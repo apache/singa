@@ -23,7 +23,6 @@ from singa import autograd
 from singa import optimizer
 import numpy as np
 
-
 if __name__ == "__main__":
 
     autograd.training = True

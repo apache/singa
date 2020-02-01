@@ -15,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 # =============================================================================
-
 '''
 Loss module includes a set of training loss implmentations. Some are converted
 from C++ implementation, and the rest are implemented directly using python

@@ -17,16 +17,16 @@
  */
 #ifndef DISABLE_WARNINGS
 
+#include <iostream>
 #include "singa/core/device.h"
 #include "singa/singa_config.h"
 #include "singa/utils/opencl_utils.h"
-#include <iostream>
 using namespace std;
 namespace singa {
 
 #ifdef USE_CUDA
- 
-std::vector<std::shared_ptr<Device> > Platform::UsedDevice;
+
+std::vector<std::shared_ptr<Device>> Platform::UsedDevice;
 std::mutex Platform::mtx_;
 int Platform::GetNumGPUs() {
   int count;
@@ -55,7 +55,7 @@ const vector<int> Platform::GetGPUIDs() {
 }
 
 const std::pair<size_t, size_t> Platform::GetGPUMemSize(const int device) {
-  std::pair<size_t, size_t> ret{ 0, 0 };
+  std::pair<size_t, size_t> ret{0, 0};
   if (Platform::CheckDevice(device)) {
     CUDA_CHECK(cudaSetDevice(device));
     size_t free = 0, total = 0;
@@ -78,20 +78,17 @@ const vector<std::pair<size_t, size_t>> Platform::GetGPUMemSize() {
 
 const string Platform::DeviceQuery(int device, bool verbose) {
   if (cudaSuccess != cudaGetDevice(&device)) {
-    return "The device (ID = " + std::to_string(device) + " is not available" ;
+    return "The device (ID = " + std::to_string(device) + " is not available";
   }
   cudaDeviceProp prop;
   CUDA_CHECK(cudaGetDeviceProperties(&prop, device));
   std::ostringstream out;
   out << "Device id:                     " << device << '\n';
   out << "Total global memory:           " << prop.totalGlobalMem << '\n';
-  out << "Total shared memory per block: " << prop.sharedMemPerBlock
-      << '\n';
-  out << "Maximum threads per block:     " << prop.maxThreadsPerBlock
-      << '\n';
-  out << "Maximum dimension of block:    "
-      << prop.maxThreadsDim[0 << '\n'] << ", " << prop.maxThreadsDim[1]
-      << ", " << prop.maxThreadsDim[2] << '\n';
+  out << "Total shared memory per block: " << prop.sharedMemPerBlock << '\n';
+  out << "Maximum threads per block:     " << prop.maxThreadsPerBlock << '\n';
+  out << "Maximum dimension of block:    " << prop.maxThreadsDim[0 << '\n']
+      << ", " << prop.maxThreadsDim[1] << ", " << prop.maxThreadsDim[2] << '\n';
   out << "Maximum dimension of grid:     " << prop.maxGridSize[0] << ", "
       << "Concurrent copy and execution: "
       << (prop.deviceOverlap ? "Yes" : "No") << '\n';
@@ -103,7 +100,7 @@ const string Platform::DeviceQuery(int device, bool verbose) {
     out << "Total registers per block:     " << prop.regsPerBlock << '\n';
     out << "Maximum memory pitch:          " << prop.memPitch << '\n';
     out << "Warp size:                     " << prop.warpSize
-      << prop.maxGridSize[1] << ", " << prop.maxGridSize[2] << '\n';
+        << prop.maxGridSize[1] << ", " << prop.maxGridSize[2] << '\n';
     out << "Clock rate:                    " << prop.clockRate << '\n';
     out << "Number of multiprocessors:     " << prop.multiProcessorCount
         << '\n';
@@ -113,15 +110,15 @@ const string Platform::DeviceQuery(int device, bool verbose) {
   return out.str();
 }
 
-const vector<shared_ptr<Device>>
-Platform::CreateCudaGPUs(const size_t num_devices, size_t init_size) {
+const vector<shared_ptr<Device>> Platform::CreateCudaGPUs(
+    const size_t num_devices, size_t init_size) {
   const vector<int> gpus = GetGPUIDs();
   CHECK_LE(num_devices, gpus.size());
   vector<int> use_gpus(gpus.begin(), gpus.begin() + num_devices);
   return CreateCudaGPUsOn(use_gpus, init_size);
 }
 
-const vector<shared_ptr<Device> > Platform::CreateCudaGPUsOn(
+const vector<shared_ptr<Device>> Platform::CreateCudaGPUsOn(
     const vector<int>& devices, size_t init_size) {
   MemPoolConf conf;
   if (init_size > 0) conf.set_init_size(init_size);
@@ -136,7 +133,7 @@ const vector<shared_ptr<Device> > Platform::CreateCudaGPUsOn(
     for (int i = 0; i < count; i++) UsedDevice.push_back(nullptr);
   }
   auto pool = std::make_shared<CnMemPool>(conf);
-  vector<shared_ptr<Device> > ret;
+  vector<shared_ptr<Device>> ret;
   for (size_t i = 0; i < devices.size(); i++) {
     if (UsedDevice[devices[i]] == nullptr)
       UsedDevice[devices[i]] = std::make_shared<CudaGPU>(devices[i], pool);
@@ -184,7 +181,7 @@ Platform::CreateOpenclDevices(const std::vector<int> &id) {
 
 }
 */
-#endif // USE_OPENCL
+#endif  // USE_OPENCL
 
 }  // namespace singa
 

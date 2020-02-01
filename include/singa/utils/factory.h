@@ -32,7 +32,7 @@
  * returns pointer to the base class.
  */
 #define CreateInstance(SubClass, BaseClass) \
-  [](void)->BaseClass* {return new SubClass();}
+  [](void) -> BaseClass* { return new SubClass(); }
 
 /**
  * Factory template to generate class (or a sub-class) object based on id.
@@ -41,7 +41,7 @@
  * 2. call Create() func to call the creation function and return
  * a pointer to the base calss.
  */
-template<typename T, typename ID = std::string>
+template <typename T, typename ID = std::string>
 class Factory {
  public:
   /**
@@ -51,8 +51,7 @@ class Factory {
    * @param id Identifier of the creating function/class
    * @param func a function that creates a layer instance
    */
-  static void Register(const ID& id,
-                       const std::function<T*(void)>& creator) {
+  static void Register(const ID& id, const std::function<T*(void)>& creator) {
     Registry* reg = GetRegistry();
     // CHECK(reg->find(id) == reg->end())
     //  << "The id " << id << " has been registered";
@@ -66,15 +65,14 @@ class Factory {
    */
   static T* Create(const ID& id) {
     Registry* reg = GetRegistry();
-    CHECK(reg->find(id) != reg->end())
-      << "The creation function for " << id << " has not been registered";
+    CHECK(reg->find(id) != reg->end()) << "The creation function for " << id
+                                       << " has not been registered";
     return (*reg)[id]();
   }
 
   static const std::vector<ID> GetIDs() {
     std::vector<ID> keys;
-    for (const auto entry : *GetRegistry())
-      keys.push_back(entry.first);
+    for (const auto entry : *GetRegistry()) keys.push_back(entry.first);
     return keys;
   }
 
@@ -87,7 +85,7 @@ class Factory {
   }
 };
 
-template<typename Base, typename Sub, typename ID = std::string>
+template <typename Base, typename Sub, typename ID = std::string>
 class Registra {
  public:
   Registra(const ID& id) {

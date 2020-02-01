@@ -19,9 +19,9 @@
 *
 *************************************************************/
 
+#include <cmath>
 #include "gtest/gtest.h"
 #include "singa/model/optimizer.h"
-#include <cmath>
 
 TEST(RMSProp, ApplyCPU) {
   singa::RMSProp rmsprop;

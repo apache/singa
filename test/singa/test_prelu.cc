@@ -142,7 +142,7 @@ TEST(PReLU, BackwardCPU) {
 #ifdef USE_CUDA
 TEST(PReLU, ForwardGPU) {
   const float x[] = {1.f,  2.f, 3.f,  -2.f, -3.f, -1.f,
-                         -1.f, 2.f, -1.f, -2.f, -2.f, -1.f};
+                     -1.f, 2.f, -1.f, -2.f, -2.f, -1.f};
   size_t n = sizeof(x) / sizeof(float);
   size_t batchsize = 2, c = 3, h = 2, w = 1;
   auto cuda = std::make_shared<singa::CudaGPU>();
@@ -185,7 +185,7 @@ TEST(PReLU, ForwardGPU) {
 
 TEST(PReLU, BackwardGPU) {
   const float x[] = {1.f,  2.f, 3.f,  -2.f, -3.f, -1.f,
-                           -1.f, 2.f, -1.f, -2.f, -2.f, -1.f};
+                     -1.f, 2.f, -1.f, -2.f, -2.f, -1.f};
   size_t n = sizeof(x) / sizeof(float);
   size_t batchsize = 2, c = 3, h = 2, w = 1;
   auto cuda = std::make_shared<singa::CudaGPU>();
@@ -206,7 +206,7 @@ TEST(PReLU, BackwardGPU) {
 
   singa::Tensor out = prelu.Forward(singa::kTrain, in);
   const float grad[] = {1.f, 2.f,  -2.f, -1.f, -1.f, -3.f,
-                          2.f, -2.f, 1.f,  1.f,  -2.f, 0.f};
+                        2.f, -2.f, 1.f,  1.f,  -2.f, 0.f};
   singa::Tensor out_diff(singa::Shape{batchsize, c, h, w}, cuda);
   out_diff.CopyDataFromHostPtr<float>(grad, n);
   const auto ret = prelu.Backward(singa::kTrain, out_diff);
@@ -225,7 +225,7 @@ TEST(PReLU, BackwardGPU) {
     for (size_t i = 0; i < n; i++) {
       size_t pos = i / (h * w) % c / div_factor;
       dx[i] = grad[i] *
-                (std::max(x[i], 0.f) + neg_slope[pos] * std::min(x[i], 0.f));
+              (std::max(x[i], 0.f) + neg_slope[pos] * std::min(x[i], 0.f));
     }
     for (size_t i = 0; i < n; i++) {
       size_t pos = i / (h * w) % c / div_factor;
@@ -235,8 +235,8 @@ TEST(PReLU, BackwardGPU) {
     for (size_t i = 0; i < n; i++) {
       size_t pos = i % c / div_factor;
       dx[i] = grad[i] *
-        (std::max(x[i], 0.f) + neg_slope[pos] * std::min(x[i], 0.f));
-  }
+              (std::max(x[i], 0.f) + neg_slope[pos] * std::min(x[i], 0.f));
+    }
     for (size_t i = 0; i < n; i++) {
       size_t pos = i % c / div_factor;
       da[pos] += grad[i] * std::min(x[i], 0.f);

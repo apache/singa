@@ -19,7 +19,7 @@ from builtins import str
 from builtins import object
 
 from multiprocessing import Process, Queue
-from flask import Flask,request, send_from_directory, jsonify
+from flask import Flask, request, send_from_directory, jsonify
 from flask_cors import cross_origin
 import os, traceback
 import time
@@ -28,74 +28,87 @@ from werkzeug.datastructures import CombinedMultiDict, MultiDict
 import pickle
 import uuid
 
+
 class MsgType(object):
-   def __init__(self, name):
-       self.name = name
-   def __str__(self):
-       return self.name
-   def __repr__(self):
-       return "<Msg: %s>" % self
-   def equal(self,target):
-       return str(self) == str(target)
 
-   def is_info(self):
-       return self.name.startswith('kInfo')
-   def is_command(self):
-       return self.name.startswith('kCommand')
-   def is_status(self):
-       return self.name.startswith('kStatus')
-   def is_request(self):
-       return self.name.startswith('kRequest')
-   def is_response(self):
-       return self.name.startswith('kResponse')
+    def __init__(self, name):
+        self.name = name
 
-   @staticmethod
-   def parse(name):
-       return getattr(MsgType,str(name))
-   @staticmethod
-   def get_command(name):
-       if name=='stop':
-           return MsgType.kCommandStop
-       if name=='pause':
-           return MsgType.kCommandPause
-       if name=='resume':
-           return MsgType.kCommandResume
-       return MsgType.kCommand
+    def __str__(self):
+        return self.name
 
-types =  ['kInfo','kInfoMetric',
-           'kCommand','kCommandStop','kCommandPause','kCommandResume',
-           'kStatus','kStatusRunning','kStatusPaused','kStatusError',
-           'kRequest','kResponse']
+    def __repr__(self):
+        return "<Msg: %s>" % self
+
+    def equal(self, target):
+        return str(self) == str(target)
+
+    def is_info(self):
+        return self.name.startswith('kInfo')
+
+    def is_command(self):
+        return self.name.startswith('kCommand')
+
+    def is_status(self):
+        return self.name.startswith('kStatus')
+
+    def is_request(self):
+        return self.name.startswith('kRequest')
+
+    def is_response(self):
+        return self.name.startswith('kResponse')
+
+    @staticmethod
+    def parse(name):
+        return getattr(MsgType, str(name))
+
+    @staticmethod
+    def get_command(name):
+        if name == 'stop':
+            return MsgType.kCommandStop
+        if name == 'pause':
+            return MsgType.kCommandPause
+        if name == 'resume':
+            return MsgType.kCommandResume
+        return MsgType.kCommand
+
+
+types = [
+    'kInfo', 'kInfoMetric', 'kCommand', 'kCommandStop', 'kCommandPause',
+    'kCommandResume', 'kStatus', 'kStatusRunning', 'kStatusPaused',
+    'kStatusError', 'kRequest', 'kResponse'
+]
 
 for t in types:
-    setattr(MsgType,t,MsgType(t))
+    setattr(MsgType, t, MsgType(t))
 
 #####   NOTE the server currently only can handle request sequentially
 
 app = Flask(__name__)
-top_k_=5
+top_k_ = 5
+
 
 class Agent(object):
 
-    def __init__(self,port):
+    def __init__(self, port):
         info_queue = Queue()
         command_queue = Queue()
-        self.p = Process(target=start, args=(port, info_queue,command_queue))
+        self.p = Process(target=start, args=(port, info_queue, command_queue))
         self.p.start()
-        self.info_queue=info_queue
-        self.command_queue=command_queue
+        self.info_queue = info_queue
+        self.command_queue = command_queue
         return
 
     def pull(self):
         if not self.command_queue.empty():
-            msg,data=self.command_queue.get()
+            msg, data = self.command_queue.get()
             if msg.is_request():
                 data = pickle.loads(data)
-            return msg,data
-        return None,None
+            return msg, data
+        return None, None
 
-    def push(self,msg,value):
-        self.info_queue.put((msg,value))
+    def push(self, msg, value):
+        self.info_queue.put((msg, value))
         return
 
     def stop(self):
@@ -103,35 +116,40 @@ class Agent(object):
         time.sleep(1)
         self.p.terminate()
 
-def start(port,info_queue,command_queue):
+
+def start(port, info_queue, command_queue):
     global info_queue_, command_queue_, data_
-    info_queue_=info_queue
-    command_queue_=command_queue
+    info_queue_ = info_queue
+    command_queue_ = command_queue
     data_ = []
     app.run(host='0.0.0.0', port=port)
     return
+
 
 def getDataFromInfoQueue(need_return=False):
     global info_queue_, data_
     if not need_return:
         while not info_queue_.empty():
-            msg,d = info_queue_.get()
+            msg, d = info_queue_.get()
             data_.append(d)
     else:
-        while True: # loop until get answer
+        while True:  # loop until get answer
             while not info_queue_.empty():
-                msg,d = info_queue_.get()
+                msg, d = info_queue_.get()
                 if msg.is_info():
                     data_.append(d)
                 else:
-                    return msg,d
+                    return msg, d
             time.sleep(0.01)
+
 
 @app.route("/")
 @cross_origin()
 def index():
     try:
-        req=send_from_directory(os.getcwd(),"index.html", mimetype='text/html')
+        req = send_from_directory(os.getcwd(),
+                                  "index.html",
+                                  mimetype='text/html')
     except Exception:
         traceback.print_exc()
         return "error"
@@ -139,6 +157,7 @@ def index():
         traceback.print_exc()
         return "error"
     return req
+
 
 # support two operations for user to monitor the training status
 @app.route('/getAllData')
@@ -178,16 +197,17 @@ def getTopKData():
         return failure("Internal Error - Triggered SystemExit")
     return success(data_[-k:])
 
+
 @app.route("/api", methods=['POST'])
 @cross_origin()
 def api():
-    global info_queue_,command_queue_
+    global info_queue_, command_queue_
     try:
-        files=transformFile(request.files)
-        values = CombinedMultiDict([request.args,request.form,files])
+        files = transformFile(request.files)
+        values = CombinedMultiDict([request.args, request.form, files])
         req_str = pickle.dumps(values)
-        command_queue_.put((MsgType.kRequest,req_str))
-        msg,response=getDataFromInfoQueue(True)
+        command_queue_.put((MsgType.kRequest, req_str))
+        msg, response = getDataFromInfoQueue(True)
         deleteFiles(files)
         return response
     except Exception:
@@ -197,14 +217,15 @@ def api():
         traceback.print_exc()
         return failure("Internal Error - Triggered SystemExit")
 
-@app.route("/command/<name>", methods=['GET','POST'])
+
+@app.route("/command/<name>", methods=['GET', 'POST'])
 @cross_origin()
 def command(name):
-    global info_queue_,command_queue_
+    global info_queue_, command_queue_
     try:
-        command=MsgType.get_command(name)
-        command_queue_.put((command,""))
-        msg,response=getDataFromInfoQueue(True)
+        command = MsgType.get_command(name)
+        command_queue_.put((command, ""))
+        msg, response = getDataFromInfoQueue(True)
         return response
     except Exception:
         traceback.print_exc()
@@ -213,10 +234,13 @@ def command(name):
         traceback.print_exc()
         return failure("Internal Error - Triggered SystemExit")
 
+
 def success(data=""):
     '''return success status in json format'''
     res = dict(result="success", data=data)
     return jsonify(res)
+
+
 def failure(message):
     '''return failure status in json format'''
     res = dict(result="message", message=message)
@@ -224,11 +248,11 @@ def failure(message):
 
 
 def transformFile(files):
-    result= MultiDict([])
+    result = MultiDict([])
     for f in files:
         file = files[f]
-        unique_filename = str(uuid.uuid4())+secure_filename(file.filename)
-        filepath=os.path.join(os.getcwd(), unique_filename)
+        unique_filename = str(uuid.uuid4()) + secure_filename(file.filename)
+        filepath = os.path.join(os.getcwd(), unique_filename)
         file.save(filepath)
         result.add(f, filepath)
     return result

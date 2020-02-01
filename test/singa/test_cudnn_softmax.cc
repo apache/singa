@@ -21,10 +21,10 @@
 #include "singa/singa_config.h"
 #ifdef USE_CUDNN
 
+#include <cudnn.h>
+#include <math.h>  // exp
 #include "../src/model/layer/cudnn_softmax.h"
 #include "gtest/gtest.h"
-#include <math.h>  // exp
-#include <cudnn.h>
 
 // TODO(wangwei) add test for matrix input
 using singa::CudnnSoftmax;

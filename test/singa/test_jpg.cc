@@ -19,10 +19,10 @@
 *
 *************************************************************/
 
-#include "singa/io/encoder.h"
-#include "singa/io/decoder.h"
-#include "gtest/gtest.h"
 #include <time.h>
+#include "gtest/gtest.h"
+#include "singa/io/decoder.h"
+#include "singa/io/encoder.h"
 
 #ifdef USE_OPENCV
 #include <opencv2/highgui/highgui.hpp>
@@ -35,7 +35,7 @@ TEST(Decoder, Decode) {
 
   // initial random seed
   srand(time(NULL));
- 
+
   singa::EncoderConf encoder_conf;
   encoder_conf.set_image_dim_order("HWC");
   encoder.Setup(encoder_conf);
@@ -77,7 +77,7 @@ TEST(Decoder, Decode) {
   const int* in_label = input[1].data<int>();
   EXPECT_EQ(2, in_label[0]);
   EXPECT_EQ(2u, input.size());
- 
+
   std::string tmp = encoder.Encode(input);
   std::vector<Tensor> output = decoder.Decode(tmp);
   EXPECT_EQ(2u, output.size());
@@ -92,7 +92,7 @@ TEST(Decoder, Decode) {
   for (size_t i = 0; i < height; i++)
     for (size_t j = 0; j < width; j++)
       for (size_t k = 0; k < channel; k++)
-        out.at<cv::Vec3b>(i, j)[k] = 
+        out.at<cv::Vec3b>(i, j)[k] =
             out_pixel[i * width * channel + j * channel + k];
   for(size_t i = 0; i < total; i++)
     EXPECT_LE(fabs(in_pixel[i]-out_pixel[i]), 10.f);*/

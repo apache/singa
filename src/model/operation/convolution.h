@@ -24,13 +24,13 @@
 #include <string>
 #include <vector>
 #include "singa/core/tensor.h"
-#include "singa/utils/logging.h"
 #include "singa/singa_config.h"
+#include "singa/utils/logging.h"
 
 #ifdef USE_CUDNN
 #include <cudnn.h>
 #include "../layer/cudnn_utils.h"
-#endif // USE_CUDNN
+#endif  // USE_CUDNN
 
 #ifdef USE_DNNL
 #include <singa/utils/dnnl_utils.h>
@@ -40,12 +40,12 @@
 namespace singa {
 
 class ConvHandle {
-
  public:
-  ConvHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
-             const std::vector<size_t>& stride, const std::vector<size_t>& padding,
-             const size_t in_channels, const size_t out_channels,
-             const bool bias, const size_t groups = 1);
+  ConvHandle(const Tensor &input, const std::vector<size_t> &kernel_size,
+             const std::vector<size_t> &stride,
+             const std::vector<size_t> &padding, const size_t in_channels,
+             const size_t out_channels, const bool bias,
+             const size_t groups = 1);
 
   ~ConvHandle();
 
@@ -93,25 +93,28 @@ class ConvHandle {
 
 };
 
+Tensor CpuConvForward(const Tensor &x, Tensor &W, Tensor &b,
+                      const ConvHandle &ch);
 
-Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b, const ConvHandle &ch);
+Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x,
+                        const ConvHandle &ch);
 
-Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x, const ConvHandle &ch);
+Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
+                        const ConvHandle &ch);
 
-Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, const ConvHandle &ch);
-
-Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b, const ConvHandle &ch);
-
-
+Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b,
+                        const ConvHandle &ch);
 
 #ifdef USE_CUDNN
-class CudnnConvHandle: public ConvHandle {
+class CudnnConvHandle : public ConvHandle {
  public:
-  CudnnConvHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
-                  const std::vector<size_t>& stride, const std::vector<size_t>& padding,
-                  const size_t in_channels, const size_t out_channels,
-                  const bool bias, const size_t groups = 1, const size_t workspace_byte_limit = 1024 * 1024 * 1024,
-                  const std::string& prefer = "fastest");
+  CudnnConvHandle(const Tensor &input, const std::vector<size_t> &kernel_size,
+                  const std::vector<size_t> &stride,
+                  const std::vector<size_t> &padding, const size_t in_channels,
+                  const size_t out_channels, const bool bias,
+                  const size_t groups = 1,
+                  const size_t workspace_byte_limit = 1024 * 1024 * 1024,
+                  const std::string &prefer = "fastest");
   ~CudnnConvHandle();
   // TODO(wangwei) add the destructor
 
@@ -129,13 +132,17 @@ class CudnnConvHandle: public ConvHandle {
   size_t channels_per_filter;
 };
 
-Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const CudnnConvHandle &cch);
+Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b,
+                      const CudnnConvHandle &cch);
 
-Tensor GpuConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x, const CudnnConvHandle &cch);
+Tensor GpuConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x,
+                        const CudnnConvHandle &cch);
 
-Tensor GpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, const CudnnConvHandle &cch);
+Tensor GpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
+                        const CudnnConvHandle &cch);
 
-Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b, const CudnnConvHandle &cch);
+Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b,
+                        const CudnnConvHandle &cch);
 #endif  // USE_CUDNN
 
 }  // namespace singa

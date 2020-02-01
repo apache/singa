@@ -26,8 +26,8 @@
 
 #ifdef USE_CUDNN
 #include <cudnn.h>
-#include "../layer/cudnn_utils.h" // check_cudnn
-#endif // USE_CUDNN
+#include "../layer/cudnn_utils.h"  // check_cudnn
+#endif                             // USE_CUDNN
 
 #ifdef USE_DNNL
 #include <singa/utils/dnnl_utils.h>
@@ -45,7 +45,7 @@ namespace singa {
 
 class BatchNormHandle {
  public:
-  BatchNormHandle(const float momentum, const Tensor& input);
+  BatchNormHandle(const float momentum, const Tensor &input);
   ~BatchNormHandle();
 
   float factor;
@@ -72,25 +72,23 @@ Tensor
 CpuBatchNormForwardInference(const BatchNormHandle &bnh, const Tensor &x, const Tensor &bnScale, const Tensor &bnBias,
                              Tensor &running_mean, Tensor &running_var);
 
-const std::vector<Tensor>
-CpuBatchNormForwardTraining(const BatchNormHandle &bnh, const Tensor &x, const Tensor &bnScale, const Tensor &bnBias,
-                            Tensor &running_mean, Tensor &running_var);
+const std::vector<Tensor> CpuBatchNormForwardTraining(
+    const BatchNormHandle &bnh, const Tensor &x, const Tensor &bnScale,
+    const Tensor &bnBias, Tensor &running_mean, Tensor &running_var);
 
-const std::vector<Tensor> CpuBatchNormBackwardx(const BatchNormHandle &bnh,
-    const Tensor &y, const Tensor &dy,
-    const Tensor &x,
-    const Tensor &bnScale, const Tensor &bnBias,
+const std::vector<Tensor> CpuBatchNormBackwardx(
+    const BatchNormHandle &bnh, const Tensor &y, const Tensor &dy,
+    const Tensor &x, const Tensor &bnScale, const Tensor &bnBias,
     const Tensor &mean, const Tensor &var);
 #endif // USE_DNNL
 
 
 
-
 #ifdef USE_CUDNN
 
-class CudnnBatchNormHandle: public BatchNormHandle {
+class CudnnBatchNormHandle : public BatchNormHandle {
  public:
-  CudnnBatchNormHandle(const float momentum, const Tensor& input);
+  CudnnBatchNormHandle(const float momentum, const Tensor &input);
 
   //~CudnnBatchNormHandle();
 
@@ -99,17 +97,19 @@ class CudnnBatchNormHandle: public BatchNormHandle {
   cudnnTensorDescriptor_t param_desc = nullptr;
 };
 
-const std::vector<Tensor> GpuBatchNormForwardTraining(const CudnnBatchNormHandle
-    &cbnh, const Tensor& x, const Tensor& bnScale, const Tensor& bnBias,
-    Tensor& running_mean, Tensor& running_var);
+const std::vector<Tensor> GpuBatchNormForwardTraining(
+    const CudnnBatchNormHandle &cbnh, const Tensor &x, const Tensor &bnScale,
+    const Tensor &bnBias, Tensor &running_mean, Tensor &running_var);
 
 Tensor GpuBatchNormForwardInference(const CudnnBatchNormHandle &cbnh,
-                                    const Tensor& x, const Tensor& bnScale, const Tensor& bnBias,
-                                    const Tensor& running_mean, const Tensor& running_var);
+                                    const Tensor &x, const Tensor &bnScale,
+                                    const Tensor &bnBias,
+                                    const Tensor &running_mean,
+                                    const Tensor &running_var);
 
-const std::vector<Tensor> GpuBatchNormBackward(const CudnnBatchNormHandle &cbnh,
-    const Tensor& dy, const Tensor& x, const Tensor& bnScale, const Tensor& mean,
-    const Tensor& var);
+const std::vector<Tensor> GpuBatchNormBackward(
+    const CudnnBatchNormHandle &cbnh, const Tensor &dy, const Tensor &x,
+    const Tensor &bnScale, const Tensor &mean, const Tensor &var);
 
 #endif  // USE_CUDNN
 

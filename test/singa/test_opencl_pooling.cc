@@ -19,8 +19,8 @@
 *
 *************************************************************/
 
-#include "../src/model/layer/pooling.h"
 #include "../src/model/layer/opencl_pooling.h"
+#include "../src/model/layer/pooling.h"
 
 #include "gtest/gtest.h"
 
@@ -56,7 +56,6 @@ TEST(OpenclPooling, Setup) {
   EXPECT_EQ(3u, pool.height());
   EXPECT_EQ(3u, pool.width());
 }
-
 
 TEST(OpenclPooling, Forward) {
   const size_t batchsize = 2, c = 1, h = 3, w = 3;
@@ -94,7 +93,6 @@ TEST(OpenclPooling, Forward) {
   EXPECT_EQ(8.0f, outptr1[6]);
   EXPECT_EQ(9.0f, outptr1[7]);
 }
-
 
 TEST(OpenclPooling, Backward) {
   // src_data
@@ -152,5 +150,4 @@ TEST(OpenclPooling, Backward) {
   EXPECT_EQ(0.4f, dx[17]);
 }
 
-
-#endif // USE_OPENCL
+#endif  // USE_OPENCL

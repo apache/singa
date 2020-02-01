@@ -30,7 +30,6 @@ using singa::OpenclConvolution;
 using singa::OpenclDevice;
 using singa::Shape;
 
-
 TEST(OpenclConvolution, Setup) {
   OpenclConvolution conv;
   EXPECT_EQ("OpenclConvolution", conv.layer_type());
@@ -60,13 +59,12 @@ TEST(OpenclConvolution, Setup) {
   EXPECT_EQ(3u, conv.width());
 }
 
-
 TEST(OpenclConvolution, Forward) {
   const size_t batchsize = 2, c = 1, h = 3, w = 3;
   const float x[batchsize * c * h * w] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f,
                                           7.0f, 8.0f, 9.0f, 1.0f, 2.0f, 3.0f,
                                           4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
-                                          
+
   auto ocl = std::make_shared<OpenclDevice>();
   singa::Tensor in(singa::Shape{batchsize, c, h, w}, ocl);
   in.CopyDataFromHostPtr(x, batchsize * c * h * w);
@@ -113,7 +111,6 @@ TEST(OpenclConvolution, Forward) {
   EXPECT_EQ(-3.0f, outptr1[6]);
   EXPECT_EQ(12.0f, outptr1[7]);
 }
-
 
 TEST(OpenclConvolution, Backward) {
   // src_data
@@ -219,5 +216,4 @@ TEST(OpenclConvolution, Backward) {
   EXPECT_FLOAT_EQ(dy[0] * x[4] + dy[4] * x[13], dwptr[8]);
 }
 
-
-#endif // USE_OPENCL
+#endif  // USE_OPENCL

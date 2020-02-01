@@ -20,7 +20,7 @@
 
 namespace singa {
 
-std::shared_ptr<Device> defaultDevice=std::make_shared<CppCPU>();
+std::shared_ptr<Device> defaultDevice = std::make_shared<CppCPU>();
 
 CppCPU::CppCPU() : Device(-1, 1) {
   lang_ = kCpp;
@@ -34,20 +34,16 @@ CppCPU::CppCPU() : Device(-1, 1) {
 CppCPU::~CppCPU() {
 };
 
-void CppCPU::SetRandSeed(unsigned seed) {
-  ctx_.random_generator.seed(seed);
-}
-
+void CppCPU::SetRandSeed(unsigned seed) { ctx_.random_generator.seed(seed); }
 
 void CppCPU::DoExec(function<void(Context*)>&& fn, int executor) {
   CHECK_EQ(executor, 0);
   fn(&ctx_);
 }
 
-
 void* CppCPU::Malloc(int size) {
   if (size > 0) {
-    void *ptr = malloc(size);
+    void* ptr = malloc(size);
     memset(ptr, 0, size);
     return ptr;
   } else {
@@ -55,15 +51,12 @@ void* CppCPU::Malloc(int size) {
   }
 }
 
-
 void CppCPU::Free(void* ptr) {
-  if (ptr != nullptr)
-    free(ptr);
+  if (ptr != nullptr) free(ptr);
 }
 
-
 void CppCPU::CopyToFrom(void* dst, const void* src, size_t nBytes,
-                           CopyDirection direction, Context* ctx) {
+                        CopyDirection direction, Context* ctx) {
   memcpy(dst, src, nBytes);
 }
 

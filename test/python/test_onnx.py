@@ -25,8 +25,9 @@ from singa import sonnx
 from singa import opt
 
 import onnx
-from onnx import (defs, checker, helper, numpy_helper, mapping,
-                  ModelProto, GraphProto, NodeProto, AttributeProto, TensorProto, OperatorSetIdProto)
+from onnx import (defs, checker, helper, numpy_helper, mapping, ModelProto,
+                  GraphProto, NodeProto, AttributeProto, TensorProto,
+                  OperatorSetIdProto)
 from onnx.helper import make_tensor, make_tensor_value_info, make_node, make_graph
 
 from cuda_helper import gpu_dev, cpu_dev
@@ -49,10 +50,13 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_relu(self):
-        X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
+        X = np.array([0.8, -1.2, 3.3, -3.6, -0.5,
+                      0.5]).reshape(3, 2).astype(np.float32)
         XT = np.array([0.8, 0, 3.3, 0, 0, 0.5]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(X)
         x.to_device(gpu_dev)
@@ -65,7 +69,9 @@ class TestPythonOnnx(unittest.TestCase):
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_avg_pool(self):
         x = tensor.Tensor(shape=(2, 3, 3, 3), device=gpu_dev)
@@ -79,7 +85,9 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_softmax(self):
         X = np.array([[-1, 0, 1]]).astype(np.float32)
@@ -94,7 +102,9 @@ class TestPythonOnnx(unittest.TestCase):
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_sigmoid(self):
         X = np.array([[-1, 0, 1]]).astype(np.float32)
@@ -109,7 +119,9 @@ class TestPythonOnnx(unittest.TestCase):
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_add(self):
         X1 = np.random.randn(3, 4, 5).astype(np.float32)
@@ -129,7 +141,9 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x1, x2])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_concat(self):
         X1 = np.random.randn(3, 4, 5).astype(np.float32)
@@ -148,7 +162,9 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x1, x2])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_matmul(self):
         X1 = np.random.randn(4, 5).astype(np.float32)
@@ -169,7 +185,9 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x1, x2])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_max_pool(self):
         x = tensor.Tensor(shape=(2, 3, 4, 4), device=gpu_dev)
@@ -184,7 +202,9 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_batch_norm(self):
         x = np.array([[[[-1, 0, 1]], [[2, 3, 4]]]]).astype(np.float32)
@@ -207,8 +227,7 @@ class TestPythonOnnx(unittest.TestCase):
         var.to_device(gpu_dev)
 
         handle = singa.CudnnBatchNormHandle(0.9, x.data)
-        y = autograd.batchnorm_2d(handle, x, s,
-                                  bias, mean, var)
+        y = autograd.batchnorm_2d(handle, x, s, bias, mean, var)
 
         # frontend
         model = sonnx.to_onnx([x, s, bias, mean, var], [y])
@@ -218,7 +237,9 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x, s, bias, mean, var])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_linear(self):
         x = tensor.Tensor(shape=(2, 20), device=gpu_dev)
@@ -234,7 +255,9 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x1])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     # def test_gemm(self):
     #     A = np.random.randn(2, 3).astype(np.float32)
@@ -262,7 +285,8 @@ class TestPythonOnnx(unittest.TestCase):
     #     np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
 
     def test_reshape(self):
-        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9, 9.0]).reshape(3, 2).astype(np.float32)
+        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
+                      9.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         x.to_device(gpu_dev)
         y = autograd.Reshape((2, 3))(x)[0]
@@ -275,11 +299,15 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x, (2, 3)])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_sum(self):
-        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9, 9.0]).reshape(3, 2).astype(np.float32)
-        x1 = np.array([0.1, 1.0, 0.4, 4.0, 0.9, 9.0]).reshape(3, 2).astype(np.float32)
+        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
+                      9.0]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0.1, 1.0, 0.4, 4.0, 0.9,
+                       9.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         x1 = tensor.from_numpy(x1)
         y = autograd.Sum()(x, x1)[0]
@@ -292,10 +320,13 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x, x1])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_Cos(self):
-        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9, 9.0]).reshape(3, 2).astype(np.float32)
+        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
+                      9.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         y = autograd.Cos()(x)[0]
 
@@ -307,10 +338,13 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
-    
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
+
     def test_Cosh(self):
-        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9, 9.0]).reshape(3, 2).astype(np.float32)
+        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
+                      9.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         y = autograd.Cosh()(x)[0]
 
@@ -322,10 +356,13 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_Sin(self):
-        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9, 9.0]).reshape(3, 2).astype(np.float32)
+        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
+                      9.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         y = autograd.Sin()(x)[0]
 
@@ -337,10 +374,13 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_Sinh(self):
-        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9, 9.0]).reshape(3, 2).astype(np.float32)
+        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
+                      9.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         y = autograd.Sinh()(x)[0]
 
@@ -352,10 +392,13 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_Tan(self):
-        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9, 9.0]).reshape(3, 2).astype(np.float32)
+        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
+                      9.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         y = autograd.Tan()(x)[0]
 
@@ -367,10 +410,13 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_Tanh(self):
-        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9, 9.0]).reshape(3, 2).astype(np.float32)
+        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
+                      9.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         y = autograd.Tanh()(x)[0]
 
@@ -382,10 +428,13 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_Acos(self):
-        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9, 9.0]).reshape(3, 2).astype(np.float32)
+        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
+                      9.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         y = autograd.Acos()(x)[0]
 
@@ -397,11 +446,13 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
-
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_Acosh(self):
-        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9, 9.0]).reshape(3, 2).astype(np.float32)
+        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
+                      9.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         y = autograd.Acosh()(x)[0]
 
@@ -413,10 +464,13 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_Asin(self):
-        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9, 9.0]).reshape(3, 2).astype(np.float32)
+        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
+                      9.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         y = autograd.Asin()(x)[0]
 
@@ -428,10 +482,13 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_Asinh(self):
-        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9, 9.0]).reshape(3, 2).astype(np.float32)
+        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
+                      9.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         y = autograd.Asinh()(x)[0]
 
@@ -443,10 +500,13 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_Atan(self):
-        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9, 9.0]).reshape(3, 2).astype(np.float32)
+        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
+                      9.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         y = autograd.Atan()(x)[0]
 
@@ -458,10 +518,13 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_Atanh(self):
-        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9, 9.0]).reshape(3, 2).astype(np.float32)
+        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
+                      9.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         y = autograd.Atanh()(x)[0]
 
@@ -473,17 +536,20 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_SeLu(self):
-        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5,
+                      0.9]).reshape(3, 2).astype(np.float32)
         #y = gamma * (alpha * e^x - alpha) for x <= 0, y = gamma * x for x > 0
-        a=1.67326
-        g=1.0507
+        a = 1.67326
+        g = 1.0507
         x = tensor.from_numpy(x)
         x.to_device(gpu_dev)
 
-        y = autograd.selu(x,a,g)
+        y = autograd.selu(x, a, g)
 
         # frontend
         model = sonnx.to_onnx([x], [y])
@@ -493,16 +559,19 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_ELu(self):
-        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5,
+                      0.9]).reshape(3, 2).astype(np.float32)
         #y = gamma * (alpha * e^x - alpha) for x <= 0, y = gamma * x for x > 0
-        a=1.
+        a = 1.
         x = tensor.from_numpy(x)
         x.to_device(gpu_dev)
 
-        y = autograd.elu(x,a)
+        y = autograd.elu(x, a)
 
         # frontend
         model = sonnx.to_onnx([x], [y])
@@ -512,17 +581,21 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_Equal(self):
-        x0 = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
-        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3, 2).astype(np.float32)
+        x0 = np.array([-0.9, -0.3, -0.1, 0.1, 0.5,
+                       0.9]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3,
+                                                         2).astype(np.float32)
         x0 = tensor.from_numpy(x0)
         x1 = tensor.from_numpy(x1)
         x0.to_device(gpu_dev)
         x1.to_device(gpu_dev)
 
-        y = autograd.equal(x0,x1)
+        y = autograd.equal(x0, x1)
 
         # frontend
         model = sonnx.to_onnx([x0, x1], [y])
@@ -531,18 +604,22 @@ class TestPythonOnnx(unittest.TestCase):
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x0, x1])
-        
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_Less(self):
-        x0 = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
-        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3, 2).astype(np.float32)
+        x0 = np.array([-0.9, -0.3, -0.1, 0.1, 0.5,
+                       0.9]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3,
+                                                         2).astype(np.float32)
         x0 = tensor.from_numpy(x0)
         x1 = tensor.from_numpy(x1)
         x0.to_device(gpu_dev)
         x1.to_device(gpu_dev)
 
-        y = autograd.less(x0,x1)
+        y = autograd.less(x0, x1)
 
         # frontend
         model = sonnx.to_onnx([x0, x1], [y])
@@ -551,11 +628,14 @@ class TestPythonOnnx(unittest.TestCase):
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x0, x1])
-        
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)     
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_Sign(self):
-        x = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
+        x = np.array([0.8, -1.2, 3.3, -3.6, -0.5,
+                      0.5]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         y = autograd.sign(x)
 
@@ -567,17 +647,21 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)   
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_Div(self):
-        x0 = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
-        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3, 2).astype(np.float32)
+        x0 = np.array([-0.9, -0.3, -0.1, 0.1, 0.5,
+                       0.9]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3,
+                                                         2).astype(np.float32)
         x0 = tensor.from_numpy(x0)
         x1 = tensor.from_numpy(x1)
         x0.to_device(gpu_dev)
         x1.to_device(gpu_dev)
 
-        y = autograd.div(x0,x1)
+        y = autograd.div(x0, x1)
 
         # frontend
         model = sonnx.to_onnx([x0, x1], [y])
@@ -586,18 +670,22 @@ class TestPythonOnnx(unittest.TestCase):
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x0, x1])
-        
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_Sub(self):
-        x0 = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
-        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3, 2).astype(np.float32)
+        x0 = np.array([-0.9, -0.3, -0.1, 0.1, 0.5,
+                       0.9]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3,
+                                                         2).astype(np.float32)
         x0 = tensor.from_numpy(x0)
         x1 = tensor.from_numpy(x1)
         x0.to_device(gpu_dev)
         x1.to_device(gpu_dev)
 
-        y = autograd.sub(x0,x1)
+        y = autograd.sub(x0, x1)
 
         # frontend
         model = sonnx.to_onnx([x0, x1], [y])
@@ -606,11 +694,14 @@ class TestPythonOnnx(unittest.TestCase):
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x0, x1])
-        
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)     
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_Sqrt(self):
-        x = np.array([0.1,1.0,0.4,4.0,0.9,9.0]).reshape(3,2).astype(np.float32)
+        x = np.array([0.1, 1.0, 0.4, 4.0, 0.9,
+                      9.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         y = autograd.sqrt(x)
 
@@ -622,36 +713,43 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5) 
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_Greater(self):
-        x0 = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
-        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3, 2).astype(np.float32)
+        x0 = np.array([-0.9, -0.3, -0.1, 0.1, 0.5,
+                       0.9]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3,
+                                                         2).astype(np.float32)
         x0 = tensor.from_numpy(x0)
         x1 = tensor.from_numpy(x1)
         x0.to_device(cpu_dev)
         x1.to_device(cpu_dev)
 
-        y = autograd.greater(x0,x1)
+        y = autograd.greater(x0, x1)
 
         # frontend
-        model = sonnx.to_onnx([x0,x1], [y])
+        model = sonnx.to_onnx([x0, x1], [y])
         # print('The model is:\n{}'.format(model))
 
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
-        y_t = sg_ir.run([x0,x1])
+        y_t = sg_ir.run([x0, x1])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_HardSigmoid(self):
-        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
-        a=0.2
-        g=0.5
+        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5,
+                      0.9]).reshape(3, 2).astype(np.float32)
+        a = 0.2
+        g = 0.5
 
         x = tensor.from_numpy(x)
         x.to_device(gpu_dev)
-        y = autograd.hardsigmoid(x,a,g)
+        y = autograd.hardsigmoid(x, a, g)
 
         # frontend
         model = sonnx.to_onnx([x], [y])
@@ -661,10 +759,13 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_identity(self):
-        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5,
+                      0.9]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         x.to_device(gpu_dev)
 
@@ -678,10 +779,13 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_softplus(self):
-        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5,
+                      0.9]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         x.to_device(gpu_dev)
 
@@ -695,10 +799,13 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_softsign(self):
-        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5,
+                      0.9]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         x.to_device(gpu_dev)
 
@@ -712,50 +819,60 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_mean(self):
-        x0 = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
-        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3, 2).astype(np.float32)
+        x0 = np.array([-0.9, -0.3, -0.1, 0.1, 0.5,
+                       0.9]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3,
+                                                         2).astype(np.float32)
         x0 = tensor.from_numpy(x0)
         x1 = tensor.from_numpy(x1)
         x0.to_device(gpu_dev)
         x1.to_device(gpu_dev)
 
-        y = autograd.mean(x0,x1)
+        y = autograd.mean(x0, x1)
 
         # frontend
-        model = sonnx.to_onnx([x0,x1], [y])
+        model = sonnx.to_onnx([x0, x1], [y])
         # print('The model is:\n{}'.format(model))
 
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
-        y_t = sg_ir.run([x0,x1])
+        y_t = sg_ir.run([x0, x1])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_pow(self):
         x0 = np.array([7, 5, 0.2, 0.1, 0.3, 4]).reshape(3, 2).astype(np.float32)
-        x1 = np.array([-1.0, 2.0, -1.0, -2.1, 1.0, -2.0]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([-1.0, 2.0, -1.0, -2.1, 1.0,
+                       -2.0]).reshape(3, 2).astype(np.float32)
         x0 = tensor.from_numpy(x0)
         x1 = tensor.from_numpy(x1)
         x0.to_device(gpu_dev)
         x1.to_device(gpu_dev)
 
-        y = autograd.mean(x0,x1)
+        y = autograd.mean(x0, x1)
 
         # frontend
-        model = sonnx.to_onnx([x0,x1], [y])
+        model = sonnx.to_onnx([x0, x1], [y])
         # print('The model is:\n{}'.format(model))
 
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
-        y_t = sg_ir.run([x0,x1])
+        y_t = sg_ir.run([x0, x1])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_clip(self):
-        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5,
+                      0.9]).reshape(3, 2).astype(np.float32)
 
         x = tensor.from_numpy(x)
         min = -0.5
@@ -772,57 +889,66 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x, min, max])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
-
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_prelu(self):
-        x = np.array([0.1,-1.0,-0.4,4.0,-0.9,9.0]).reshape(3,2).astype(np.float32)
-        slope = np.array([0.1,1.0,0.4,4.0,0.9,9.0]).reshape(3,2).astype(np.float32)
+        x = np.array([0.1, -1.0, -0.4, 4.0, -0.9,
+                      9.0]).reshape(3, 2).astype(np.float32)
+        slope = np.array([0.1, 1.0, 0.4, 4.0, 0.9,
+                          9.0]).reshape(3, 2).astype(np.float32)
 
         x = tensor.from_numpy(x)
         slope = tensor.from_numpy(slope)
         x.to_device(gpu_dev)
         slope.to_device(gpu_dev)
 
-        y = autograd.prelu(x,slope)
+        y = autograd.prelu(x, slope)
 
         # frontend
-        model = sonnx.to_onnx([x,slope], [y])
+        model = sonnx.to_onnx([x, slope], [y])
         # print('The model is:\n{}'.format(model))
 
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
-        y_t = sg_ir.run([x,slope])
+        y_t = sg_ir.run([x, slope])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_mul(self):
-        x = np.array([0.1,-1.0,0.4,4.0,-0.9,9.0]).reshape(3,2).astype(np.float32)
-        x1 = np.array([0.1,1.0,0.4,4.0,0.9,9.0]).reshape(3,2).astype(np.float32)
+        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
+                      9.0]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0.1, 1.0, 0.4, 4.0, 0.9,
+                       9.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         x1 = tensor.from_numpy(x1)
         x.to_device(gpu_dev)
         x1.to_device(gpu_dev)
-        y = autograd.mul(x,x1)
+        y = autograd.mul(x, x1)
 
         # frontend
-        model = sonnx.to_onnx([x,x1], [y])
+        model = sonnx.to_onnx([x, x1], [y])
         # print('The model is:\n{}'.format(model))
 
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
-        y_t = sg_ir.run([x,x1])
+        y_t = sg_ir.run([x, x1])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_transpose(self):
-        x = np.random.randn(3,2,1)
-        y = x.transpose(1,2,0)
+        x = np.random.randn(3, 2, 1)
+        y = x.transpose(1, 2, 0)
 
         x = tensor.from_numpy(x)
         x.to_device(cpu_dev)
 
-        y = autograd.transpose(x,(1,2,0))
+        y = autograd.transpose(x, (1, 2, 0))
 
         # frontend
         model = sonnx.to_onnx([x], [y])
@@ -832,54 +958,65 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_max(self):
-        X0 = np.array([0.1, 0.2, 2.0, 0.0, 0.1, 0.2]).reshape(3, 2).astype(np.float32)
-        X1 = np.array([1.0, 2.0, 1.0, 2.1, 0.0, 2.0]).reshape(3, 2).astype(np.float32)
+        X0 = np.array([0.1, 0.2, 2.0, 0.0, 0.1,
+                       0.2]).reshape(3, 2).astype(np.float32)
+        X1 = np.array([1.0, 2.0, 1.0, 2.1, 0.0,
+                       2.0]).reshape(3, 2).astype(np.float32)
         x0 = tensor.from_numpy(X0)
         x1 = tensor.from_numpy(X1)
         x0.to_device(gpu_dev)
         x1.to_device(gpu_dev)
 
-        y = autograd.max(x0,x1)
+        y = autograd.max(x0, x1)
 
         # frontend
-        model = sonnx.to_onnx([x0,x1], [y])
+        model = sonnx.to_onnx([x0, x1], [y])
         # print('The model is:\n{}'.format(model))
 
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
-        y_t = sg_ir.run([x0,x1])
+        y_t = sg_ir.run([x0, x1])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)      
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_min(self):
-        X0 = np.array([0.1, 0.2, 2.0, 0.0, 0.1, 0.2]).reshape(3, 2).astype(np.float32)
-        X1 = np.array([1.0, 2.0, 1.0, 2.1, 0.0, 2.0]).reshape(3, 2).astype(np.float32)
+        X0 = np.array([0.1, 0.2, 2.0, 0.0, 0.1,
+                       0.2]).reshape(3, 2).astype(np.float32)
+        X1 = np.array([1.0, 2.0, 1.0, 2.1, 0.0,
+                       2.0]).reshape(3, 2).astype(np.float32)
         x0 = tensor.from_numpy(X0)
         x1 = tensor.from_numpy(X1)
         x0.to_device(gpu_dev)
         x1.to_device(gpu_dev)
 
-        y = autograd.min(x0,x1)
+        y = autograd.min(x0, x1)
 
         # frontend
-        model = sonnx.to_onnx([x0,x1], [y])
+        model = sonnx.to_onnx([x0, x1], [y])
         # print('The model is:\n{}'.format(model))
 
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
-        y_t = sg_ir.run([x0,x1])
+        y_t = sg_ir.run([x0, x1])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)  
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_shape(self):
-        x = np.array([0.1,-1.0,0.4,4.0,-0.9,9.0]).reshape(3,2).astype(np.float32)
+        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
+                      9.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         x.to_device(gpu_dev)
 
-        y=autograd.shape(x)
+        y = autograd.shape(x)
 
         # frontend
         model = sonnx.to_onnx([x], [y])
@@ -889,69 +1026,87 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_and(self):
-        x0 = np.array([0, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
-        x1 = np.array([0, -0.3, 0, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
-    
+        x0 = np.array([0, -0.3, -0.1, 0.1, 0.5,
+                       0.9]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0.5, 0.9]).reshape(3,
+                                                           2).astype(np.float32)
+
         x0 = tensor.from_numpy(x0)
         x1 = tensor.from_numpy(x1)
         x0.to_device(gpu_dev)
         x1.to_device(gpu_dev)
-    
-        y = autograd._and(x0,x1)
+
+        y = autograd._and(x0, x1)
 
         # frontend
-        model = sonnx.to_onnx([x0,x1], [y])
+        model = sonnx.to_onnx([x0, x1], [y])
         # print('The model is:\n{}'.format(model))
 
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
-        y_t = sg_ir.run([x0,x1])
+        y_t = sg_ir.run([x0, x1])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)     
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
+
     def test_or(self):
-        x0 = np.array([1.0, 1.0, 2.0, -3.0, 0, -7.0]).reshape(3, 2).astype(np.float32)
-        x1 = np.array([-1.0, 0, 2.0, 4.0, 0, -7.0]).reshape(3, 2).astype(np.float32)
+        x0 = np.array([1.0, 1.0, 2.0, -3.0, 0,
+                       -7.0]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([-1.0, 0, 2.0, 4.0, 0,
+                       -7.0]).reshape(3, 2).astype(np.float32)
 
         x0 = tensor.from_numpy(x0)
         x1 = tensor.from_numpy(x1)
         x0.to_device(gpu_dev)
         x1.to_device(gpu_dev)
 
-        y = autograd._or(x0,x1)
+        y = autograd._or(x0, x1)
         # frontend
-        model = sonnx.to_onnx([x0,x1], [y])
+        model = sonnx.to_onnx([x0, x1], [y])
         # print('The model is:\n{}'.format(model))
 
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
-        y_t = sg_ir.run([x0,x1])
+        y_t = sg_ir.run([x0, x1])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)  
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
+
     def test_xor(self):
-        x0 = np.array([0, -0.3, -0.1, 0.1, 0.5, 9.0]).reshape(3, 2).astype(np.float32)
-        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3, 2).astype(np.float32)
+        x0 = np.array([0, -0.3, -0.1, 0.1, 0.5,
+                       9.0]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3,
+                                                         2).astype(np.float32)
 
         x0 = tensor.from_numpy(x0)
         x1 = tensor.from_numpy(x1)
         x0.to_device(gpu_dev)
         x1.to_device(gpu_dev)
 
-        y = autograd._xor(x0,x1)
+        y = autograd._xor(x0, x1)
 
         # frontend
-        model = sonnx.to_onnx([x0,x1], [y])
+        model = sonnx.to_onnx([x0, x1], [y])
         # print('The model is:\n{}'.format(model))
 
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
-        y_t = sg_ir.run([x0,x1])
+        y_t = sg_ir.run([x0, x1])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)  
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
+
     def test_not(self):
-        x = np.array([1.0, -1.0, 0, -0.1, 0, -7.0]).reshape(3, 2).astype(np.float32)
+        x = np.array([1.0, -1.0, 0, -0.1, 0,
+                      -7.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         x.to_device(gpu_dev)
 
@@ -965,9 +1120,13 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
+
     def test_negative(self):
-        X = np.array([0.1,0,0.4,1.-4,0.9,-2.0]).reshape(3,2).astype(np.float32)
+        X = np.array([0.1, 0, 0.4, 1. - 4, 0.9,
+                      -2.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(X)
         x.to_device(gpu_dev)
 
@@ -981,9 +1140,13 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
+
     def test_reciprocal(self):
-        X = np.array([0.1,0,0.4,1.-4,0.9,-2.0]).reshape(3,2).astype(np.float32)
+        X = np.array([0.1, 0, 0.4, 1. - 4, 0.9,
+                      -2.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(X)
         x.to_device(cpu_dev)
 
@@ -996,7 +1159,9 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_inference(self):
         x = tensor.Tensor(shape=(2, 3, 3, 3), device=gpu_dev)
@@ -1012,7 +1177,9 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x], last_layers=-1)
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(x1), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(x1),
+                                             tensor.to_numpy(y_t[0]),
+                                             decimal=5)
 
     def test_retraining(self):
         # forward
@@ -1038,7 +1205,7 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         for idx, tens in sg_ir.tensor_map.items():
             tens.requires_grad = True
-            tens.stores_grad= True
+            tens.stores_grad = True
             sg_ir.tensor_map[idx] = tens
         # forward
         y_o = sg_ir.run([x])[0]

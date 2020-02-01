@@ -22,8 +22,8 @@
 #ifndef SINGA_UTILS_TOKENIZER_H_
 #define SINGA_UTILS_TOKENIZER_H_
 
-#include <string>
 #include <algorithm>
+#include <string>
 #include "singa/utils/logging.h"
 
 namespace singa {
@@ -51,8 +51,8 @@ inline int ArgPos(int argc, char** arglist, const char* arg) {
   return -1;
 }
 
-template<typename T>
-inline std::string VecToStr(const std::vector<T> & in) {
+template <typename T>
+inline std::string VecToStr(const std::vector<T>& in) {
   std::string out = "(";
 
   for (auto x : in) {
@@ -76,14 +76,13 @@ inline std::string VecToStr(const std::vector<T> & in) {
 
 class Tokenizer {
  public:
-  Tokenizer(const std::string& str, const std::string& sep): start_(0),
-  sep_(sep), buf_(str) {}
-  Tokenizer & operator>>(std::string& out) {
+  Tokenizer(const std::string& str, const std::string& sep)
+      : start_(0), sep_(sep), buf_(str) {}
+  Tokenizer& operator>>(std::string& out) {
     CHECK_LT(start_, buf_.length());
     int start = start_;
     auto pos = buf_.find_first_of(sep_, start);
-    if (pos == std::string::npos)
-      pos = buf_.length();
+    if (pos == std::string::npos) pos = buf_.length();
     start_ = (unsigned int)(pos + 1);
     out = buf_.substr(start, pos);
     return *this;

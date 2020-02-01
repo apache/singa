@@ -68,9 +68,9 @@ TEST(Dense, ForwardCpp) {
   EXPECT_EQ(9u, out1.Size());
   for (int i = 0; i < 3; i++)
     for (int j = 0; j < 3; j++)
-      EXPECT_FLOAT_EQ((x[i * 2 + 0] * we[j] +
-                       x[i * 2 + 1] * we[3 + j] + bia[j]),
-                      outptr1[i * 3 + j]);
+      EXPECT_FLOAT_EQ(
+          (x[i * 2 + 0] * we[j] + x[i * 2 + 1] * we[3 + j] + bia[j]),
+          outptr1[i * 3 + j]);
 }
 TEST(Dense, BackwardCpp) {
   Dense dense;
@@ -169,9 +169,9 @@ TEST(Dense, ForwardCuda) {
   EXPECT_EQ(9u, out1.Size());
   for (int i = 0; i < 3; i++)
     for (int j = 0; j < 3; j++)
-      EXPECT_FLOAT_EQ((x[i * 2 + 0] * we[j] +
-                       x[i * 2 + 1] * we[3 + j] + bia[j]),
-                      outptr1[i * 3 + j]);
+      EXPECT_FLOAT_EQ(
+          (x[i * 2 + 0] * we[j] + x[i * 2 + 1] * we[3 + j] + bia[j]),
+          outptr1[i * 3 + j]);
 }
 TEST(Dense, BackwardCuda) {
   Dense dense;

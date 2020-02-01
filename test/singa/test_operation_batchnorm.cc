@@ -19,9 +19,9 @@
 *
 ************************************************************/
 
+#include <iostream>
 #include "../src/model/operation/batchnorm.h"
 #include "gtest/gtest.h"
-#include <iostream>
 
 using namespace singa;
 

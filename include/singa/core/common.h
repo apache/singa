@@ -18,16 +18,16 @@
 
 #ifndef SINGA_CORE_COMMON_H_
 #define SINGA_CORE_COMMON_H_
-#include <random>
-#include <chrono>
-#include "singa/singa_config.h"
 #include <atomic>
+#include <chrono>
 #include <memory>
+#include <random>
+#include "singa/singa_config.h"
 #include "singa/utils/logging.h"
 
 #ifdef USE_CUDA
-#include <cuda_runtime.h>
 #include <cublas_v2.h>
+#include <cuda_runtime.h>
 #include <curand.h>
 #ifdef USE_CUDNN
 #include <cudnn.h>
@@ -50,12 +50,13 @@ namespace singa {
 
 namespace lang {
 /// To implemente functions using cpp libraries
-typedef struct _Cpp { } Cpp;
+typedef struct _Cpp {
+} Cpp;
 /// To implemente functions using cuda libraries
-typedef struct _Cuda { } Cuda;
+typedef struct _Cuda {
+} Cuda;
 /// To implement function using opencl libraries
-typedef struct _Opencl { } Opencl;
-}  // namespace lang
+typedef struct _Opencl { } Opencl; }  // namespace lang
 
 /// Block represent a chunk of memory (on device or host).
 class Block {
@@ -80,14 +81,10 @@ class Block {
   int IncRefCount() {
     return ++ref_count_;  // Note do not use ref_count_++;
   }
-  int DecRefCount() {
-    return --ref_count_;
-  }
+  int DecRefCount() { return --ref_count_; }
   int ref_count() const { return ref_count_.load(); }
 
-  bool initialized() const {
-    return initialized_;
-  }
+  bool initialized() const { return initialized_; }
 
  private:
   Block() {}
@@ -109,7 +106,7 @@ typedef struct _Context {
 #ifdef USE_CUDNN
   cudnnHandle_t cudnn_handle;
 #endif
-#endif // USE_CUDA
+#endif  // USE_CUDA
 
 #ifdef USE_DNNL
   dnnl::engine dnnl_engine;

@@ -57,26 +57,27 @@ def crop(img, patch, position):
         and center.
     '''
     if img.size[0] < patch[0]:
-        raise Exception('img size[0] %d is smaller than patch[0]: %d'
-                        % (img.size[0], patch[0]))
+        raise Exception('img size[0] %d is smaller than patch[0]: %d' %
+                        (img.size[0], patch[0]))
     if img.size[1] < patch[1]:
-        raise Exception('img size[1] %d is smaller than patch[1]: %d'
-                        % (img.size[1], patch[1]))
+        raise Exception('img size[1] %d is smaller than patch[1]: %d' %
+                        (img.size[1], patch[1]))
 
     if position == 'left_top':
         left, upper = 0, 0
     elif position == 'left_bottom':
-        left, upper = 0, img.size[1]-patch[1]
+        left, upper = 0, img.size[1] - patch[1]
     elif position == 'right_top':
-        left, upper = img.size[0]-patch[0], 0
+        left, upper = img.size[0] - patch[0], 0
     elif position == 'right_bottom':
-        left, upper = img.size[0]-patch[0], img.size[1]-patch[1]
+        left, upper = img.size[0] - patch[0], img.size[1] - patch[1]
     elif position == 'center':
-        left, upper = (img.size[0]-patch[0]) // 2, (img.size[1]-patch[1]) // 2
+        left, upper = (img.size[0] - patch[0]) // 2, (img.size[1] -
+                                                      patch[1]) // 2
     else:
         raise Exception('position is wrong')
 
-    box = (left, upper, left+patch[0], upper+patch[1])
+    box = (left, upper, left + patch[0], upper + patch[1])
     new_img = img.crop(box)
     # print "crop to box %d,%d,%d,%d" % box
     return new_img
@@ -95,19 +96,19 @@ def crop_and_resize(img, patch, position):
         left, upper = 0, 0
         right, bottom = size[1], size[1]
     elif position == 'center':
-        left, upper = (size[0]-size[1]) // 2, 0
-        right, bottom = (size[0]+size[1]) // 2, size[1]
+        left, upper = (size[0] - size[1]) // 2, 0
+        right, bottom = (size[0] + size[1]) // 2, size[1]
     elif position == 'right':
-        left, upper = size[0]-size[1], 0
+        left, upper = size[0] - size[1], 0
         right, bottom = size[0], size[1]
     elif position == 'top':
         left, upper = 0, 0
         right, bottom = size[0], size[0]
     elif position == 'middle':
-        left, upper = 0, (size[1]-size[0]) // 2
-        right, bottom = size[0], (size[1]+size[0]) // 2
+        left, upper = 0, (size[1] - size[0]) // 2
+        right, bottom = size[0], (size[1] + size[0]) // 2
     elif position == 'bottom':
-        left, upper = 0, size[1]-size[0]
+        left, upper = 0, size[1] - size[0]
         right, bottom = size[0], size[1]
     else:
         raise Exception('position is wrong')
@@ -124,9 +125,9 @@ def resize(img, small_size):
     '''Resize the image to make the smaller side be at the given size'''
     size = img.size
     if size[0] < size[1]:
-        new_size = (small_size, int(small_size*size[1]/size[0]))
+        new_size = (small_size, int(small_size * size[1] / size[0]))
     else:
-        new_size = (int(small_size*size[0]/size[1]), small_size)
+        new_size = (int(small_size * size[0] / size[1]), small_size)
     new_img = img.resize(new_size, Image.BILINEAR)
     # print 'resize to (%d,%d)' % new_size
     return new_img
@@ -146,7 +147,7 @@ def color_cast(img, offset):
             for c in range(3):
                 if cast_value[c] == 0:
                     continue
-                v = x[w][h][c]+cast_value[c]
+                v = x[w][h][c] + cast_value[c]
                 if v < 0:
                     v = 0
                 if v > 255:
@@ -166,7 +167,7 @@ def enhance(img, scale):
     for i in range(4):
         r = random.randint(0, 1)
         if r:
-            enhance_value[i] = random.uniform(1-scale, 1+scale)
+            enhance_value[i] = random.uniform(1 - scale, 1 + scale)
     if not enhance_value[0] == 1.0:
         enhancer = ImageEnhance.Color(img)
         img = enhancer.enhance(enhance_value[0])
@@ -317,11 +318,8 @@ class ImageTool(object):
         '''
         new_imgs = []
         positions = [
-            "left_top",
-            "left_bottom",
-            "right_top",
-            "right_bottom",
-            "center"]
+            "left_top", "left_bottom", "right_top", "right_bottom", "center"
+        ]
         if num_case > 5 or num_case < 1:
             raise Exception('num_case must be in [1,5]')
         for img in self.imgs:
@@ -389,8 +387,7 @@ class ImageTool(object):
         patch5 = 5
         patch3 = 3
         if num_case < 1 or num_case > patch5 + patch3:
-            raise Exception(
-                'num_case must be in [0,%d]' % (patch5+patch3))
+            raise Exception('num_case must be in [0,%d]' % (patch5 + patch3))
         if num_case == patch5 + patch3:
             count = patch5
         else:
@@ -403,8 +400,8 @@ class ImageTool(object):
         new_imgs = []
         if count > 0:
             new_imgs += self.crop5(patch, count, False)
-        if num_case-count > 0:
-            new_imgs += self.crop3(patch, num_case-count, False)
+        if num_case - count > 0:
+            new_imgs += self.crop3(patch, num_case - count, False)
 
         if inplace:
             self.imgs = new_imgs
@@ -427,8 +424,8 @@ class ImageTool(object):
                 (img.size[0], img.size[1], patch[0], patch[1])
             left_offset = random.randint(0, img.size[0] - patch[0])
             top_offset = random.randint(0, img.size[1] - patch[1])
-            box = (left_offset, top_offset,
-                   left_offset + patch[0], top_offset + patch[1])
+            box = (left_offset, top_offset, left_offset + patch[0],
+                   top_offset + patch[1])
             new_imgs.append(img.crop(box))
 
         if inplace:
@@ -449,7 +446,7 @@ class ImageTool(object):
         '''
         new_imgs = []
         for img in self.imgs:
-            area = img.size[0]*img.size[1]
+            area = img.size[0] * img.size[1]
             img_resized = None
             for attempt in range(10):
                 target_area = random.uniform(0.08, 1.0) * area

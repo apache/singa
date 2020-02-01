@@ -34,7 +34,6 @@ TEST(OpenclDevice, Constructor) {
   EXPECT_EQ(0, dev.id());
 }
 
-
 TEST(OpenclDevice, MemoryMallocFree) {
   OpenclDevice dev;
   Block* b = dev.NewBlock(4);
@@ -43,19 +42,17 @@ TEST(OpenclDevice, MemoryMallocFree) {
   dev.FreeBlock(b);
 }
 
-
 TEST(OpenclDevice, Exec) {
   OpenclDevice dev;
   Block* b = dev.NewBlock(4);
-  int x = 1, y =3, z = 0;
-  dev.Exec([x, y, &z](singa::Context *ctx) {
-      z = x + y;
-      }, {b}, {b}, false);
+  int x = 1, y = 3, z = 0;
+  dev.Exec([x, y, &z](singa::Context* ctx) { z = x + y; }, {b}, {b}, false);
   EXPECT_EQ(x + y, z);
   dev.FreeBlock(b);
 }
 
-// Tests for integrity of one round of data transfer to an OpenCL device and back.
+// Tests for integrity of one round of data transfer to an OpenCL device and
+// back.
 TEST(OpenclDevice, CopyDataToFrom) {
   OpenclDevice dev;
   CppCPU host;
@@ -78,7 +75,6 @@ TEST(OpenclDevice, CopyDataToFrom) {
   EXPECT_EQ('c', astr[2]);
   EXPECT_EQ('x', astr[3]);
 }
-
 
 TEST(OpenclDevice, DuplicateDataOnDevice) {
   OpenclDevice dev;
@@ -105,4 +101,4 @@ TEST(OpenclDevice, DuplicateDataOnDevice) {
   EXPECT_EQ('x', astr[3]);
 }
 
-#endif // USE_OPENCL
+#endif  // USE_OPENCL

@@ -19,11 +19,11 @@
 *
 *************************************************************/
 
-#include "singa/io/encoder.h"
-#include "singa/io/decoder.h"
-#include "gtest/gtest.h"
-#include <sstream>
 #include <algorithm>
+#include <sstream>
+#include "gtest/gtest.h"
+#include "singa/io/decoder.h"
+#include "singa/io/encoder.h"
 
 using singa::Shape;
 using singa::Tensor;

@@ -23,10 +23,10 @@
 #define SINGA_UTILS_SAFE_QUEUE_H_
 
 #include <algorithm>
-#include <queue>
+#include <condition_variable>
 #include <list>
 #include <mutex>
-#include <condition_variable>
+#include <queue>
 #include <thread>
 
 /**
@@ -36,9 +36,7 @@ template <typename T, class Container = std::queue<T>>
 class SafeQueue {
  public:
   SafeQueue() = default;
-  ~SafeQueue() {
-    std::lock_guard<std::mutex> lock(mutex_);
-  }
+  ~SafeQueue() { std::lock_guard<std::mutex> lock(mutex_); }
 
   /**
    * Push an element into the queue. Blocking operation.
@@ -69,11 +67,10 @@ class SafeQueue {
     std::unique_lock<std::mutex> lock(mutex_);
 
     if (queue_.empty()) {
-      if (timeout == 0)
-        return false;
+      if (timeout == 0) return false;
 
-      if (condition_.wait_for(lock, std::chrono::microseconds(timeout))
-          == std::cv_status::timeout)
+      if (condition_.wait_for(lock, std::chrono::microseconds(timeout)) ==
+          std::cv_status::timeout)
         return false;
     }
 
@@ -89,14 +86,12 @@ class SafeQueue {
   bool TryPop(T& e) {
     std::unique_lock<std::mutex> lock(mutex_);
 
-    if (queue_.empty())
-      return false;
+    if (queue_.empty()) return false;
 
     e = queue_.front();
     queue_.pop();
     return true;
   }
-
 
   /**
    * @return Number of elements in the queue.
@@ -115,7 +110,7 @@ class SafeQueue {
 /**
  * Thread safe priority queue.
  */
-template<typename T>
+template <typename T>
 class PriorityQueue {
  public:
   PriorityQueue() = default;
@@ -174,15 +169,13 @@ class PriorityQueue {
   /**
    * @return Number of elements in the queue.
    */
-  unsigned int Size() const {
-    return queue_.Size();
-  }
+  unsigned int Size() const { return queue_.Size(); }
 
  private:
   struct Element {
     T data;
     int priority;
-    inline bool operator<(const Element &other) const {
+    inline bool operator<(const Element& other) const {
       return priority < other.priority;
     }
   };

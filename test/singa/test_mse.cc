@@ -20,8 +20,8 @@
 *************************************************************/
 
 #include "gtest/gtest.h"
-#include "singa/core/tensor.h"
 #include "singa/core/device.h"
+#include "singa/core/tensor.h"
 #include "singa/model/loss.h"
 
 using singa::Tensor;
@@ -33,8 +33,8 @@ class TestMSE : public ::testing::Test {
     p.CopyDataFromHostPtr(pdat, sizeof(pdat) / sizeof(float));
     t.CopyDataFromHostPtr(tdat, sizeof(pdat) / sizeof(float));
   }
-  const float pdat[6] = { 0.1f, 1.1f, 2.1f, 0.3f, 2.2f, 1.8f};
-  const float tdat[6] = { 0.1f, 1.1f, 2.0f, 0.3f, 2.2f, 1.8f};
+  const float pdat[6] = {0.1f, 1.1f, 2.1f, 0.3f, 2.2f, 1.8f};
+  const float tdat[6] = {0.1f, 1.1f, 2.0f, 0.3f, 2.2f, 1.8f};
 
   singa::Tensor p, t;
 };
@@ -85,8 +85,8 @@ TEST_F(TestMSE, CudaForward) {
     }
     EXPECT_FLOAT_EQ(ldat[i], 0.5 * l);
   }
-	p.ToHost();
-	t.ToHost();
+  p.ToHost();
+  t.ToHost();
   delete mse;
 }
 
@@ -102,8 +102,7 @@ TEST_F(TestMSE, CudaBackward) {
 
   for (size_t i = 0; i < grad.Size(); i++)
     EXPECT_FLOAT_EQ(gdat[i], (1.0f / p.shape().at(0)) * (pdat[i] - tdat[i]));
-	p.ToHost();
-	t.ToHost();
-
+  p.ToHost();
+  t.ToHost();
 }
 #endif

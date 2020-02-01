@@ -19,9 +19,9 @@
 *
 *************************************************************/
 
+#include <math.h>  // exp, tanh
 #include "../src/model/layer/activation.h"
 #include "gtest/gtest.h"
-#include <math.h> // exp, tanh
 
 using singa::Activation;
 using singa::Shape;
@@ -65,19 +65,14 @@ TEST(Activation, Forward) {
 
     float* y = new float[n];
     if (acti.Mode() == "sigmoid") {
-      for (size_t i = 0; i < n; i++)
-        y[i] = 1.f / (1.f + exp(-x[i]));
-    }
-    else if (acti.Mode() == "tanh") {
-      for (size_t i = 0; i < n; i++)
-        y[i] = tanh(x[i]);
-    }
-    else if (acti.Mode() == "relu") {
-      for (size_t i = 0; i < n; i++)
-        y[i] = (x[i] >= 0.f) ? x[i] : 0.f;
-    }
-    else
+      for (size_t i = 0; i < n; i++) y[i] = 1.f / (1.f + exp(-x[i]));
+    } else if (acti.Mode() == "tanh") {
+      for (size_t i = 0; i < n; i++) y[i] = tanh(x[i]);
+    } else if (acti.Mode() == "relu") {
+      for (size_t i = 0; i < n; i++) y[i] = (x[i] >= 0.f) ? x[i] : 0.f;
+    } else {
       LOG(FATAL) << "Unkown activation: " << acti.Mode();
+    }
     EXPECT_FLOAT_EQ(y[0], yptr[0]);
     EXPECT_FLOAT_EQ(y[4], yptr[4]);
     EXPECT_FLOAT_EQ(y[5], yptr[5]);
@@ -117,17 +112,14 @@ TEST(Activation, Backward) {
     if (acti.Mode() == "sigmoid") {
       for (size_t i = 0; i < n; i++)
         dx[i] = grad[i] * yptr[i] * (1.0f - yptr[i]);
-    }
-    else if (acti.Mode() == "tanh") {
-      for (size_t i = 0; i < n; i++)
-        dx[i] = grad[i] * (1 - yptr[i] * yptr[i]);
-    }
-    else if (acti.Mode() == "relu") {
+    } else if (acti.Mode() == "tanh") {
+      for (size_t i = 0; i < n; i++) dx[i] = grad[i] * (1 - yptr[i] * yptr[i]);
+    } else if (acti.Mode() == "relu") {
       for (size_t i = 0; i < n; i++)
         dx[i] = grad[i] * (x[i] > 0.f) + acti.Negative_slope() * (x[i] <= 0.f);
-    }
-    else
+    } else {
       LOG(FATAL) << "Unkown activation: " << acti.Mode();
+    }
     EXPECT_FLOAT_EQ(dx[0], xptr[0]);
     EXPECT_FLOAT_EQ(dx[4], xptr[4]);
     EXPECT_FLOAT_EQ(dx[5], xptr[5]);

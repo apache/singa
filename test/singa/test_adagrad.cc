@@ -19,10 +19,10 @@
 *
 *************************************************************/
 
+#include <cmath>
 #include "gtest/gtest.h"
 #include "singa/model/optimizer.h"
 #include "singa/singa_config.h"
-#include <cmath>
 
 TEST(AdaGrad, ApplyCPU) {
   singa::AdaGrad adagrad;

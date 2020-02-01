@@ -40,18 +40,14 @@ TEST(DNNLOperationPooling, Forward) {
 }
 TEST(DNNLOperationPooling, ForwardAverage) {
   const size_t batchsize = 2, c = 1, h = 3, w = 3;
-  const float x[batchsize * c * h * w] = {1.0f, 2.0f, 3.0f,
-                                          4.0f, 5.0f, 6.0f,
-                                          7.0f, 8.0f, 9.0f,
+  const float x[batchsize * c * h * w] = {
+      1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f,
 
-                                          1.0f, 2.0f, 3.0f,
-                                          4.0f, 5.0f, 6.0f,
-                                          7.0f, 8.0f, 9.0f};
+      1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
   Tensor in(Shape{batchsize, c, h, w});
   in.CopyDataFromHostPtr(x, batchsize * c * h * w);
 
-
-  PoolingHandle pool_handle(in, {2, 2}, {1,1}, {0,0}, false);
+  PoolingHandle pool_handle(in, {2, 2}, {1, 1}, {0, 0}, false);
   Tensor out1 = CpuPoolingForward(pool_handle, in);
 }
 
@@ -64,8 +60,7 @@ TEST(DNNLOperationPooling, Backward) {
   Tensor in(Shape{batchsize, c, src_h, src_w});
   in.CopyDataFromHostPtr(x, batchsize * c * src_h * src_w);
 
-
-  PoolingHandle pool_handle(in, {2, 2}, {1,1}, {0,0}, true);
+  PoolingHandle pool_handle(in, {2, 2}, {1, 1}, {0, 0}, true);
 
   Tensor out = CpuPoolingForward(pool_handle, in);
 
@@ -82,18 +77,13 @@ TEST(DNNLOperationPooling, BackwardAvg) {
   // src_data
   const size_t batchsize = 2, c = 1, src_h = 3, src_w = 3;
   const float x[batchsize * c * src_h * src_w] = {
-      1.0f, 2.0f, 3.0f,
-      4.0f, 5.0f, 6.0f,
-      7.0f, 8.0f, 9.0f,
+      1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f,
 
-      1.0f, 2.0f, 3.0f,
-      4.0f, 5.0f, 6.0f,
-      7.0f, 8.0f, 9.0f};
+      1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
   Tensor in(Shape{batchsize, c, src_h, src_w});
   in.CopyDataFromHostPtr(x, batchsize * c * src_h * src_w);
 
-
-  PoolingHandle pool_handle(in, {2, 2}, {1,1}, {0,0}, false);
+  PoolingHandle pool_handle(in, {2, 2}, {1, 1}, {0, 0}, false);
 
   Tensor out = CpuPoolingForward(pool_handle, in);
 
