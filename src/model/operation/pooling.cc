@@ -86,9 +86,7 @@ PoolingHandle::~PoolingHandle() {
 #ifdef USE_DNNL
 
 Tensor CpuPoolingForward(const PoolingHandle &ph, const Tensor &x) {
-  Tensor y({(unsigned long)ph.batchsize, (unsigned long)ph.channels,
-            (unsigned long)ph.pooled_height, (unsigned long)ph.pooled_width},
-           x.device(), x.data_type());
+
 
   Tensor y({(unsigned long) ph.batchsize, (unsigned long) ph.channels, (unsigned long) ph.pooled_height,
             (unsigned long) ph.pooled_width
