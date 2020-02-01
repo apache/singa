@@ -238,6 +238,47 @@ void Abs<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
   traverse_unary<float>(in, out, [](float x) { return fabs(x); });
 }
 
+#ifdef USE_DNNL
+template <>
+void SoftMax<float, lang::Cpp>(const Tensor& in, Tensor* out, Context *ctx, int axis) {
+
+  CHECK_LE(axis, (int)in.shape().size()-1 );
+  CHECK_GE(axis, -1*(int)in.nDim() );
+
+  Shape original_shape = in.shape();
+  if (axis < 0) axis = in.shape().size() + axis;
+
+  Shape coerced_shape = {1, 1};
+  for (int i = 0; i < in.shape().size(); i++) {
+      if (i < axis)
+        coerced_shape[0] *= in.shape()[i];
+      else
+        coerced_shape[1] *= in.shape()[i];
+  }
+  Tensor in_reshaped = Reshape(in, coerced_shape);
+  out->Reshape(coerced_shape);
+
+  // optimise by minus x - x.max()
+  auto in_max = RowMax(in_reshaped);
+  in_max.Reshape({coerced_shape[0],1});
+  in_reshaped = in_reshaped - in_max;
+
+
+  auto md = dnnl::memory::desc({coerced_shape[0], coerced_shape[1]}, dnnl::memory::data_type::f32, dnnl::memory::format_tag::ab);
+  auto in_mem = dnnl::memory(md, ctx->dnnl_engine, in_reshaped.block()->mutable_data());
+  auto out_mem = dnnl::memory(md, ctx->dnnl_engine, out->block()->mutable_data());
+
+
+  auto softmax_desc = dnnl::softmax_forward::desc(dnnl::prop_kind::forward_scoring, md, 1);
+  auto softmax_prim_desc = dnnl::softmax_forward::primitive_desc(softmax_desc, ctx->dnnl_engine);
+  auto softmax = dnnl::softmax_forward(softmax_prim_desc);
+  softmax.execute(ctx->dnnl_stream, {{DNNL_ARG_SRC, in_mem}, {DNNL_ARG_DST, out_mem}});
+  ctx->dnnl_stream.wait();
+
+  out->Reshape(original_shape);
+}
+#endif // USE_DNNL
+
 template <>
 void Add<float, lang::Cpp>(const Tensor &in, const float x, Tensor *out,
                            Context *ctx) {

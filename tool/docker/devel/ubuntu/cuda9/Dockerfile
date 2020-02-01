@@ -61,12 +61,10 @@ RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.10.tar.gz -P /tmp/ \
     && tar zxf /tmp/swig-3.0.10.tar.gz -C /tmp/ \
     && cd /tmp/swig-3.0.10 && ./configure && make && make install
 
-# install mkldnn
-RUN wget https://github.com/intel/mkl-dnn/archive/v0.18.tar.gz -P /tmp/ \
-    && tar zxf /tmp/v0.18.tar.gz -C /tmp/ \
-    && cd /tmp/mkl-dnn-0.18/ \
-    && mkdir -p build && cd build && cmake .. \
-    && make && make install
+# install dnnl
+RUN wget https://github.com/intel/mkl-dnn/releases/download/v1.1/dnnl_lnx_1.1.0_cpu_gomp.tgz -P /tmp/ \
+    && tar zxf /tmp/dnnl_lnx_1.1.0_cpu_gomp.tgz -C /root
+ENV DNNL_ROOT /root/dnnl_lnx_1.1.0_cpu_gomp/
 
 # config ssh service
 RUN mkdir /var/run/sshd \
@@ -82,7 +80,7 @@ RUN mkdir /var/run/sshd \
 RUN git clone https://github.com/apache/singa.git $HOME/singa \
     && cd $HOME/singa \
     && mkdir build && cd build \
-    && cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_MKLDNN=ON -DUSE_PYTHON3=ON ..
+    && cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_DNNL=ON -DUSE_PYTHON3=ON ..
 RUN cd $HOME/singa/build && make && make install
 
 WORKDIR $HOME/singa

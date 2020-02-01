@@ -40,9 +40,6 @@
 #include "singa/utils/opencl_utils.h"
 #endif  // USE_OPENCL
 
-#ifdef USE_MKLDNN
-#include "singa/utils/mkldnn_utils.h"
-#endif  // USE_MKLDNN
 
 using std::vector;
 using std::string;
