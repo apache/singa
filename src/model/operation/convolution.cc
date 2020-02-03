@@ -63,7 +63,8 @@ ConvHandle::ConvHandle(const Tensor &input,
 
 #ifdef USE_DNNL
   if (input.device()->lang() == kCpp) {
-    const int groups = 1; // only groups 1 is supported for now
+    use_dnnl = true;
+    const int groups = 1;  // only groups 1 is supported for now
     auto dtype_ = dnnl::memory::data_type::f32;
 
     x_dims = dnnl::memory::dims{(int)input.shape(0), (int)in_channels,
@@ -95,15 +96,17 @@ ConvHandle::ConvHandle(const Tensor &input,
     // singa api
     db = new Tensor(Shape{num_filters}, input.device(), input.data_type());
   }
-#endif // USE_DNNL
+#endif  // USE_DNNL
 }
 
 ConvHandle::~ConvHandle() {
 #ifdef USE_DNNL
-  delete (conv_d);
-  delete (conv_pd);
-  delete (db);
-#endif // USE_DNNL
+  if (use_dnnl) {
+    delete (conv_d);
+    delete (conv_pd);
+    delete (db);
+  }
+#endif  // USE_DNNL
 }
 
 Tensor CpuConvForward(const Tensor &x, Tensor &W, Tensor &b,
@@ -138,15 +141,15 @@ Tensor CpuConvForward(const Tensor &x, Tensor &W, Tensor &b,
 
         convolution_forward(*ch.conv_pd)
             .execute(ctx->dnnl_stream, {{DNNL_ARG_SRC, x_mem},
-                                   {DNNL_ARG_WEIGHTS, w_mem},
-                                   {DNNL_ARG_BIAS, b_mem},
-                                   {DNNL_ARG_DST, y_mem}});
+                                        {DNNL_ARG_WEIGHTS, w_mem},
+                                        {DNNL_ARG_BIAS, b_mem},
+                                        {DNNL_ARG_DST, y_mem}});
         ctx->dnnl_stream.wait();
       },
       {x.block(), W.block(), b.block()}, {output.block()});
 
   return output;
-#else // cpp naive
+#else   // cpp naive
   Shape w_shape = W.shape();
   Shape b_shape;
   if (ch.bias_term) b_shape = b.shape();
@@ -178,20 +181,22 @@ Tensor CpuConvForward(const Tensor &x, Tensor &W, Tensor &b,
   W.Reshape(w_shape);
   if (ch.bias_term) b.Reshape(b_shape);
   return output;
-#endif // USE_DNNL
+#endif  // USE_DNNL
 }
 
 Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x,
                         const ConvHandle &ch) {
   CHECK_EQ(dy.device()->lang(), kCpp);
+  CHECK_EQ(W.device()->lang(), kCpp);
+  CHECK_EQ(x.device()->lang(), kCpp);
 
   CHECK(dy.shape(1) == ch.num_filters && dy.shape(2) == ch.conv_height &&
         dy.shape(3) == ch.conv_width)
       << "input gradients shape should not change";
 
   CHECK(W.shape(0) == ch.num_filters && W.shape(1) == ch.channels &&
-        W.shape(2) == ch.kernel_h
-        && W.shape(3) == ch.kernel_w) << "weights shape should not change";
+        W.shape(2) == ch.kernel_h && W.shape(3) == ch.kernel_w)
+      << "weights shape should not change";
 
 #ifdef USE_DNNL
   Tensor dx;
@@ -214,8 +219,8 @@ Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x,
 
         convolution_backward_data(conv_bwd_data_pd)
             .execute(ctx->dnnl_stream, {{DNNL_ARG_DIFF_DST, dy_mem},
-                                   {DNNL_ARG_WEIGHTS, w_mem},
-                                   {DNNL_ARG_DIFF_SRC, dx_mem}});
+                                        {DNNL_ARG_WEIGHTS, w_mem},
+                                        {DNNL_ARG_DIFF_SRC, dx_mem}});
         ctx->dnnl_stream.wait();
 
       },
@@ -223,7 +228,7 @@ Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x,
 
   return dx;
 
-#else // NOT USE_DNNL
+#else   // NOT USE_DNNL
   Shape w_shape = W.shape();
   W.Reshape(Shape{ch.num_filters, ch.col_height});
 
@@ -243,12 +248,14 @@ Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x,
   }
   W.Reshape(w_shape);
   return dx;
-#endif // USE_DNNL
+#endif  // USE_DNNL
 }
 
 Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
                         const ConvHandle &ch) {
   CHECK_EQ(dy.device()->lang(), kCpp);
+  CHECK_EQ(x.device()->lang(), kCpp);
+  CHECK_EQ(W.device()->lang(), kCpp);
 
   CHECK(dy.shape(1) == ch.num_filters && dy.shape(2) == ch.conv_height &&
         dy.shape(3) == ch.conv_width)
@@ -280,16 +287,16 @@ Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
             conv_dw_d, eng, *ch.conv_pd);
         convolution_backward_weights(conv_dw_pd)
             .execute(ctx->dnnl_stream, {{DNNL_ARG_DIFF_DST, dy_mem},
-                                   {DNNL_ARG_SRC, x_mem},
-                                   {DNNL_ARG_DIFF_WEIGHTS, dw_mem},
-                                   {DNNL_ARG_DIFF_BIAS, db_mem}});
+                                        {DNNL_ARG_SRC, x_mem},
+                                        {DNNL_ARG_DIFF_WEIGHTS, dw_mem},
+                                        {DNNL_ARG_DIFF_BIAS, db_mem}});
         ctx->dnnl_stream.wait();
 
       },
       {x.block(), dy.block(), W.block()}, {dW.block()});
 
   return dW;
-#else // native cpp
+#else   // native cpp
   Tensor dW;
   dW.ResetLike(W);
   dW.SetValue(0.0f);
@@ -312,12 +319,13 @@ Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
   }
   dW.Reshape(w_shape);
   return dW;
-#endif // USE_DNNL
+#endif  // USE_DNNL
 }
 
 Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b,
                         const ConvHandle &ch) {
   CHECK_EQ(dy.device()->lang(), kCpp);
+  CHECK_EQ(b.device()->lang(), kCpp);
 
   CHECK(dy.shape(1) == ch.num_filters && dy.shape(2) == ch.conv_height &&
         dy.shape(3) == ch.conv_width)
@@ -328,7 +336,7 @@ Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b,
 #ifdef USE_DNNL
   Tensor db = ch.db->Clone();
   return db;
-#else // Native cpp
+#else   // Native cpp
   Tensor db;
   db.ResetLike(b);
 
@@ -343,7 +351,7 @@ Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b,
   SumRows(tmp3, &db);
 
   return db;
-#endif // USE_DNNL
+#endif  // USE_DNNL
 };
 
 #ifdef USE_CUDNN
