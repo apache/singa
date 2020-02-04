@@ -3,6 +3,9 @@
 *.pyc
 __pycache__
 *.swp
+\#*\#
+.\#*
+
 
 *.o
 *.bin
