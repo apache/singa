@@ -194,6 +194,8 @@ class Tensor {
   /// device. If 'device' is nullptr, then clone it one the current device.
   Tensor Clone(std::shared_ptr<Device> device = nullptr) const;
 
+  void Clone(Tensor *&other, std::shared_ptr<Device> device = nullptr) const;
+  
   // --------------------------------------------------------------------------
   // ---Following methods change the tensor and return itself
   // --------------------------------------------------------------------------

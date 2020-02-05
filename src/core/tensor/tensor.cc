@@ -405,6 +405,14 @@ Tensor Tensor::Clone(std::shared_ptr<Device> device) const {
   return t;
 }
 
+void Tensor::Clone(Tensor *&other, std::shared_ptr<Device> device) const {
+  if (device == nullptr) device = device_;
+  other = new Tensor(shape_, device, data_type_);
+  other->stride_ = stride_;
+  other->CopyData(*this);
+  return;
+}
+
 Tensor &Tensor::Broadcast(const Shape &shape) {
   // TODO(wangwei) do we need to transform the mem layout if the tensor was
   // transposed?
@@ -1498,9 +1506,10 @@ Tensor CrossEntropyFwd(const Tensor &p, const Tensor &t) {
 }
 
 Tensor SoftmaxCrossEntropyBwd(const Tensor &p, const Tensor &t) {
-  auto g = p.Clone();
-  SoftmaxCrossEntropyBwd(t, &g);
-  return g;
+  Tensor *g = nullptr;
+  p.Clone(g);
+  SoftmaxCrossEntropyBwd(t, g);
+  return *g;
 }
 
 void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss) {
