@@ -1353,10 +1353,10 @@ void SumRows(const Tensor &M, Tensor *v) {
     size_t nb_row = M.shape(0), nb_col = M.shape(1);
     CHECK_EQ(nb_col, v->Size());
 
-    Tensor one(Shape{nb_row}, M.device(), M.data_type());
-    one.SetValue(1.0f);  // TODO(wangwei) cast type
+    Tensor *one = new Tensor(Shape{nb_row}, M.device(), M.data_type());
+    one->SetValue(1.0f);  // TODO(wangwei) cast type
     Tensor X = Transpose(M);
-    Mult(X, one, v);
+    Mult(X, *one, v);
   }
 }
 // ====================Random operations=====================================
