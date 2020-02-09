@@ -30,8 +30,9 @@
 namespace singa {
 
 Tensor::~Tensor() {
-  if (block_ != nullptr && block_->DecRefCount() == 0)
+  if (block_ != nullptr && block_->DecRefCount() == 0) {
     device_->FreeBlock(block_);
+  }
   block_ = nullptr;
 }
 
@@ -44,7 +45,9 @@ Tensor::Tensor() {
 Tensor::Tensor(const Shape &shape, DataType dtype)
     : data_type_(dtype), device_(defaultDevice), shape_(shape) {
   size_t size = Product(shape_) * SizeOf(data_type_);
-  if (size) block_ = device_->NewBlock((int)size);
+  if (size) {
+    block_ = device_->NewBlock((int)size);
+  }
   generate_stride();
 }
 
@@ -53,7 +56,9 @@ Tensor::Tensor(const Shape &shape, std::shared_ptr<Device> device,
                DataType dtype)
     : data_type_(dtype), device_(device), shape_(shape) {
   size_t size = Product(shape_) * SizeOf(data_type_);
-  if (size) block_ = device_->NewBlock((int)size);
+  if (size) {
+    block_ = device_->NewBlock((int)size);
+  }
   generate_stride();
 }
 
@@ -520,7 +525,8 @@ GenUnaryTensorArgMemberFn(operator/=, Div);
 #define GenUnaryScalarArgMemberFn(op, fn) \
   template <typename DType>               \
   Tensor &Tensor::op(const DType x) {     \
-    fn(*this, x, this);                   \
+    Tensor *t = new Tensor(*this);        \
+    fn(*this, x, t);                      \
     return *this;                         \
   }                                       \
   template Tensor &Tensor::op<float>(const float x)
@@ -846,7 +852,6 @@ void SoftMax(const Tensor &in, Tensor *out, int axis) {
 }
 
 Tensor SoftMax(const Tensor &in, int axis) {
-  printf("enter softmax\n");
   Tensor *retptr = new Tensor(in.shape(), in.device(), in.data_type());
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     retptr->device()->Exec(
@@ -954,16 +959,15 @@ GenBinaryTensorFn(operator>, GT);
 GenBinaryTensorFn(operator>=, GE);
 GenBinaryTensorFn(ReLUBackward, ReLUBackward);
 
-#define EltwiseTensorScalarFn(fn, t, x, ret)                               \
-  do {                                                                     \
-    LOG(INFO) << &t << " " << ret;                                         \
-    TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, {     \
-      static_assert(std::is_same<SType, DType>::value,                     \
-                    "The Scalar type must match the Tensor data type");    \
-      ret->device()->Exec(                                                 \
-          [&t, x, ret](Context *ctx) { fn<DType, Lang>(t, x, ret, ctx); }, \
-          {t.block()}, {ret->block()});                                    \
-    });                                                                    \
+#define EltwiseTensorScalarFn(fn, t, x, ret)                              \
+  do {                                                                    \
+    TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, {    \
+      static_assert(std::is_same<SType, DType>::value,                    \
+                    "The Scalar type must match the Tensor data type");   \
+      ret->device()->Exec(                                                \
+          [t, x, ret](Context *ctx) { fn<DType, Lang>(t, x, ret, ctx); }, \
+          {t.block()}, {ret->block()});                                   \
+    });                                                                   \
   } while (0)
 
 #define GenTensorScalarFn(op, fn)                                      \
@@ -1082,7 +1086,7 @@ Tensor RowMax(const Tensor &in) {
   Tensor *ret = new Tensor({in.shape(0)}, in.device(), in.data_type());
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     in.device()->Exec(
-        [&in, ret](Context *ctx) {
+        [in, ret](Context *ctx) {
           // size_t nrow = 1;
           // if (in.nDim() > 1) nrow = in.shape(0);
           // size_t ncol = in.Size() / nrow;
@@ -1098,7 +1102,6 @@ void AddColumn(const Tensor &v, Tensor *M) { AddColumn(1, 1, v, M); }
 template <typename SType>
 void AddColumn(const SType alpha, const SType beta, const Tensor &v,
                Tensor *M) {
-  printf("enter Addrcolumn\n");
   if (M->transpose()) {
     Tensor *X = new Tensor(Transpose(*M));
     AddRow(v, X);
@@ -1122,7 +1125,6 @@ void AddRow(const Tensor &v, Tensor *M) { AddRow(1, 1, v, M); }
 /// Add row 'v' by each column of matrix M; write results into 'out'
 template <typename SType>
 void AddRow(const SType alpha, const SType beta, const Tensor &v, Tensor *M) {
-  printf("enter Addrow\n");
   if (M->transpose()) {
     Tensor *X = new Tensor(Transpose(*M));
     AddColumn(v, X);

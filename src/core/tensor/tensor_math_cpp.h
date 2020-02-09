@@ -936,7 +936,6 @@ void ComputeCrossEntropy<float, lang::Cpp>(bool int_target,
                                            const size_t dim, const Block *p,
                                            const Block *t, Block *loss,
                                            Context *ctx) {
-  printf("enter cpu crossentropy");
   const float *pPtr = static_cast<const float *>(p->data());
   const int *tPtr = static_cast<const int *>(t->data());
   float *lossPtr = static_cast<float *>(loss->mutable_data());
@@ -1018,7 +1017,6 @@ void RowMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
 /*
 template <>
 void SoftMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context* ctx) {
-  printf("enter cpp softmax\n");
   CHECK_LE(in.nDim(), 2u) << "Axis is required for SoftMax on multi dimemsional
 tensor";
   out->CopyData(in);

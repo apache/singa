@@ -220,7 +220,6 @@ def backward(y, dy=None):
                 del not_ready[src_op]
         del op  # delete the operation to free all tensors from this op
 
-
 class Operation(object):
     """
     An operation includes the forward and backward function of

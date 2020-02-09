@@ -49,7 +49,8 @@ class Device {
   std::shared_ptr<Device> host();
   int id() const;
   virtual void Sync();
-  void ExecBuffOps();  
+  void ExecBuffOps();
+  void SetBufferFlag(bool buffer_flag);
 };
 
 class Platform {

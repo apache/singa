@@ -45,6 +45,9 @@ class Device(object):
     def set_rand_seed(self, seed):
         self.singa_device.SetRandSeed(seed)
 
+    def set_buffer_flag(self, buffer_flag):
+        self.singa_device.SetBufferFlag(buffer_flag)
+
     def get_host(self):
         return self.singa_device.host()
 

@@ -62,15 +62,13 @@ if __name__ == "__main__":
         categorical[np.arange(n), y] = 1
         return categorical
 
-
-
     label = to_categorical(label, 2).astype(np.float32)
     print("train_data_shape:", data.shape)
     print("train_label_shape:", label.shape)
 
+    dev.SetBufferFlag(False)
     inputs = Tensor(data=data)
     target = Tensor(data=label)
-    dev.ExecBuffOps()
 
     w0 = Tensor(shape=(2, 3), requires_grad=True, stores_grad=True)
     w0.set_value(10.0)
@@ -81,25 +79,48 @@ if __name__ == "__main__":
     w1.set_value(10.0)
     b1 = Tensor(shape=(1, 2), requires_grad=True, stores_grad=True)
     b1.set_value(0.0)
-    dev.ExecBuffOps()
 
-    a=tensor.to_numpy(w1)[0]
-    dev.ExecBuffOps()
-    print(a)
+    print("finished init inputs")
+
+    # print("data:", data[0])
+    # print("inputs", tensor.to_numpy(inputs))
+    # print("label", label[0])
+    # print("target", tensor.to_numpy(target))
+    print("w0:\n", tensor.to_numpy(w0))
+    print("b0:\n", tensor.to_numpy(b0))
+    print("w1:\n", tensor.to_numpy(w1))
+    print("b1:\n", tensor.to_numpy(b1))
 
     sgd = optimizer.SGD(0.05)
 
+    dev.SetBufferFlag(True)
+    print("start farward propagation")
+    
     x = autograd.matmul(inputs, w0)
     x = autograd.add_bias(x, b0)
     x = autograd.relu(x)
     x = autograd.matmul(x, w1)
     x = autograd.add_bias(x, b1)
-    dev.ExecBuffOps()
-    print(tensor.to_numpy(x)[0])    
     loss = autograd.softmax_cross_entropy(x, target)
+
     dev.ExecBuffOps()
-    print(tensor.to_numpy(loss)[0])
-    print("start backward loop")
+    
+    print("start backward propagation")
+    
+    tg = []
     for p, gp in autograd.backward(loss):
+        tg.append(gp)
         sgd.apply(0, gp, p, "")
+
     dev.ExecBuffOps()
+
+    print("finished training")
+    dev.SetBufferFlag(False)
+    
+    print("loss:\n", tensor.to_numpy(loss))
+    print("w0:\n", tensor.to_numpy(w0))
+    print("b0:\n", tensor.to_numpy(b0))
+    print("w1:\n", tensor.to_numpy(w1))
+    print("b1:\n", tensor.to_numpy(b1))
+    for i, t in enumerate(tg):
+        print("gradient %d:%s\n"%(i, t.name), tensor.to_numpy(t))

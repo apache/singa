@@ -28,25 +28,26 @@ Device::Device(int id, int num_executors)
 void Device::Exec(function<void(Context*)>&& fn,
                   const vector<Block*> read_blocks,
                   const vector<Block*> write_blocks, bool use_rand_generator) {
-  // buffer=false;
-  if (buffer == true) {
-    printf("EnterEXEC\n");
+  // buffer_flag_ = false;
+  if (buffer_flag_ == true) {
+    // printf("EnterEXEC\n");
     buffOps.push_back(fn);
   } else {
-    printf("immediately ops\n");
+    // printf("immediately ops\n");
     DoExec(std::move(fn), 0);
   }
 }
 
 void Device::ExecBuffOps() {
-  buffer = false;
+  bool previous_state = buffer_flag_;
+  buffer_flag_ = false;
   while (!buffOps.empty()) {
-    printf("EnterBuffStart, %d\n", buffOps.size());
+    // printf("EnterBuffStart, %d\n", buffOps.size());
     DoExec(std::move(buffOps.front()), 0);
     buffOps.erase(buffOps.begin());
-    printf("EnterBuffExit\n");
+    // printf("EnterBuffExit\n");
   }
-  buffer = true;
+  buffer_flag_ = previous_state;
 }
 
 // TODO(wangwei) get Block from the memory manager

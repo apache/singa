@@ -60,6 +60,8 @@ class Device {
 
   virtual void SetRandSeed(unsigned seed) = 0;
 
+  void SetBufferFlag(bool buffer_flag) { buffer_flag_ = buffer_flag; }
+
   /// Called by Tensor.
   Block* NewBlock(int size);
 
@@ -81,8 +83,6 @@ class Device {
   /// delay it depending on the scheduler.
   void Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
             const vector<Block*> write_blocks, bool use_rand_generator = false);
-
-  bool buffer = true;
 
   void ExecBuffOps();
 
@@ -122,6 +122,7 @@ class Device {
   int id_ = 0;
   int num_executors_ = 0;
   unsigned seed_ = 0;
+  bool buffer_flag_ = true;
   // Scheduler* scheduler_ = nullptr;
   // VirtualMemory* vm_ = nullptr;
   /// Programming language type, could be kCpp, kCuda, kOpencl
