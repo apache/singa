@@ -492,7 +492,7 @@ class Clip(Operation):
         return singa.__mul__(dy, self.mask)
 
 
-def clip(x, min, max):
+def clip(x, min=None, max=None):
     return Clip(min, max)(x)[0]
 
 class Identity(Operation):
