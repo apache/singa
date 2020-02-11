@@ -25,6 +25,8 @@ import numpy as np
 from singa import tensor
 from singa.proto import core_pb2
 
+from cuda_helper import gpu_dev, cpu_dev
+
 
 class TestTensorMethods(unittest.TestCase):
 
@@ -286,6 +288,20 @@ class TestTensorMethods(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(ta), np.reshape( a.transpose(TRANSPOSE_AXES), RESHAPE_DIMS))
 
 
+
+    def test_subscription_cpu(self):
+        np1 = np.random.random((5, 5, 5, 5)).astype(np.float32)
+        sg_tensor = tensor.Tensor(device=cpu_dev, data=np1)
+        sg_tensor_ret = sg_tensor[1:3, :, 1:, :-1]
+        np.testing.assert_array_almost_equal((tensor.to_numpy(sg_tensor_ret)),
+                                             np1[1:3, :, 1:, :-1])
+
+    def test_subscription_gpu(self):
+        np1 = np.random.random((5, 5, 5, 5)).astype(np.float32)
+        sg_tensor = tensor.Tensor(device=gpu_dev, data=np1)
+        sg_tensor_ret = sg_tensor[1:3, :, 1:, :-1]
+        np.testing.assert_array_almost_equal((tensor.to_numpy(sg_tensor_ret)),
+                                             np1[1:3, :, 1:, :-1])
 
 
 if __name__ == '__main__':
