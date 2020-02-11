@@ -25,8 +25,8 @@ import numpy as np
 from singa import device
 
 if __name__ == "__main__":
-    dev = device.get_default_device()
-    #dev = device.create_cuda_gpu_on(0)
+    # dev = device.get_default_device()
+    dev = device.create_cuda_gpu_on(0)
 
     autograd.training = True
     np.random.seed(0)
@@ -67,17 +67,17 @@ if __name__ == "__main__":
     print("train_label_shape:", label.shape)
 
     dev.SetBufferFlag(False)
-    inputs = Tensor(data=data)
-    target = Tensor(data=label)
+    inputs = Tensor(data=data, device=dev)
+    target = Tensor(data=label, device=dev)
 
-    w0 = Tensor(shape=(2, 3), requires_grad=True, stores_grad=True)
+    w0 = Tensor(shape=(2, 3), device=dev, requires_grad=True, stores_grad=True)
     w0.set_value(10.0)
-    b0 = Tensor(shape=(1, 3), requires_grad=True, stores_grad=True)
+    b0 = Tensor(shape=(1, 3), device=dev, requires_grad=True, stores_grad=True)
     b0.set_value(1.0)
 
-    w1 = Tensor(shape=(3, 2), requires_grad=True, stores_grad=True)
+    w1 = Tensor(shape=(3, 2), device=dev, requires_grad=True, stores_grad=True)
     w1.set_value(10.0)
-    b1 = Tensor(shape=(1, 2), requires_grad=True, stores_grad=True)
+    b1 = Tensor(shape=(1, 2), device=dev, requires_grad=True, stores_grad=True)
     b1.set_value(0.0)
 
     print("finished init inputs")
@@ -95,7 +95,7 @@ if __name__ == "__main__":
 
     dev.SetBufferFlag(True)
     print("start farward propagation")
-    
+
     x = autograd.matmul(inputs, w0)
     x = autograd.add_bias(x, b0)
     x = autograd.relu(x)
@@ -116,7 +116,7 @@ if __name__ == "__main__":
 
     print("finished training")
     dev.SetBufferFlag(False)
-    
+
     print("loss:\n", tensor.to_numpy(loss))
     print("w0:\n", tensor.to_numpy(w0))
     print("b0:\n", tensor.to_numpy(b0))
