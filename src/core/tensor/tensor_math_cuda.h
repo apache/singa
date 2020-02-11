@@ -815,8 +815,8 @@ void Dot<float, lang::Cuda>(const Tensor& in1, const Tensor& in2, float* out,
   CUBLAS_CHECK(cublasSdot(handle, num, inPtr1, 1, inPtr2, 1, out));
 }
 template <>
-void Dot<float, lang::Cuda>(const Tensor& in1,
-                            const Tensor& in2, Tensor* out, Context* ctx) {
+void Dot<float, lang::Cuda>(const Tensor& in1, const Tensor& in2, Tensor* out,
+                            Context* ctx) {
   const float* inPtr1 = static_cast<const float*>(in1.block()->data());
   const float* inPtr2 = static_cast<const float*>(in2.block()->data());
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
@@ -828,8 +828,7 @@ void Dot<float, lang::Cuda>(const Tensor& in1,
 }
 
 template <>
-void Nrm2<float, lang::Cuda>(const Tensor& in, float* out,
-                             Context* ctx) {
+void Nrm2<float, lang::Cuda>(const Tensor& in, float* out, Context* ctx) {
   auto handle = ctx->cublas_handle;  // TODO(wangwei) set cudastream
   const float* inPtr = static_cast<const float*>(in.block()->data());
   const size_t num = in.Size();
@@ -934,6 +933,41 @@ void SoftMax<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
                                   (void*)(&alpha), generate_tensor_nd_desc(tmp),
                                   inPtr, (void*)(&beta),
                                   generate_tensor_nd_desc(tmp), outPtr));
+}
+
+template <>
+void SoftMaxBackward<float, lang::Cuda>(const Tensor& in, Tensor* out,
+                                        const Tensor& fdout, Context* ctx) {
+  cudnnSoftmaxAlgorithm_t algorithm = CUDNN_SOFTMAX_FAST;
+  cudnnSoftmaxMode_t mode = CUDNN_SOFTMAX_MODE_INSTANCE;
+
+  /*
+   * tensor tmp is for generating cudnn descriptor
+   *   as for cudnn softmax, it required shape of {N, C, 1, 1}
+   *   while helper func `generate_shape_cuda` generate shape of {1, 1, N, C}
+   *   Thus this part serve similar purpose as `generate_shape_cuda` but in
+   * reverse manner
+  */
+  CHECK_LE(in.shape().size(), 5)
+      << "Dimensions (shape) beyond 5 are currently not supported";
+  auto tmp = in;
+  while (tmp.shape().size() < 4) {
+    auto s = tmp.shape();
+    s.push_back(1);
+    tmp.Reshape(s);
+  }
+
+  const float* inPtr = static_cast<const float*>(in.block()->data());
+  const float* fdoutPtr = static_cast<const float*>(fdout.block()->data());
+  float* outPtr = static_cast<float*>(out->block()->mutable_data());
+
+  float alpha = 1.0;
+  float beta = 0.0;
+
+  check_cudnn(cudnnSoftmaxBackward(
+      ctx->cudnn_handle, algorithm, mode, (void*)(&alpha),
+      generate_tensor_nd_desc(tmp), fdoutPtr, generate_tensor_nd_desc(tmp),
+      inPtr, (void*)(&beta), generate_tensor_nd_desc(tmp), outPtr));
 }
 
 template <>
