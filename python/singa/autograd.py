@@ -647,10 +647,14 @@ class Reshape(Operation):
         self._shape = x.shape()
         shape = self.shape
         # handle the shape with 0
-        shape = [self._shape[i] if i < len(self._shape) and shape[i] == 0 else shape[i] for i in range(len(shape))]
+        shape = [
+            self._shape[i]
+            if i < len(self._shape) and shape[i] == 0 else shape[i]
+            for i in range(len(shape))
+        ]
         # handle the shape with -1
         hidden_shape = int(np.prod(self._shape) // np.abs(np.prod(shape)))
-        self.cache=[s if s != -1 else hidden_shape for s in shape]
+        self.cache = [s if s != -1 else hidden_shape for s in shape]
 
         return singa.Reshape(x, self.cache)
 
@@ -881,32 +885,10 @@ class SoftMax(Operation):
             dx (Ctensor): data for the dL / dx, L is the loss,
             x is the input of current Opertion
         """
-        # calculations are made on numpy array
-        if self.axis == 1:
-            dy = singa.DefaultTranspose(dy)
-        grad = ctensor2numpy(dy)
-        output = ctensor2numpy(self.output)
-        out_1 = np.einsum("ki,ki->ki", grad, output)
-        medium_out = np.einsum("ki,kj->kij", output, output)
-        out_2 = np.einsum("kij,kj->ki", medium_out, grad)
-        out = out_1 - out_2
-        dx = CTensor(out_1.shape)
-        dx.CopyFloatDataFromHostPtr(out.flatten())
-        """grad = Tensor(data=dy)
-        output = Tensor(data=self.output)
-        out_1 = einsum('ki,ki->ki', grad, output)
-        medium_out = einsum('ki,kj->kij', output, output)
-        out_2 = einsum('kij,kj->ki', medium_out, grad)
-        out = out_1 - out_2
-        dx = CTensor(out_1.data.shape)
-        dx.CopyFloatDataFromHostPtr(out.data.flatten())"""
-        if self.axis == 0:
-            return dx
-        elif self.axis == 1:
-            return singa.DefaultTranspose(dx)
+        return singa.SoftMaxBackward(dy, self.axis, self.output)
 
 
-def softmax(x, axis=0):
+def softmax(x, axis=1):
     return SoftMax(axis)(x)[0]
 
 
@@ -1236,16 +1218,13 @@ class _Conv2d(Operation):
 
     def backward(self, dy):
         assert training is True and hasattr(
-            self, "inputs"
-        ), "Please set training as True before do BP. "
-        
+            self, "inputs"), "Please set training as True before do BP. "
+
         if (type(self.handle) != singa.ConvHandle):
-            dx = singa.GpuConvBackwardx(
-                dy, self.inputs[1], self.inputs[0], self.handle
-            )
-            dW = singa.GpuConvBackwardW(
-                dy, self.inputs[0], self.inputs[1], self.handle
-            )
+            dx = singa.GpuConvBackwardx(dy, self.inputs[1], self.inputs[0],
+                                        self.handle)
+            dW = singa.GpuConvBackwardW(dy, self.inputs[0], self.inputs[1],
+                                        self.handle)
             if self.handle.bias_term:
                 db = singa.GpuConvBackwardb(dy, self.inputs[2], self.handle)
                 return dx, dW, db
@@ -1420,13 +1399,13 @@ class Conv2d(Layer):
 class SeparableConv2d(Layer):
 
     def __init__(
-            self,
-            in_channels,
-            out_channels,
-            kernel_size,
-            stride=1,
-            padding=0,
-            bias=False,
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride=1,
+        padding=0,
+        bias=False,
     ):
         self.depthwise_conv = Conv2d(
             in_channels,
@@ -1600,9 +1579,8 @@ class _Pooling2d(Operation):
 
     def backward(self, dy):
         if (type(self.handle) != singa.PoolingHandle):
-            dx = singa.GpuPoolingBackward(
-                self.handle, dy, self.cache[0], self.cache[1]
-            )
+            dx = singa.GpuPoolingBackward(self.handle, dy, self.cache[0],
+                                          self.cache[1])
         else:
             dx = singa.CpuPoolingBackward(self.handle, dy, self.cache[0],
                                           self.cache[1])
@@ -2120,15 +2098,15 @@ class RNN_Base(Layer):
 class RNN(RNN_Base):
 
     def __init__(
-            self,
-            input_size,
-            hidden_size,
-            num_layers=1,
-            nonlinearity="tanh",
-            bias=True,
-            batch_first=False,
-            dropout=0,
-            bidirectional=False,
+        self,
+        input_size,
+        hidden_size,
+        num_layers=1,
+        nonlinearity="tanh",
+        bias=True,
+        batch_first=False,
+        dropout=0,
+        bidirectional=False,
     ):
         self.nonlinearity = nonlinearity
 
@@ -2181,15 +2159,15 @@ class RNN(RNN_Base):
 class LSTM(RNN_Base):
 
     def __init__(
-            self,
-            input_size,
-            hidden_size,
-            nonlinearity="tanh",
-            num_layers=1,
-            bias=True,
-            batch_first=False,
-            dropout=0,
-            bidirectional=False,
+        self,
+        input_size,
+        hidden_size,
+        nonlinearity="tanh",
+        num_layers=1,
+        bias=True,
+        batch_first=False,
+        dropout=0,
+        bidirectional=False,
     ):
         self.nonlinearity = nonlinearity
 

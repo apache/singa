@@ -514,6 +514,7 @@ void MultRow(const Tensor &v, Tensor *M);
 /// Do softmax for each row. 'in' could be a 1-d or 2-d Tensor.
 Tensor SoftMax(const Tensor &in);
 Tensor SoftMax(const Tensor &in, int axis);
+Tensor SoftMaxBackward(const Tensor &in, int axis, const Tensor &fdout);
 
 Tensor RowMax(const Tensor &in);
 /// Do softmax for each row. 'in' could be a 1-d or 2-d Tensor.
