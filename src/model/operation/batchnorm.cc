@@ -177,7 +177,7 @@ const std::vector<Tensor> CpuBatchNormForwardTraining(
       {y.block(), running_mean.block(), running_var.block(), mean.block(),
        var.block()});
 
-  return {y, running_mean, running_var, mean, var};
+  return {y, mean, var};
 }
 
 const std::vector<Tensor> CpuBatchNormBackwardx(
