@@ -904,7 +904,7 @@ void GEMM<float, lang::Cuda>(const float alpha, const Tensor& A,
 
 template <>
 void SoftMax<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
-  cudnnSoftmaxAlgorithm_t algorithm = CUDNN_SOFTMAX_FAST;
+  cudnnSoftmaxAlgorithm_t algorithm = CUDNN_SOFTMAX_ACCURATE;
   cudnnSoftmaxMode_t mode = CUDNN_SOFTMAX_MODE_INSTANCE;
 
   /*
