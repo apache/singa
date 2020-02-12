@@ -938,7 +938,7 @@ void SoftMax<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
 template <>
 void SoftMaxBackward<float, lang::Cuda>(const Tensor& in, Tensor* out,
                                         const Tensor& fdout, Context* ctx) {
-  cudnnSoftmaxAlgorithm_t algorithm = CUDNN_SOFTMAX_FAST;
+  cudnnSoftmaxAlgorithm_t algorithm = CUDNN_SOFTMAX_ACCURATE;
   cudnnSoftmaxMode_t mode = CUDNN_SOFTMAX_MODE_INSTANCE;
 
   /*
