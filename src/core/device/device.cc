@@ -41,10 +41,10 @@ void Device::Exec(function<void(Context*)>&& fn,
 void Device::ExecBuffOps() {
   bool previous_state = buffer_flag_;
   buffer_flag_ = false;
-  while (!buffOps.empty()) {
+  for (size_t i = 0; i < buffOps.size(); ++i) {
     // printf("EnterBuffStart, %d\n", buffOps.size());
-    DoExec(std::move(buffOps.front()), 0);
-    buffOps.erase(buffOps.begin());
+    DoExec(std::move(buffOps[i]), 0);
+    // buffOps.erase(buffOps.begin());
     // printf("EnterBuffExit\n");
   }
   buffer_flag_ = previous_state;
