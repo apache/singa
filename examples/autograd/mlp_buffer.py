@@ -66,7 +66,6 @@ if __name__ == "__main__":
     print("train_data_shape:", data.shape)
     print("train_label_shape:", label.shape)
 
-    dev.SetBufferFlag(False)
     inputs = Tensor(data=data, device=dev)
     target = Tensor(data=label, device=dev)
 

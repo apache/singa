@@ -122,7 +122,7 @@ class Device {
   int id_ = 0;
   int num_executors_ = 0;
   unsigned seed_ = 0;
-  bool buffer_flag_ = true;
+  bool buffer_flag_ = false;
   // Scheduler* scheduler_ = nullptr;
   // VirtualMemory* vm_ = nullptr;
   /// Programming language type, could be kCpp, kCuda, kOpencl
