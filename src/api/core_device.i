@@ -51,6 +51,7 @@ class Device {
   virtual void Sync();
   void ExecBuffOps();
   void SetBufferFlag(bool buffer_flag);
+  bool GetBufferFlag() const;
 };
 
 class Platform {

@@ -556,7 +556,6 @@ void square(const size_t n, const float *in, float *out, cudaStream_t s) {
 }
 
 void relu(const size_t n, const float *in, float *out, cudaStream_t s) {
-  printf("enter3\n");
   KernelRelu <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
 }
 void sigmoid(const size_t n, const float *in, float *out, cudaStream_t s) {

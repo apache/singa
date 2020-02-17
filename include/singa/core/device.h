@@ -60,6 +60,8 @@ class Device {
 
   virtual void SetRandSeed(unsigned seed) = 0;
 
+  bool GetBufferFlag() const { return buffer_flag_; }
+
   void SetBufferFlag(bool buffer_flag) { buffer_flag_ = buffer_flag; }
 
   /// Called by Tensor.

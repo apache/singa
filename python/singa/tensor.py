@@ -678,7 +678,10 @@ def from_raw_tensors(tt):
 
 def zeros_like(t):
     ret = Tensor(t.shape, t.device, t.dtype)
+    flag = t.device.GetBufferFlag()
+    t.device.SetBufferFlag(False)
     ret.set_value(float(0))
+    t.device.SetBufferFlag(flag)
     return ret
 
 

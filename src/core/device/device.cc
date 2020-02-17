@@ -30,7 +30,7 @@ void Device::Exec(function<void(Context*)>&& fn,
                   const vector<Block*> write_blocks, bool use_rand_generator) {
   // buffer_flag_ = false;
   if (buffer_flag_ == true) {
-    // printf("EnterEXEC\n");
+    // printf("EnterEXEC, %d\n", buffOps.size());
     buffOps.push_back(fn);
   } else {
     // printf("immediately ops\n");
@@ -42,7 +42,7 @@ void Device::ExecBuffOps() {
   bool previous_state = buffer_flag_;
   buffer_flag_ = false;
   for (size_t i = 0; i < buffOps.size(); ++i) {
-    // printf("EnterBuffStart, %d\n", buffOps.size());
+    // printf("EnterBuffStart, %d\n", i);
     DoExec(std::move(buffOps[i]), 0);
     // buffOps.erase(buffOps.begin());
     // printf("EnterBuffExit\n");
