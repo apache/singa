@@ -1181,9 +1181,13 @@ def cat(xs, axis=0):
 
 
 class _Conv2d(Operation):
-    def __init__(self, handle):
+    def __init__(self, handle, pad_mode="NOTSET"):
         super(_Conv2d, self).__init__()
         self.handle = handle
+        # Where default value is NOTSET, which means explicit padding is used. 
+        # SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+        # In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER. 
+        self.pad_mode = pad_mode
 
     def forward(self, x, W, b=None):
         assert x.nDim() == 4, "The dimensions of input should be 4D."
@@ -1200,9 +1204,15 @@ class _Conv2d(Operation):
             b.SetFloatValue(0.0)
 
         if (type(self.handle) != singa.ConvHandle):
-            return singa.GpuConvForward(x, W, b, self.handle)
+            rew_tensor = singa.GpuConvForward(x, W, b, self.handle)
         else:
-            return singa.CpuConvForward(x, W, b, self.handle)
+            rew_tensor = singa.CpuConvForward(x, W, b, self.handle)
+        py_tensor = tensor.from_raw_tensor(rew_tensor)
+        if self.pad_mode == "SAME_UPPER":
+            py_tensor = py_tensor[:, :, 1:, 1:]
+        elif self.pad_mode == "SAME_LOWER":
+            py_tensor = py_tensor[:, :, :-1, :-1]
+        return py_tensor.data
 
     def backward(self, dy):
         assert training is True and hasattr(

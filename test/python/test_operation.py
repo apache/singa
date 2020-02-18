@@ -161,6 +161,51 @@ class TestPythonOperation(unittest.TestCase):
         y_without_bias = conv_without_bias_0(gpu_input_tensor)
         self.check_shape(y_without_bias.shape, (2, 1, 2, 2))
 
+    def _conv2d_same_pad(self, dev, pad_mode):
+
+        # (samples, channels, input_w, input_h)
+        x = tensor.Tensor(shape=(3, 3, 32, 32), device=dev)
+        x.gaussian(0.0, 1.0)
+
+        # (filter, channels, kernel_w, kernel_h)
+        w = tensor.Tensor(shape=(3, 3, 4, 4), device=dev)
+        w.gaussian(0.0, 1.0)
+
+        # with the same padding, the padding should be 3
+        # for SAME_UPPER, is (1, 2)
+        # for SAME_LOWER, is (2, 1)
+
+        x_shape = x.shape
+        kernel = (4, 4)
+        padding = (
+            2, 2
+        )  # we add 4 padding here and hope the conv and trim one padding then
+        stride = (1, 1)
+        group = 1
+        bias = False
+        in_channels = x_shape[1]
+        w_shape = w.shape
+        out_channels = w_shape[0]
+        assert w_shape[1] == in_channels // group
+
+        if dev == cpu_dev:
+            handle = singa.ConvHandle(x.data, kernel, stride, padding,
+                                      in_channels, out_channels, bias, group)
+        else:
+            handle = singa.CudnnConvHandle(x.data, kernel, stride, padding,
+                                           in_channels, out_channels, bias,
+                                           group)
+        y = autograd._Conv2d(handle, pad_mode)(x, w)[0]
+        self.check_shape(y.shape, (3, 3, 32, 32))
+
+    def test_conv2d_same_upper_pad(self):
+        self._conv2d_same_pad(gpu_dev, "SAME_UPPER")
+        self._conv2d_same_pad(cpu_dev, "SAME_UPPER")
+
+    def test_conv2d_same_lower_pad(self):
+        self._conv2d_same_pad(gpu_dev, "SAME_LOWER")
+        self._conv2d_same_pad(cpu_dev, "SAME_LOWER")
+
     def test_sum_cpu(self):
         x = np.array([0.1,-1.0,0.4,4.0,-0.9,9.0]).reshape(3,2).astype(np.float32)
         x1 = np.array([0.1,1.0,0.4,4.0,0.9,9.0]).reshape(3,2).astype(np.float32)
