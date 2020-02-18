@@ -469,7 +469,7 @@ class SingaFrontend(object):
             helper.make_attribute('momentum', op.handle.factor),
             helper.make_attribute('epsilon', epsilon),
         ])
-        # then we add nodes of scal, bias, mean, var 
+        # then we add nodes of scal, bias, mean, var
         nodes = []
         running_values = {
             "mean": op.running_mean,
@@ -631,7 +631,7 @@ class SingaFrontend(object):
                 X.append(helper.make_tensor_value_info(op.name, dtype, op_t.shape))
             # because the inputs of batchnorm and reshape are differnet with onnx
             # we need to add these inputs into onnx model mannully
-            elif yid in input_tensors and optype == '_BatchNorm2d': 
+            elif yid in input_tensors and optype == '_BatchNorm2d':
                 # batchnorm add scale, bias, mean, var as inputs
                 running_values = {
                     "mean": op.running_mean,
@@ -645,12 +645,12 @@ class SingaFrontend(object):
                     running_value.ToDevice(tmp_device)
                     X.append(helper.make_tensor_value_info(node_name, TensorProto.FLOAT, np_running_value.shape))
                 graph_def.node.extend(cls.singa_op_to_onnx_node(op, op_t))
-            elif yid in input_tensors and optype == 'Reshape': 
+            elif yid in input_tensors and optype == 'Reshape':
                 # reshape add shape
                 node_name = op.name+":shape"
                 X.append(helper.make_tensor_value_info(node_name, TensorProto.FLOAT, [len(op.shape)]))
                 graph_def.node.extend(cls.singa_op_to_onnx_node(op, op_t))
-            elif yid in input_tensors and optype == 'Clip': 
+            elif yid in input_tensors and optype == 'Clip':
                 # Clip add min and max
                 node_name = op.name+":min"
                 X.append(helper.make_tensor_value_info(node_name, TensorProto.FLOAT, [1]))
@@ -727,7 +727,7 @@ class OnnxNode(object):
         self.attrs = OnnxAttributes.from_onnx(node.attribute)
         self.inputs = list(node.input)
         self.outputs = list(node.output)
-    
+
     def getattr(self, key, default=None):
         return self.attrs[key] if key in self.attrs else default
 
@@ -891,7 +891,7 @@ class SingaBackend(Backend):
         _, forward = cls._common_onnx_node_to_singa_op(
             onnx_node, inputs, opset_version)
         return _, forward(alpha, beta)
-   
+
     @classmethod
     def _create_equal(cls, onnx_node, inputs, opset_version):
         """
@@ -994,7 +994,7 @@ class SingaBackend(Backend):
         group = onnx_node.getattr('group', 1)
 
         # not support dilation
-        
+
         if dilation != 1 and list(dilation) != [1, 1]:
             raise ValueError("Not implemented yet for dilation")
 
@@ -1165,8 +1165,12 @@ class SingaBackend(Backend):
         beta = onnx_node.getattr('beta', 1.)
         transA = onnx_node.getattr('transA', 0)
         transB = onnx_node.getattr('transB', 0)
-        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs, opset_version)
-        return None, forward(alpha=alpha, beta=beta, transA=transA, transB=transB)
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
+                                                       opset_version)
+        return None, forward(alpha=alpha,
+                             beta=beta,
+                             transA=transA,
+                             transB=transB)
 
     @classmethod
     def _create_flatten(cls, onnx_node, inputs, opset_version):
@@ -1186,7 +1190,7 @@ class SingaBackend(Backend):
         factor = onnx_node.getattr('axis', 1)
         if factor < 0:
             factor = len(inputs[0].shape) + factor # in order to support the negative axis
-        
+
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs, opset_version)
         return None, forward(start_axis=factor)
 
@@ -1329,8 +1333,8 @@ class SingaBackend(Backend):
         Returns:
             a list of SingaOps('name', 'op', 'handle', 'forward')
         """
-        #  runs model checker, optimizer, shape inference engine 
-        optimized_model = onnx.utils.polish_model(onnx_model) 
+        #  runs model checker, optimizer, shape inference engine
+        optimized_model = onnx.utils.polish_model(onnx_model)
         # print('The model is:\n{}'.format(optimized_model))
         # this tensor_nap contains all tensors, including outputs of each op
         tensor_map = {}
@@ -1338,7 +1342,7 @@ class SingaBackend(Backend):
         weights = {}
         singa_ops = []
         singa_op = collections.namedtuple('SingaOps', ['name', 'op', 'handle', 'forward'])
-        # init the input, output, and intermidate nodes as singa tensors 
+        # init the input, output, and intermidate nodes as singa tensors
         cls._onnx_node_to_singa_tensor(optimized_model.graph.input, tensor_map, device)
         cls._onnx_node_to_singa_tensor(optimized_model.graph.output, tensor_map, device)
         cls._onnx_node_to_singa_tensor(optimized_model.graph.value_info, tensor_map, device)

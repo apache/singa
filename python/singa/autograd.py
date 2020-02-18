@@ -485,7 +485,7 @@ class Clip(Operation):
             mask1 = singa.LEFloat(x, self.max)
             self.mask = singa.__mul__(mask1, self.mask)
             x = singa.__add__(singa.MultFloat(mask0, self.max), singa.__mul__(mask1, x))
-                    
+
         return x
 
     def backward(self, dy):
@@ -1208,7 +1208,7 @@ class _Conv2d(Operation):
         assert training is True and hasattr(
             self, "inputs"
         ), "Please set training as True before do BP. "
-        
+
         if (type(self.handle) != singa.ConvHandle):
             dx = singa.GpuConvBackwardx(
                 dy, self.inputs[1], self.inputs[0], self.handle
@@ -1558,7 +1558,7 @@ class _BatchNorm2d(Operation):
             dx, ds, db = singa.GpuBatchNormBackward(
                 self.handle, dy, x, scale, mean, var
             )
-            
+
         return dx, ds, db
 
 
@@ -1591,7 +1591,7 @@ class _Pooling2d(Operation):
             dx = singa.CpuPoolingBackward(
                 self.handle, dy, self.cache[0], self.cache[1]
             )
-            
+
         return dx
 
 
@@ -1788,7 +1788,7 @@ class Acos(Operation):
 
     def backward(self, dy):
         dx = singa.Square(self.input)
-        dx = singa.MultFloat(dx, -1.0)         
+        dx = singa.MultFloat(dx, -1.0)
         dx = singa.AddFloat(dx, 1.0)
         dx = singa.PowFloat(dx, -0.5)
         dx = singa.MultFloat(dx, -1.0)
@@ -1865,7 +1865,7 @@ class Asin(Operation):
 
     def backward(self, dy):
         dx = singa.Square(self.input)
-        dx = singa.MultFloat(dx, -1.0)         
+        dx = singa.MultFloat(dx, -1.0)
         dx = singa.AddFloat(dx, 1.0)
         dx = singa.PowFloat(dx, -0.5)
         dx *= dy
@@ -1942,7 +1942,7 @@ class Atanh(Operation):
 
     def backward(self, dy):
         dx = singa.Square(self.input)
-        dx = singa.MultFloat(dx, -1.0)         
+        dx = singa.MultFloat(dx, -1.0)
         dx = singa.AddFloat(dx, 1.0)
         dx = singa.PowFloat(dx, -1.0)
         dx *= dy
@@ -2339,36 +2339,36 @@ def pow(a, b):
 
 class SoftSign(Operation):
     def __init__(self):
-        super(SoftSign, self).__init__()  
-    
+        super(SoftSign, self).__init__()
+
     def forward(self, x):
-    # y = x / (1 + np.abs(x))
+        # y = x / (1 + np.abs(x))
         if training:
             self.input = x
         x1 = singa.AddFloat(singa.Abs(x),1.0)
         y = singa.__div__(x,x1)
-        
+
         return y
-      
+
     def backward(self, dy):
         dx = singa.AddFloat(singa.Abs(self.input),1.0)
         dx = singa.PowFloat(singa.Square(dx),-1.0)
         dx = singa.__mul__(dy, dx)
         return dx
-      
+
 def softsign(x):
     return SoftSign()(x)[0]
 
 
 class Sqrt(Operation):
     def __init__(self):
-        super(Sqrt, self).__init__()  
-    
+        super(Sqrt, self).__init__()
+
     def forward(self, x):
         if training:
             self.input = x
         return singa.Sqrt(x)
-      
+
     def backward(self, dy):
         dx = singa.PowFloat(self.input,-0.5)
         dx = singa.MultFloat(dx,0.5)
@@ -2377,18 +2377,18 @@ class Sqrt(Operation):
 
 def sqrt(x):
     return Sqrt()(x)[0]
-  
+
 
 class SoftPlus(Operation):
     def __init__(self):
-        super(SoftPlus, self).__init__()  
-    
+        super(SoftPlus, self).__init__()
+
     def forward(self, x):
-    #f(x) = ln(exp(x) + 1)
+        #f(x) = ln(exp(x) + 1)
         if training:
             self.input = x
         x1 = singa.AddFloat(singa.Exp(x),1.0)
-        y = singa.Log(x1)    
+        y = singa.Log(x1)
         return y
 
     def backward(self, dy):
@@ -2397,15 +2397,15 @@ class SoftPlus(Operation):
         dx = singa.__mul__(dy, dx)
         return dx
 
-      
+
 def softplus(x):
     return SoftPlus()(x)[0]
 
 
 class Sub(Operation):
     def __init__(self):
-        super(Sub, self).__init__()    
-    
+        super(Sub, self).__init__()
+
     def forward(self, a, b):
         res = singa.__sub__(a, b)
         if training:
@@ -2429,12 +2429,12 @@ def sub(a, b):
     return Sub()(a,b)[0]
 
 
- # optimize min to support multi inputs
+# optimize min to support multi inputs
 class Min(Operation):
     def __init__(self):
         super(Min, self).__init__()
-        self.masks = []    
-    
+        self.masks = []
+
     def _min(self, a, b):
         m = singa.__sub__(a, b)
         mask0 = singa.LEFloat(m, 0)
@@ -2602,7 +2602,7 @@ class Shape(Operation):
     def backward(self, dy):
         return list(dy.shape())
 
-        
+
 def shape(x):
     return Shape()(x)[0]
 
@@ -2618,7 +2618,7 @@ class Max(Operation):
         mask1 = singa.LTFloat(m, 0)
         res = singa.__add__(singa.__mul__(mask0, a), singa.__mul__(mask1, b))
         return res, (mask0, mask1)
-        
+
     def forward(self, *x):
         assert(len(x)>0)
         self.l = len(x)
@@ -2676,7 +2676,7 @@ class Or(Operation):
 
     def forward(self, a, b):
         m = singa.__add__(singa.PowFloat(singa.Sign(a), 2.0), singa.PowFloat(singa.Sign(b), 2.0))
-        cur = singa.Sign(m) 
+        cur = singa.Sign(m)
 
         return cur
 
@@ -2713,7 +2713,7 @@ class Xor(Operation):
 
     def forward(self, a, b):
         m = singa.__sub__(singa.PowFloat(singa.Sign(a), 2.0), singa.PowFloat(singa.Sign(b), 2.0))
-        cur = singa.PowFloat(singa.Sign(m), 2.0)    
+        cur = singa.PowFloat(singa.Sign(m), 2.0)
 
         return cur
 
@@ -2822,7 +2822,8 @@ class Gemm(Operation):
         # y = alpha * A  * BT => da = alpha * dy * B
         # y = alpha * AT * B  => da = alpha * B * dyT = alpha * (dy * BT)T
         # y = alpha * AT * BT => da = alpha * BT * dyT = alpha * (dy * B)T
-        da = singa.MultFloat(singa.Mult(dy, singa.DefaultTranspose(_B)), self.alpha)
+        da = singa.MultFloat(singa.Mult(dy, singa.DefaultTranspose(_B)),
+                             self.alpha)
         if self.transA:
             da = singa.DefaultTranspose(da)
 
@@ -2830,11 +2831,13 @@ class Gemm(Operation):
         # y = alpha * AT * B  => db = alpha * A * dy
         # y = alpha * A  * BT => db = alpha * dyT * A = alpha * (AT * dy)T
         # y = alpha * AT * BT => db = alpha * dyT * AT = alpha * (A * dy)T
-        db = singa.MultFloat(singa.Mult(singa.DefaultTranspose(_A), dy), self.alpha)
+        db = singa.MultFloat(singa.Mult(singa.DefaultTranspose(_A), dy),
+                             self.alpha)
         if self.transB:
             db = singa.DefaultTranspose(db)
         if C:
-            dc = back_broadcast(dy.shape(), C.shape(), singa.MultFloat(dy, self.beta))
+            dc = back_broadcast(dy.shape(), C.shape(),
+                                singa.MultFloat(dy, self.beta))
             return da, db, dc
         else:
             return da, db

@@ -33,7 +33,7 @@ CTensor = singa.Tensor
 dy = CTensor([2, 1, 2, 2])
 singa.Gaussian(0.0, 1.0, dy)
 
-        
+
 def _tuple_to_string(t):
     lt = [str(x) for x in t]
     return '(' + ', '.join(lt) + ')'
@@ -62,7 +62,7 @@ def prepare_inputs_targets_for_rnn_test():
     x_2 = np.random.random((2, 3)).astype(np.float32)
 
     h_0 = np.zeros((2, 2)).astype(
-        np.float32)  
+        np.float32)
 
     t_0 = np.random.random((2, 2)).astype(np.float32)
     t_1 = np.random.random((2, 2)).astype(np.float32)
@@ -407,7 +407,7 @@ class TestPythonOperation(unittest.TestCase):
         loss_np=tensor.to_numpy(loss)[0]
         self.assertAlmostEqual(loss_np, 0.0366666, places=4)
         self.check_shape(dx.shape(), (3, 2))
-        
+
     def test_Abs(self):
         X=np.array([0.8,-1.2,3.3,-3.6,-0.5,0.5]).reshape(3,2).astype(np.float32)
         XT=np.array([0.8,1.2,3.3,3.6,0.5,0.5]).reshape(3,2).astype(np.float32)
@@ -642,7 +642,7 @@ class TestPythonOperation(unittest.TestCase):
         result = autograd.acos(x)
         dx = result.creator.backward(dy.data)
 
-        G = - 1.0 / np.sqrt( 1.0 - np.square(X) )  
+        G = - 1.0 / np.sqrt( 1.0 - np.square(X) )
         DX = np.multiply(G, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
@@ -661,7 +661,7 @@ class TestPythonOperation(unittest.TestCase):
         result = autograd.acos(x)
         dx = result.creator.backward(dy.data)
 
-        G = - 1.0 / np.sqrt( 1.0 - np.square(X) )  
+        G = - 1.0 / np.sqrt( 1.0 - np.square(X) )
         DX = np.multiply(G, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
@@ -895,7 +895,7 @@ class TestPythonOperation(unittest.TestCase):
         result = autograd.tan(x)
         dx = result.creator.backward(dy.data)
 
-        G = 1.0 / np.square( np.cos(X) ) 
+        G = 1.0 / np.square( np.cos(X) )
         DX = np.multiply(G, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
@@ -914,7 +914,7 @@ class TestPythonOperation(unittest.TestCase):
         result = autograd.tan(x)
         dx = result.creator.backward(dy.data)
 
-        G = 1.0 / np.square( np.cos(X) ) 
+        G = 1.0 / np.square( np.cos(X) )
         DX = np.multiply(G, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
@@ -933,7 +933,7 @@ class TestPythonOperation(unittest.TestCase):
         result = autograd.tanh(x)
         dx = result.creator.backward(dy.data)
 
-        G = 1.0 / np.square( np.cosh(X) ) 
+        G = 1.0 / np.square( np.cosh(X) )
         DX = np.multiply(G, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
@@ -952,7 +952,7 @@ class TestPythonOperation(unittest.TestCase):
         result = autograd.tanh(x)
         dx = result.creator.backward(dy.data)
 
-        G = 1.0 / np.square( np.cosh(X) ) 
+        G = 1.0 / np.square( np.cosh(X) )
         DX = np.multiply(G, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
@@ -971,7 +971,7 @@ class TestPythonOperation(unittest.TestCase):
         result = autograd.atan(x)
         dx = result.creator.backward(dy.data)
 
-        G = 1.0 / ( 1.0 + np.square(X) ) 
+        G = 1.0 / ( 1.0 + np.square(X) )
         DX = np.multiply(G, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
@@ -990,7 +990,7 @@ class TestPythonOperation(unittest.TestCase):
         result = autograd.atan(x)
         dx = result.creator.backward(dy.data)
 
-        G = 1.0 / ( 1.0 + np.square(X) ) 
+        G = 1.0 / ( 1.0 + np.square(X) )
         DX = np.multiply(G, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
@@ -1009,7 +1009,7 @@ class TestPythonOperation(unittest.TestCase):
         result = autograd.atanh(x)
         dx = result.creator.backward(dy.data)
 
-        G = 1.0 / ( 1.0 - np.square(X) ) 
+        G = 1.0 / ( 1.0 - np.square(X) )
         DX = np.multiply(G, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
@@ -1028,7 +1028,7 @@ class TestPythonOperation(unittest.TestCase):
         result = autograd.atanh(x)
         dx = result.creator.backward(dy.data)
 
-        G = 1.0 / ( 1.0 - np.square(X) ) 
+        G = 1.0 / ( 1.0 - np.square(X) )
         DX = np.multiply(G, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
@@ -1038,7 +1038,7 @@ class TestPythonOperation(unittest.TestCase):
         X0 = np.array([7, -5, 0.2, -0.1, 0.3, 4]).reshape(3, 2).astype(np.float32)
         X1 = np.array([0.6, -1.3, 0.1, -0.1, 0.4, 0.3]).reshape(3, 2).astype(np.float32)
         XT = np.subtract(X0, X1)
-        
+
         DY = np.ones((3, 2), dtype = np.float32)
         x0 = tensor.from_numpy(X0)
         x1 = tensor.from_numpy(X1)
@@ -1061,7 +1061,7 @@ class TestPythonOperation(unittest.TestCase):
         X0 = np.array([7, -5, 0.2, -0.1, 0.3, 4]).reshape(3, 2).astype(np.float32)
         X1 = np.array([0.6, -1.3, 0.1, -0.1, 0.4, 0.3]).reshape(3, 2).astype(np.float32)
         XT = np.subtract(X0, X1)
-        
+
         DY = np.ones((3, 2), dtype = np.float32)
         x0 = tensor.from_numpy(X0)
         x1 = tensor.from_numpy(X1)
@@ -1079,12 +1079,12 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), DX0, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), DX1, decimal=5)
-        
+
     def test_Pow_cpu(self):
         X0 = np.array([7, 5, 0.2, 0.1, 0.3, 4]).reshape(3, 2).astype(np.float32)
         X1 = np.array([-1.0, 2.0, -1.0, -2.1, 1.0, -2.0]).reshape(3, 2).astype(np.float32)
         XT = np.power(X0, X1)
-        
+
         DY = np.ones((3, 2), dtype = np.float32)
         x0 = tensor.from_numpy(X0)
         x1 = tensor.from_numpy(X1)
@@ -1109,7 +1109,7 @@ class TestPythonOperation(unittest.TestCase):
         X0 = np.array([7, 5, 0.2, 0.1, 0.3, 4]).reshape(3, 2).astype(np.float32)
         X1 = np.array([-1.0, 2.0, -1.0, -2.1, 1.0, -2.0]).reshape(3, 2).astype(np.float32)
         XT = np.power(X0, X1)
-        
+
         DY = np.ones((3, 2), dtype = np.float32)
         x0 = tensor.from_numpy(X0)
         x1 = tensor.from_numpy(X1)
@@ -1150,7 +1150,7 @@ class TestPythonOperation(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
-    
+
     def test_SoftSign_gpu(self):
         # y = x / (1 + np.abs(x))
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
@@ -1190,7 +1190,7 @@ class TestPythonOperation(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
-    
+
     def test_SoftPlus_gpu(self):
         #y = np.log(np.exp(x) + 1)
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
@@ -1503,7 +1503,7 @@ class TestPythonOperation(unittest.TestCase):
         data_1 = np.array([1, 4, 4]).astype(np.float32)
         data_2 = np.array([2, 5, 3]).astype(np.float32)
         XT = np.array([3, 5, 4]).astype(np.float32)
-        
+
         DY = np.array([1, 1, 1]).astype(np.float32)
         x0 = tensor.from_numpy(data_0)
         x1 = tensor.from_numpy(data_1)
@@ -1529,7 +1529,7 @@ class TestPythonOperation(unittest.TestCase):
     def test_max_cpu_1inputs(self):
         data_0 = np.array([3, 2, 1]).astype(np.float32)
         XT = np.array([3, 2, 1]).astype(np.float32)
-        
+
         DY = np.array([1, 1, 1]).astype(np.float32)
         x0 = tensor.from_numpy(data_0)
         dy = tensor.from_numpy(DY)
@@ -1572,7 +1572,7 @@ class TestPythonOperation(unittest.TestCase):
         data_1 = np.array([1, 4, 4]).astype(np.float32)
         data_2 = np.array([2, 5, 3]).astype(np.float32)
         XT = np.array([3, 5, 4]).astype(np.float32)
-        
+
         DY = np.array([1, 1, 1]).astype(np.float32)
         x0 = tensor.from_numpy(data_0)
         x1 = tensor.from_numpy(data_1)
@@ -1598,7 +1598,7 @@ class TestPythonOperation(unittest.TestCase):
     def test_max_gpu_1inputs(self):
         data_0 = np.array([3, 2, 1]).astype(np.float32)
         XT = np.array([3, 2, 1]).astype(np.float32)
-        
+
         DY = np.array([1, 1, 1]).astype(np.float32)
         x0 = tensor.from_numpy(data_0)
         dy = tensor.from_numpy(DY)
@@ -1701,7 +1701,7 @@ class TestPythonOperation(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
         np.testing.assert_array_almost_equal(dx, grad, decimal=5)
-    
+
     def test_shape_gpu(self):
         x = np.array([0.1,-1.0,0.4,4.0,-0.9,9.0]).reshape(3,2).astype(np.float32)
         y = list(x.shape)
@@ -1750,7 +1750,7 @@ class TestPythonOperation(unittest.TestCase):
         data_1 = np.array([1, 4, 4]).astype(np.float32)
         data_2 = np.array([2, 5, 0]).astype(np.float32)
         XT = np.array([1, 2, 0]).astype(np.float32)
-        
+
         DY = np.array([1, 1, 1]).astype(np.float32)
         x0 = tensor.from_numpy(data_0)
         x1 = tensor.from_numpy(data_1)
@@ -1776,7 +1776,7 @@ class TestPythonOperation(unittest.TestCase):
     def test_min_cpu_1inputs(self):
         data_0 = np.array([3, 2, 1]).astype(np.float32)
         XT = np.array([3, 2, 1]).astype(np.float32)
-        
+
         DY = np.array([1, 1, 1]).astype(np.float32)
         x0 = tensor.from_numpy(data_0)
         dy = tensor.from_numpy(DY)
@@ -1820,7 +1820,7 @@ class TestPythonOperation(unittest.TestCase):
         data_1 = np.array([1, 4, 4]).astype(np.float32)
         data_2 = np.array([2, 5, 0]).astype(np.float32)
         XT = np.array([1, 2, 0]).astype(np.float32)
-        
+
         DY = np.array([1, 1, 1]).astype(np.float32)
         x0 = tensor.from_numpy(data_0)
         x1 = tensor.from_numpy(data_1)
@@ -1847,7 +1847,7 @@ class TestPythonOperation(unittest.TestCase):
     def test_min_gpu_1inputs(self):
         data_0 = np.array([3, 2, 1]).astype(np.float32)
         XT = np.array([3, 2, 1]).astype(np.float32)
-        
+
         DY = np.array([1, 1, 1]).astype(np.float32)
         x0 = tensor.from_numpy(data_0)
         dy = tensor.from_numpy(DY)
@@ -1926,29 +1926,29 @@ class TestPythonOperation(unittest.TestCase):
     def test_and_cpu(self):
         x0 = np.array([0, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
         x1 = np.array([0, -0.3, 0, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
-    
+
         y = np.logical_and(x0,x1)
         x0 = tensor.from_numpy(x0)
         x1 = tensor.from_numpy(x1)
         x0.to_device(cpu_dev)
         x1.to_device(cpu_dev)
-    
+
         result = autograd._and(x0,x1)
-    
+
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
 
     def test_and_gpu(self):
         x0 = np.array([0, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
         x1 = np.array([0, -0.3, 0, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
-    
+
         y = np.logical_and(x0,x1)
         x0 = tensor.from_numpy(x0)
         x1 = tensor.from_numpy(x1)
         x0.to_device(gpu_dev)
         x1.to_device(gpu_dev)
-    
+
         result = autograd._and(x0,x1)
-    
+
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
 
     def test_or_cpu(self):
@@ -2028,7 +2028,7 @@ class TestPythonOperation(unittest.TestCase):
         result = autograd._xor(x0,x1)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
-        
+
     def test_negative_cpu(self):
         X = np.array([0.1,0,0.4,1.-4,0.9,-2.0]).reshape(3,2).astype(np.float32)
         XT = np.negative(X)
@@ -2413,7 +2413,7 @@ class TestPythonOperation(unittest.TestCase):
             dy = np.random.randn(*y.shape)
             grad0 = np.sum(dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
             grad1 = np.sum(dy, axis=axis_helper(y.shape, x1.shape)).reshape(x1.shape)
-            
+
             x = tensor.from_numpy(x)
             x1 = tensor.from_numpy(x1)
             dy = tensor.from_numpy(dy)
@@ -2444,7 +2444,7 @@ class TestPythonOperation(unittest.TestCase):
             dy = np.random.randn(*y.shape)
             grad0 = np.sum(dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
             grad1 = np.sum(-dy, axis=axis_helper(y.shape, x1.shape)).reshape(x1.shape)
-            
+
             x = tensor.from_numpy(x)
             x1 = tensor.from_numpy(x1)
             dy = tensor.from_numpy(dy)
@@ -2476,7 +2476,7 @@ class TestPythonOperation(unittest.TestCase):
             dy = np.random.randn(*y.shape)
             grad0 = np.sum(dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
             grad1 = np.sum(-dy, axis=axis_helper(y.shape, x1.shape)).reshape(x1.shape)
-            
+
             x = tensor.from_numpy(x)
             x1 = tensor.from_numpy(x1)
             dy = tensor.from_numpy(dy)
@@ -2507,7 +2507,7 @@ class TestPythonOperation(unittest.TestCase):
             dy = np.random.randn(*y.shape)
             grad0 = np.sum(x1 * dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
             grad1 = np.sum(x * dy, axis=axis_helper(y.shape, x1.shape)).reshape(x1.shape)
-            
+
             x = tensor.from_numpy(x)
             x1 = tensor.from_numpy(x1)
             dy = tensor.from_numpy(dy)
@@ -2538,7 +2538,7 @@ class TestPythonOperation(unittest.TestCase):
             dy = np.random.randn(*y.shape)
             grad0 = np.sum(x1 * dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
             grad1 = np.sum(x * dy, axis=axis_helper(y.shape, x1.shape)).reshape(x1.shape)
-            
+
             x = tensor.from_numpy(x)
             x1 = tensor.from_numpy(x1)
             dy = tensor.from_numpy(dy)
@@ -2569,7 +2569,7 @@ class TestPythonOperation(unittest.TestCase):
             dy = np.random.randn(*y.shape).astype(np.float32)
             grad0 = np.sum(np.power(x1, -1) * dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
             grad1 = np.sum(x * - np.power(x1, -2) * dy, axis=axis_helper(y.shape, x1.shape)).reshape(x1.shape)
-            
+
             x = tensor.from_numpy(x)
             x1 = tensor.from_numpy(x1)
             dy = tensor.from_numpy(dy)
@@ -2601,7 +2601,7 @@ class TestPythonOperation(unittest.TestCase):
             dy = np.random.randn(*y.shape).astype(np.float32)
             grad0 = np.sum(np.power(x1, -1) * dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
             grad1 = np.sum(x * - np.power(x1, -2) * dy, axis=axis_helper(y.shape, x1.shape)).reshape(x1.shape)
-            
+
             x = tensor.from_numpy(x)
             x1 = tensor.from_numpy(x1)
             dy = tensor.from_numpy(dy)
@@ -2632,7 +2632,7 @@ class TestPythonOperation(unittest.TestCase):
             dy = np.random.randn(*y.shape).astype(np.float32)
             grad0 = np.sum(x1 * np.power(x, x1-1) * dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
             grad1 = np.sum(np.power(x, x1) * np.log(x) * dy, axis=axis_helper(y.shape, x1.shape)).reshape(x1.shape)
-            
+
             x = tensor.from_numpy(x)
             x1 = tensor.from_numpy(x1)
             dy = tensor.from_numpy(dy)
@@ -2663,7 +2663,7 @@ class TestPythonOperation(unittest.TestCase):
             dy = np.random.randn(*y.shape).astype(np.float32)
             grad0 = np.sum(x1 * np.power(x, x1-1) * dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
             grad1 = np.sum(np.power(x, x1) * np.log(x) * dy, axis=axis_helper(y.shape, x1.shape)).reshape(x1.shape)
-            
+
             x = tensor.from_numpy(x)
             x1 = tensor.from_numpy(x1)
             dy = tensor.from_numpy(dy)
@@ -2697,7 +2697,7 @@ class TestPythonOperation(unittest.TestCase):
             x0[x0 < 1] = 0
             grad0 = np.sum((x0+(1-x0)*slope)*dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
             grad1 = np.sum((1-x0)*x*dy, axis=axis_helper(y.shape, slope.shape)).reshape(slope.shape)
-            
+
             x = tensor.from_numpy(x)
             slope = tensor.from_numpy(slope)
             dy = tensor.from_numpy(dy)
@@ -2731,7 +2731,7 @@ class TestPythonOperation(unittest.TestCase):
             x0[x0 < 1] = 0
             grad0 = np.sum((x0+(1-x0)*slope)*dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
             grad1 = np.sum((1-x0)*x*dy, axis=axis_helper(y.shape, slope.shape)).reshape(slope.shape)
-            
+
             x = tensor.from_numpy(x)
             slope = tensor.from_numpy(slope)
             dy = tensor.from_numpy(dy)
@@ -2778,7 +2778,7 @@ class TestPythonOperation(unittest.TestCase):
 
             result = autograd.gemm(a, b, c, alpha, beta, transA, transB)
             da, db, dc = result.creator.backward(dy.data)
-            
+
             # Y = alpha * A' * B' + beta * C
             _A = A if transA == 0 else A.T
             _B = B if transB == 0 else B.T
@@ -2789,18 +2789,31 @@ class TestPythonOperation(unittest.TestCase):
             DA = DA if transA == 0 else DA.T
             DB = alpha * np.matmul(_A.T, DY)
             DB = DB if transB == 0 else DB.T
-            DC = beta * np.sum(DY, axis=axis_helper(Y.shape, C.shape)).reshape(C.shape)
+            DC = beta * np.sum(DY, axis=axis_helper(Y.shape, C.shape)).reshape(
+                C.shape)
 
-            np.testing.assert_array_almost_equal(tensor.to_numpy(result), Y, decimal=5)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(da)), DA, decimal=5)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(db)), DB, decimal=5)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dc)), DC, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result),
+                                                 Y,
+                                                 decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(
+                tensor.from_raw_tensor(da)),
+                                                 DA,
+                                                 decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(
+                tensor.from_raw_tensor(db)),
+                                                 DB,
+                                                 decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(
+                tensor.from_raw_tensor(dc)),
+                                                 DC,
+                                                 decimal=5)
 
     def test_gemm_cpu(self):
         self.gemm_test(cpu_dev)
 
     def test_gemm_gpu(self):
         self.gemm_test(gpu_dev)
+
 
 if __name__ == '__main__':
     unittest.main()
