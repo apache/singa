@@ -203,6 +203,7 @@ class SingaFrontend(object):
         'Not': 'Not',
         'Negative': 'Neg',
         'Reciprocal': 'Reciprocal',
+        'GlobalAveragePool' : 'GlobalAveragePool'
     }
 
     # this dict indicates the operators that need extra handle
@@ -618,7 +619,6 @@ class SingaFrontend(object):
         if optype in cls._bool_operators:
             y_dtype = cls._bool_operators[optype]
         Y = [helper.make_tensor_value_info(y.name, y_dtype, y.shape)]
-
         for op, yid, op_t in topol:
             optype = cls._get_singa_op_type(op)
             # print(op.name, cls._get_singa_op_type(op), op_t, optype, yid)
@@ -808,6 +808,7 @@ class SingaBackend(Backend):
         'Not': '_not',
         'Neg': 'negative',
         'Reciprocal': 'reciprocal',
+        'GlobalAveragePool' : 'globalaveragepool'
     }
 
     # this dict indicates the operators that need extra handle
@@ -989,6 +990,10 @@ class SingaBackend(Backend):
         kernel = tuple(onnx_node.attrs["kernel_shape"])
         # todo: we only support the padding with tuple
         padding = tuple(onnx_node.attrs["pads"][0:2]) if "pads" in onnx_node.attrs else (0, 0)
+        if "auto_pad" in onnx_node.attrs:
+            auto_pad = force_unicode(onnx_node.attrs['auto_pad'])
+            out_shape = get_output_shape(auto_pad, inputs[0].shape[2:], kernel, stride)
+            padding = get_pad_shape(auto_pad, inputs[0].shape[2:], kernel, stride, out_shape)
         stride = tuple(onnx_node.getattr('strides', (1, 1)))
         dilation = onnx_node.getattr('dilations', 1)
         group = onnx_node.getattr('group', 1)

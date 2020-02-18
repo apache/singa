@@ -1085,6 +1085,24 @@ class TestPythonOnnx(unittest.TestCase):
             sgd.update(p, gp)
         sgd.step()
 
+    def test_globalaveragepool(self):
+        X = np.array([[[
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9],
+        ]]]).astype(np.float32)
+
+        x = tensor.from_numpy(X)
+        x.to_device(gpu_dev)
+        y = autograd.globalaveragepool(x)
+
+        # frontend
+        model = sonnx.to_onnx([x], [y])
+        # backend
+        sg_ir = sonnx.prepare(model, device=gpu_dev)
+        y_t = sg_ir.run([x])
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
 
 if __name__ == '__main__':
     unittest.main()
