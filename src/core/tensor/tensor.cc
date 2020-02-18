@@ -182,13 +182,13 @@ Tensor Tensor::AsType(const DataType type) {
 Tensor &Tensor::ToDevice(std::shared_ptr<Device> dst) {
   // TODO(wangwei) the comparison is restricted. May compare against device ID?
   if (device_ != dst) {
-    Tensor *tmp = new Tensor(shape_, dst, data_type_);
+    Tensor tmp(shape_, dst, data_type_);
     if (block_ != nullptr && Size() && block_->initialized())
-      tmp->CopyData(*this);
+      tmp.CopyData(*this);
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
-    block_ = tmp->block_;
-    tmp->block_ = nullptr;
+    block_ = tmp.block_;
+    tmp.block_ = nullptr;
     device_ = dst;
   }
   return *this;
@@ -525,8 +525,7 @@ GenUnaryTensorArgMemberFn(operator/=, Div);
 #define GenUnaryScalarArgMemberFn(op, fn) \
   template <typename DType>               \
   Tensor &Tensor::op(const DType x) {     \
-    Tensor *t = new Tensor(*this);        \
-    fn(*this, x, t);                      \
+    fn(*this, x, this);                   \
     return *this;                         \
   }                                       \
   template Tensor &Tensor::op<float>(const float x)
@@ -745,9 +744,10 @@ void Tensor::SetValue(const SType x) {
 
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     // TODO(wangwei) cast x to DType
+    auto thisPtr = std::make_shared<Tensor>(*this);
     device_->Exec(
-        [this, x, ptr](Context *ctx) { Set<DType, Lang>(x, this, ctx); }, {},
-        {ptr});
+        [thisPtr, x](Context *ctx) { Set<DType, Lang>(x, thisPtr.get(), ctx); },
+        {}, {ptr});
   });
 }
 template void Tensor::SetValue<float>(const float x);
@@ -756,10 +756,10 @@ template void Tensor::SetValue<int>(const int x);
 template <typename SType>
 void Tensor::get_value(SType *value, const size_t num) {
   CHECK(device_ == defaultDevice);
-  Tensor *t = new Tensor(shape_, device_, data_type_);
+  Tensor t(shape_, device_, data_type_);
   // transform function arrange data in memory considering stride
-  singa::Transform(*this, t);
-  auto ptr = static_cast<const SType *>(t->block()->data());
+  singa::Transform(*this, &t);
+  auto ptr = static_cast<const SType *>(t.block()->data());
   for (size_t i = 0; i < num; i++) value[i] = ptr[i];
 }
 template void Tensor::get_value<float>(float *value, const size_t num);
@@ -776,18 +776,22 @@ template void Tensor::GetValue<int>(int *value, const size_t num);
 #define EltwiseUnaryTensorFn(fn, t, ret)                               \
   do {                                                                 \
     TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, { \
+      auto retPtr = std::make_shared<Tensor>(*ret);                    \
       ret->device()->Exec(                                             \
-          [t, ret](Context *ctx) { fn<DType, Lang>(t, ret, ctx); },    \
+          [t, retPtr](Context *ctx) {                                  \
+            fn<DType, Lang>(t, retPtr.get(), ctx);                     \
+          },                                                           \
           {t.block()}, {ret->block()});                                \
     });                                                                \
   } while (0)
 
-#define GenUnaryTensorFn(fn)                                              \
-  Tensor fn(const Tensor &in) {                                           \
-    Tensor *retptr = new Tensor(in.shape(), in.device(), in.data_type()); \
-    EltwiseUnaryTensorFn(fn, in, retptr);                                 \
-    return *retptr;                                                       \
-  }                                                                       \
+#define GenUnaryTensorFn(fn)                             \
+  Tensor fn(const Tensor &in) {                          \
+    Tensor ret(in.shape(), in.device(), in.data_type()); \
+    Tensor *retptr = &ret;                               \
+    EltwiseUnaryTensorFn(fn, in, retptr);                \
+    return ret;                                          \
+  }                                                      \
   void fn(const Tensor &in, Tensor *out) { EltwiseUnaryTensorFn(fn, in, out); }
 
 GenUnaryTensorFn(Abs);
@@ -851,15 +855,16 @@ void SoftMax(const Tensor &in, Tensor *out, int axis) {
 }
 
 Tensor SoftMax(const Tensor &in, int axis) {
-  Tensor *retptr = new Tensor(in.shape(), in.device(), in.data_type());
+  auto retPtr =
+      std::make_shared<Tensor>(in.shape(), in.device(), in.data_type());
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
-    retptr->device()->Exec(
-        [in, retptr, axis](Context *ctx) {
-          SoftMax<DType, Lang>(in, retptr, ctx, axis);
+    retPtr->device()->Exec(
+        [in, retPtr, axis](Context *ctx) {
+          SoftMax<DType, Lang>(in, retPtr.get(), ctx, axis);
         },
-        {in.block()}, {retptr->block()});
+        {in.block()}, {retPtr->block()});
   });
-  return *retptr;
+  return *retPtr;
 }
 void SoftMaxBackward(const Tensor &in, Tensor *out, int axis,
                      const Tensor &fdout) {
@@ -909,41 +914,42 @@ Tensor SoftMaxBackward(const Tensor &in, int axis, const Tensor &fdout) {
   do {                                                                     \
     TYPE_LANG_SWITCH(lhs.data_type(), DType, lhs.device()->lang(), Lang, { \
       CHECK_EQ(sizeof(DType), SizeOf(rhs.data_type()));                    \
+      auto retPtr = std::make_shared<Tensor>(*ret);                        \
       ret->device()->Exec(                                                 \
-          [lhs, rhs, ret](Context *ctx) {                                  \
-            fn<DType, Lang>(lhs, rhs, ret, ctx);                           \
+          [lhs, rhs, retPtr](Context *ctx) {                               \
+            fn<DType, Lang>(lhs, rhs, retPtr.get(), ctx);                  \
           },                                                               \
           {lhs.block(), rhs.block()}, {ret->block()});                     \
     });                                                                    \
   } while (0)
 
-#define GenBinaryTensorFn(op, fn)                                            \
-  Tensor op(const Tensor &lhs, const Tensor &rhs) {                          \
-    if (lhs.shape() != rhs.shape()) {                                        \
-      auto lhs_ = Broadcast(lhs, rhs.shape());                               \
-      auto rhs_ = Broadcast(rhs, lhs.shape());                               \
-      Tensor *ret = new Tensor(lhs_.shape(), lhs.device(), lhs.data_type()); \
-      fn(lhs_, rhs_, ret);                                                   \
-      return *ret;                                                           \
-    } else {                                                                 \
-      Tensor *ret = new Tensor(lhs.shape(), lhs.device(), lhs.data_type());  \
-      fn(lhs, rhs, ret);                                                     \
-      return *ret;                                                           \
-    }                                                                        \
-  }                                                                          \
-  void fn(const Tensor &lhs, const Tensor &rhs, Tensor *ret) {               \
-    CHECK_EQ(lhs.device(), ret->device());                                   \
-    CHECK_EQ(rhs.device(), ret->device());                                   \
-    if (lhs.shape() != rhs.shape()) {                                        \
-      auto lhs_ = Broadcast(lhs, rhs.shape());                               \
-      auto rhs_ = Broadcast(rhs, lhs.shape());                               \
-      CHECK(lhs_.shape() == ret->shape());                                   \
-      EltwiseBinaryTensorFn(fn, lhs_, rhs_, ret);                            \
-    } else {                                                                 \
-      CHECK(lhs.shape() == ret->shape());                                    \
-      EltwiseBinaryTensorFn(fn, lhs, rhs, ret);                              \
-    }                                                                        \
-  }
+#define GenBinaryTensorFn(op, fn)                              \
+  Tensor op(const Tensor &lhs, const Tensor &rhs) {            \
+    if (lhs.shape() != rhs.shape()) {                          \
+      auto lhs_ = Broadcast(lhs, rhs.shape());                 \
+      auto rhs_ = Broadcast(rhs, lhs.shape());                 \
+      Tensor ret(lhs_.shape(), lhs.device(), lhs.data_type()); \
+      fn(lhs_, rhs_, &ret);                                    \
+      return ret;                                              \
+    } else {                                                   \
+      Tensor ret(lhs.shape(), lhs.device(), lhs.data_type());  \
+      fn(lhs, rhs, &ret);                                      \
+      return ret;                                              \
+    }                                                          \
+  }                                                            \
+  void fn(const Tensor &lhs, const Tensor &rhs, Tensor *ret) { \
+    CHECK_EQ(lhs.device(), ret->device());                     \
+    CHECK_EQ(rhs.device(), ret->device());                     \
+    if (lhs.shape() != rhs.shape()) {                          \
+      auto lhs_ = Broadcast(lhs, rhs.shape());                 \
+      auto rhs_ = Broadcast(rhs, lhs.shape());                 \
+      CHECK(lhs_.shape() == ret->shape());                     \
+      EltwiseBinaryTensorFn(fn, lhs_, rhs_, ret);              \
+    } else {                                                   \
+      CHECK(lhs.shape() == ret->shape());                      \
+      EltwiseBinaryTensorFn(fn, lhs, rhs, ret);                \
+    }                                                          \
+  }  // namespace singa
 
 // boradcasting operations:
 // https://github.com/onnx/onnx/blob/master/docs/Broadcasting.md
@@ -958,29 +964,32 @@ GenBinaryTensorFn(operator>, GT);
 GenBinaryTensorFn(operator>=, GE);
 GenBinaryTensorFn(ReLUBackward, ReLUBackward);
 
-#define EltwiseTensorScalarFn(fn, t, x, ret)                              \
-  do {                                                                    \
-    TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, {    \
-      static_assert(std::is_same<SType, DType>::value,                    \
-                    "The Scalar type must match the Tensor data type");   \
-      ret->device()->Exec(                                                \
-          [t, x, ret](Context *ctx) { fn<DType, Lang>(t, x, ret, ctx); }, \
-          {t.block()}, {ret->block()});                                   \
-    });                                                                   \
+#define EltwiseTensorScalarFn(fn, t, x, ret)                            \
+  do {                                                                  \
+    TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, {  \
+      static_assert(std::is_same<SType, DType>::value,                  \
+                    "The Scalar type must match the Tensor data type"); \
+      auto retPtr = std::make_shared<Tensor>(*ret);                     \
+      ret->device()->Exec(                                              \
+          [t, x, retPtr](Context *ctx) {                                \
+            fn<DType, Lang>(t, x, retPtr.get(), ctx);                   \
+          },                                                            \
+          {t.block()}, {ret->block()});                                 \
+    });                                                                 \
   } while (0)
 
-#define GenTensorScalarFn(op, fn)                                      \
-  template <typename SType>                                            \
-  Tensor op(const Tensor &in, const SType x) {                         \
-    Tensor *ret = new Tensor(in.shape(), in.device(), in.data_type()); \
-    fn(in, x, ret);                                                    \
-    return *ret;                                                       \
-  }                                                                    \
-  template <typename SType>                                            \
-  void fn(const Tensor &in, const SType x, Tensor *ret) {              \
-    EltwiseTensorScalarFn(fn, in, x, ret);                             \
-  }                                                                    \
-  template Tensor op<float>(const Tensor &in, const float x);          \
+#define GenTensorScalarFn(op, fn)                             \
+  template <typename SType>                                   \
+  Tensor op(const Tensor &in, const SType x) {                \
+    Tensor ret(in.shape(), in.device(), in.data_type());      \
+    fn(in, x, &ret);                                          \
+    return ret;                                               \
+  }                                                           \
+  template <typename SType>                                   \
+  void fn(const Tensor &in, const SType x, Tensor *ret) {     \
+    EltwiseTensorScalarFn(fn, in, x, ret);                    \
+  }                                                           \
+  template Tensor op<float>(const Tensor &in, const float x); \
   template void fn<float>(const Tensor &in, const float x, Tensor *ret)
 
 GenTensorScalarFn(operator+, Add);
@@ -994,9 +1003,9 @@ GenTensorScalarFn(operator>, GT);
 GenTensorScalarFn(operator>=, GE);
 template <typename SType>
 Tensor Div(const SType alpha, const Tensor &in) {
-  Tensor *out = new Tensor(in.shape(), in.device(), in.data_type());
-  Div(alpha, in, out);
-  return *out;
+  Tensor out(in.shape(), in.device(), in.data_type());
+  Div(alpha, in, &out);
+  return out;
 }
 template Tensor Div<float>(const float, const Tensor &);
 
@@ -1006,9 +1015,10 @@ void Div(const SType alpha, const Tensor &in, Tensor *out) {
   CHECK(in.shape() == out->shape());
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     // TODO(wangwei) type cast SType to DType;
+    auto outPtr = std::make_shared<Tensor>(*out);
     in.device()->Exec(
-        [alpha, in, out](Context *ctx) {
-          Div<DType, Lang>(alpha, in, out, ctx);
+        [alpha, in, outPtr](Context *ctx) {
+          Div<DType, Lang>(alpha, in, outPtr.get(), ctx);
         },
         {in.block()}, {out->block()});
   });
@@ -1058,42 +1068,46 @@ float Sum<float>(const Tensor &in) {
 
 Tensor Sum(const Tensor &M, int axis) {
   if (axis == 0) {
-    Tensor *out = new Tensor(Shape{M.shape(1)}, M.device(), M.data_type());
-    SumRows(M, out);
-    return *out;
+    Tensor out(Shape{M.shape(1)}, M.device(), M.data_type());
+    SumRows(M, &out);
+    return out;
   } else {
     CHECK_EQ(axis, 1) << "Not support Sum over axis = " << axis;
-    Tensor *out = new Tensor(Shape{M.shape(0)}, M.device(), M.data_type());
-    SumColumns(M, out);
-    return *out;
+    Tensor out = Tensor(Shape{M.shape(0)}, M.device(), M.data_type());
+    SumColumns(M, &out);
+    return out;
   }
 }
 
 Tensor SumAll(const Tensor &in) {
-  Tensor *out = new Tensor({(size_t)1}, in.device(), in.data_type());
-  Tensor *one = new Tensor(in.shape(), in.device(), in.data_type());
+  auto out =
+      std::make_shared<Tensor>(Shape({(size_t)1}), in.device(), in.data_type());
+  auto one = std::make_shared<Tensor>(in.shape(), in.device(), in.data_type());
   one->SetValue(1.0f);
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     one->device()->Exec(
-        [in, one, out](Context *ctx) { Dot<DType, Lang>(in, *one, out, ctx); },
+        [in, one, out](Context *ctx) {
+          Dot<DType, Lang>(in, *one, out.get(), ctx);
+        },
         {in.block(), one->block()}, {out->block()});
   });
   return *out;
 }
 
 Tensor RowMax(const Tensor &in) {
-  Tensor *ret = new Tensor({in.shape(0)}, in.device(), in.data_type());
+  auto retPtr = std::make_shared<Tensor>(Shape({in.shape(0)}), in.device(),
+                                         in.data_type());
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     in.device()->Exec(
-        [in, ret](Context *ctx) {
+        [in, retPtr](Context *ctx) {
           // size_t nrow = 1;
           // if (in.nDim() > 1) nrow = in.shape(0);
           // size_t ncol = in.Size() / nrow;
-          RowMax<DType, Lang>(in, ret, ctx);
+          RowMax<DType, Lang>(in, retPtr.get(), ctx);
         },
-        {in.block()}, {ret->block()});
+        {in.block()}, {retPtr->block()});
   });
-  return *ret;
+  return *retPtr;
 }
 
 void AddColumn(const Tensor &v, Tensor *M) { AddColumn(1, 1, v, M); }
@@ -1102,18 +1116,18 @@ template <typename SType>
 void AddColumn(const SType alpha, const SType beta, const Tensor &v,
                Tensor *M) {
   if (M->transpose()) {
-    Tensor *X = new Tensor(Transpose(*M));
-    AddRow(v, X);
+    Tensor X(Transpose(*M));
+    AddRow(v, &X);
   } else {
     CHECK_EQ(M->nDim(), 2u);
     // CHECK_EQ(v.nDim(), 1u); (chonho) shape of v is 2-element tuple
     size_t nb_row = M->shape(0), nb_col = M->shape(1);
     CHECK_EQ(nb_row, v.Size());
 
-    Tensor *one = new Tensor(Shape{1, nb_col}, M->device(), M->data_type());
-    one->SetValue(1.0f);  // TODO(wangwei) cast type
-    Tensor *vmat = new Tensor(Reshape(v, Shape{nb_row, 1}));
-    Mult(alpha, *vmat, *one, beta, M);
+    Tensor one(Shape{1, nb_col}, M->device(), M->data_type());
+    one.SetValue(1.0f);  // TODO(wangwei) cast type
+    Tensor vmat(Reshape(v, Shape{nb_row, 1}));
+    Mult(alpha, vmat, one, beta, M);
   }
 }
 template void AddColumn(const float alpha, const float beta, const Tensor &v,
@@ -1125,20 +1139,20 @@ void AddRow(const Tensor &v, Tensor *M) { AddRow(1, 1, v, M); }
 template <typename SType>
 void AddRow(const SType alpha, const SType beta, const Tensor &v, Tensor *M) {
   if (M->transpose()) {
-    Tensor *X = new Tensor(Transpose(*M));
-    AddColumn(v, X);
+    Tensor X(Transpose(*M));
+    AddColumn(v, &X);
   } else {
     CHECK_EQ(M->nDim(), 2u);
     // CHECK_EQ(v.nDim(), 1u); (chonho) shape of v is 2-element tuple
     size_t nb_row = M->shape(0), nb_col = M->shape(1);
     CHECK_EQ(nb_col, v.Size());
 
-    Tensor *one = new Tensor(Shape{nb_row, 1}, M->device(), M->data_type());
-    one->SetValue(1.0f);
+    Tensor one(Shape{nb_row, 1}, M->device(), M->data_type());
+    one.SetValue(1.0f);
     // printf("before create1\n");
-    Tensor *vmat = new Tensor(Reshape(v, Shape{1, nb_col}));
+    Tensor vmat(Reshape(v, Shape{1, nb_col}));
     // printf("before create2\n");
-    Mult(alpha, *one, *vmat, beta, M);
+    Mult(alpha, one, vmat, beta, M);
   }
 }
 template void AddRow(const float alpha, const float beta, const Tensor &v,
@@ -1305,8 +1319,11 @@ void MultColumn(const Tensor &v, Tensor *M) {
   CHECK_EQ(v.Size(), M->shape(0));
   CheckDataTypeAndLang(*M, v);
   TYPE_LANG_SWITCH(v.data_type(), DType, v.device()->lang(), Lang, {
+    auto MPtr = std::make_shared<Tensor>(*M);
     v.device()->Exec(
-        [M, v](Context *ctx) { DGMM<DType, Lang>(false, *M, v, M, ctx); },
+        [MPtr, v](Context *ctx) {
+          DGMM<DType, Lang>(false, *MPtr, v, MPtr.get(), ctx);
+        },
         {M->block(), v.block()}, {M->block()});
   });
 }
@@ -1319,8 +1336,11 @@ void MultRow(const Tensor &v, Tensor *M) {
   CHECK_EQ(v.Size(), M->shape(1));
   CheckDataTypeAndLang(*M, v);
   TYPE_LANG_SWITCH(v.data_type(), DType, v.device()->lang(), Lang, {
+    auto MPtr = std::make_shared<Tensor>(*M);
     v.device()->Exec(
-        [M, v](Context *ctx) { DGMM<DType, Lang>(true, *M, v, M, ctx); },
+        [MPtr, v](Context *ctx) {
+          DGMM<DType, Lang>(true, *MPtr, v, MPtr.get(), ctx);
+        },
         {M->block(), v.block()}, {M->block()});
   });
 }
@@ -1354,10 +1374,10 @@ void SumRows(const Tensor &M, Tensor *v) {
     size_t nb_row = M.shape(0), nb_col = M.shape(1);
     CHECK_EQ(nb_col, v->Size());
 
-    Tensor *one = new Tensor(Shape{nb_row}, M.device(), M.data_type());
-    one->SetValue(1.0f);  // TODO(wangwei) cast type
+    Tensor one(Shape{nb_row}, M.device(), M.data_type());
+    one.SetValue(1.0f);  // TODO(wangwei) cast type
     Tensor X = Transpose(M);
-    Mult(X, *one, v);
+    Mult(X, one, v);
   }
 }
 // ====================Random operations=====================================
@@ -1365,8 +1385,11 @@ template <typename SType>
 void Bernoulli(const SType p, Tensor *out) {
   TYPE_LANG_SWITCH(out->data_type(), DType, out->device()->lang(), Lang, {
     auto prob = TypeCast<SType, DType>(p);
+    auto outPtr = std::make_shared<Tensor>(*out);
     out->device()->Exec(
-        [prob, out](Context *ctx) { Bernoulli<DType, Lang>(prob, out, ctx); },
+        [prob, outPtr](Context *ctx) {
+          Bernoulli<DType, Lang>(prob, outPtr.get(), ctx);
+        },
         {}, {out->block()}, true);
   });
 }
@@ -1378,9 +1401,12 @@ void Uniform(const SType low, const SType high, Tensor *out) {
   TYPE_LANG_SWITCH(out->data_type(), DType, out->device()->lang(), Lang, {
     auto l = TypeCast<SType, DType>(low);
     auto h = TypeCast<SType, DType>(high);
+    auto outPtr = std::make_shared<Tensor>(*out);
     out->device()->Exec(
-        [l, h, out](Context *ctx) { Uniform<DType, Lang>(l, h, out, ctx); }, {},
-        {out->block()}, true);
+        [l, h, outPtr](Context *ctx) {
+          Uniform<DType, Lang>(l, h, outPtr.get(), ctx);
+        },
+        {}, {out->block()}, true);
   });
 }
 
@@ -1391,8 +1417,11 @@ void Gaussian(const SType mean, const SType std, Tensor *out) {
   TYPE_LANG_SWITCH(out->data_type(), DType, out->device()->lang(), Lang, {
     auto m = TypeCast<SType, DType>(mean);
     auto s = TypeCast<SType, DType>(std);
+    auto outPtr = std::make_shared<Tensor>(*out);
     out->device()->Exec(
-        [m, s, out](Context *ctx) { Gaussian<DType, Lang>(m, s, out, ctx); },
+        [m, s, outPtr](Context *ctx) {
+          Gaussian<DType, Lang>(m, s, outPtr.get(), ctx);
+        },
         {}, {out->block()}, true);
   });
 }
@@ -1404,10 +1433,12 @@ template <typename SType>
 void Axpy(const SType alpha, const Tensor &in, Tensor *out) {
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     auto a = TypeCast<SType, DType>(alpha);
-    Tensor *tmp = new Tensor(*out);
+    auto outPtr = std::make_shared<Tensor>(*out);
     out->device()->Exec(
-        [a, in, tmp](Context *ctx) { Axpy<DType, Lang>(a, in, tmp, ctx); },
-        {in.block(), tmp->block()}, {tmp->block()});
+        [a, in, outPtr](Context *ctx) {
+          Axpy<DType, Lang>(a, in, outPtr.get(), ctx);
+        },
+        {in.block(), out->block()}, {out->block()});
   });
 }
 
@@ -1424,6 +1455,7 @@ Tensor Mult(const Tensor &A, const Tensor &B) {
     s.pop_back();
     s.push_back(B.shape(B.nDim() - 1));
   }
+
   Tensor out(s, A.device(), A.data_type());
   Mult(A, B, &out);
   return out;
@@ -1441,9 +1473,10 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
     TYPE_LANG_SWITCH(A.data_type(), DType, A.device()->lang(), Lang, {
       auto a = TypeCast<SType, DType>(alpha);
       auto b = TypeCast<SType, DType>(beta);
+      auto CPtr = std::make_shared<Tensor>(*C);
       C->device()->Exec(
-          [a, A, b, B, C](Context *ctx) {
-            GEMV<DType, Lang>(a, A, B, b, C, ctx);
+          [a, A, b, B, CPtr](Context *ctx) {
+            GEMV<DType, Lang>(a, A, B, b, CPtr.get(), ctx);
           },
           {A.block(), B.block()}, {C->block()});
     });
@@ -1453,9 +1486,10 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
     TYPE_LANG_SWITCH(A.data_type(), DType, A.device()->lang(), Lang, {
       auto a = TypeCast<SType, DType>(alpha);
       auto b = TypeCast<SType, DType>(beta);
+      auto CPtr = std::make_shared<Tensor>(*C);
       C->device()->Exec(
-          [a, A, b, B, C](Context *ctx) {
-            GEMM<DType, Lang>(a, A, B, b, C, ctx);
+          [a, A, b, B, CPtr](Context *ctx) {
+            GEMM<DType, Lang>(a, A, B, b, CPtr.get(), ctx);
           },
           {A.block(), B.block()}, {C->block()});
     });
@@ -1503,16 +1537,15 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
 // Misc.
 // ************************
 Tensor CrossEntropyFwd(const Tensor &p, const Tensor &t) {
-  Tensor *loss = new Tensor({p.shape(0)}, p.device(), p.data_type());
-  ComputeCrossEntropy(p, t, loss);
-  return *loss;
+  Tensor loss({p.shape(0)}, p.device(), p.data_type());
+  ComputeCrossEntropy(p, t, &loss);
+  return loss;
 }
 
 Tensor SoftmaxCrossEntropyBwd(const Tensor &p, const Tensor &t) {
-  Tensor *g = nullptr;
-  p.Clone(g);
-  SoftmaxCrossEntropyBwd(t, g);
-  return *g;
+  Tensor g = p.Clone();
+  SoftmaxCrossEntropyBwd(t, &g);
+  return g;
 }
 
 void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss) {
@@ -1522,12 +1555,13 @@ void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss) {
   if (p.nDim() == 2u) batchsize = p.shape(0);
   size_t dim = p.Size() / batchsize;
   TYPE_LANG_SWITCH(p.data_type(), DType, p.device()->lang(), Lang, {
+    auto lossPtr = std::make_shared<Tensor>(*loss);
     p.device()->Exec(
-        [batchsize, dim, t, p, loss](Context *ctx) {
+        [batchsize, dim, t, p, lossPtr](Context *ctx) {
           bool int_target = t.Size() == batchsize;
           ComputeCrossEntropy<DType, Lang>(int_target, batchsize, dim,
-                                           p.block(), t.block(), loss->block(),
-                                           ctx);
+                                           p.block(), t.block(),
+                                           lossPtr->block(), ctx);
         },
         {p.block(), t.block()}, {loss->block()});
   });
@@ -1540,12 +1574,13 @@ void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p) {
   if (p->nDim() == 2u) batchsize = p->shape(0);
   size_t dim = p->Size() / batchsize;
   TYPE_LANG_SWITCH(p->data_type(), DType, p->device()->lang(), Lang, {
+    auto pPtr = std::make_shared<Tensor>(*p);
     p->device()->Exec(
-        [batchsize, dim, t, p](Context *ctx) {
+        [batchsize, dim, t, pPtr](Context *ctx) {
           bool int_target = t.Size() == batchsize;
           SoftmaxCrossEntropyBwd<DType, Lang>(int_target, batchsize, dim,
-                                              p->block(), t.block(), p->block(),
-                                              ctx);
+                                              pPtr->block(), t.block(),
+                                              pPtr->block(), ctx);
         },
         {p->block(), t.block()}, {p->block()});
   });

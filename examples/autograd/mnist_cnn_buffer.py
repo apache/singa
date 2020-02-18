@@ -49,7 +49,7 @@ class CNN:
         y = self.linear1(y)
         y = autograd.relu(y)
         y = self.linear2(y)
-        return y, yl
+        return y
 
 def check_dataset_exist(dirpath):
     if not os.path.exists(dirpath):
@@ -243,7 +243,6 @@ def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None,
             print('Training loss = %f, training accuracy = %f' % (train_loss, train_correct / (num_train_batch*batch_size*world_size)), flush=True)
 
         # Evaluation Phase
-        '''
         print("Evaluation Phase")
         for b in range(num_test_batch):
             x = test_x[b * batch_size: (b + 1) * batch_size]
@@ -257,11 +256,10 @@ def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None,
             # Reduce the Evaulation Accuracy from Multiple Devices
             test_correct = reduce_variable(test_correct, sgd, reducer)
 
-        '''
         # Output the Evaluation Accuracy
         if ((DIST == False) or (sgd.rank_in_global == 0)):
-        #    print('Evaluation accuracy = %f, Elapsed Time = %fs' % (test_correct / (num_test_batch*batch_size*world_size), time.time() - start_time ), flush=True)
-            print('Elapsed Time = %fs' % ( time.time() - start_time ), flush=True)
+            print('Evaluation accuracy = %f, Elapsed Time = %fs' % (test_correct / (num_test_batch*batch_size*world_size), time.time() - start_time ), flush=True)
+        #    print('Elapsed Time = %fs' % ( time.time() - start_time ), flush=True)
 
 if __name__ == '__main__':
     np.random.seed(0)
