@@ -2762,6 +2762,7 @@ def reciprocal(x):
     return Reciprocal()(x)[0]
 
 
+
 class Gemm(Operation):
     def __init__(self, alpha=1.0, beta=1.0, transA=0, transB=0):
         """
@@ -2822,7 +2823,8 @@ class Gemm(Operation):
         # y = alpha * A  * BT => da = alpha * dy * B
         # y = alpha * AT * B  => da = alpha * B * dyT = alpha * (dy * BT)T
         # y = alpha * AT * BT => da = alpha * BT * dyT = alpha * (dy * B)T
-        da = singa.MultFloat(singa.Mult(dy, singa.DefaultTranspose(_B)), self.alpha)
+        da = singa.MultFloat(singa.Mult(dy, singa.DefaultTranspose(_B)),
+                             self.alpha)
         if self.transA:
             da = singa.DefaultTranspose(da)
 
@@ -2830,11 +2832,13 @@ class Gemm(Operation):
         # y = alpha * AT * B  => db = alpha * A * dy
         # y = alpha * A  * BT => db = alpha * dyT * A = alpha * (AT * dy)T
         # y = alpha * AT * BT => db = alpha * dyT * AT = alpha * (A * dy)T
-        db = singa.MultFloat(singa.Mult(singa.DefaultTranspose(_A), dy), self.alpha)
+        db = singa.MultFloat(singa.Mult(singa.DefaultTranspose(_A), dy),
+                             self.alpha)
         if self.transB:
             db = singa.DefaultTranspose(db)
         if C:
-            dc = back_broadcast(dy.shape(), C.shape(), singa.MultFloat(dy, self.beta))
+            dc = back_broadcast(dy.shape(), C.shape(),
+                                singa.MultFloat(dy, self.beta))
             return da, db, dc
         else:
             return da, db

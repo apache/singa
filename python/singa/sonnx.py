@@ -1165,8 +1165,12 @@ class SingaBackend(Backend):
         beta = onnx_node.getattr('beta', 1.)
         transA = onnx_node.getattr('transA', 0)
         transB = onnx_node.getattr('transB', 0)
-        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs, opset_version)
-        return None, forward(alpha=alpha, beta=beta, transA=transA, transB=transB)
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
+                                                       opset_version)
+        return None, forward(alpha=alpha,
+                             beta=beta,
+                             transA=transA,
+                             transB=transB)
 
     @classmethod
     def _create_flatten(cls, onnx_node, inputs, opset_version):

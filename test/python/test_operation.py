@@ -2778,7 +2778,7 @@ class TestPythonOperation(unittest.TestCase):
 
             result = autograd.gemm(a, b, c, alpha, beta, transA, transB)
             da, db, dc = result.creator.backward(dy.data)
-            
+
             # Y = alpha * A' * B' + beta * C
             _A = A if transA == 0 else A.T
             _B = B if transB == 0 else B.T
@@ -2789,12 +2789,24 @@ class TestPythonOperation(unittest.TestCase):
             DA = DA if transA == 0 else DA.T
             DB = alpha * np.matmul(_A.T, DY)
             DB = DB if transB == 0 else DB.T
-            DC = beta * np.sum(DY, axis=axis_helper(Y.shape, C.shape)).reshape(C.shape)
+            DC = beta * np.sum(DY, axis=axis_helper(Y.shape, C.shape)).reshape(
+                C.shape)
 
-            np.testing.assert_array_almost_equal(tensor.to_numpy(result), Y, decimal=5)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(da)), DA, decimal=5)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(db)), DB, decimal=5)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dc)), DC, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result),
+                                                 Y,
+                                                 decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(
+                tensor.from_raw_tensor(da)),
+                                                 DA,
+                                                 decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(
+                tensor.from_raw_tensor(db)),
+                                                 DB,
+                                                 decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(
+                tensor.from_raw_tensor(dc)),
+                                                 DC,
+                                                 decimal=5)
 
     def test_gemm_cpu(self):
         self.gemm_test(cpu_dev)
