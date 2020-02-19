@@ -18,7 +18,15 @@
 #
 
 # format cpp code by clang-format
-find include/ test/singa/ src/ -iname *.h -o -iname *.cc | xargs clang-format -i
+find src/api/ \
+    src/core/ \
+    src/proto/ \
+    src/utils/ \
+    include/singa/core/ \
+    include/singa/utils/ \
+    test/singa/ -iname *.h -o -iname *.cc | xargs clang-format -i
 
 # format python code by yapf
-find examples/ test/python/ python/ -iname *.py | xargs yapf -i
+find python/ \
+    examples/autograd \
+    test/python/ -iname *.py | xargs yapf -i

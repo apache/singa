@@ -25,31 +25,28 @@ namespace singa {
 
 using namespace dnnl;
 
-inline dnnl::memory::format_tag get_dnnl_format_tag(const Tensor &x){
+inline dnnl::memory::format_tag get_dnnl_format_tag(const Tensor &x) {
   memory::format_tag format_tag_;
-  switch(x.nDim()){
-  case 1:{
-  format_tag_ = memory::format_tag::a;
-  break;
-  }
-  case 2:{
-  format_tag_ = memory::format_tag::ab;
-  break;
-  }
-  case 3:{
-  format_tag_ = memory::format_tag::abc;
-  break;
-  }
-  case 4:{
-           format_tag_ = memory::format_tag::abcd;
-           break;
-         }
-  default:{
-            LOG(FATAL)<<x.nDim()<<" dim is not supported";
-          }
+  switch (x.nDim()) {
+    case 1: {
+      format_tag_ = memory::format_tag::a;
+      break;
+    }
+    case 2: {
+      format_tag_ = memory::format_tag::ab;
+      break;
+    }
+    case 3: {
+      format_tag_ = memory::format_tag::abc;
+      break;
+    }
+    case 4: {
+      format_tag_ = memory::format_tag::abcd;
+      break;
+    }
+    default: { LOG(FATAL) << x.nDim() << " dim is not supported"; }
   }
   return format_tag_;
 }
-
 }
-#endif // SINGA_UTILS_MKLDNN_UTILS_H_
+#endif  // SINGA_UTILS_MKLDNN_UTILS_H_

@@ -27,7 +27,7 @@ using namespace singa;
 
 #ifdef USE_DNNL
 TEST(DNNLOperationBatchNorm, ForwardInference) {
-  Tensor x(Shape{2,2});
+  Tensor x(Shape{2, 2});
   Tensor alpha(Shape{2});
   Tensor beta(Shape{2});
   Tensor moving_mean(Shape{2});
@@ -39,12 +39,13 @@ TEST(DNNLOperationBatchNorm, ForwardInference) {
   Gaussian(0.0f, 1.0f, &moving_mean);
   Gaussian(0.0f, 1.0f, &moving_var);
 
-  BatchNormHandle batch_norm_handle(0u,x);
-  Tensor y = CpuBatchNormForwardInference(batch_norm_handle, x, alpha, beta, moving_mean, moving_var);
+  BatchNormHandle batch_norm_handle(0u, x);
+  Tensor y = CpuBatchNormForwardInference(batch_norm_handle, x, alpha, beta,
+                                          moving_mean, moving_var);
 }
 
 TEST(DNNLOperationBatchNorm, ForwardTraining) {
-  Tensor x(Shape{2,2});
+  Tensor x(Shape{2, 2});
   Tensor alpha(Shape{2});
   Tensor beta(Shape{2});
   Tensor moving_mean(Shape{2});
@@ -56,14 +57,15 @@ TEST(DNNLOperationBatchNorm, ForwardTraining) {
   Gaussian(0.0f, 1.0f, &moving_mean);
   Gaussian(0.0f, 1.0f, &moving_var);
 
-  BatchNormHandle batch_norm_handle(0u,x);
-  auto outputs = CpuBatchNormForwardTraining(batch_norm_handle, x, alpha, beta, moving_mean, moving_var);
+  BatchNormHandle batch_norm_handle(0u, x);
+  auto outputs = CpuBatchNormForwardTraining(batch_norm_handle, x, alpha, beta,
+                                             moving_mean, moving_var);
 }
 
 TEST(DNNLOperationBatchNorm, Backward) {
-  Tensor x(Shape{2,2});
-  Tensor y(Shape{2,2});
-  Tensor dy(Shape{2,2});
+  Tensor x(Shape{2, 2});
+  Tensor y(Shape{2, 2});
+  Tensor dy(Shape{2, 2});
   Tensor alpha(Shape{2});
   Tensor beta(Shape{2});
   Tensor moving_mean(Shape{2});
@@ -77,9 +79,9 @@ TEST(DNNLOperationBatchNorm, Backward) {
   Gaussian(0.0f, 1.0f, &moving_mean);
   Gaussian(0.0f, 1.0f, &moving_var);
 
-  BatchNormHandle batch_norm_handle(0u,x);
-  auto outputs = CpuBatchNormBackwardx( batch_norm_handle, y, dy, x, alpha, beta, moving_mean, moving_var);
+  BatchNormHandle batch_norm_handle(0u, x);
+  auto outputs = CpuBatchNormBackwardx(batch_norm_handle, y, dy, x, alpha, beta,
+                                       moving_mean, moving_var);
 }
 
-#endif // USE_DNNL
-
+#endif  // USE_DNNL

@@ -204,7 +204,7 @@ TEST_F(TensorMath, SoftMaxCpp) {
 
 #ifdef USE_CUDNN
 TEST_F(TensorMath, SoftMaxOnAxisCUDNN) {
-  Tensor in(Shape{2,2,2,2}, std::make_shared<singa::CudaGPU>() );
+  Tensor in(Shape{2, 2, 2, 2}, std::make_shared<singa::CudaGPU>());
   Gaussian(0.0f, 1.0f, &in);
 
   // -4, -3, -2, -1, 0, 1, 2, 3
@@ -222,7 +222,7 @@ TEST_F(TensorMath, SoftMaxOnAxisCUDNN) {
 
 #ifdef USE_DNNL
 TEST_F(TensorMath, SoftMaxOnAxisDNNL) {
-  Tensor in(Shape{2,2,2,2});
+  Tensor in(Shape{2, 2, 2, 2});
   Gaussian(0.0f, 1.0f, &in);
 
   // -4, -3, -2, -1, 0, 1, 2, 3
@@ -236,7 +236,7 @@ TEST_F(TensorMath, SoftMaxOnAxisDNNL) {
   out = SoftMax(in, 2);
   out = SoftMax(in, 3);
 }
-#endif // USE_DNNL
+#endif  // USE_DNNL
 
 TEST_F(TensorMath, LTCpp) {
   Tensor p1 = a < 2.0f;

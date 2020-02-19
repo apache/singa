@@ -26,7 +26,6 @@ using namespace singa;
 
 #ifdef USE_DNNL
 TEST(DNNLOperationPooling, Forward) {
-
   const size_t batchsize = 2, c = 1, h = 3, w = 3;
   const float x[batchsize * c * h * w] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f,
                                           7.0f, 8.0f, 9.0f, 1.0f, 2.0f, 3.0f,
@@ -35,7 +34,7 @@ TEST(DNNLOperationPooling, Forward) {
   Tensor in(Shape{batchsize, c, h, w});
   in.CopyDataFromHostPtr(x, batchsize * c * h * w);
 
-  PoolingHandle pool_handle(in, {2, 2}, {1,1}, {0,0}, true);
+  PoolingHandle pool_handle(in, {2, 2}, {1, 1}, {0, 0}, true);
   Tensor out1 = CpuPoolingForward(pool_handle, in);
 }
 TEST(DNNLOperationPooling, ForwardAverage) {
@@ -97,4 +96,4 @@ TEST(DNNLOperationPooling, BackwardAvg) {
   Tensor in_grad = CpuPoolingBackward(pool_handle, grad, in, out);
 }
 
-#endif // USE_DNNL
+#endif  // USE_DNNL
