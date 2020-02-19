@@ -19,6 +19,7 @@
 // #include "singa/utils/stacktrace.h"
 #include <algorithm>
 #include <utility>
+
 #include "./tensor_math.h"
 #include "./tensor_math_cpp.h"
 #include "./tensor_math_cuda.h"
@@ -230,7 +231,9 @@ void Tensor::FromProto(const singa::TensorProto &proto) {
       break;
     }
     */
-    default: { LOG(FATAL) << "Unsupported Type" << DataType_Name(data_type_); }
+    default: {
+      LOG(FATAL) << "Unsupported Type" << DataType_Name(data_type_);
+    }
   }
 }
 
@@ -283,7 +286,9 @@ void Tensor::to_proto(singa::TensorProto *proto) const {
       break;
     }
     */
-    default: { LOG(FATAL) << "Unsupported Type" << DataType_Name(data_type_); }
+    default: {
+      LOG(FATAL) << "Unsupported Type" << DataType_Name(data_type_);
+    }
   }
 }
 

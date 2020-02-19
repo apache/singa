@@ -22,6 +22,7 @@
 #include <chrono>
 #include <memory>
 #include <random>
+
 #include "singa/singa_config.h"
 #include "singa/utils/logging.h"
 
@@ -54,7 +55,9 @@ typedef struct _Cpp {
 typedef struct _Cuda {
 } Cuda;
 /// To implement function using opencl libraries
-typedef struct _Opencl { } Opencl; }  // namespace lang
+typedef struct _Opencl {
+} Opencl;
+}  // namespace lang
 
 /// Block represent a chunk of memory (on device or host).
 class Block {

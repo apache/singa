@@ -44,9 +44,11 @@ inline dnnl::memory::format_tag get_dnnl_format_tag(const Tensor &x) {
       format_tag_ = memory::format_tag::abcd;
       break;
     }
-    default: { LOG(FATAL) << x.nDim() << " dim is not supported"; }
+    default: {
+      LOG(FATAL) << x.nDim() << " dim is not supported";
+    }
   }
   return format_tag_;
 }
-}
+}  // namespace singa
 #endif  // SINGA_UTILS_MKLDNN_UTILS_H_

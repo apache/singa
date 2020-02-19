@@ -18,9 +18,9 @@
 
 #include "gtest/gtest.h"
 #include "singa/core/tensor.h"
-using singa::Tensor;
-using singa::Shape;
 using singa::Device;
+using singa::Shape;
+using singa::Tensor;
 
 TEST(TensorClass, Constructor) {
   singa::Tensor float_t(singa::Shape{2, 3});

@@ -23,11 +23,11 @@
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
 #include <cudnn.h>
+
 #include "./math_kernel.h"
 #include "./tensor_math.h"
 #include "singa/core/common.h"
 #include "singa/core/tensor.h"
-#include "singa/utils/cuda_utils.h"
 #include "singa/utils/cuda_utils.h"
 
 #define check_cudnn(expression)                          \
@@ -913,7 +913,7 @@ void SoftMax<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
    *   while helper func `generate_shape_cuda` generate shape of {1, 1, N, C}
    *   Thus this part serve similar purpose as `generate_shape_cuda` but in
    * reverse manner
-  */
+   */
   CHECK_LE(in.shape().size(), 5)
       << "Dimensions (shape) beyond 5 are currently not supported";
   auto tmp = in;
@@ -947,7 +947,7 @@ void SoftMaxBackward<float, lang::Cuda>(const Tensor& in, Tensor* out,
    *   while helper func `generate_shape_cuda` generate shape of {1, 1, N, C}
    *   Thus this part serve similar purpose as `generate_shape_cuda` but in
    * reverse manner
-  */
+   */
   CHECK_LE(in.shape().size(), 5)
       << "Dimensions (shape) beyond 5 are currently not supported";
   auto tmp = in;
