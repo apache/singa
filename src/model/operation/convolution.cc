@@ -147,9 +147,9 @@ Tensor CpuConvForward(const Tensor &x, Tensor &W, Tensor &b,
         auto conv_user_bias_memory = memory({{ch.b_dims}, dtype, tag::x}, eng, b.block()->mutable_data());
 
         auto conv_src_md = memory::desc({ch.x_dims}, dtype, tag::any);
-        auto conv_bias_md = memory::desc({ch.b_dims}, dtype, tag::x);
-        auto conv_weights_md = memory::desc({ch.w_dims}, dtype, tag::goihw);
-        auto conv_dst_md = memory::desc({ch.o_dims}, dtype, tag::nchw);
+        auto conv_bias_md = memory::desc({ch.b_dims}, dtype, tag::any);
+        auto conv_weights_md = memory::desc({ch.w_dims}, dtype, tag::any);
+        auto conv_dst_md = memory::desc({ch.o_dims}, dtype, tag::nchw); // could not set to any
 
         auto conv_desc = convolution_forward::desc(prop_kind::forward, algorithm::convolution_direct, conv_src_md, conv_weights_md, conv_bias_md, conv_dst_md, ch.s_dims, ch.p_dims, ch.p_dims);
         auto conv_pd = convolution_forward::primitive_desc(conv_desc, eng);
@@ -249,26 +249,37 @@ Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x,
 
   dy.device()->Exec(
       [&x, &dx, &dy, &W, &ch](Context *ctx) {
-        auto eng = ctx->dnnl_engine;
         using namespace dnnl;
-        auto x_mem = memory(ch.x_md, eng, x.block()->mutable_data());
-        auto w_mem = memory(ch.w_md, eng, W.block()->mutable_data());
-        auto dx_mem = memory(ch.x_md, eng, dx.block()->mutable_data());
-        auto dy_mem = memory(ch.y_md, eng, dy.block()->mutable_data());
+        auto eng = ctx->dnnl_engine;
+        auto s = ctx->dnnl_stream;
+        using tag = memory::format_tag;
+        using dt = memory::data_type;
+        auto dtype = dnnl::memory::data_type::f32;
 
-        auto conv_bwd_data_d = convolution_backward_data::desc(
-            algorithm::convolution_direct, ch.x_md, ch.w_md, ch.y_md, ch.s_dims,
-            ch.p_dims, ch.p_dims);
-        auto conv_bwd_data_pd = convolution_backward_data::primitive_desc(
-            conv_bwd_data_d, eng, *ch.conv_pd);
+        auto conv_user_src_memory = memory({{ch.x_dims}, dtype, tag::nchw}, eng, dx.block()->mutable_data());
+        auto conv_user_diff_dst_memory = memory({{ch.o_dims}, dtype, tag::nchw}, eng, dy.block()->mutable_data());
+        auto conv_user_weights_memory = memory({{ch.w_dims}, dt::f32, tag::goihw}, eng,W.block()->mutable_data());
 
+        auto conv_diff_dst_md = memory::desc({ch.o_dims}, dt::f32, tag::nchw);
+
+        auto conv_src_md = memory::desc({ch.x_dims}, dtype, tag::nchw);
+        auto conv_weights_md = memory::desc({ch.w_dims}, dtype, tag::goihw);
+        auto conv_bias_md = memory::desc({ch.b_dims}, dtype, tag::x);
+        auto conv_dst_md = memory::desc({ch.o_dims}, dtype, tag::nchw); // could not set to any
+
+        auto conv_desc = convolution_forward::desc(prop_kind::forward, algorithm::convolution_direct, conv_src_md, conv_weights_md, conv_bias_md, conv_dst_md, ch.s_dims, ch.p_dims, ch.p_dims);
+        auto conv_pd = convolution_forward::primitive_desc(conv_desc, eng);
+
+
+        auto conv_bwd_data_d = convolution_backward_data::desc( algorithm::convolution_direct, conv_src_md, conv_weights_md, conv_diff_dst_md, ch.s_dims, ch.p_dims, ch.p_dims);
+        auto conv_bwd_data_pd = convolution_backward_data::primitive_desc(conv_bwd_data_d, eng, conv_pd);
         // perf not ok
         std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
         convolution_backward_data(conv_bwd_data_pd)
-            .execute(ctx->dnnl_stream, {{DNNL_ARG_DIFF_DST, dy_mem},
-                                        {DNNL_ARG_WEIGHTS, w_mem},
-                                        {DNNL_ARG_DIFF_SRC, dx_mem}});
+            .execute(ctx->dnnl_stream, {{DNNL_ARG_DIFF_DST, conv_user_diff_dst_memory},
+                                        {DNNL_ARG_WEIGHTS, conv_user_weights_memory},
+                                        {DNNL_ARG_DIFF_SRC, conv_user_src_memory}});
         ctx->dnnl_stream.wait();
 
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
@@ -322,26 +333,55 @@ Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
 
   dy.device()->Exec(
       [&x, &dy, &dW, &ch](Context *ctx) {
-        auto eng = ctx->dnnl_engine;
         using namespace dnnl;
+        auto eng = ctx->dnnl_engine;
+        auto s = ctx->dnnl_stream;
+        using tag = memory::format_tag;
+        using dt = memory::data_type;
+        auto dtype = dnnl::memory::data_type::f32;
 
-        auto x_mem = memory(ch.x_md, eng, x.block()->mutable_data());
-        auto dw_mem = memory(ch.w_md, eng, dW.block()->mutable_data());
-        auto dy_mem = memory(ch.y_md, eng, dy.block()->mutable_data());
-        auto db_mem = memory(ch.b_md, eng, ch.db->block()->mutable_data());
+        auto conv_user_src_memory = memory({{ch.x_dims}, dtype, tag::nchw}, eng, x.block()->mutable_data());
+        auto conv_user_diff_dst_memory = memory({{ch.o_dims}, dtype, tag::nchw}, eng, dy.block()->mutable_data());
+        auto conv_user_diff_weights_memory = memory({{ch.w_dims}, dt::f32, tag::goihw}, eng,dW.block()->mutable_data());
+        auto conv_diff_bias_memory = memory({{ch.b_dims}, dt::f32, tag::x}, eng, ch.db->block()->mutable_data());
 
-        auto conv_dw_d = convolution_backward_weights::desc(
-            algorithm::convolution_direct, ch.x_md, ch.w_md, ch.b_md, ch.y_md,
-            ch.s_dims, ch.p_dims, ch.p_dims);
+        auto conv_src_md = memory::desc({ch.x_dims}, dtype, tag::nchw);
+        auto conv_weights_md = memory::desc({ch.w_dims}, dtype, tag::goihw);
+        auto conv_bias_md = memory::desc({ch.b_dims}, dtype, tag::x);
+        auto conv_dst_md = memory::desc({ch.o_dims}, dtype, tag::nchw); // could not set to any
 
-        auto conv_dw_pd = convolution_backward_weights::primitive_desc(
-            conv_dw_d, eng, *ch.conv_pd);
-        convolution_backward_weights(conv_dw_pd)
-            .execute(ctx->dnnl_stream, {{DNNL_ARG_DIFF_DST, dy_mem},
-                                        {DNNL_ARG_SRC, x_mem},
-                                        {DNNL_ARG_DIFF_WEIGHTS, dw_mem},
-                                        {DNNL_ARG_DIFF_BIAS, db_mem}});
+        auto conv_desc = convolution_forward::desc(prop_kind::forward, algorithm::convolution_direct, conv_src_md, conv_weights_md, conv_bias_md, conv_dst_md, ch.s_dims, ch.p_dims, ch.p_dims);
+        auto conv_pd = convolution_forward::primitive_desc(conv_desc, eng);
+
+
+        auto conv_bwd_src_memory = conv_user_src_memory;
+        auto conv_diff_weights_memory = conv_user_diff_weights_memory;
+        auto conv_diff_dst_memory = conv_user_diff_dst_memory;
+
+        auto conv_bwd_src_md = memory::desc({ch.x_dims}, dt::f32, tag::nchw);
+        auto conv_diff_weights_md = memory::desc({ch.w_dims}, dt::f32, tag::goihw);
+        auto conv_diff_bias_md = memory::desc({ch.b_dims}, dt::f32, tag::x);
+        auto conv_diff_dst_md = memory::desc({ch.o_dims}, dt::f32, tag::nchw);
+
+        auto conv_bwd_weights_desc = convolution_backward_weights::desc(algorithm::convolution_direct, conv_bwd_src_md, conv_diff_weights_md, conv_diff_bias_md, conv_diff_dst_md, ch.s_dims, ch.p_dims, ch.p_dims);
+
+        auto conv_bwd_weights_pd = convolution_backward_weights::primitive_desc( conv_bwd_weights_desc, eng, conv_pd);
+
+
+        // perf not ok
+        std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
+        convolution_backward_weights(conv_bwd_weights_pd)
+            .execute(ctx->dnnl_stream, {{DNNL_ARG_DIFF_DST, conv_diff_dst_memory},
+                                        {DNNL_ARG_SRC, conv_bwd_src_memory},
+                                        {DNNL_ARG_DIFF_WEIGHTS, conv_diff_weights_memory},
+                                        {DNNL_ARG_DIFF_BIAS, conv_diff_bias_memory}});
         ctx->dnnl_stream.wait();
+
+        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+        std::cout << "backwardW Time difference = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[microsec]" << std::endl;
+        /*
+        */
 
       },
       {x.block(), dy.block(), W.block()}, {dW.block()});
