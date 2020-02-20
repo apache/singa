@@ -1,23 +1,23 @@
 /************************************************************
-*
-* Licensed to the Apache Software Foundation (ASF) under one
-* or more contributor license agreements.  See the NOTICE file
-* distributed with this work for additional information
-* regarding copyright ownership.  The ASF licenses this file
-* to you under the Apache License, Version 2.0 (the
-* "License"); you may not use this file except in compliance
-* with the License.  You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing,
-* software distributed under the License is distributed on an
-* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-* KIND, either express or implied.  See the License for the
-* specific language governing permissions and limitations
-* under the License.
-*
-*************************************************************/
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ *************************************************************/
 
 #include "../src/model/layer/concat.h"
 #include "gtest/gtest.h"
@@ -25,8 +25,8 @@
 using singa::Shape;
 
 TEST(Concat, Setup) {
-  Shape s1 {2u, 3u};
-  Shape s2 {1u, 3u};
+  Shape s1{2u, 3u};
+  Shape s2{1u, 3u};
   singa::LayerConf conf;
   conf.set_type("singa_concat");
   conf.mutable_concat_conf()->set_axis(0);
@@ -53,16 +53,13 @@ void ForwardConcatRowTest(std::shared_ptr<singa::Device> dev) {
   EXPECT_EQ(out.size(), 1u);
 
   out[0].ToHost();
-  const float * outptr = out[0].data<float>();
+  const float* outptr = out[0].data<float>();
   for (size_t i = 0; i < a; i++) {
-    for (size_t j = 0; j < c; j++)
-      EXPECT_FLOAT_EQ(outptr[i * c + j], 1.0f);
+    for (size_t j = 0; j < c; j++) EXPECT_FLOAT_EQ(outptr[i * c + j], 1.0f);
   }
   for (size_t i = a; i < a + b; i++) {
-    for (size_t j = 0; j < c; j++)
-      EXPECT_FLOAT_EQ(outptr[i  * c + j], 2.0f);
+    for (size_t j = 0; j < c; j++) EXPECT_FLOAT_EQ(outptr[i * c + j], 2.0f);
   }
-
 }
 
 void ForwardConcatColumnTest(std::shared_ptr<singa::Device> dev) {
@@ -81,16 +78,15 @@ void ForwardConcatColumnTest(std::shared_ptr<singa::Device> dev) {
   auto out = layer.Forward(singa::kTrain, {t1, t2});
   EXPECT_EQ(out.size(), 1u);
   out[0].ToHost();
-  const float * outptr = out[0].data<float>();
+  const float* outptr = out[0].data<float>();
   for (size_t i = 0; i < c; i++) {
     for (size_t j = 0; j < a; j++)
       EXPECT_FLOAT_EQ(outptr[i * (a + b) + j], 1.0f);
   }
   for (size_t i = 0; i < c; i++) {
     for (size_t j = a; j < a + b; j++)
-      EXPECT_FLOAT_EQ(outptr[i  * (a + b) + j], 2.0f);
+      EXPECT_FLOAT_EQ(outptr[i * (a + b) + j], 2.0f);
   }
-
 }
 TEST(Concat, ForwardConcatRowCpp) {
   ForwardConcatRowTest(singa::defaultDevice);
@@ -99,7 +95,6 @@ TEST(Concat, ForwardConcatRowCpp) {
 TEST(Concat, ForwardConcatColumnCpp) {
   ForwardConcatColumnTest(singa::defaultDevice);
 }
-
 
 #ifdef USE_CUDA
 TEST(Concat, ForwardConcatRowCuda) {
@@ -110,7 +105,6 @@ TEST(Concat, ForwardConcatColumnCuda) {
   ForwardConcatColumnTest(std::make_shared<singa::CudaGPU>());
 }
 #endif  // USE_CUDA
-
 
 void BackwardConcatRowTest(std::shared_ptr<singa::Device> dev) {
   size_t a = 2u, b = 1u, c = 3u;
@@ -137,15 +131,15 @@ void BackwardConcatRowTest(std::shared_ptr<singa::Device> dev) {
   const float* tptr = t.data<float>();
 
   grads[0].ToHost();
-  const float * outa = grads[0].data<float>();
+  const float* outa = grads[0].data<float>();
   for (size_t i = 0; i < a; i++)
     for (size_t j = 0; j < c; j++)
       EXPECT_FLOAT_EQ(outa[i * c + j], tptr[i * c + j]);
   grads[1].ToHost();
-  const float * outb = grads[1].data<float>();
+  const float* outb = grads[1].data<float>();
   for (size_t i = 0; i < b; i++)
     for (size_t j = 0; j < c; j++)
-      EXPECT_FLOAT_EQ(outb[i  * c + j], tptr[(i + a) * c + j]);
+      EXPECT_FLOAT_EQ(outb[i * c + j], tptr[(i + a) * c + j]);
 }
 
 void BackwardConcatColumnTest(std::shared_ptr<singa::Device> dev) {
@@ -173,15 +167,15 @@ void BackwardConcatColumnTest(std::shared_ptr<singa::Device> dev) {
   const float* tptr = t.data<float>();
 
   grads[0].ToHost();
-  const float * outa = grads[0].data<float>();
+  const float* outa = grads[0].data<float>();
   for (size_t i = 0; i < c; i++)
     for (size_t j = 0; j < a; j++)
       EXPECT_FLOAT_EQ(outa[i * a + j], tptr[i * (a + b) + j]);
   grads[1].ToHost();
-  const float * outb = grads[1].data<float>();
+  const float* outb = grads[1].data<float>();
   for (size_t i = 0; i < c; i++)
     for (size_t j = 0; j < b; j++)
-      EXPECT_FLOAT_EQ(outb[i  * b + j], tptr[i * (a + b) + a + j]);
+      EXPECT_FLOAT_EQ(outb[i * b + j], tptr[i * (a + b) + a + j]);
 }
 
 TEST(Concat, BackwardConcatRowCpp) {
@@ -191,7 +185,6 @@ TEST(Concat, BackwardConcatRowCpp) {
 TEST(Concat, BackwardConcatColumn) {
   BackwardConcatColumnTest(singa::defaultDevice);
 }
-
 
 #ifdef USE_CUDA
 TEST(Concat, BackwardConcatRowCuda) {

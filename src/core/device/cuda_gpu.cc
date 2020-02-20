@@ -21,8 +21,10 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <curand.h>
+
 #include <chrono>
 #include <iostream>
+
 #include "singa/core/device.h"
 #include "singa/utils/cuda_utils.h"
 namespace singa {
@@ -128,9 +130,7 @@ void CudaGPU::Free(void* ptr) {
   }
 }
 
-void CudaGPU::Sync() {
-  CUDA_CHECK(cudaStreamSynchronize(ctx_.stream));
-}
+void CudaGPU::Sync() { CUDA_CHECK(cudaStreamSynchronize(ctx_.stream)); }
 
 }  // namespace singa
 #endif  // USE_CUDA

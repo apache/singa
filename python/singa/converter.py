@@ -31,8 +31,11 @@ import numpy as np
 
 class CaffeConverter(object):
 
-    def __init__(self, net_proto, solver_proto = None, input_sample_shape =
-            None, param_path = None):
+    def __init__(self,
+                 net_proto,
+                 solver_proto=None,
+                 input_sample_shape=None,
+                 param_path=None):
         self.caffe_net_path = net_proto
         self.caffe_solver_path = solver_proto
         self.input_sample_shape = input_sample_shape
@@ -49,7 +52,7 @@ class CaffeConverter(object):
     def read_caffemodel(self):
         f = open(self.param_path, 'rb')
         contents = f.read()
-        net_param = caffe_pb2.NetParameter();
+        net_param = caffe_pb2.NetParameter()
         net_param.ParseFromString(contents)
         return net_param
 
@@ -143,10 +146,13 @@ class CaffeConverter(object):
             if layer_confs[i].type == 'Data' or layer_confs[i].type == 5:
                 continue
             elif layer_confs[i].type == 'Input':
-                self.input_sample_shape = layer_confs[i].input_param.shape[0].dim[1:]
-            elif layer_confs[i].type == 'SoftmaxWithLoss' or layer_confs[i].type == 21:
+                self.input_sample_shape = layer_confs[i].input_param.shape[
+                    0].dim[1:]
+            elif layer_confs[i].type == 'SoftmaxWithLoss' or layer_confs[
+                    i].type == 21:
                 net.loss = loss.SoftmaxCrossEntropy()
-            elif layer_confs[i].type == 'EuclideanLoss' or layer_confs[i].type == 7:
+            elif layer_confs[i].type == 'EuclideanLoss' or layer_confs[
+                    i].type == 7:
                 net.loss = loss.SquareError()
             elif layer_confs[i].type == 'Accuracy' or layer_confs[i].type == 1:
                 net.metric = metric.Accuracy()
@@ -155,8 +161,8 @@ class CaffeConverter(object):
                 conf = model_pb2.LayerConf()
                 conf.ParseFromString(strConf)
                 if caffe_solver:
-                    layer.engine = self.convert_engine(
-                        layer_confs[i], caffe_solver.solver_mode)
+                    layer.engine = self.convert_engine(layer_confs[i],
+                                                       caffe_solver.solver_mode)
                 else:
                     # if caffe_solver is None,
                     layer.engine = self.convert_engine(layer_confs[i], 0)
@@ -165,7 +171,8 @@ class CaffeConverter(object):
                     print('input sample shape: ', self.input_sample_shape)
                     lyr.setup(self.input_sample_shape)
                     print(lyr.name, lyr.get_output_sample_shape())
-                if layer_confs[i].type == 'InnerProduct' or layer_confs[i].type == 14:
+                if layer_confs[i].type == 'InnerProduct' or layer_confs[
+                        i].type == 14:
                     net.add(layer.Flatten('flat' + str(flatten_id)))
                     flatten_id += 1
                 net.add(lyr)
@@ -190,7 +197,7 @@ class CaffeConverter(object):
         first_conv = True
         for layer in layers:
             if layer.type == 'Convolution' or layer.type == 'InnerProduct':
-                assert(len(layer.blobs) == 2), 'Either 2 params per layer or 0'
+                assert (len(layer.blobs) == 2), 'Either 2 params per layer or 0'
                 wmat_dim = []
                 if getattr(layer.blobs[0].shape, 'dim', None) is not None:
                     if len(layer.blobs[0].shape.dim) > 0:
@@ -230,4 +237,6 @@ class CaffeConverter(object):
                 i += 1
                 params[i].copy_from_numpy(bias)
                 i += 1
-                print('converting layer {0}, wmat shape = {1}, bias shape = {2}'.format(layer.name, w.shape, bias.shape))
+                print(
+                    'converting layer {0}, wmat shape = {1}, bias shape = {2}'.
+                    format(layer.name, w.shape, bias.shape))

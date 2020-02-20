@@ -1,27 +1,26 @@
 /************************************************************
-*
-* Licensed to the Apache Software Foundation (ASF) under one
-* or more contributor license agreements.  See the NOTICE file
-* distributed with this work for additional information
-* regarding copyright ownership.  The ASF licenses this file
-* to you under the Apache License, Version 2.0 (the
-* "License"); you may not use this file except in compliance
-* with the License.  You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing,
-* software distributed under the License is distributed on an
-* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-* KIND, either express or implied.  See the License for the
-* specific language governing permissions and limitations
-* under the License.
-*
-*************************************************************/
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ *************************************************************/
 
 #include "../src/model/layer/convolution.h"
 #include "../src/model/layer/opencl_convolution.h"
-
 #include "gtest/gtest.h"
 
 #ifdef USE_OPENCL
@@ -29,7 +28,6 @@
 using singa::OpenclConvolution;
 using singa::OpenclDevice;
 using singa::Shape;
-
 
 TEST(OpenclConvolution, Setup) {
   OpenclConvolution conv;
@@ -60,13 +58,12 @@ TEST(OpenclConvolution, Setup) {
   EXPECT_EQ(3u, conv.width());
 }
 
-
 TEST(OpenclConvolution, Forward) {
   const size_t batchsize = 2, c = 1, h = 3, w = 3;
   const float x[batchsize * c * h * w] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f,
                                           7.0f, 8.0f, 9.0f, 1.0f, 2.0f, 3.0f,
                                           4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
-                                          
+
   auto ocl = std::make_shared<OpenclDevice>();
   singa::Tensor in(singa::Shape{batchsize, c, h, w}, ocl);
   in.CopyDataFromHostPtr(x, batchsize * c * h * w);
@@ -113,7 +110,6 @@ TEST(OpenclConvolution, Forward) {
   EXPECT_EQ(-3.0f, outptr1[6]);
   EXPECT_EQ(12.0f, outptr1[7]);
 }
-
 
 TEST(OpenclConvolution, Backward) {
   // src_data
@@ -219,5 +215,4 @@ TEST(OpenclConvolution, Backward) {
   EXPECT_FLOAT_EQ(dy[0] * x[4] + dy[4] * x[13], dwptr[8]);
 }
 
-
-#endif // USE_OPENCL
+#endif  // USE_OPENCL

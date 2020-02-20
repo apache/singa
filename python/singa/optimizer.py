@@ -68,8 +68,12 @@ class Optimizer(object):
             also apply constraint outside.
     '''
 
-    def __init__(self, lr=None, momentum=None, weight_decay=None,
-                 regularizer=None, constraint=None):
+    def __init__(self,
+                 lr=None,
+                 momentum=None,
+                 weight_decay=None,
+                 regularizer=None,
+                 constraint=None):
         self.lr = lr
         self.momentum = momentum
         if weight_decay is not None:
@@ -122,7 +126,11 @@ class Optimizer(object):
         if specs.lr_mult != 1:
             self.learning_rate_multiplier[name] = specs.lr_mult
 
-    def apply_regularizer_constraint(self, epoch, value, grad, name=None,
+    def apply_regularizer_constraint(self,
+                                     epoch,
+                                     value,
+                                     grad,
+                                     name=None,
                                      step=-1):
         '''Apply regularization and constraint if available.
 
@@ -197,8 +205,12 @@ class SGD(Optimizer):
     See the base Optimizer for all arguments.
     '''
 
-    def __init__(self, lr=None, momentum=None, weight_decay=None,
-                 regularizer=None, constraint=None):
+    def __init__(self,
+                 lr=None,
+                 momentum=None,
+                 weight_decay=None,
+                 regularizer=None,
+                 constraint=None):
         super(SGD, self).__init__(lr, momentum, weight_decay, regularizer,
                                   constraint)
         conf = model_pb2.OptimizerConf()
@@ -211,12 +223,10 @@ class SGD(Optimizer):
     def apply_with_lr(self, epoch, lr, grad, value, name, step=-1):
         if grad.is_empty():
             return value
-        grad = self.apply_regularizer_constraint(
-            epoch, value, grad, name, step)
+        grad = self.apply_regularizer_constraint(epoch, value, grad, name, step)
         if name is not None and name in self.learning_rate_multiplier:
             lr = lr * self.learning_rate_multiplier[name]
-        self.opt.Apply(epoch, lr, name.encode(), grad.data,
-                       value.data)
+        self.opt.Apply(epoch, lr, name.encode(), grad.data, value.data)
         return value
 
 
@@ -226,10 +236,14 @@ class Nesterov(Optimizer):
     See the base Optimizer for all arguments.
     '''
 
-    def __init__(self, lr=None, momentum=0.9, weight_decay=None,
-                 regularizer=None, constraint=None):
-        super(Nesterov, self).__init__(lr, momentum, weight_decay,
-                                       regularizer, constraint)
+    def __init__(self,
+                 lr=None,
+                 momentum=0.9,
+                 weight_decay=None,
+                 regularizer=None,
+                 constraint=None):
+        super(Nesterov, self).__init__(lr, momentum, weight_decay, regularizer,
+                                       constraint)
         conf = model_pb2.OptimizerConf()
         if self.momentum is not None:
             conf.momentum = momentum
@@ -241,12 +255,10 @@ class Nesterov(Optimizer):
         if grad.is_empty():
             return value
 
-        grad = self.apply_regularizer_constraint(
-            epoch, value, grad, name, step)
+        grad = self.apply_regularizer_constraint(epoch, value, grad, name, step)
         if name is not None and name in self.learning_rate_multiplier:
             lr = lr * self.learning_rate_multiplier[name]
-        self.opt.Apply(epoch, lr, name.encode(), grad.data,
-                       value.data)
+        self.opt.Apply(epoch, lr, name.encode(), grad.data, value.data)
         return value
 
 
@@ -260,8 +272,13 @@ class RMSProp(Optimizer):
         epsilon (float): small value for preventing numeric error
     '''
 
-    def __init__(self, rho=0.9, epsilon=1e-8, lr=None, weight_decay=None,
-                 regularizer=None, constraint=None):
+    def __init__(self,
+                 rho=0.9,
+                 epsilon=1e-8,
+                 lr=None,
+                 weight_decay=None,
+                 regularizer=None,
+                 constraint=None):
         super(RMSProp, self).__init__(lr, None, weight_decay, regularizer,
                                       constraint)
         conf = model_pb2.OptimizerConf()
@@ -274,12 +291,10 @@ class RMSProp(Optimizer):
         if grad.is_empty():
             return value
 
-        grad = self.apply_regularizer_constraint(
-            epoch, value, grad, name, step)
+        grad = self.apply_regularizer_constraint(epoch, value, grad, name, step)
         if name is not None and name in self.learning_rate_multiplier:
             lr = lr * self.learning_rate_multiplier[name]
-        self.opt.Apply(step, lr,  name.encode(), grad.data,
-                       value.data)
+        self.opt.Apply(step, lr, name.encode(), grad.data, value.data)
         return value
 
 
@@ -292,8 +307,13 @@ class AdaGrad(Optimizer):
         epsilon (float): small number for preventing numeric error.
     '''
 
-    def __init__(self, epsilon=1e-8, lr=None, weight_decay=None, lr_gen=None,
-                 regularizer=None, constraint=None):
+    def __init__(self,
+                 epsilon=1e-8,
+                 lr=None,
+                 weight_decay=None,
+                 lr_gen=None,
+                 regularizer=None,
+                 constraint=None):
         super(AdaGrad, self).__init__(lr, None, weight_decay, regularizer,
                                       constraint)
         conf = model_pb2.OptimizerConf()
@@ -306,12 +326,10 @@ class AdaGrad(Optimizer):
         if grad.is_empty():
             return value
 
-        grad = self.apply_regularizer_constraint(
-            epoch, value, grad, name, step)
+        grad = self.apply_regularizer_constraint(epoch, value, grad, name, step)
         if name is not None and name in self.learning_rate_multiplier:
             lr = lr * self.learning_rate_multiplier[name]
-        self.opt.Apply(epoch, lr,  name.encode(), grad.data,
-                       value.data)
+        self.opt.Apply(epoch, lr, name.encode(), grad.data, value.data)
         return value
 
 
@@ -326,8 +344,14 @@ class Adam(Optimizer):
         epsilon (float): small value for preventing numeric error
     '''
 
-    def __init__(self, beta_1=0.9, beta_2=0.999, epsilon=1e-8, lr=None,
-                 weight_decay=None, regularizer=None, constraint=None):
+    def __init__(self,
+                 beta_1=0.9,
+                 beta_2=0.999,
+                 epsilon=1e-8,
+                 lr=None,
+                 weight_decay=None,
+                 regularizer=None,
+                 constraint=None):
         super(Adam, self).__init__(lr, None, weight_decay, regularizer,
                                    constraint)
         self.beta_1 = beta_1
@@ -353,8 +377,7 @@ class Adam(Optimizer):
             self.t += 1
             self.last_step = step
             self.last_epoch = epoch
-        grad = self.apply_regularizer_constraint(
-            epoch, value, grad, name, step)
+        grad = self.apply_regularizer_constraint(epoch, value, grad, name, step)
         if name is not None and name in self.learning_rate_multiplier:
             lr = lr * self.learning_rate_multiplier[name]
         if name not in self.m or name not in self.v:
@@ -433,8 +456,7 @@ class CppConstraint(Constraint):
         self.constraint.Setup(conf.SerializeToString())
 
     def apply(self, epoch, value, grad, step=-1):
-        self.constraint.Apply(epoch, value.data, grad.data,
-                              step)
+        self.constraint.Apply(epoch, value.data, grad.data, step)
         return grad
 
 
