@@ -25,9 +25,164 @@
 #include "../src/model/operation/convolution.h"
 
 #include "gtest/gtest.h"
+#include <chrono>
+#include <iostream>
 
 using namespace singa;
 #ifdef USE_DNNL
+
+#include "dnnl.hpp"
+#include <stdio.h>
+
+using namespace dnnl;
+inline memory::dim product(const memory::dims &dims) {
+    return std::accumulate(dims.begin(), dims.end(), (memory::dim)1,
+            std::multiplies<memory::dim>());
+}
+
+inline void write_to_dnnl_memory(void *handle, dnnl::memory &mem) {
+    dnnl::engine eng = mem.get_engine();
+    size_t bytes = mem.get_desc().get_size();
+
+    uint8_t *dst = static_cast<uint8_t *>(mem.get_data_handle());
+    for (size_t i = 0; i < bytes; ++i)
+        dst[i] = ((uint8_t *)handle)[i];
+}
+
+
+TEST(MYTEST, Forward) {
+  // dnnl setup
+    using tag = memory::format_tag;
+    using dt = memory::data_type;
+    auto eng = engine(dnnl::engine::kind::cpu, 0);
+    stream s(eng);
+
+    const int batch = 64;
+    const int image_h = 28;
+    const int in_chan = 1;
+    const int out_chan = 20;
+    const int ker = 5;
+    const int stride = 1;
+    const int out_size = 24;
+
+    //const int batch = 32;
+    //const int image_h = 227;
+    //const int in_chan = 3;
+    //const int out_chan = 96;
+    //const int ker = 11;
+    //const int stride = 4;
+    //const int out_size = 55;
+
+  //singa setup
+  Tensor in(Shape{batch, in_chan, image_h, image_h});
+  Tensor out(Shape{batch, out_chan, out_size, out_size});
+  Tensor weights(Shape{out_chan, in_chan, ker, ker});
+  Tensor bias(Shape{out_chan});
+  Gaussian(0.0f, 1.0f, &in);
+  Gaussian(0.0f, 1.0f, &weights);
+  Gaussian(0.0f, 1.0f, &bias);
+  //singa setup
+
+    std::vector<float> net_src(batch * in_chan * image_h * image_h);
+    // std::vector<float> net_dst(batch * out_chan * 27 * 27);
+
+    // initializing non-zero values for src
+    for (size_t i = 0; i < net_src.size(); ++i)
+        net_src[i] = sinf((float)i);
+
+
+    // AlexNet: conv
+    // {batch, in_chan, image_h, image_h} (x) {out_chan, in_chan, ker, ker} -> {batch, out_chan, out_size, out_size}
+    // strides: {stride, stride}
+    memory::dims conv_src_tz = {batch, in_chan, image_h, image_h};
+    memory::dims conv_weights_tz = {out_chan, in_chan, ker, ker};
+    memory::dims conv_bias_tz = {out_chan};
+    memory::dims conv_dst_tz = {batch, out_chan, out_size, out_size};
+    memory::dims conv_strides = {stride, stride};
+    memory::dims conv_padding = {0, 0};
+
+
+    std::vector<float> conv_weights(product(conv_weights_tz));
+    std::vector<float> conv_bias(product(conv_bias_tz));
+
+    // initializing non-zero values for weights and bias
+    for (size_t i = 0; i < conv_weights.size(); ++i)
+        conv_weights[i] = sinf((float)i);
+    for (size_t i = 0; i < conv_bias.size(); ++i)
+        conv_bias[i] = sinf((float)i);
+
+
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    // time start
+    const int times = 100;
+    for (int i=0; i<times; i++){
+
+
+    // create memory for user data
+    auto conv_user_src_memory = memory({{conv_src_tz}, dt::f32, tag::nchw}, eng, in.block()->mutable_data());
+    auto conv_user_weights_memory = memory({{conv_weights_tz}, dt::f32, tag::oihw}, eng, weights.block()->mutable_data());
+    auto conv_user_bias_memory = memory({{conv_bias_tz}, dt::f32, tag::x}, eng, bias.block()->mutable_data());
+    //auto conv_user_src_memory = memory({{conv_src_tz}, dt::f32, tag::nchw}, eng);
+    //write_to_dnnl_memory(net_src.data(), conv_user_src_memory);
+    //auto conv_user_weights_memory = memory({{conv_weights_tz}, dt::f32, tag::oihw}, eng);
+    //write_to_dnnl_memory((void *)conv_weights.data(), conv_user_weights_memory);
+    //auto conv_user_bias_memory = memory({{conv_bias_tz}, dt::f32, tag::x}, eng);
+    //write_to_dnnl_memory(conv_bias.data(), conv_user_bias_memory);
+
+    // create memory descriptors for convolution data w/ no specified
+    // format tag(`any`)
+    // tag `any` lets a primitive(convolution in this case)
+    // chose the memory format preferred for best performance.
+    auto conv_src_md = memory::desc({conv_src_tz}, dt::f32, tag::any);
+    auto conv_bias_md = memory::desc({conv_bias_tz}, dt::f32, tag::any);
+    auto conv_weights_md = memory::desc({conv_weights_tz}, dt::f32, tag::any);
+    auto conv_dst_md = memory::desc({conv_dst_tz}, dt::f32, tag::any);
+
+    // create a convolution primitive descriptor
+    auto conv_desc = convolution_forward::desc(prop_kind::forward,
+            algorithm::convolution_direct, conv_src_md, conv_weights_md,
+            conv_bias_md, conv_dst_md, conv_strides, conv_padding,
+            conv_padding);
+    auto conv_pd = convolution_forward::primitive_desc(conv_desc, eng);
+
+    // create reorder primitives between user input and conv src if needed
+    auto conv_src_memory = conv_user_src_memory;
+    if (conv_pd.src_desc() != conv_user_src_memory.get_desc()) {
+        conv_src_memory = memory(conv_pd.src_desc(), eng);
+        reorder(conv_user_src_memory, conv_src_memory).execute(s,{{DNNL_ARG_FROM, conv_user_src_memory},
+                {DNNL_ARG_TO, conv_src_memory}});
+    }
+
+    auto conv_weights_memory = conv_user_weights_memory;
+    if (conv_pd.weights_desc() != conv_user_weights_memory.get_desc()) {
+        conv_weights_memory = memory(conv_pd.weights_desc(), eng);
+        reorder(conv_user_weights_memory, conv_weights_memory).execute(s,{{DNNL_ARG_FROM, conv_user_weights_memory},
+                {DNNL_ARG_TO, conv_weights_memory}});
+    }
+
+    // create memory for conv dst
+    //auto conv_dst_memory = memory(conv_pd.dst_desc(), eng);
+    auto conv_dst_memory = memory(conv_pd.dst_desc(), eng, out.block()->mutable_data());
+
+    // finally create a convolution primitive
+    convolution_forward(conv_pd).execute(s,{{DNNL_ARG_SRC, conv_src_memory},
+            {DNNL_ARG_WEIGHTS, conv_weights_memory},
+            {DNNL_ARG_BIAS, conv_user_bias_memory},
+            {DNNL_ARG_DST, conv_dst_memory}});
+
+    s.wait();
+
+    // time end
+
+    }
+
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::cout << "[total]Time difference = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[mu s]" << std::endl;
+    std::cout << "[avg]Time difference = " << (std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/times << "[mu s]" << std::endl;
+
+  printf("mytestok\n");
+}
+
 
 TEST(DNNLOperation_Convolution, Forward) {
   const size_t batch_size = 2, c = 1, h = 3, w = 3;
