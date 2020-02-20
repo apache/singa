@@ -64,6 +64,7 @@ TEST(MYTEST, Forward) {
     const int ker = 5;
     const int stride = 1;
     const int out_size = 24;
+    const int group = 1;
 
     //const int batch = 32;
     //const int image_h = 227;
@@ -75,52 +76,50 @@ TEST(MYTEST, Forward) {
 
   //singa setup
   Tensor in(Shape{batch, in_chan, image_h, image_h});
+  Tensor in_reo(Shape{batch, in_chan, image_h, image_h});
   Tensor out(Shape{batch, out_chan, out_size, out_size});
-  Tensor weights(Shape{out_chan, in_chan, ker, ker});
+  Tensor weights(Shape{group, out_chan, in_chan, ker, ker});
+  Tensor weights_reo(Shape{out_chan, in_chan, ker, ker});
   Tensor bias(Shape{out_chan});
   Gaussian(0.0f, 1.0f, &in);
+  Gaussian(0.0f, 1.0f, &in_reo);
   Gaussian(0.0f, 1.0f, &weights);
+  Gaussian(0.0f, 1.0f, &weights_reo);
   Gaussian(0.0f, 1.0f, &bias);
+  Gaussian(0.0f, 1.0f, &out);
   //singa setup
 
-    std::vector<float> net_src(batch * in_chan * image_h * image_h);
+    //std::vector<float> net_src(batch * in_chan * image_h * image_h);
     // std::vector<float> net_dst(batch * out_chan * 27 * 27);
 
     // initializing non-zero values for src
-    for (size_t i = 0; i < net_src.size(); ++i)
-        net_src[i] = sinf((float)i);
+    //for (size_t i = 0; i < net_src.size(); ++i)
+        //net_src[i] = sinf((float)i);
 
 
     // AlexNet: conv
     // {batch, in_chan, image_h, image_h} (x) {out_chan, in_chan, ker, ker} -> {batch, out_chan, out_size, out_size}
     // strides: {stride, stride}
     memory::dims conv_src_tz = {batch, in_chan, image_h, image_h};
-    memory::dims conv_weights_tz = {out_chan, in_chan, ker, ker};
+    memory::dims conv_weights_tz = {group, out_chan, in_chan, ker, ker};
     memory::dims conv_bias_tz = {out_chan};
     memory::dims conv_dst_tz = {batch, out_chan, out_size, out_size};
     memory::dims conv_strides = {stride, stride};
     memory::dims conv_padding = {0, 0};
 
 
-    std::vector<float> conv_weights(product(conv_weights_tz));
-    std::vector<float> conv_bias(product(conv_bias_tz));
+//    std::vector<float> conv_weights(product(conv_weights_tz));
+//    std::vector<float> conv_bias(product(conv_bias_tz));
 
     // initializing non-zero values for weights and bias
-    for (size_t i = 0; i < conv_weights.size(); ++i)
-        conv_weights[i] = sinf((float)i);
-    for (size_t i = 0; i < conv_bias.size(); ++i)
-        conv_bias[i] = sinf((float)i);
-
-
-    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-    // time start
-    const int times = 100;
-    for (int i=0; i<times; i++){
-
+//    for (size_t i = 0; i < conv_weights.size(); ++i)
+//        conv_weights[i] = sinf((float)i);
+//    for (size_t i = 0; i < conv_bias.size(); ++i)
+//        conv_bias[i] = sinf((float)i);
 
     // create memory for user data
     auto conv_user_src_memory = memory({{conv_src_tz}, dt::f32, tag::nchw}, eng, in.block()->mutable_data());
-    auto conv_user_weights_memory = memory({{conv_weights_tz}, dt::f32, tag::oihw}, eng, weights.block()->mutable_data());
+    auto conv_user_weights_memory = memory({{conv_weights_tz}, dt::f32, tag::goihw}, eng, weights.block()->mutable_data());
     auto conv_user_bias_memory = memory({{conv_bias_tz}, dt::f32, tag::x}, eng, bias.block()->mutable_data());
     //auto conv_user_src_memory = memory({{conv_src_tz}, dt::f32, tag::nchw}, eng);
     //write_to_dnnl_memory(net_src.data(), conv_user_src_memory);
@@ -133,10 +132,16 @@ TEST(MYTEST, Forward) {
     // format tag(`any`)
     // tag `any` lets a primitive(convolution in this case)
     // chose the memory format preferred for best performance.
-    auto conv_src_md = memory::desc({conv_src_tz}, dt::f32, tag::any);
-    auto conv_bias_md = memory::desc({conv_bias_tz}, dt::f32, tag::any);
-    auto conv_weights_md = memory::desc({conv_weights_tz}, dt::f32, tag::any);
-    auto conv_dst_md = memory::desc({conv_dst_tz}, dt::f32, tag::any);
+    //
+    // auto conv_src_md = memory::desc({conv_src_tz}, dt::f32, tag::any);
+    // auto conv_bias_md = memory::desc({conv_bias_tz}, dt::f32, tag::any);
+    // auto conv_weights_md = memory::desc({conv_weights_tz}, dt::f32, tag::any);
+    // auto conv_dst_md = memory::desc({conv_dst_tz}, dt::f32, tag::any);
+
+    auto conv_src_md = memory::desc({conv_src_tz}, dt::f32, tag::nchw);
+    auto conv_bias_md = memory::desc({conv_bias_tz}, dt::f32, tag::x);
+    auto conv_weights_md = memory::desc({conv_weights_tz}, dt::f32, tag::goihw);
+    auto conv_dst_md = memory::desc({conv_dst_tz}, dt::f32, tag::nchw);
 
     // create a convolution primitive descriptor
     auto conv_desc = convolution_forward::desc(prop_kind::forward,
@@ -147,23 +152,31 @@ TEST(MYTEST, Forward) {
 
     // create reorder primitives between user input and conv src if needed
     auto conv_src_memory = conv_user_src_memory;
-    if (conv_pd.src_desc() != conv_user_src_memory.get_desc()) {
-        conv_src_memory = memory(conv_pd.src_desc(), eng);
-        reorder(conv_user_src_memory, conv_src_memory).execute(s,{{DNNL_ARG_FROM, conv_user_src_memory},
-                {DNNL_ARG_TO, conv_src_memory}});
-    }
-
     auto conv_weights_memory = conv_user_weights_memory;
-    if (conv_pd.weights_desc() != conv_user_weights_memory.get_desc()) {
-        conv_weights_memory = memory(conv_pd.weights_desc(), eng);
-        reorder(conv_user_weights_memory, conv_weights_memory).execute(s,{{DNNL_ARG_FROM, conv_user_weights_memory},
-                {DNNL_ARG_TO, conv_weights_memory}});
-    }
-
     // create memory for conv dst
     //auto conv_dst_memory = memory(conv_pd.dst_desc(), eng);
     auto conv_dst_memory = memory(conv_pd.dst_desc(), eng, out.block()->mutable_data());
 
+
+    //std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    // time start
+    const int times = 100;
+    for (int i=0; i<times; i++){
+    /*
+    if (conv_pd.src_desc() != conv_user_src_memory.get_desc()) {
+        //conv_src_memory = memory(conv_pd.src_desc(), eng);
+        conv_src_memory = memory(conv_pd.src_desc(), eng, in_reo.block()->mutable_data());
+        reorder(conv_user_src_memory, conv_src_memory).execute(s,{{DNNL_ARG_FROM, conv_user_src_memory},
+                {DNNL_ARG_TO, conv_src_memory}});
+    }
+
+    if (conv_pd.weights_desc() != conv_user_weights_memory.get_desc()) {
+        // conv_weights_memory = memory(conv_pd.weights_desc(), eng);
+        conv_weights_memory = memory(conv_pd.weights_desc(), eng, weights_reo.block()->mutable_data());
+        reorder(conv_user_weights_memory, conv_weights_memory).execute(s,{{DNNL_ARG_FROM, conv_user_weights_memory},
+                {DNNL_ARG_TO, conv_weights_memory}});
+    }
+    */
     // finally create a convolution primitive
     convolution_forward(conv_pd).execute(s,{{DNNL_ARG_SRC, conv_src_memory},
             {DNNL_ARG_WEIGHTS, conv_weights_memory},
@@ -177,8 +190,8 @@ TEST(MYTEST, Forward) {
     }
 
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    std::cout << "[total]Time difference = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[mu s]" << std::endl;
-    std::cout << "[avg]Time difference = " << (std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/times << "[mu s]" << std::endl;
+    //std::cout << "[total]Time difference = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[mu s]" << std::endl;
+    //std::cout << "[avg]Time difference = " << (std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/times << "[mu s]" << std::endl;
 
   printf("mytestok\n");
 }
@@ -226,6 +239,59 @@ TEST(DNNLOperation_Convolution, Forward) {
   EXPECT_EQ(-3.0f, out_ptr1[6]);
   EXPECT_EQ(12.0f, out_ptr1[7]);
 }
+
+TEST(DNNLOperation_Convolution, Performance) {
+    const int batch = 64;
+    const int image_h = 28;
+    const int in_chan = 1;
+    const int out_chan = 20;
+    const int ker = 5;
+    const int stride = 1;
+    const int out_size = 24;
+    const int group = 1;
+  const bool bias_flag = true;
+
+  Tensor grad(Shape{batch, out_chan, out_size, out_size});
+  Tensor in(Shape{batch, in_chan, image_h, image_h});
+  Tensor weight(Shape{out_chan, in_chan, ker, ker});
+  Tensor bias(Shape{out_chan});
+  Gaussian(0.0f, 1.0f, &grad);
+  Gaussian(0.0f, 1.0f, &in);
+  Gaussian(0.0f, 1.0f, &weight);
+  Gaussian(0.0f, 1.0f, &bias);
+  ConvHandle conv_handle(in, {ker, ker}, {stride, stride}, {0, 0}, in_chan, out_chan, bias_flag);
+
+  const int times = 100;
+
+  {
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    for (int i=0;i<times;i++){
+      Tensor out = CpuConvForward(in, weight, bias, conv_handle);
+    }
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::cout << "[avg]forward Time difference = " << (std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/times << "[microsec]" << std::endl;
+  }
+
+  {
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    for (int i=0;i<times;i++){
+  Tensor in_grad = CpuConvBackwardx(grad, weight, in, conv_handle);
+    }
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::cout << "[avg]backwardx Time difference = " << (std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/times << "[microsec]" << std::endl;
+  }
+
+  {
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    for (int i=0;i<times;i++){
+      Tensor dw = CpuConvBackwardW(grad, in, weight, conv_handle);
+    }
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::cout << "[avg]backwardW Time difference = " << (std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/times << "[microsec]" << std::endl;
+  }
+
+}
+
 
 TEST(DNNLOperation_Convolution, Backward) {
   const size_t batch_size = 2, c = 1, h = 3, w = 3;
@@ -291,7 +357,9 @@ TEST(DNNLOperation_Convolution, Backward) {
   EXPECT_EQ(dy[6] * wptr[5] + dy[7] * wptr[3], dx[16]);
   EXPECT_EQ(dy[7] * wptr[4], dx[17]);
 
+
   Tensor dw = CpuConvBackwardW(grad, in, weight, conv_handle);
+
   Tensor db = CpuConvBackwardb(grad, bias, conv_handle);
 
   const float *dbptr = db.data<float>();
