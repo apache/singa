@@ -182,13 +182,14 @@ Tensor Tensor::AsType(const DataType type) {
 Tensor &Tensor::ToDevice(std::shared_ptr<Device> dst) {
   // TODO(wangwei) the comparison is restricted. May compare against device ID?
   if (device_ != dst) {
-    Tensor tmp(shape_, dst, data_type_);
+    // TODO(rulin) fix the memory leak for tmp variable
+    Tensor *tmp = new Tensor(shape_, dst, data_type_);
     if (block_ != nullptr && Size() && block_->initialized())
-      tmp.CopyData(*this);
+      tmp->CopyData(*this);
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
-    block_ = tmp.block_;
-    tmp.block_ = nullptr;
+    block_ = tmp->block_;
+    tmp->block_ = nullptr;
     device_ = dst;
   }
   return *this;
