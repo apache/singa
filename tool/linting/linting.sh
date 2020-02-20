@@ -18,7 +18,9 @@
 #
 
 # pylint
-pylint $(find python/ test/python/ examples/ -name '*.py')
+find python/ \
+    examples/autograd \
+    test/python/ -iname *.py | xargs pylint
 LINTRESULT=$?
 if [ $LINTRESULT == 0 ]; then
   echo "pylint passed"
@@ -28,7 +30,17 @@ else
 fi
 
 # cpplint
-CPPLINTRESULT=$(cpplint --quiet $(find src/ include/ test/singa/ -name *.cc -or -name *.h) )
+find src/api/ \
+    src/core/ \
+    src/proto/ \
+    src/utils/ \
+    include/singa/core/ \
+    include/singa/utils/ \
+    src/model/operation/ \
+    include/singa/io/communicator.h \
+    src/io/communicator.cc \
+    test/singa/ -iname *.h -o -iname *.cc | xargs cpplint --quiet
+CPPLINTRESULT=$?
 if [[ $CPPLINTRESULT ]]; then
   echo $CPPLINTRESULT
   echo "cpplint not passed"
@@ -38,3 +50,4 @@ else
 fi
 
 exit 0
+
