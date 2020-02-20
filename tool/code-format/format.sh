@@ -24,6 +24,9 @@ find src/api/ \
     src/utils/ \
     include/singa/core/ \
     include/singa/utils/ \
+    src/model/operation/ \
+    include/singa/io/communicator.h \
+    src/io/communicator.cc \
     test/singa/ -iname *.h -o -iname *.cc | xargs clang-format -i
 
 # format python code by yapf
