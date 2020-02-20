@@ -17,6 +17,7 @@
  */
 
 #include <iostream>
+
 #include "gtest/gtest.h"
 #include "singa/core/device.h"
 #include "singa/core/tensor.h"

@@ -20,13 +20,6 @@
 
 #ifdef USE_OPENCL
 
-#include "singa/utils/opencl_utils.h"
-#include "tensor_math.h"
-
-#include <viennacl/matrix.hpp>
-#include <viennacl/scalar.hpp>
-#include <viennacl/vector.hpp>
-
 #include <viennacl/linalg/inner_prod.hpp>
 #include <viennacl/linalg/matrix_operations.hpp>
 #include <viennacl/linalg/norm_2.hpp>
@@ -34,11 +27,16 @@
 #include <viennacl/linalg/scalar_operations.hpp>
 #include <viennacl/linalg/sum.hpp>
 #include <viennacl/linalg/vector_operations.hpp>
-
+#include <viennacl/matrix.hpp>
 #include <viennacl/ocl/kernel.hpp>
+#include <viennacl/scalar.hpp>
+#include <viennacl/vector.hpp>
 
-using viennacl::ocl::get_context;
+#include "singa/utils/opencl_utils.h"
+#include "tensor_math.h"
+
 using viennacl::ocl::enqueue;
+using viennacl::ocl::get_context;
 
 namespace singa {
 
