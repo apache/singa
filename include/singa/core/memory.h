@@ -21,6 +21,7 @@
 
 #include <atomic>
 #include <mutex>
+
 #include "singa/proto/core.pb.h"
 #include "singa/singa_config.h"
 

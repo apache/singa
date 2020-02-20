@@ -27,12 +27,11 @@ CppCPU::CppCPU() : Device(-1, 1) {
 #ifdef USE_DNNL
   ctx_.dnnl_engine = dnnl::engine(dnnl::engine::kind::cpu, 0);
   ctx_.dnnl_stream = dnnl::stream(ctx_.dnnl_engine);
-#endif // USE_DNNL
-  //host_ = nullptr;
+#endif  // USE_DNNL
+  // host_ = nullptr;
 }
 
-CppCPU::~CppCPU() {
-};
+CppCPU::~CppCPU(){};
 
 void CppCPU::SetRandSeed(unsigned seed) { ctx_.random_generator.seed(seed); }
 

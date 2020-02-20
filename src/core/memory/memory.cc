@@ -18,7 +18,9 @@
 #ifndef DISABLE_WARNINGS
 
 #include "singa/core/memory.h"
+
 #include <iostream>
+
 #include "singa/proto/core.pb.h"
 #include "singa/utils/logging.h"
 
@@ -110,7 +112,7 @@ void CudaMemPool::Free(void *ptr) {
   cudaError_t status = cudaFree(ptr);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
 }
-}
+}  // namespace singa
 #endif
 
 #endif
