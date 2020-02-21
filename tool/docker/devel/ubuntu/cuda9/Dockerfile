@@ -94,9 +94,8 @@ RUN wget http://www.mpich.org/static/downloads/3.3.2/mpich-3.3.2.tar.gz -P $HOME
     && cd mpich-3.3.2 \
     && ./configure --prefix=$HOME/mpich-3.3.2/build --disable-fortran 2>&1 | tee c.txt \
     && make 2>&1 | tee m.txt \
-    && make install 2>&1 | tee mi.txt \
-    && PATH=$HOME/mpich-3.3.2/build/bin:$PATH \
-    && export PATH
+    && make install 2>&1 | tee mi.txt
+ENV PATH=/root/mpich-3.3.2/build/bin:$PATH
 
 # build singa
 RUN git clone https://github.com/apache/singa.git $HOME/singa \
