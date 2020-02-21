@@ -107,7 +107,7 @@ RUN git clone https://github.com/apache/singa.git $HOME/singa \
 RUN cd $HOME/singa/build && make && make install
 ENV PYTHONPATH="/root/singa/build/python/"
 
-WORKDIR $HOME/singa
+WORKDIR /root/singa
 EXPOSE 22
 
 CMD ["/usr/sbin/sshd", "-D"]
