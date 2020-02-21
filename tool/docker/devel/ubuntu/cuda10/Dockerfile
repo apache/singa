@@ -48,6 +48,7 @@ RUN apt-get update \
     && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/* \
     && pip3 install -U --no-cache \
+    && pip3 install tqdm \
     wheel \
     numpy \
     setuptools \
@@ -100,6 +101,7 @@ RUN git clone https://github.com/apache/singa.git $HOME/singa \
     && mkdir build && cd build \
     && /usr/local/bin/cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_PYTHON3=ON -DUSE_DNNL=ON -DUSE_DIST=ON ..
 RUN cd $HOME/singa/build && make && make install
+ENV PYTHONPATH="/root/singa/build/python/"
 
 WORKDIR $HOME/singa
 EXPOSE 22
