@@ -64,6 +64,7 @@ using singa::DataType;
 
 
 
+
 %template(Shape) std::vector<size_t>;
 
 namespace singa{
@@ -352,4 +353,5 @@ namespace singa{
 
   Tensor CrossEntropyFwd(const Tensor& p, const Tensor& t);
   Tensor SoftmaxCrossEntropyBwd(const Tensor& p, const Tensor& t);
+
 }
