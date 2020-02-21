@@ -21,11 +21,13 @@ from singa import opt
 from mnist_cnn import *
 import multiprocessing
 
+
 def data_partition(dataset_x, dataset_y, rank_in_global, world_size):
     data_per_rank = dataset_x.shape[0] // world_size
     idx_start = rank_in_global * data_per_rank
     idx_end = (rank_in_global + 1) * data_per_rank
-    return dataset_x[idx_start: idx_end], dataset_y[idx_start: idx_end]
+    return dataset_x[idx_start:idx_end], dataset_y[idx_start:idx_end]
+
 
 if __name__ == '__main__':
 
@@ -36,17 +38,20 @@ if __name__ == '__main__':
     max_epoch = 10
     batch_size = 64
 
-    sgd = opt.SGD(lr=0.005*gpu_per_node, momentum=0.9, weight_decay=1e-5)    
+    sgd = opt.SGD(lr=0.005 * gpu_per_node, momentum=0.9, weight_decay=1e-5)
 
-    # Use sparsification with parameters 
-    topK = False               # When topK = False, Sparsification based on a constant absolute threshold
-    corr = True               # If True, uses local accumulate gradient for the correction
-    sparsThreshold = 0.05      # The constant absolute threshold for sparsification 
+    # Use sparsification with parameters
+    topK = False  # When topK = False, Sparsification based on a constant absolute threshold
+    corr = True  # If True, uses local accumulate gradient for the correction
+    sparsThreshold = 0.05  # The constant absolute threshold for sparsification
 
     process = []
-    for gpu_num in range(0, gpu_per_node):        
-        process.append(multiprocessing.Process(target=train_mnist_cnn, args=(sgd, max_epoch, batch_size, True, data_partition,
-                                                                gpu_num, gpu_per_node, nccl_id, sparsThreshold, topK, corr)))
+    for gpu_num in range(0, gpu_per_node):
+        process.append(
+            multiprocessing.Process(target=train_mnist_cnn,
+                                    args=(sgd, max_epoch, batch_size, True,
+                                          data_partition, gpu_num, gpu_per_node,
+                                          nccl_id, sparsThreshold, topK, corr)))
 
     for p in process:
         p.start()

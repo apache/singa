@@ -25,16 +25,18 @@ Device::Device(int id, int num_executors)
   host_ = defaultDevice;
 }
 
-void Device::Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
-                    const vector<Block*> write_blocks, bool use_rand_generator) {
+void Device::Exec(function<void(Context*)>&& fn,
+                  const vector<Block*> read_blocks,
+                  const vector<Block*> write_blocks, bool use_rand_generator) {
   // TODO(wangwei) execute operations scheduled by the scheduler.
   DoExec(std::move(fn), 0);
 }
 
 // TODO(wangwei) get Block from the memory manager
 Block* Device::NewBlock(int size) {
-  CHECK_GE(size, 0) << "size is negative, could be caused by the type cast "
-    << "from size_t to int. In that case, the size is too large.";
+  CHECK_GE(size, 0)
+      << "size is negative, could be caused by the type cast "
+      << "from size_t to int. In that case, the size is too large.";
   if (size > 0) {
     void* ptr = Malloc(size);
     return new Block(ptr, size);

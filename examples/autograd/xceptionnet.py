@@ -23,18 +23,29 @@ from singa import opt
 import numpy as np
 from tqdm import trange
 
-
 # the code is modified from
 # https://github.com/Cadene/pretrained-models.pytorch/blob/master/pretrainedmodels/models/xception.py
 
+
 class Block(autograd.Layer):
 
-    def __init__(self, in_filters, out_filters, reps, strides=1, padding=0, start_with_relu=True, grow_first=True):
+    def __init__(self,
+                 in_filters,
+                 out_filters,
+                 reps,
+                 strides=1,
+                 padding=0,
+                 start_with_relu=True,
+                 grow_first=True):
         super(Block, self).__init__()
 
         if out_filters != in_filters or strides != 1:
-            self.skip = autograd.Conv2d(in_filters, out_filters,
-                                        1, stride=strides, padding=padding, bias=False)
+            self.skip = autograd.Conv2d(in_filters,
+                                        out_filters,
+                                        1,
+                                        stride=strides,
+                                        padding=padding,
+                                        bias=False)
             self.skipbn = autograd.BatchNorm2d(out_filters)
         else:
             self.skip = None
@@ -44,21 +55,36 @@ class Block(autograd.Layer):
         filters = in_filters
         if grow_first:
             self.layers.append(autograd.ReLU())
-            self.layers.append(autograd.SeparableConv2d(in_filters, out_filters,
-                                                        3, stride=1, padding=1, bias=False))
+            self.layers.append(
+                autograd.SeparableConv2d(in_filters,
+                                         out_filters,
+                                         3,
+                                         stride=1,
+                                         padding=1,
+                                         bias=False))
             self.layers.append(autograd.BatchNorm2d(out_filters))
             filters = out_filters
 
         for i in range(reps - 1):
             self.layers.append(autograd.ReLU())
-            self.layers.append(autograd.SeparableConv2d(filters, filters,
-                                                        3, stride=1, padding=1, bias=False))
+            self.layers.append(
+                autograd.SeparableConv2d(filters,
+                                         filters,
+                                         3,
+                                         stride=1,
+                                         padding=1,
+                                         bias=False))
             self.layers.append(autograd.BatchNorm2d(filters))
 
         if not grow_first:
             self.layers.append(autograd.ReLU())
-            self.layers.append(autograd.SeparableConv2d(in_filters, out_filters,
-                                                        3, stride=1, padding=1, bias=False))
+            self.layers.append(
+                autograd.SeparableConv2d(in_filters,
+                                         out_filters,
+                                         3,
+                                         stride=1,
+                                         padding=1,
+                                         bias=False))
             self.layers.append(autograd.BatchNorm2d(out_filters))
 
         if not start_with_relu:
@@ -109,33 +135,84 @@ class Xception(autograd.Layer):
         self.bn2 = autograd.BatchNorm2d(64)
         # do relu here
 
-        self.block1 = Block(
-            64, 128, 2, 2, padding=0, start_with_relu=False, grow_first=True)
-        self.block2 = Block(
-            128, 256, 2, 2, padding=0, start_with_relu=True, grow_first=True)
-        self.block3 = Block(
-            256, 728, 2, 2, padding=0, start_with_relu=True, grow_first=True)
+        self.block1 = Block(64,
+                            128,
+                            2,
+                            2,
+                            padding=0,
+                            start_with_relu=False,
+                            grow_first=True)
+        self.block2 = Block(128,
+                            256,
+                            2,
+                            2,
+                            padding=0,
+                            start_with_relu=True,
+                            grow_first=True)
+        self.block3 = Block(256,
+                            728,
+                            2,
+                            2,
+                            padding=0,
+                            start_with_relu=True,
+                            grow_first=True)
 
-        self.block4 = Block(
-            728, 728, 3, 1, start_with_relu=True, grow_first=True)
-        self.block5 = Block(
-            728, 728, 3, 1, start_with_relu=True, grow_first=True)
-        self.block6 = Block(
-            728, 728, 3, 1, start_with_relu=True, grow_first=True)
-        self.block7 = Block(
-            728, 728, 3, 1, start_with_relu=True, grow_first=True)
+        self.block4 = Block(728,
+                            728,
+                            3,
+                            1,
+                            start_with_relu=True,
+                            grow_first=True)
+        self.block5 = Block(728,
+                            728,
+                            3,
+                            1,
+                            start_with_relu=True,
+                            grow_first=True)
+        self.block6 = Block(728,
+                            728,
+                            3,
+                            1,
+                            start_with_relu=True,
+                            grow_first=True)
+        self.block7 = Block(728,
+                            728,
+                            3,
+                            1,
+                            start_with_relu=True,
+                            grow_first=True)
 
-        self.block8 = Block(
-            728, 728, 3, 1, start_with_relu=True, grow_first=True)
-        self.block9 = Block(
-            728, 728, 3, 1, start_with_relu=True, grow_first=True)
-        self.block10 = Block(
-            728, 728, 3, 1, start_with_relu=True, grow_first=True)
-        self.block11 = Block(
-            728, 728, 3, 1, start_with_relu=True, grow_first=True)
+        self.block8 = Block(728,
+                            728,
+                            3,
+                            1,
+                            start_with_relu=True,
+                            grow_first=True)
+        self.block9 = Block(728,
+                            728,
+                            3,
+                            1,
+                            start_with_relu=True,
+                            grow_first=True)
+        self.block10 = Block(728,
+                             728,
+                             3,
+                             1,
+                             start_with_relu=True,
+                             grow_first=True)
+        self.block11 = Block(728,
+                             728,
+                             3,
+                             1,
+                             start_with_relu=True,
+                             grow_first=True)
 
-        self.block12 = Block(
-            728, 1024, 2, 2, start_with_relu=True, grow_first=False)
+        self.block12 = Block(728,
+                             1024,
+                             2,
+                             2,
+                             start_with_relu=True,
+                             grow_first=False)
 
         self.conv3 = autograd.SeparableConv2d(1024, 1536, 3, 1, 1)
         self.bn3 = autograd.BatchNorm2d(1536)

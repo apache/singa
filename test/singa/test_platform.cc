@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
+#include <iostream>
 
 #include "gtest/gtest.h"
 #include "singa/core/device.h"
 #include "singa/core/tensor.h"
-#include <iostream>
 using namespace std;
 #ifdef USE_CUDA
 using singa::Platform;
@@ -28,13 +28,12 @@ using singa::Platform;
 TEST(Platform, CreateMultDevice) {
   int n = Platform::GetNumGPUs();
   auto devs = Platform::CreateCudaGPUs(n);
-  for (int i= 0;i < devs.size();i++) {
-    auto b = devs[i]->NewBlock(512+512*(2-i));
-    EXPECT_EQ(512+512*(2-i), devs[i]->GetAllocatedMem());
+  for (int i = 0; i < devs.size(); i++) {
+    auto b = devs[i]->NewBlock(512 + 512 * (2 - i));
+    EXPECT_EQ(512 + 512 * (2 - i), devs[i]->GetAllocatedMem());
     devs[i]->FreeBlock(b);
   }
 }
-
 
 TEST(Platform, NumGPUs) {
   int n = Platform::GetNumGPUs();
@@ -47,13 +46,12 @@ TEST(Platform, QueryMem) {
   auto ids = Platform::GetGPUIDs();
   EXPECT_EQ(ids.size(), n);
   auto mem = Platform::GetGPUMemSize();
-  for (auto x : mem)
-    EXPECT_GT(x.second, x.first);
+  for (auto x : mem) EXPECT_GT(x.second, x.first);
 }
 
 TEST(Platform, CreateDevice) {
   auto dev = Platform::CreateCudaGPUs(1).at(0);
-  size_t size[] = { 128, 256, 3, 24 };
+  size_t size[] = {128, 256, 3, 24};
   {
     auto ptr = dev->NewBlock(size[0]);
     auto allocated = dev->GetAllocatedMem();
@@ -73,30 +71,25 @@ TEST(Platform, CreateDevice) {
     dev->FreeBlock(ptr0);
     dev->FreeBlock(ptr1);
     dev->FreeBlock(ptr2);
-//    allocated = dev->GetAllocatedMem();
-//    EXPECT_EQ(size[3], allocated);
+    //    allocated = dev->GetAllocatedMem();
+    //    EXPECT_EQ(size[3], allocated);
     dev->FreeBlock(ptr3);
-//    allocated = dev->GetAllocatedMem();
-//    EXPECT_EQ(0, allocated);
+    //    allocated = dev->GetAllocatedMem();
+    //    EXPECT_EQ(0, allocated);
   }
 }
 
-
-
 TEST(Platform, CreatTensor) {
   auto cuda = Platform::CreateCudaGPUs(1)[0];
-  singa::Tensor t(singa::Shape{2,3,4}, cuda);
+  singa::Tensor t(singa::Shape{2, 3, 4}, cuda);
   t.SetValue(2.1f);
   t.ToHost();
   auto tPtr = t.data<float>();
-  for (size_t i = 0; i < t.Size(); i++)
-    EXPECT_FLOAT_EQ(tPtr[i], 2.1f);
+  for (size_t i = 0; i < t.Size(); i++) EXPECT_FLOAT_EQ(tPtr[i], 2.1f);
   t.ToDevice(cuda);
   t = t * 3.0f;
   t.ToHost();
   tPtr = t.data<float>();
-  for (size_t i = 0; i < t.Size(); i++)
-    EXPECT_FLOAT_EQ(tPtr[i], 2.1f * 3.0f);
+  for (size_t i = 0; i < t.Size(); i++) EXPECT_FLOAT_EQ(tPtr[i], 2.1f * 3.0f);
 }
 #endif
-

@@ -23,7 +23,6 @@ import unittest
 import math
 import numpy as np
 
-
 import singa.tensor as tensor
 import singa.optimizer as opt
 from singa import singa_wrap
@@ -34,23 +33,26 @@ from cuda_helper import gpu_dev as cuda
 def np_adam(plist, glist, mlist, vlist, lr, t, b1=0.9, b2=0.999):
     for p, g, m, v in zip(plist, glist, mlist, vlist):
         m *= b1
-        m += (1-b1) * g
+        m += (1 - b1) * g
         v *= b2
-        v += (1-b2) * g * g
+        v += (1 - b2) * g * g
         alpha = lr * math.sqrt(1. - math.pow(b2, t)) / (1. - math.pow(b1, t))
         p -= alpha * m / (np.sqrt(v) + 1e-8)
-        
+
+
 def np_rmsprop(plist, glist, vlist, lr, t, rho=0.9):
     for p, g, v in zip(plist, glist, vlist):
         v *= rho
-        v += (1-rho) * g * g
+        v += (1 - rho) * g * g
         p -= lr * g / (np.sqrt(v + 1e-8))
-        
+
+
 def np_momentum(plist, glist, vlist, lr, t, momentum=0.9):
     for p, g, v in zip(plist, glist, vlist):
         v *= momentum
         v += lr * g
         p -= v
+
 
 def np_adagrad(plist, glist, vlist, lr, t):
     for p, g, v in zip(plist, glist, vlist):

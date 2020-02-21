@@ -1,23 +1,23 @@
 /************************************************************
-*
-* Licensed to the Apache Software Foundation (ASF) under one
-* or more contributor license agreements.  See the NOTICE file
-* distributed with this work for additional information
-* regarding copyright ownership.  The ASF licenses this file
-* to you under the Apache License, Version 2.0 (the
-* "License"); you may not use this file except in compliance
-* with the License.  You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing,
-* software distributed under the License is distributed on an
-* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-* KIND, either express or implied.  See the License for the
-* specific language governing permissions and limitations
-* under the License.
-*
-*************************************************************/
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ *************************************************************/
 
 // adapted from google::tensorflow::logging
 
@@ -25,6 +25,7 @@
 #define SINGA_UTILS_LOGGING_H_
 
 #include <stdlib.h>
+
 #include <sstream>
 #include <string>
 #ifdef USE_GLOG
@@ -34,7 +35,7 @@
 namespace singa {
 
 /// Global functions for both glog and built-in log
-void InitLogging(const char *argv);
+void InitLogging(const char* argv);
 /// Make it so that all log messages go only to stderr
 void LogToStderr();
 /// Make it so that all log messages of at least a particular severity are
@@ -83,8 +84,7 @@ class LogMessageFatal : public LogMessage {
   ::singa::logging::LogMessage(__FILE__, __LINE__, singa::WARNING)
 #define _SINGA_LOG_ERROR \
   ::singa::logging::LogMessage(__FILE__, __LINE__, singa::ERROR)
-#define _SINGA_LOG_FATAL \
-  ::singa::logging::LogMessageFatal(__FILE__, __LINE__)
+#define _SINGA_LOG_FATAL ::singa::logging::LogMessageFatal(__FILE__, __LINE__)
 
 #define LOG(severity) _SINGA_LOG_##severity
 
@@ -92,17 +92,16 @@ class LogMessageFatal : public LogMessage {
 /// controlled by NDEBUG, so the check will be executed regardless of
 /// compilation mode.  Therefore, it is safe to do things like:
 ///    CHECK(fp->Write(x) == 4)
-#define CHECK(condition)              \
-  if (!(condition)) \
-  LOG(FATAL) << "Check failed: " #condition " "
+#define CHECK(condition) \
+  if (!(condition)) LOG(FATAL) << "Check failed: " #condition " "
 
 // Function is overloaded for integral types to allow static const
 // integrals declared in classes and not defined to be used as arguments to
 // CHECK* macros. It's not encouraged though.
 template <typename T>
-  inline const T& GetReferenceableValue(const T& t) {
-    return t;
-  }
+inline const T& GetReferenceableValue(const T& t) {
+  return t;
+}
 inline char GetReferenceableValue(char t) { return t; }
 inline unsigned char GetReferenceableValue(unsigned char t) { return t; }
 inline signed char GetReferenceableValue(signed char t) { return t; }
@@ -149,8 +148,7 @@ struct CheckOpString {
 
 // Build the error message string. Specify no inlining for code size.
 template <typename T1, typename T2>
-string* MakeCheckOpString(const T1& v1, const T2& v2,
-    const char* exprtext);
+string* MakeCheckOpString(const T1& v1, const T2& v2, const char* exprtext);
 
 // A helper class for formatting "expr (V1 vs. V2)" in a CHECK_XX
 // statement.  See MakeCheckOpString for sample usage.  Other
@@ -187,17 +185,17 @@ string* MakeCheckOpString(const T1& v1, const T2& v2, const char* exprtext) {
 // The (int, int) specialization works around the issue that the compiler
 // will not instantiate the template version of the function on values of
 // unnamed enum type - see comment below.
-#define SINGA_DEFINE_CHECK_OP_IMPL(name, op)                         \
-  template <typename T1, typename T2>                                \
-  inline string* name##Impl(const T1& v1, const T2& v2,              \
-                            const char* exprtext) {                  \
-    if (v1 op v2)                                                    \
-      return NULL;                                                   \
-    else                                                             \
+#define SINGA_DEFINE_CHECK_OP_IMPL(name, op)                        \
+  template <typename T1, typename T2>                               \
+  inline string* name##Impl(const T1& v1, const T2& v2,             \
+                            const char* exprtext) {                 \
+    if (v1 op v2)                                                   \
+      return NULL;                                                  \
+    else                                                            \
       return ::singa::logging::MakeCheckOpString(v1, v2, exprtext); \
-  }                                                                  \
-  inline string* name##Impl(int v1, int v2, const char* exprtext) {  \
-    return name##Impl<int, int>(v1, v2, exprtext);                   \
+  }                                                                 \
+  inline string* name##Impl(int v1, int v2, const char* exprtext) { \
+    return name##Impl<int, int>(v1, v2, exprtext);                  \
   }
 
 // We use the full name Check_EQ, Check_NE, etc. in case the file including
@@ -205,12 +203,12 @@ string* MakeCheckOpString(const T1& v1, const T2& v2, const char* exprtext) {
 // This happens if, for example, those are used as token names in a
 // yacc grammar.
 SINGA_DEFINE_CHECK_OP_IMPL(Check_EQ,
-                           == )  // Compilation error with CHECK_EQ(NULL, x)?
-SINGA_DEFINE_CHECK_OP_IMPL(Check_NE, != )  // Use CHECK(x == NULL) instead.
-SINGA_DEFINE_CHECK_OP_IMPL(Check_LE, <= )
-SINGA_DEFINE_CHECK_OP_IMPL(Check_LT, < )
-SINGA_DEFINE_CHECK_OP_IMPL(Check_GE, >= )
-SINGA_DEFINE_CHECK_OP_IMPL(Check_GT, > )
+                           ==)  // Compilation error with CHECK_EQ(NULL, x)?
+SINGA_DEFINE_CHECK_OP_IMPL(Check_NE, !=)  // Use CHECK(x == NULL) instead.
+SINGA_DEFINE_CHECK_OP_IMPL(Check_LE, <=)
+SINGA_DEFINE_CHECK_OP_IMPL(Check_LT, <)
+SINGA_DEFINE_CHECK_OP_IMPL(Check_GE, >=)
+SINGA_DEFINE_CHECK_OP_IMPL(Check_GT, >)
 #undef SINGA_DEFINE_CHECK_OP_IMPL
 
 // In optimized mode, use CheckOpString to hint to compiler that
@@ -232,9 +230,9 @@ SINGA_DEFINE_CHECK_OP_IMPL(Check_GT, > )
 #define CHECK_LT(val1, val2) CHECK_OP(Check_LT, <, val1, val2)
 #define CHECK_GE(val1, val2) CHECK_OP(Check_GE, >=, val1, val2)
 #define CHECK_GT(val1, val2) CHECK_OP(Check_GT, >, val1, val2)
-#define CHECK_NOTNULL(val)                            \
+#define CHECK_NOTNULL(val)                           \
   ::singa::logging::CheckNotNull(__FILE__, __LINE__, \
-                                  "'" #val "' Must be non NULL", (val))
+                                 "'" #val "' Must be non NULL", (val))
 
 #ifndef NDEBUG
 // DCHECK_EQ/NE/...

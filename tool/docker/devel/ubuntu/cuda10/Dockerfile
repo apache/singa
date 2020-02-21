@@ -60,12 +60,10 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v3.12.2/cmake-3.12.2
     && tar zxf /tmp/cmake-3.12.2.tar.gz -C /tmp/ \
     && cd /tmp/cmake-3.12.2/ && ./bootstrap && make -j4 && make install
 
-# install mkldnn
-RUN wget https://github.com/intel/mkl-dnn/archive/v0.18.tar.gz -P /tmp/ \
-    && tar zxf /tmp/v0.18.tar.gz -C /tmp/ \
-    && cd /tmp/mkl-dnn-0.18/ \
-    && mkdir -p build && cd build && cmake .. \
-    && make && make install
+# install dnnl
+RUN wget https://github.com/intel/mkl-dnn/releases/download/v1.1/dnnl_lnx_1.1.0_cpu_gomp.tgz -P /tmp/ \
+    && tar zxf /tmp/dnnl_lnx_1.1.0_cpu_gomp.tgz -C /root
+ENV DNNL_ROOT /root/dnnl_lnx_1.1.0_cpu_gomp/
 
 # config ssh service
 RUN mkdir /var/run/sshd \
@@ -74,11 +72,34 @@ RUN mkdir /var/run/sshd \
     && sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config \
     && mkdir /root/.ssh
 
+# build nccl
+RUN git clone https://github.com/NVIDIA/nccl.git $HOME/nccl \
+    && cd $HOME/nccl \
+    && git checkout v2.4.8-1 \
+    && make -j src.build \
+    && apt-get update \
+    && apt install build-essential devscripts debhelper fakeroot -y \
+    && make pkg.debian.build \
+    && dpkg -i build/pkg/deb/libnccl2_2.4.8-1+cuda10.0_amd64.deb \
+    && dpkg -i build/pkg/deb/libnccl-dev_2.4.8-1+cuda10.0_amd64.deb
+
+# build mpiexec
+RUN wget http://www.mpich.org/static/downloads/3.3.2/mpich-3.3.2.tar.gz -P $HOME \
+    && cd $HOME \
+    && tar xfz mpich-3.3.2.tar.gz \
+    && cd mpich-3.3.2 \
+    && ./configure --prefix=$HOME/mpich-3.3.2/build --disable-fortran 2>&1 | tee c.txt \
+    && make 2>&1 | tee m.txt \
+    && make install 2>&1 | tee mi.txt \
+    && PATH=$HOME/mpich-3.3.2/build/bin:$PATH \
+    && export PATH
+
 # build singa
 RUN git clone https://github.com/apache/singa.git $HOME/singa \
     && cd $HOME/singa \
+    && git checkout dev \
     && mkdir build && cd build \
-    && /usr/local/bin/cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_PYTHON3=ON -DUSE_MKLDNN=ON ..
+    && /usr/local/bin/cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_PYTHON3=ON -DUSE_DNNL=ON -DUSE_DIST=ON ..
 RUN cd $HOME/singa/build && make && make install
 
 WORKDIR $HOME/singa

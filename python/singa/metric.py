@@ -122,7 +122,7 @@ class Precision(Metric):
         y_np = tensor.to_numpy(y)
 
         # Sort in descending order
-        pred_np = np.argsort(-x_np)[:, 0 : self.top_k]
+        pred_np = np.argsort(-x_np)[:, 0:self.top_k]
 
         prcs_np = np.zeros(pred_np.shape[0], dtype=np.float32)
 
@@ -185,7 +185,7 @@ class Recall(Metric):
         y_np = tensor.to_numpy(y)
 
         # Sort in descending order
-        pred_np = np.argsort(-x_np)[:, 0 : self.top_k]
+        pred_np = np.argsort(-x_np)[:, 0:self.top_k]
 
         recall_np = np.zeros(pred_np.shape[0], dtype=np.float32)
 

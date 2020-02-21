@@ -1,31 +1,32 @@
 /************************************************************
-*
-* Licensed to the Apache Software Foundation (ASF) under one
-* or more contributor license agreements.  See the NOTICE file
-* distributed with this work for additional information
-* regarding copyright ownership.  The ASF licenses this file
-* to you under the Apache License, Version 2.0 (the
-* "License"); you may not use this file except in compliance
-* with the License.  You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing,
-* software distributed under the License is distributed on an
-* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-* KIND, either express or implied.  See the License for the
-* specific language governing permissions and limitations
-* under the License.
-*
-*************************************************************/
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ *************************************************************/
 #include "singa/singa_config.h"
 #ifdef USE_CUDNN
 
-#include "singa/proto/core.pb.h"
+#include <cudnn.h>
+#include <math.h>  // exp tanh
+
 #include "../src/model/layer/cudnn_activation.h"
 #include "gtest/gtest.h"
-#include <math.h>  // exp tanh
-#include <cudnn.h>
+#include "singa/proto/core.pb.h"
 
 using singa::CudnnActivation;
 using singa::Shape;
@@ -39,7 +40,7 @@ TEST(CudnnActivation, Setup) {
   reluconf->set_negative_slope(0.5f);
 
   acti.Setup(Shape{3}, conf);
-//  EXPECT_EQ(CUDNN_ACTIVATION_RELU, acti.CudnnMode());
+  //  EXPECT_EQ(CUDNN_ACTIVATION_RELU, acti.CudnnMode());
   EXPECT_EQ(0.5f, acti.Negative_slope());
 }
 
@@ -74,8 +75,9 @@ TEST(CudnnActivation, Forward) {
       for (size_t i = 0; i < n; i++) y[i] = tanh(x[i]);
     } else if (acti.Mode() == "relu") {
       for (size_t i = 0; i < n; i++) y[i] = (x[i] >= 0.f) ? x[i] : 0.f;
-    } else
+    } else {
       LOG(FATAL) << "Unkown activation: " << acti.Mode();
+    }
     EXPECT_FLOAT_EQ(y[0], yptr[0]);
     EXPECT_FLOAT_EQ(y[4], yptr[4]);
     EXPECT_FLOAT_EQ(y[5], yptr[5]);
@@ -123,8 +125,9 @@ TEST(CudnnActivation, Backward) {
       for (size_t i = 0; i < n; i++)
         dx[i] =
             grad[i] * (x[i] > 0.f);  //+ acti.Negative_slope() * (x[i] <= 0.f);
-    } else
+    } else {
       LOG(FATAL) << "Unkown activation: " << acti.Mode();
+    }
     for (size_t i = 0; i < n; i++) {
       EXPECT_NEAR(dx[i], xptr[i], 1e-7);
     }

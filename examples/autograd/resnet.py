@@ -28,6 +28,7 @@ from singa import opt
 import numpy as np
 from tqdm import trange
 
+
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
     return autograd.Conv2d(
@@ -76,17 +77,22 @@ class Bottleneck(autograd.Layer):
 
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(Bottleneck, self).__init__()
-        self.conv1 = autograd.Conv2d(
-            inplanes, planes, kernel_size=1, bias=False
-        )
+        self.conv1 = autograd.Conv2d(inplanes,
+                                     planes,
+                                     kernel_size=1,
+                                     bias=False)
         self.bn1 = autograd.BatchNorm2d(planes)
-        self.conv2 = autograd.Conv2d(
-            planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
-        )
+        self.conv2 = autograd.Conv2d(planes,
+                                     planes,
+                                     kernel_size=3,
+                                     stride=stride,
+                                     padding=1,
+                                     bias=False)
         self.bn2 = autograd.BatchNorm2d(planes)
-        self.conv3 = autograd.Conv2d(
-            planes, planes * self.expansion, kernel_size=1, bias=False
-        )
+        self.conv3 = autograd.Conv2d(planes,
+                                     planes * self.expansion,
+                                     kernel_size=1,
+                                     bias=False)
         self.bn3 = autograd.BatchNorm2d(planes * self.expansion)
 
         self.downsample = downsample
@@ -115,16 +121,22 @@ class Bottleneck(autograd.Layer):
         return out
 
 
-__all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152']
+__all__ = [
+    'ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152'
+]
 
 
 class ResNet(autograd.Layer):
+
     def __init__(self, block, layers, num_classes=1000):
         self.inplanes = 64
         super(ResNet, self).__init__()
-        self.conv1 = autograd.Conv2d(
-            3, 64, kernel_size=7, stride=2, padding=3, bias=False
-        )
+        self.conv1 = autograd.Conv2d(3,
+                                     64,
+                                     kernel_size=7,
+                                     stride=2,
+                                     padding=3,
+                                     bias=False)
         self.bn1 = autograd.BatchNorm2d(64)
         self.maxpool = autograd.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
@@ -271,13 +283,15 @@ if __name__ == "__main__":
             dev.Sync()
             softmax += time.time() - tick
             for p, g in autograd.backward(loss):
-                dev.Sync()  # this "for" loops for a large number of times, so can slow down
+                dev.Sync(
+                )  # this "for" loops for a large number of times, so can slow down
                 tick = time.time()
                 sgd.update(p, g)
-                dev.Sync()  # this "for" loops for a large number of times, so can slow down
+                dev.Sync(
+                )  # this "for" loops for a large number of times, so can slow down
                 update += time.time() - tick
 
-    dev.Sync()            
+    dev.Sync()
     end = time.time()
     throughput = float(niters * batch_size) / (end - start)
     print("Throughput = {} per second".format(throughput))
@@ -286,4 +300,5 @@ if __name__ == "__main__":
     tsoftmax = float(softmax) / float(niters)
     tbackward = titer - tforward - tsoftmax
     tsgd = float(update) / float(niters)
-    print("Total={}, forward={}, softmax={}, backward={}, sgd={}".format(titer, tforward, tsoftmax, tbackward, tsgd))
+    print("Total={}, forward={}, softmax={}, backward={}, sgd={}".format(
+        titer, tforward, tsoftmax, tbackward, tsgd))

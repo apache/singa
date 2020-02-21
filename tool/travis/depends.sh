@@ -34,3 +34,7 @@ conda update -q conda
 conda install conda-build
 conda install anaconda-client
 conda config --add channels conda-forge
+
+# linting
+conda install -c conda-forge pylint
+conda install -c conda-forge cpplint
