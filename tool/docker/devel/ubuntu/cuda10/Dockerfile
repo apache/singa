@@ -48,6 +48,7 @@ RUN apt-get update \
     && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/* \
     && pip3 install -U --no-cache \
+    && pip3 install tqdm \
     wheel \
     numpy \
     setuptools \
@@ -90,9 +91,8 @@ RUN wget http://www.mpich.org/static/downloads/3.3.2/mpich-3.3.2.tar.gz -P $HOME
     && cd mpich-3.3.2 \
     && ./configure --prefix=$HOME/mpich-3.3.2/build --disable-fortran 2>&1 | tee c.txt \
     && make 2>&1 | tee m.txt \
-    && make install 2>&1 | tee mi.txt \
-    && PATH=$HOME/mpich-3.3.2/build/bin:$PATH \
-    && export PATH
+    && make install 2>&1 | tee mi.txt
+ENV PATH=/root/mpich-3.3.2/build/bin:$PATH
 
 # build singa
 RUN git clone https://github.com/apache/singa.git $HOME/singa \
@@ -101,8 +101,9 @@ RUN git clone https://github.com/apache/singa.git $HOME/singa \
     && mkdir build && cd build \
     && /usr/local/bin/cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_PYTHON3=ON -DUSE_DNNL=ON -DUSE_DIST=ON ..
 RUN cd $HOME/singa/build && make && make install
+ENV PYTHONPATH="/root/singa/build/python/"
 
-WORKDIR $HOME/singa
+WORKDIR /root/singa
 EXPOSE 22
 
 CMD ["/usr/sbin/sshd", "-D"]
