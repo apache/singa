@@ -83,13 +83,6 @@ class ConvHandle {
   dnnl::memory::dims o_dims;
   dnnl::memory::dims w_dims;
 
-  dnnl::memory::desc x_md;
-  dnnl::memory::desc w_md;
-  dnnl::memory::desc b_md;
-  dnnl::memory::desc y_md;
-  dnnl::convolution_forward::desc *conv_d;
-  dnnl::convolution_forward::primitive_desc *conv_pd;
-
   Tensor *db;
 #endif  // USE_DNNL
 };

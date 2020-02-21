@@ -22,11 +22,15 @@
 
 #ifdef USE_CBLAS
 
+#include <chrono>
+#include <iostream>
 #include "../src/model/operation/convolution.h"
 #include "gtest/gtest.h"
 
 using namespace singa;
 #ifdef USE_DNNL
+
+#include <stdio.h>
 
 TEST(DNNLOperation_Convolution, Forward) {
   const size_t batch_size = 2, c = 1, h = 3, w = 3;
@@ -69,6 +73,78 @@ TEST(DNNLOperation_Convolution, Forward) {
   EXPECT_EQ(7.0f, out_ptr1[5]);
   EXPECT_EQ(-3.0f, out_ptr1[6]);
   EXPECT_EQ(12.0f, out_ptr1[7]);
+}
+
+TEST(DNNLOperation_Convolution, Performance) {
+  const int batch = 64;
+  const int image_h = 28;
+  const int in_chan = 1;
+  const int out_chan = 20;
+  const int ker = 5;
+  const int stride = 1;
+  const int out_size = 24;
+  const bool bias_flag = true;
+
+  Tensor grad(Shape{batch, out_chan, out_size, out_size});
+  Tensor in(Shape{batch, in_chan, image_h, image_h});
+  Tensor weight(Shape{out_chan, in_chan, ker, ker});
+  Tensor bias(Shape{out_chan});
+  Gaussian(0.0f, 1.0f, &grad);
+  Gaussian(0.0f, 1.0f, &in);
+  Gaussian(0.0f, 1.0f, &weight);
+  Gaussian(0.0f, 1.0f, &bias);
+  ConvHandle conv_handle(in, {ker, ker}, {stride, stride}, {0, 0}, in_chan,
+                         out_chan, bias_flag);
+
+  const int times = 100;
+
+  {
+    std::chrono::steady_clock::time_point begin =
+        std::chrono::steady_clock::now();
+    for (int i = 0; i < times; i++) {
+      Tensor out = CpuConvForward(in, weight, bias, conv_handle);
+    }
+    std::chrono::steady_clock::time_point end =
+        std::chrono::steady_clock::now();
+    std::cout << "[avg]forward Time difference = "
+              << (std::chrono::duration_cast<std::chrono::microseconds>(end -
+                                                                        begin)
+                      .count()) /
+                     times
+              << "[microsec]" << std::endl;
+  }
+
+  {
+    std::chrono::steady_clock::time_point begin =
+        std::chrono::steady_clock::now();
+    for (int i = 0; i < times; i++) {
+      Tensor in_grad = CpuConvBackwardx(grad, weight, in, conv_handle);
+    }
+    std::chrono::steady_clock::time_point end =
+        std::chrono::steady_clock::now();
+    std::cout << "[avg]backwardx Time difference = "
+              << (std::chrono::duration_cast<std::chrono::microseconds>(end -
+                                                                        begin)
+                      .count()) /
+                     times
+              << "[microsec]" << std::endl;
+  }
+
+  {
+    std::chrono::steady_clock::time_point begin =
+        std::chrono::steady_clock::now();
+    for (int i = 0; i < times; i++) {
+      Tensor dw = CpuConvBackwardW(grad, in, weight, conv_handle);
+    }
+    std::chrono::steady_clock::time_point end =
+        std::chrono::steady_clock::now();
+    std::cout << "[avg]backwardW Time difference = "
+              << (std::chrono::duration_cast<std::chrono::microseconds>(end -
+                                                                        begin)
+                      .count()) /
+                     times
+              << "[microsec]" << std::endl;
+  }
 }
 
 TEST(DNNLOperation_Convolution, Backward) {
@@ -136,6 +212,7 @@ TEST(DNNLOperation_Convolution, Backward) {
   EXPECT_EQ(dy[7] * wptr[4], dx[17]);
 
   Tensor dw = CpuConvBackwardW(grad, in, weight, conv_handle);
+
   Tensor db = CpuConvBackwardb(grad, bias, conv_handle);
 
   const float *dbptr = db.data<float>();
