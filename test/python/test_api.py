@@ -573,13 +573,13 @@ class TestAPI(unittest.TestCase):
             tensor.to_numpy(_cTensor_to_pyTensor(dx0_ct)), dx1)
 
     def test_concat(self):
-        np1 = np.random.random([5,6,7,8]).astype(np.float32)
-        np2 = np.random.random([5,6,7,1]).astype(np.float32)
-        np3 = np.concatenate((np1,np2),axis=3)
+        np1 = np.random.random([5, 6, 7, 8]).astype(np.float32)
+        np2 = np.random.random([5, 6, 7, 1]).astype(np.float32)
+        np3 = np.concatenate((np1, np2), axis=3)
 
         for dev in [cpu_dev, gpu_dev]:
-            t1 = tensor.Tensor(device = dev, data=np1)
-            t2 = tensor.Tensor(device = dev, data=np2)
+            t1 = tensor.Tensor(device=dev, data=np1)
+            t2 = tensor.Tensor(device=dev, data=np2)
 
             ctensors = singa_api.VecTensor()
             ctensors.append(t1.data)
@@ -589,8 +589,6 @@ class TestAPI(unittest.TestCase):
 
             np.testing.assert_array_almost_equal(
                 tensor.to_numpy(_cTensor_to_pyTensor(t3_ct)), np3)
-
-
 
 
 if __name__ == '__main__':
