@@ -39,7 +39,7 @@ find src/api/ \
     src/model/operation/ \
     include/singa/io/communicator.h \
     src/io/communicator.cc \
-    test/singa/ -iname *.h -o -iname *.cc | xargs cpplint --quiet
+    test/singa/ -iname *.h -o -iname *.cc | xargs cpplint --quiet --verbose=5
 CPPLINTRESULT=$?
 if [[ $CPPLINTRESULT ]]; then
   echo $CPPLINTRESULT
