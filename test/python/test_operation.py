@@ -169,14 +169,15 @@ class TestPythonOperation(unittest.TestCase):
         y_without_bias = conv_without_bias_0(gpu_input_tensor)
         self.check_shape(y_without_bias.shape, (2, 1, 2, 2))
 
-    def _conv2d_same_pad(self, dev, pad_mode):
-
-        # (samples, channels, input_w, input_h)
-        x = tensor.Tensor(shape=(3, 3, 32, 32), device=dev)
+    def _conv_same_pad(self, dev, pad_mode, is_2d):
+        if is_2d:
+            x_w, w_w, k_w, p_w = 32, 4, 4, 2
+        else:
+            x_w, w_w, k_w, p_w = 1, 1, 1, 0
+        x = tensor.Tensor(shape=(3, 3, x_w, 32), device=dev)
         x.gaussian(0.0, 1.0)
 
-        # (filter, channels, kernel_w, kernel_h)
-        w = tensor.Tensor(shape=(3, 3, 4, 4), device=dev)
+        w = tensor.Tensor(shape=(3, 3, w_w, 4), device=dev)
         w.gaussian(0.0, 1.0)
 
         # with the same padding, the padding should be 3
@@ -184,10 +185,9 @@ class TestPythonOperation(unittest.TestCase):
         # for SAME_LOWER, is (2, 1)
 
         x_shape = x.shape
-        kernel = (4, 4)
-        padding = (
-            2, 2
-        )  # we add 4 padding here and hope the conv and trim one padding then
+        kernel = (k_w, 4)
+        # we add 4 padding here and hope the conv and trim one padding then
+        padding = (p_w, 2)  
         stride = (1, 1)
         group = 1
         bias = False
@@ -204,46 +204,82 @@ class TestPythonOperation(unittest.TestCase):
                                            in_channels, out_channels, bias,
                                            group)
         y = autograd._Conv2d(handle, pad_mode)(x, w)[0]
-        self.check_shape(y.shape, (3, 3, 32, 32))
 
-    def test_conv2d_same_upper_pad(self):
-        self._conv2d_same_pad(gpu_dev, "SAME_UPPER")
-        self._conv2d_same_pad(cpu_dev, "SAME_UPPER")
-
-    def test_conv2d_same_lower_pad(self):
-        self._conv2d_same_pad(gpu_dev, "SAME_LOWER")
-        self._conv2d_same_pad(cpu_dev, "SAME_LOWER")
-
-    def test_sum_cpu(self):
-        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
-                      9.0]).reshape(3, 2).astype(np.float32)
-        x1 = np.array([0.1, 1.0, 0.4, 4.0, 0.9,
-                       9.0]).reshape(3, 2).astype(np.float32)
-        y = x + x1
-        dy = np.ones((3, 2), dtype=np.float32)
-        grad0 = dy
-        grad1 = dy
-        x = tensor.from_numpy(x)
-        x1 = tensor.from_numpy(x1)
+        dy = np.ones((3, 3, x_w, 32), dtype=np.float32)
         dy = tensor.from_numpy(dy)
-        x.to_device(cpu_dev)
-        x1.to_device(cpu_dev)
-        dy.to_device(cpu_dev)
+        dy.to_device(dev)
 
-        result = autograd.sum(x, x1)
-        dx0, dx1 = result.creator.backward(dy.data)
+        dx, dW = y.creator.backward(dy.data)
+        self.check_shape(y.shape, (3, 3, x_w, 32))
+        self.check_shape(dx.shape(), (3, 3, x_w, 32))
+        self.check_shape(dW.shape(), (3, 3, w_w, 4))
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(result),
-                                             y,
-                                             decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(
-            tensor.from_raw_tensor(dx0)),
-                                             grad0,
-                                             decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(
-            tensor.from_raw_tensor(dx1)),
-                                             grad1,
-                                             decimal=5)
+    def test_conv2d_same_pad_cpu(self):
+        self._conv_same_pad(cpu_dev, "SAME_LOWER", True)
+        self._conv_same_pad(cpu_dev, "SAME_UPPER", True)
+
+    def test_conv2d_same_pad_gpu(self):
+        self._conv_same_pad(gpu_dev, "SAME_LOWER", True)
+        self._conv_same_pad(gpu_dev, "SAME_UPPER", True)
+
+    def test_conv1d_same_pad_cpu(self):
+        self._conv_same_pad(cpu_dev, "SAME_LOWER", False)
+        self._conv_same_pad(cpu_dev, "SAME_UPPER", False)
+
+    def test_conv1d_same_pad_gpu(self):
+        self._conv_same_pad(gpu_dev, "SAME_LOWER", False)
+        self._conv_same_pad(gpu_dev, "SAME_UPPER", False)
+
+    def _pooling_same_pad(self, dev, pad_mode, is_2d):
+        if is_2d:
+            x_w, k_w, p_w = 32, 4, 2
+        else:
+            x_w, k_w, p_w = 1, 1, 0
+        x = tensor.Tensor(shape=(3, 3, x_w, 32), device=dev)
+        x.gaussian(0.0, 1.0)
+
+        # with the same padding, the padding should be 3
+        # for SAME_UPPER, is (1, 2)
+        # for SAME_LOWER, is (2, 1)
+
+        x_shape = x.shape
+        kernel = (k_w, 4)
+        # we add 4 padding here and hope the conv and trim one padding then
+        padding = (p_w, 2)  
+        stride = (1, 1)
+
+        if dev == cpu_dev:
+            handle = singa.PoolingHandle(x.data, kernel, stride, padding,
+                                         True)
+        else:
+            handle = singa.CudnnPoolingHandle(x.data, kernel, stride, padding,
+                                              True)
+       
+        y = autograd._Pooling2d(handle, pad_mode)(x)[0]
+
+        dy = np.ones((3, 3, x_w, 32), dtype=np.float32)
+        dy = tensor.from_numpy(dy)
+        dy.to_device(dev)
+
+        dx = y.creator.backward(dy.data)
+        self.check_shape(y.shape, (3, 3, x_w, 32))
+        self.check_shape(dx.shape(), (3, 3, x_w, 32))
+
+    def test_pooling2d_same_pad_cpu(self):
+        self._pooling_same_pad(cpu_dev, "SAME_LOWER", True)
+        self._pooling_same_pad(cpu_dev, "SAME_UPPER", True)
+
+    def test_pooling2d_same_pad_gpu(self):
+        self._pooling_same_pad(gpu_dev, "SAME_LOWER", True)
+        self._pooling_same_pad(gpu_dev, "SAME_UPPER", True)
+
+    def test_pooling1d_same_pad_cpu(self):
+        self._pooling_same_pad(cpu_dev, "SAME_LOWER", False)
+        self._pooling_same_pad(cpu_dev, "SAME_UPPER", False)
+
+    def test_pooling1d_same_pad_gpu(self):
+        self._pooling_same_pad(gpu_dev, "SAME_LOWER", False)
+        self._pooling_same_pad(gpu_dev, "SAME_UPPER", False)
 
     def test_sum_gpu(self):
         x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
@@ -3508,7 +3544,6 @@ class TestPythonOperation(unittest.TestCase):
                                                  grad1,
                                                  decimal=5)
 
-
     def globalaveragepool_channel_first(self, dev):
         X = np.array([[[
             [1, 2, 3],
@@ -3529,8 +3564,13 @@ class TestPythonOperation(unittest.TestCase):
         DX = np.ones(X.shape, dtype=np.float32)
         DX = np.multiply(DX, DY) / np.prod(X.shape[2:])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result),
+                                             XT,
+                                             decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(
+            tensor.from_raw_tensor(dx)),
+                                             DX,
+                                             decimal=5)
 
     def globalaveragepool_channel_last(self, dev):
         X = np.array([[
@@ -3552,8 +3592,13 @@ class TestPythonOperation(unittest.TestCase):
         DX = np.ones(X.shape, dtype=np.float32)
         DX = np.multiply(DX, DY) / np.prod(X.shape[1:-1])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result),
+                                             XT,
+                                             decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(
+            tensor.from_raw_tensor(dx)),
+                                             DX,
+                                             decimal=5)
 
     def test_globalaveragepool_cpu(self):
         self.globalaveragepool_channel_first(cpu_dev)
@@ -3562,6 +3607,7 @@ class TestPythonOperation(unittest.TestCase):
     def test_globalaveragepool_gpu(self):
         self.globalaveragepool_channel_first(gpu_dev)
         self.globalaveragepool_channel_last(gpu_dev)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1191,17 +1191,105 @@ def cat(xs, axis=0):
     return Concat(axis)(*xs)[0]
 
 
+def _handle_same_pad_fwd(y, pad_mode):
+    """
+    handle same padding mode forward
+    Args:dy
+        the forward tensor
+    Returns: 
+        tensor, the output
+    """
+    y_shape = y.shape()
+    y = tensor.from_raw_tensor(y)
+    if y_shape[2] == 1:
+        label_1, label_2 = 0, 1
+    else:
+        label_1, label_2 = 1, 1
+    if pad_mode == "SAME_UPPER":
+        y = y[:, :, label_1:, label_2:]
+    elif pad_mode == "SAME_LOWER":
+        y = y[:, :, :-label_1, :-label_2]
+    return y.data
+
+
+def _handle_same_pad_bwd(dy, pad_mode):
+    """
+    handle same padding mode backward
+    Args:dy
+        the backward tensor
+    Returns: 
+        tensor, the output
+    """
+    dy_shape = dy.shape()
+    # one column zeros at last axis
+    padding_1 = np.zeros([*dy_shape[:3], 1]).astype(np.float32)
+    padding_1 = tensor.Tensor(device=dy.device(), data=padding_1)
+    dy_tensor = tensor.from_raw_tensor(dy)
+    if pad_mode == "SAME_UPPER":
+        concat_left, concat_right = padding_1, dy_tensor
+    else:
+        concat_left, concat_right = dy_tensor, padding_1
+    dy_tensor = tensor.concatenate((concat_left, concat_right), 3)
+    if dy_shape[2] != 1:  # if not 1d
+        # one row zeros at last second axis
+        padding_2 = np.zeros([*dy_shape[:2], 1,
+                              dy_shape[-1] + 1]).astype(np.float32)
+        padding_2 = tensor.Tensor(device=dy.device(), data=padding_2)
+        if pad_mode == "SAME_UPPER":
+            concat_left, concat_right = padding_2, dy_tensor
+        else:
+            concat_left, concat_right = dy_tensor, padding_2
+        dy_tensor = tensor.concatenate((dy_tensor, padding_2), 2)
+    return dy_tensor.data
+
+
+def _get_padding_shape(input_spatial_shape, kernel_spatial_shape,
+                       strides_spatial, output_spatial_shape):
+    """
+    return padding shape of conv2d or pooling,
+    ! borrow from onnx
+    Args:
+        auto_pad: string
+    Args:
+        kernel_spatial_shape: list[int]
+    Args:
+        strides_spatial: list[int]
+    Args:
+        output_spatial_shape: list[int]
+    Returns: 
+        list[int]
+    """
+    pad_shape = [0] * len(input_spatial_shape)
+    for i in range(len(input_spatial_shape)):
+        pad_shape[i] = (output_spatial_shape[i] - 1) * strides_spatial[i] + \
+            kernel_spatial_shape[i] - input_spatial_shape[i]
+        # because we only support one direction padding, we directly divede 2 here
+        pad_shape[i] = int(math.ceil(pad_shape[i] / 2))
+    return pad_shape
+
+
 class _Conv2d(Operation):
+
     def __init__(self, handle, pad_mode="NOTSET"):
         super(_Conv2d, self).__init__()
         self.handle = handle
-        # Where default value is NOTSET, which means explicit padding is used. 
+        # Where default value is NOTSET, which means explicit padding is used.
         # SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
-        # In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER. 
+        # In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
         self.pad_mode = pad_mode
 
     def forward(self, x, W, b=None):
         assert x.nDim() == 4, "The dimensions of input should be 4D."
+        # check padding shape
+        if self.pad_mode != "NOTSET":
+            _padding = [self.handle.pad_w, self.handle.pad_h]
+            _padding_correct = _get_padding_shape(
+                x.shape()[2:], (self.handle.kernel_w, self.handle.kernel_h),
+                (self.handle.stride_w, self.handle.stride_h),
+                x.shape()[2:])
+            assert _padding == _padding_correct, (
+                'For a same mode, the given padding %s is wrong, the correct one should be %s.'
+                % (_padding, _padding_correct))
 
         if training:
             if self.handle.bias_term:
@@ -1215,19 +1303,20 @@ class _Conv2d(Operation):
             b.SetFloatValue(0.0)
 
         if (type(self.handle) != singa.ConvHandle):
-            rew_tensor = singa.GpuConvForward(x, W, b, self.handle)
+            y = singa.GpuConvForward(x, W, b, self.handle)
         else:
-            rew_tensor = singa.CpuConvForward(x, W, b, self.handle)
-        py_tensor = tensor.from_raw_tensor(rew_tensor)
-        if self.pad_mode == "SAME_UPPER":
-            py_tensor = py_tensor[:, :, 1:, 1:]
-        elif self.pad_mode == "SAME_LOWER":
-            py_tensor = py_tensor[:, :, :-1, :-1]
-        return py_tensor.data
+            y = singa.CpuConvForward(x, W, b, self.handle)
+
+        if self.pad_mode != "NOTSET":
+            y = _handle_same_pad_fwd(y, self.pad_mode)
+        return y
 
     def backward(self, dy):
         assert training is True and hasattr(
             self, "inputs"), "Please set training as True before do BP. "
+
+        if self.pad_mode != "NOTSET":
+            dy = _handle_same_pad_bwd(dy, self.pad_mode)
 
         if (type(self.handle) != singa.ConvHandle):
             dx = singa.GpuConvBackwardx(dy, self.inputs[1], self.inputs[0],
@@ -1251,11 +1340,11 @@ class _Conv2d(Operation):
                 return dx, dW
 
 
-def conv2d(handle, x, W, b=None):
+def conv2d(handle, x, W, b=None, pad_mode="NOTSET"):
     if b is None:
-        return _Conv2d(handle)(x, W)[0]
+        return _Conv2d(handle, pad_mode)(x, W)[0]
     else:
-        return _Conv2d(handle)(x, W, b)[0]
+        return _Conv2d(handle, pad_mode)(x, W, b)[0]
 
 
 class Conv2d(Layer):
@@ -1269,6 +1358,7 @@ class Conv2d(Layer):
                  dilation=1,
                  group=1,
                  bias=True,
+                 pad_mode="NOTSET",
                  **kwargs):
 
         self.in_channels = in_channels
@@ -1300,7 +1390,7 @@ class Conv2d(Layer):
             self.padding = (padding, padding)
         elif isinstance(padding, tuple):
             self.padding = padding
-        else:
+        elif pad_mode == "NOTSET":
             raise TypeError("Wrong padding type.")
 
         if dilation != 1:
@@ -1344,10 +1434,16 @@ class Conv2d(Layer):
             # to keep consistency when to do forward.
             self.b = None
             # Tensor(data=CTensor([]), requires_grad=False, stores_grad=False)
+        self.pad_mode = pad_mode
 
     def __call__(self, x):
 
         assert x.shape[1] == self.in_channels, "in_channels mismatched"
+
+        # if same pad mode, re-compute the padding
+        if self.pad_mode != "NOTSET":
+            self.padding = _get_padding_shape(x.shape[2:], self.kernel_size,
+                                              self.stride, x.shape[2:])
 
         if self.bias:
             self.device_check(x, self.W, self.b)
@@ -1571,22 +1667,40 @@ def batchnorm_2d(handle, x, scale, bias, running_mean, running_var):
 
 class _Pooling2d(Operation):
 
-    def __init__(self, handle):
+    def __init__(self, handle, pad_mode="NOTSET"):
+        # Where default value is NOTSET, which means explicit padding is used.
+        # SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+        # In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
         super(_Pooling2d, self).__init__()
         self.handle = handle
+        self.pad_mode = pad_mode
 
     def forward(self, x):
+        # check padding shape
+        if self.pad_mode != "NOTSET":
+            _padding = [self.handle.pad_w, self.handle.pad_h]
+            _padding_correct = _get_padding_shape(
+                x.shape()[2:], (self.handle.kernel_w, self.handle.kernel_h),
+                (self.handle.stride_w, self.handle.stride_h),
+                x.shape()[2:])
+            assert _padding == _padding_correct, (
+                'For a same mode, the given padding %s is wrong, the correct one should be %s.'
+                % (_padding, _padding_correct))
+
         if (type(self.handle) != singa.PoolingHandle):
             y = singa.GpuPoolingForward(self.handle, x)
         else:
             y = singa.CpuPoolingForward(self.handle, x)
-
+        if self.pad_mode != "NOTSET":
+            y = _handle_same_pad_fwd(y, self.pad_mode)
         if training:
             self.cache = (x, y)
 
         return y
 
     def backward(self, dy):
+        if self.pad_mode != "NOTSET":
+            dy = _handle_same_pad_bwd(dy, self.pad_mode)
         if (type(self.handle) != singa.PoolingHandle):
             dx = singa.GpuPoolingBackward(self.handle, dy, self.cache[0],
                                           self.cache[1])
@@ -1597,13 +1711,18 @@ class _Pooling2d(Operation):
         return dx
 
 
-def pooling_2d(handle, x):
-    return _Pooling2d(handle)(x)[0]
+def pooling_2d(handle, x, pad_mode="NOTSET"):
+    return _Pooling2d(handle, pad_mode)(x)[0]
 
 
 class Pooling2d(Layer):
 
-    def __init__(self, kernel_size, stride=None, padding=0, is_max=True):
+    def __init__(self,
+                 kernel_size,
+                 stride=None,
+                 padding=0,
+                 is_max=True,
+                 pad_mode="NOTSET"):
         if isinstance(kernel_size, int):
             self.kernel_size = (kernel_size, kernel_size)
         elif isinstance(kernel_size, tuple):
@@ -1627,12 +1746,17 @@ class Pooling2d(Layer):
             self.padding = (padding, padding)
         elif isinstance(padding, tuple):
             self.padding = padding
-        else:
+        elif pad_mode == "NOTSET":
             raise TypeError("Wrong padding type.")
 
         self.is_max = is_max
+        self.pad_mode = pad_mode
 
     def __call__(self, x):
+        # if same pad mode, re-compute the padding
+        if self.pad_mode != "NOTSET":
+            self.padding = _get_padding_shape(x.shape[2:], self.kernel_size,
+                                              self.stride, x.shape[2:])
 
         out_shape_h = (int(
             (x.shape[2] + 2 * self.padding[0] - self.kernel_size[0]) //
@@ -1679,38 +1803,40 @@ class Pooling2d(Layer):
                     self.is_max,
                 )
 
-        y = pooling_2d(self.handle, x)
+        y = pooling_2d(self.handle, x, self.pad_mode)
         return y
 
 
 class MaxPool2d(Pooling2d):
 
-    def __init__(self, kernel_size, stride=None, padding=0):
-        super(MaxPool2d, self).__init__(kernel_size, stride, padding, True)
+    def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
+        super(MaxPool2d, self).__init__(kernel_size, stride, padding, True,
+                                        pad_mode)
 
 
 class AvgPool2d(Pooling2d):
 
-    def __init__(self, kernel_size, stride=None, padding=0):
-        super(AvgPool2d, self).__init__(kernel_size, stride, padding, False)
+    def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
+        super(AvgPool2d, self).__init__(kernel_size, stride, padding, False,
+                                        pad_mode)
 
 
 class MaxPool1d(Pooling2d):
 
-    def __init__(self, kernel_size, stride=None, padding=0):
+    def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
         if stride is None:
             stride = kernel_size
-        super(MaxPool1d, self).__init__((1, kernel_size), (0, stride),
-                                        (0, padding), True)
+        super(MaxPool1d, self).__init__((1, kernel_size), (1, stride),
+                                        (0, padding), True, pad_mode)
 
 
 class AvgPool1d(Pooling2d):
 
-    def __init__(self, kernel_size, stride=None, padding=0):
+    def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
         if stride is None:
             stride = kernel_size
-        super(AvgPool1d, self).__init__((1, kernel_size), (0, stride),
-                                        (0, padding), False)
+        super(AvgPool1d, self).__init__((1, kernel_size), (1, stride),
+                                        (0, padding), False, pad_mode)
 
 
 class Tanh(Operation):
@@ -2844,6 +2970,7 @@ def reciprocal(x):
 
 
 class GlobalAveragePool(Operation):
+
     def __init__(self, data_format='channels_first'):
         """
         init a GlobalAveragePool operator
@@ -2867,14 +2994,14 @@ class GlobalAveragePool(Operation):
             self.mask = singa.Tensor(x.shape(), x.device())
 
         shape = list(x.shape())
-        
+
         # (N x C x H x W) for channels_first
         if self.data_format == 'channels_first':
             axes = tuple(i for i in range(2, len(shape)))
-            self.shape_divisor = 1/np.prod(shape[2:])
-        else: # (N x H x W x C) for channels_last
-            axes = tuple(i for i in range(1, len(shape)-1))
-            self.shape_divisor = 1/np.prod(shape[1:-1])
+            self.shape_divisor = 1 / np.prod(shape[2:])
+        else:  # (N x H x W x C) for channels_last
+            axes = tuple(i for i in range(1, len(shape) - 1))
+            self.shape_divisor = 1 / np.prod(shape[1:-1])
 
         # output shape
         # (N x C x 1 x 1) for channels_first
