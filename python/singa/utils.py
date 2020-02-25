@@ -123,8 +123,11 @@ def get_padding_shape(input_spatial_shape, kernel_spatial_shape,
     for i in range(len(input_spatial_shape)):
         pad_shape[i] = (output_spatial_shape[i] - 1) * strides_spatial[i] + \
             kernel_spatial_shape[i] - input_spatial_shape[i]
-        # because we only support one direction padding, we directly divede 2 here
-        pad_shape[i] = int(math.ceil(pad_shape[i] / 2))
+        # once need padding along one direction
+        if pad_shape[i] % 2 != 0:
+            pad_shape[i] = int(math.ceil(pad_shape[i] / 2)) * strides_spatial[i]
+        else:
+            pad_shape[i] = pad_shape[i] // 2
     return pad_shape
 
 
@@ -158,3 +161,18 @@ def get_output_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
                           (kernel_spatial_shape[i] - 1)) /
                     float(strides_spatial[i])))
     return out_shape
+
+
+def force_unicode(s):
+    """
+    return string of a bytes
+    ! borrow from onnx
+    Args:
+        s: string or bytes
+    Returns: 
+        string
+    """
+    try:
+        return s.decode('utf-8')
+    except AttributeError:
+        return s
