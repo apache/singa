@@ -3119,8 +3119,8 @@ def reciprocal(x):
     return Reciprocal()(x)[0]
 
 
-
 class Gemm(Operation):
+
     def __init__(self, alpha=1.0, beta=1.0, transA=0, transB=0):
         """
         init a General Matrix multiplication(Gemm) operator

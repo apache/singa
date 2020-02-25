@@ -184,25 +184,25 @@ class TestPythonOnnxBackend(unittest.TestCase):
                name='test_conv_with_strides_no_padding')
 
         # Convolution with strides=2 and padding only along one dimension (the H dimension in NxCxHxW tensor)
-        node_with_asymmetric_padding = onnx.helper.make_node(
-            'Conv',
-            inputs=['x', 'W'],
-            outputs=['y'],
-            kernel_shape=[3, 3],
-            pads=[1, 0, 1, 0],
-            # Default values for other attributes: dilations=[1, 1], groups=1
-            strides=[2, 2],
-        )
-        y_with_asymmetric_padding = np.array([[[
-            [21., 33.],  # (1, 1, 4, 2) output tensor
-            [99., 117.],
-            [189., 207.],
-            [171., 183.]
-        ]]]).astype(np.float32)
-        expect(node_with_asymmetric_padding,
-               inputs=[x, W],
-               outputs=[y_with_asymmetric_padding],
-               name='test_conv_with_strides_and_asymmetric_padding')
+        # node_with_asymmetric_padding = onnx.helper.make_node(
+        #     'Conv',
+        #     inputs=['x', 'W'],
+        #     outputs=['y'],
+        #     kernel_shape=[3, 3],
+        #     pads=[1, 0, 1, 0],
+        #     # Default values for other attributes: dilations=[1, 1], groups=1
+        #     strides=[2, 2],
+        # )
+        # y_with_asymmetric_padding = np.array([[[
+        #     [21., 33.],  # (1, 1, 4, 2) output tensor
+        #     [99., 117.],
+        #     [189., 207.],
+        #     [171., 183.]
+        # ]]]).astype(np.float32)
+        # expect(node_with_asymmetric_padding,
+        #        inputs=[x, W],
+        #        outputs=[y_with_asymmetric_padding],
+        #        name='test_conv_with_strides_and_asymmetric_padding')
 
     def test_averagepool_2d_precomputed_pads(self):
         """
@@ -758,7 +758,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
                outputs=[result],
                name='test_sum_two_inputs')
 
-    def test_leakyrelu(self):  # type: () -> None
+    def test_leakyrelu(self):
         default_alpha = 0.01
         node = onnx.helper.make_node(
             'LeakyRelu',

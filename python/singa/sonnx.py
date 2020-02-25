@@ -26,6 +26,7 @@ from onnx.backend.base import Backend, BackendRep
 from onnx import (checker, helper, numpy_helper, GraphProto, NodeProto,
                   TensorProto, OperatorSetIdProto, optimizer)
 import warnings
+import math
 
 from . import singa_wrap as singa
 from . import autograd
@@ -95,15 +96,9 @@ def get_pad_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
         for i in range(len(input_spatial_shape)):
             pad_shape[i] = (output_spatial_shape[i] - 1) * strides_spatial[i] + \
                 kernel_spatial_shape[i] - input_spatial_shape[i]
-            # todo, cannot add padding at only one dirction
+            # hanlde the padding at only one dirction
             if (pad_shape[i] % 2) == 0:
-
-                pad_shape[i] = pad_shape[i] // 2
-    elif auto_pad == 'VALID':
-        pass
-    if pad_shape[0] != pad_shape[1]:
-        # once the padding is odd, it means we must add extra padding at one end of the input
-        raise ValueError("Not implemented two directional padding")
+                pad_shape[i] = int(math.ceil(pad_shape[i] / 2))
     return pad_shape
 
 
@@ -793,7 +788,7 @@ class SingaBackend(Backend):
         'Sigmoid': 'sigmoid',
         'Add': 'add',
         'MatMul': 'Matmul',
-        'Conv': 'conv2d',
+        'Conv': '_Conv2d',
         'MaxPool': 'pooling_2d',
         'AveragePool': 'pooling_2d',
         'BatchNormalization': 'batchnorm_2d',
@@ -1044,10 +1039,15 @@ class SingaBackend(Backend):
             forward, the autograd of singa operator
         """
         kernel = tuple(onnx_node.attrs["kernel_shape"])
-        # todo: we only support the padding with tuple
-        padding = tuple(
-            onnx_node.attrs["pads"][0:2]) if "pads" in onnx_node.attrs else (0,
-                                                                             0)
+        padding = onnx_node.getattr("pads", (0, 0))
+        # twe only support the padding with tuple
+        if padding[0] != padding[1] or padding[2] != padding[3]:
+            raise ValueError(
+                "Not implemented yet for padding only along one dimension")
+        else:
+            padding = padding[1:3]
+        stride = onnx_node.getattr("strides", (0, 0))
+        auto_pad = None
         if "auto_pad" in onnx_node.attrs:
             auto_pad = force_unicode(onnx_node.attrs['auto_pad'])
             out_shape = get_output_shape(auto_pad, inputs[0].shape[2:], kernel,
@@ -1059,7 +1059,6 @@ class SingaBackend(Backend):
         group = onnx_node.getattr('group', 1)
 
         # not support dilation
-
         if dilation != 1 and list(dilation) != [1, 1]:
             raise ValueError("Not implemented yet for dilation")
 
@@ -1089,7 +1088,7 @@ class SingaBackend(Backend):
 
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
-        return handle, forward
+        return _, forward(handle, auto_pad)
 
     @classmethod
     def _create_max_avg_pool(cls, onnx_node, inputs, opset_version):
