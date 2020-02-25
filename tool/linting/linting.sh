@@ -22,9 +22,12 @@ find python/singa/ \
     examples/autograd \
     test/python/ -iname *.py
 
+pylint python/singa/autograd.py
+
 find python/singa/ \
     examples/autograd \
     test/python/ -iname *.py | xargs pylint
+
 LINTRESULT=$?
 if [ $LINTRESULT == 0 ]; then
   echo "pylint passed"
