@@ -977,7 +977,7 @@ class SingaBackend(Backend):
             auto_pad = utils.force_unicode(onnx_node.attrs['auto_pad'])
             out_shape = utils.get_output_shape(auto_pad, inputs[0].shape[2:], kernel,
                                          stride)
-            padding = utils.get_pad_shape(auto_pad, inputs[0].shape[2:], kernel,
+            padding = utils.get_padding_shape(inputs[0].shape[2:], kernel,
                                     stride, out_shape)
         stride = tuple(onnx_node.getattr('strides', (1, 1)))
         dilation = onnx_node.getattr('dilations', 1)
@@ -1040,7 +1040,7 @@ class SingaBackend(Backend):
             auto_pad = utils.force_unicode(onnx_node.attrs['auto_pad'])
             out_shape = utils.get_output_shape(auto_pad, inputs[0].shape[2:], kernel,
                                          stride)
-            padding = utils.get_pad_shape(auto_pad, inputs[0].shape[2:], kernel,
+            padding = utils.get_padding_shape(inputs[0].shape[2:], kernel,
                                     stride, out_shape)
 
         # not support count_include_pad and auto_pad
