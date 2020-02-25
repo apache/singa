@@ -714,8 +714,8 @@ class SingaBackend(Backend):
         'Add': 'add',
         'MatMul': 'Matmul',
         'Conv': '_Conv2d',
-        'MaxPool': 'pooling_2d',
-        'AveragePool': 'pooling_2d',
+        'MaxPool': '_Pooling2d',
+        'AveragePool': '_Pooling2d',
         'BatchNormalization': 'batchnorm_2d',
         'Concat': 'Concat',
         'Flatten': 'Flatten',
@@ -1036,6 +1036,7 @@ class SingaBackend(Backend):
             onnx_node.attrs["pads"][0:2]) if "pads" in onnx_node.attrs else (0,
                                                                              0)
         stride = tuple(onnx_node.getattr('strides', (1, 1)))
+        auto_pad = None
         if "auto_pad" in onnx_node.attrs:
             auto_pad = utils.force_unicode(onnx_node.attrs['auto_pad'])
             out_shape = utils.get_output_shape(auto_pad, inputs[0].shape[2:], kernel,
@@ -1063,7 +1064,7 @@ class SingaBackend(Backend):
 
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
-        return handle, forward
+        return _, forward(handle, auto_pad)
 
     @classmethod
     def _create_batchnorm(cls, onnx_node, inputs, opset_version):
