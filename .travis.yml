@@ -49,9 +49,16 @@ matrix:
     stage: linting
     dist: bionic
     compiler: gcc
-    name: "Ubuntu 18.04 (Static Analysis)"
+    name: "Ubuntu 18.04 (Static Analysis Python)"
     script:
-      - bash -ex tool/linting/linting.sh
+      - bash -ex tool/linting/py.sh
+  - os: linux
+    stage: linting
+    dist: bionic
+    compiler: gcc
+    name: "Ubuntu 18.04 (Static Analysis Cpp)"
+    script:
+      - bash -ex tool/linting/cpp.sh
 
 install:
   - travis_wait bash -ex tool/travis/depends.sh

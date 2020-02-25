@@ -19,19 +19,6 @@
 
 export PATH="$HOME/miniconda/bin:$PATH"
 
-# pylint
-find python/singa/ \
-    examples/autograd \
-    test/python/ -iname *.py | xargs pylint
-
-LINTRESULT=$?
-if [ $LINTRESULT == 0 ]; then
-  echo "pylint passed"
-else
-  echo "pylint not passed"
-  exit $LINTRESULT
-fi
-
 # cpplint
 find src/api/ \
     src/core/ \
