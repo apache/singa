@@ -17,6 +17,8 @@
 # limitations under the License.
 #
 
+export PATH="$HOME/miniconda/bin:$PATH"
+
 # pylint
 find python/singa/ \
     examples/autograd \
