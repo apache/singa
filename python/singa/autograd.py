@@ -27,7 +27,6 @@ from singa import tensor
 from .tensor import Tensor
 from . import singa_wrap as singa
 
-
 CTensor = singa.Tensor
 training = False
 
@@ -42,12 +41,13 @@ def axis_helper(y_shape, x_shape):
         a tuple refering the axes 
     """
     res = []
-    j = len(x_shape)-1
-    for i in range(len(y_shape)-1, -1, -1):
+    j = len(x_shape) - 1
+    for i in range(len(y_shape) - 1, -1, -1):
         if j < 0 or x_shape[j] != y_shape[i]:
             res.append(i)
-        j-=1
+        j -= 1
     return tuple(res[::-1])
+
 
 def back_broadcast(y_shape, x_shape, x):
     """
@@ -66,6 +66,7 @@ def back_broadcast(y_shape, x_shape, x):
         x = tensor.reshape(x, x_shape)
         x = x.data
     return x
+
 
 def infer_dependency(op):
     """
@@ -133,9 +134,8 @@ def backward(y, dy=None):
     """
     assert isinstance(y, Tensor), "wrong input type."
     op_dep, tensor_dep = infer_dependency(y.creator)
-    assert y.size() == 1, (
-        "y must be a Tensor with a single value;" "size of y is % d" % y.size()
-    )
+    assert y.size() == 1, ("y must be a Tensor with a single value;"
+                           "size of y is % d" % y.size())
 
     # by default the dy is a tensor with 1.0 for each sample;
     if dy is None:
@@ -167,9 +167,8 @@ def backward(y, dy=None):
         # TODO src and dx must match
 
         assert len(op.src) == len(dxs), (
-            "the number of src ops (=%d) and dx (=%d) not match"
-            % (len(op.src), len(dxs))
-        )
+            "the number of src ops (=%d) and dx (=%d) not match" %
+            (len(op.src), len(dxs)))
         for (src_op, x_id, y, y_stores_grad), dx in zip(op.src, dxs):
             # prefix x is w.r.t op; prefix y is w.r.t src_op.
             # x_id is the python id of one input arg of src_op, denoted as x.
@@ -207,16 +206,15 @@ def backward(y, dy=None):
                 # it may cause a delay to yield. Only after src_op's all
                 # output tensors have recieved the gradients, then output
                 g = not_ready[src_op][y_idx]
-                tg = Tensor(
-                    device=g.device(), data=g, name=src_op.grad_name(y_idx)
-                )
+                tg = Tensor(device=g.device(),
+                            data=g,
+                            name=src_op.grad_name(y_idx))
                 yield (y, tg)
 
             if op_dep[src_op] == 0:
                 if src_op.requires_grad is True:
                     assert not isinstance(
-                        src_op, Dummy
-                    ), "Dummy op does not do backward()"
+                        src_op, Dummy), "Dummy op does not do backward()"
                     ready.append((src_op, not_ready[src_op]))
                 del not_ready[src_op]
         del op  # delete the operation to free all tensors from this op
@@ -236,9 +234,8 @@ class Operation(object):
 
     def __init__(self, name=None):
         if name is None:
-            self.name = "{}#{}".format(
-                self.__class__.__name__, Operation.op_count
-            )
+            self.name = "{}#{}".format(self.__class__.__name__,
+                                       Operation.op_count)
             Operation.op_count += 1
         else:
             self.name = name
@@ -275,9 +272,8 @@ class Operation(object):
             Tensor instance(s)
         """
         # TODO add the pre hook
-        assert all(
-            [isinstance(x, Tensor) for x in xs]
-        ), "xs should include only Tensor instances"
+        assert all([isinstance(x, Tensor) for x in xs
+                   ]), "xs should include only Tensor instances"
 
         # need to do backward if any of its input arg needs gradient
         self.requires_grad = any([x.requires_grad for x in xs])
@@ -307,9 +303,7 @@ class Operation(object):
                 requires_grad=self.requires_grad,
                 creator=self,
                 name=self.output_name(idx),
-            )
-            for idx, y in enumerate(ys)
-        )
+            ) for idx, y in enumerate(ys))
         # map from python id to output index
         self.y_id2idx = {id(y): i for i, y in enumerate(ys)}
         # TODO add the post hook
@@ -362,11 +356,12 @@ class Dummy(Operation):
     def grad_name(self, idx):
         return "{}_g".format(self.name)
 
-
     def __getattr__(self, name):
         return self.tensor.__getattribute__(name)
 
+
 class Mean(Operation):
+
     def __init__(self):
         super(Mean, self).__init__()
 
@@ -380,12 +375,12 @@ class Mean(Operation):
         """
         if training:
             self.l = len(l)
-        assert(len(l)>0);
-        x = singa.Tensor(list(l[0].shape()),l[0].device())
+        assert (len(l) > 0)
+        x = singa.Tensor(list(l[0].shape()), l[0].device())
         x.SetFloatValue(0.0)
         for i in range(len(l)):
-            x+=l[i]
-        return singa.MultFloat(x,1/len(l))
+            x += l[i]
+        return singa.MultFloat(x, 1 / len(l))
 
     def backward(self, dy):
         """
@@ -394,13 +389,15 @@ class Mean(Operation):
         Returns:
             a list of dx(CTensor)
         """
-        return [singa.MultFloat(dy,1/self.l)]*self.l
+        return [singa.MultFloat(dy, 1 / self.l)] * self.l
+
 
 def mean(*l):
     return Mean()(*l)[0]
 
 
 class ReLU(Operation):
+
     def __init__(self):
         super(ReLU, self).__init__()
 
@@ -430,10 +427,11 @@ def relu(x):
 
 
 class Less(Operation):
+
     def __init__(self):
         super(Less, self).__init__()
 
-    def forward(self, x,y):
+    def forward(self, x, y):
         """Do forward propgation.
         Store the [x<y] if requires gradient.
         Args:
@@ -442,7 +440,7 @@ class Less(Operation):
         Returns:
             a CTensor for the result
         """
-        cur = singa.LTFloat(singa.__sub__(x,y),0)
+        cur = singa.LTFloat(singa.__sub__(x, y), 0)
         if training:
             self.cache = cur
         return cur
@@ -452,13 +450,15 @@ class Less(Operation):
         Args:
             dy (CTensor): data for the dL / dy, L is the loss
         """
-        assert False,('no backward function for less')
+        assert False, ('no backward function for less')
 
-def less(x,y):
-    return Less()(x,y)[0]
+
+def less(x, y):
+    return Less()(x, y)[0]
 
 
 class Clip(Operation):
+
     def __init__(self, min, max):
         super(Clip, self).__init__()
         self.max = max
@@ -478,27 +478,32 @@ class Clip(Operation):
             mask0 = singa.LTFloat(x, self.min)
             mask1 = singa.GEFloat(x, self.min)
             self.mask = singa.__mul__(mask1, self.mask)
-            x = singa.__add__(singa.MultFloat(mask0, self.min), singa.__mul__(mask1, x))
+            x = singa.__add__(singa.MultFloat(mask0, self.min),
+                              singa.__mul__(mask1, x))
 
         if self.max is not None:
             mask0 = singa.GTFloat(x, self.max)
             mask1 = singa.LEFloat(x, self.max)
             self.mask = singa.__mul__(mask1, self.mask)
-            x = singa.__add__(singa.MultFloat(mask0, self.max), singa.__mul__(mask1, x))
-                    
+            x = singa.__add__(singa.MultFloat(mask0, self.max),
+                              singa.__mul__(mask1, x))
+
         return x
 
     def backward(self, dy):
         return singa.__mul__(dy, self.mask)
 
 
-def clip(x, min, max):
+def clip(x, min=None, max=None):
     return Clip(min, max)(x)[0]
 
+
 class Identity(Operation):
+
     def __init__(self):
         super(Identity, self).__init__()
-    def forward(self,x):
+
+    def forward(self, x):
         return x
 
     def backward(self, dy):
@@ -513,6 +518,7 @@ class Identity(Operation):
 
 def identity(x):
     return Identity()(x)[0]
+
 
 class Matmul(Operation):
     """For matrix multiplication"""
@@ -549,11 +555,13 @@ class Matmul(Operation):
 def matmul(x, w):
     return Matmul()(x, w)[0]
 
+
 class Greater(Operation):
+
     def __init__(self):
         super(Greater, self).__init__()
 
-    def forward(self, x,y):
+    def forward(self, x, y):
         """Do forward propgation.
         Store the [x>y] if requires gradient.
         Args:
@@ -562,7 +570,7 @@ class Greater(Operation):
         Returns:
             a CTensor for the result
         """
-        cur = singa.GTFloat(singa.__sub__(x,y),0)
+        cur = singa.GTFloat(singa.__sub__(x, y), 0)
         if training:
             self.cache = cur
         return cur
@@ -572,10 +580,12 @@ class Greater(Operation):
         Args:
             dy (CTensor): data for the dL / dy, L is the loss
         """
-        assert False,('no backward function for greater')
+        assert False, ('no backward function for greater')
 
-def greater(x,y):
-    return Greater()(x,y)[0]
+
+def greater(x, y):
+    return Greater()(x, y)[0]
+
 
 class AddBias(Operation):
     """
@@ -624,10 +634,12 @@ def add_bias(x, b, axis=0):
 
 
 class Reshape(Operation):
-    def __init__(self,shape):
+
+    def __init__(self, shape):
         super(Reshape, self).__init__()
         if isinstance(shape, tensor.Tensor):
-            self.shape = np.asarray(tensor.to_numpy(shape).astype(np.int32)).tolist()
+            self.shape = np.asarray(tensor.to_numpy(shape).astype(
+                np.int32)).tolist()
         else:
             self.shape = list(shape)
 
@@ -635,10 +647,14 @@ class Reshape(Operation):
         self._shape = x.shape()
         shape = self.shape
         # handle the shape with 0
-        shape = [self._shape[i] if i < len(self._shape) and shape[i] == 0 else shape[i] for i in range(len(shape))]
+        shape = [
+            self._shape[i]
+            if i < len(self._shape) and shape[i] == 0 else shape[i]
+            for i in range(len(shape))
+        ]
         # handle the shape with -1
         hidden_shape = int(np.prod(self._shape) // np.abs(np.prod(shape)))
-        self.cache=[s if s != -1 else hidden_shape for s in shape]
+        self.cache = [s if s != -1 else hidden_shape for s in shape]
 
         return singa.Reshape(x, self.cache)
 
@@ -646,10 +662,12 @@ class Reshape(Operation):
         return singa.Reshape(dy, self._shape)
 
 
-def reshape(a,shape):
+def reshape(a, shape):
     return Reshape(shape)(a)[0]
 
+
 class PRelu(Operation):
+
     def __init__(self):
         super(PRelu, self).__init__()
 
@@ -673,7 +691,7 @@ class PRelu(Operation):
         dx = singa.__add__(dx1mask, dx2)
         dx = singa.__mul__(dy, dx)
         dslope = singa.__mul__(dy, singa.__mul__(self.mask0, self.input))
-        if(type(dy) == float) or self.shape0 == self.shape1:
+        if (type(dy) == float) or self.shape0 == self.shape1:
             assert self.shape0 == self.shape1, ('should have same shape')
             return dx, dslope
         # handle broadcast
@@ -687,6 +705,7 @@ def prelu(x, slope):
 
 
 class Add(Operation):
+
     def __init__(self):
         super(Add, self).__init__()
 
@@ -700,7 +719,7 @@ class Add(Operation):
 
     def backward(self, dy):
         dx0, dx1 = dy, dy
-        if(type(dy) == float) or self.shape0 == self.shape1:
+        if (type(dy) == float) or self.shape0 == self.shape1:
             assert self.shape0 == self.shape1, ('should have same shape')
             return dx0, dx1
         # handle broadcast
@@ -712,10 +731,12 @@ class Add(Operation):
 def add(a, b):
     return Add()(a, b)[0]
 
+
 class Elu(Operation):
-    def __init__(self,alpha=1):
+
+    def __init__(self, alpha=1):
         super(Elu, self).__init__()
-        self.alpha=alpha
+        self.alpha = alpha
 
     def forward(self, x):
         """Do forward propgation.
@@ -730,7 +751,7 @@ class Elu(Operation):
             self.input = x
         x1 = singa.LTFloat(x, 0.0)
         x1 *= x
-        x1 = singa.MultFloat(singa.SubFloat(singa.Exp(x1),1.0),self.alpha)
+        x1 = singa.MultFloat(singa.SubFloat(singa.Exp(x1), 1.0), self.alpha)
         x2 = singa.ReLU(x)
         x1 += x2
         return x1
@@ -752,15 +773,17 @@ class Elu(Operation):
         dx *= dy
         return dx
 
-def elu(x,alpha=1):
+
+def elu(x, alpha=1):
     return Elu(alpha)(x)[0]
 
 
 class Equal(Operation):
+
     def __init__(self):
         super(Equal, self).__init__()
 
-    def forward(self, x,y):
+    def forward(self, x, y):
         """Do forward propgation.
        Store the x if requires gradient.
        Args:
@@ -768,8 +791,8 @@ class Equal(Operation):
        Returns:
            a CTensor for the result
        """
-        m = singa.__sub__(x,y)
-        cur = singa.__mul__(singa.GEFloat(m,0),singa.LEFloat(m,0))
+        m = singa.__sub__(x, y)
+        cur = singa.__mul__(singa.GEFloat(m, 0), singa.LEFloat(m, 0))
         return cur
 
     def backward(self, dy):
@@ -777,17 +800,19 @@ class Equal(Operation):
         Args:
             dy (CTensor): data for the dL / dy, L is the loss
         """
-        assert False,('no backward function for equal')
+        assert False, ('no backward function for equal')
 
-def equal(x,y):
-    return Equal()(x,y)[0]
+
+def equal(x, y):
+    return Equal()(x, y)[0]
 
 
 class SeLU(Operation):
-    def __init__(self,alpha=1.67326,gamma=1.0507):
+
+    def __init__(self, alpha=1.67326, gamma=1.0507):
         super(SeLU, self).__init__()
-        self.alpha=alpha
-        self.gamma=gamma
+        self.alpha = alpha
+        self.gamma = gamma
 
     def forward(self, x):
         """Do forward propgation.
@@ -802,9 +827,10 @@ class SeLU(Operation):
             self.input = x
         x1 = singa.LEFloat(x, 0.0)
         x1 *= x
-        x1 = singa.MultFloat(singa.SubFloat(singa.Exp(x1), 1.0), self.alpha * self.gamma)
+        x1 = singa.MultFloat(singa.SubFloat(singa.Exp(x1), 1.0),
+                             self.alpha * self.gamma)
         x2 = singa.ReLU(x)
-        x2 = singa.MultFloat(x2,self.gamma)
+        x2 = singa.MultFloat(x2, self.gamma)
         x1 += x2
         return x1
 
@@ -816,7 +842,7 @@ class SeLU(Operation):
             dx
         """
         dx1mask = singa.LEFloat(self.input, 0.0)
-        dx1 = singa.MultFloat(singa.Exp(self.input), self.gamma*self.alpha)
+        dx1 = singa.MultFloat(singa.Exp(self.input), self.gamma * self.alpha)
         dx1 = singa.__mul__(dx1mask, dx1)
 
         dx2mask = singa.GTFloat(self.input, 0.0)
@@ -826,9 +852,9 @@ class SeLU(Operation):
         dx *= dy
         return dx
 
-def selu(x,alpha=1.67326,gamma=1.0507):
-    return SeLU(alpha,gamma)(x)[0]
 
+def selu(x, alpha=1.67326, gamma=1.0507):
+    return SeLU(alpha, gamma)(x)[0]
 
 
 class SoftMax(Operation):
@@ -859,56 +885,38 @@ class SoftMax(Operation):
             dx (Ctensor): data for the dL / dx, L is the loss,
             x is the input of current Opertion
         """
-        # calculations are made on numpy array
-        if self.axis == 1:
-            dy = singa.DefaultTranspose(dy)
-        grad = ctensor2numpy(dy)
-        output = ctensor2numpy(self.output)
-        out_1 = np.einsum("ki,ki->ki", grad, output)
-        medium_out = np.einsum("ki,kj->kij", output, output)
-        out_2 = np.einsum("kij,kj->ki", medium_out, grad)
-        out = out_1 - out_2
-        dx = CTensor(out_1.shape)
-        dx.CopyFloatDataFromHostPtr(out.flatten())
-        """grad = Tensor(data=dy)
-        output = Tensor(data=self.output)
-        out_1 = einsum('ki,ki->ki', grad, output)
-        medium_out = einsum('ki,kj->kij', output, output)
-        out_2 = einsum('kij,kj->ki', medium_out, grad)
-        out = out_1 - out_2
-        dx = CTensor(out_1.data.shape)
-        dx.CopyFloatDataFromHostPtr(out.data.flatten())"""
-        if self.axis == 0:
-            return dx
-        elif self.axis == 1:
-            return singa.DefaultTranspose(dx)
+        return singa.SoftMaxBackward(dy, self.axis, self.output)
 
 
-def softmax(x, axis=0):
+def softmax(x, axis=1):
     return SoftMax(axis)(x)[0]
 
+
 class Sum(Operation):
+
     def __init__(self):
         super(Sum, self).__init__()
 
     def forward(self, *l):
         if training:
             self.l = len(l)
-        assert(len(l)>0)
-        x = singa.Tensor(list(l[0].shape()),l[0].device())
+        assert (len(l) > 0)
+        x = singa.Tensor(list(l[0].shape()), l[0].device())
         x.SetFloatValue(0.0)
         for i in range(len(l)):
-            x+=l[i]
+            x += l[i]
         return x
 
     def backward(self, dy):
-        return [dy]*self.l
+        return [dy] * self.l
 
 
 def sum(*l):
     return Sum()(*l)[0]
 
+
 class CrossEntropy(Operation):
+
     def __init__(self):
         super(CrossEntropy, self).__init__()
 
@@ -925,9 +933,8 @@ class CrossEntropy(Operation):
         Returns:
             loss (CTensor): scalar.
         """
-        loss = CTensor((1,))
-        loss_data = -singa.SumAsFloat(singa.__mul__(t, singa.Log(x)))
-        loss.SetFloatValue(loss_data / x.shape()[0])
+        loss = singa.SumAll(singa.__mul__(t, singa.Log(x)))
+        loss /= -x.shape()[0]
         self.x = x
         self.t = t
         self.input = (x, t)
@@ -944,7 +951,7 @@ class CrossEntropy(Operation):
                           dy = 1.0
         """
         dx = singa.__div__(self.t, self.x)
-        dx *= float(-1 / self.x.shape()[0])
+        dx *= float(-1.0 / self.x.shape()[0])
         if isinstance(dy, float):
             # dtype of dy: float
             dx *= dy
@@ -958,15 +965,16 @@ def cross_entropy(y, t):
 
 
 class SoftMaxCrossEntropy(Operation):
+
     def __init__(self, t):
         super(SoftMaxCrossEntropy, self).__init__()
         self.t = t.data
 
     def forward(self, x):
         self.p = singa.SoftMax(x)
-        loss = CTensor((1,), self.p.device())
         ret = singa.CrossEntropyFwd(self.p, self.t)
-        loss.SetFloatValue(singa.SumAsFloat(ret) / x.shape()[0])
+        loss = singa.SumAll(ret)
+        loss /= x.shape()[0]
         return loss
 
     def backward(self, dy=1.0):
@@ -981,14 +989,15 @@ def softmax_cross_entropy(x, t):
 
 
 class MeanSquareError(Operation):
+
     def __init__(self):
         super(MeanSquareError, self).__init__()
 
     def forward(self, x, t):
         self.err = singa.__sub__(x, t)
         sqr = singa.Square(self.err)
-        loss = CTensor((1,), x.device())
-        loss.SetFloatValue(singa.SumAsFloat(sqr) / x.shape()[0] / 2)
+        loss = singa.SumAll(sqr)
+        loss /= (x.shape()[0] * 2)
         return loss
 
     def backward(self, dy=1.0):
@@ -1016,6 +1025,7 @@ def ctensor2numpy(x):
 
 
 class Flatten(Operation):
+
     def __init__(self, start_axis=1):
         super(Flatten, self).__init__()
         # flatten all axis after (inclusive) start_axis
@@ -1026,10 +1036,13 @@ class Flatten(Operation):
         shape, axis = self.shape, self.start_axis
         # the start_axis must be within this range (0, r-1)
         assert axis <= len(
-            shape)-1 or axis >= 0, "the start_axis must be within (0, %d-1)" % len(shape)
+            shape
+        ) - 1 or axis >= 0, "the start_axis must be within (0, %d-1)" % len(
+            shape)
         # calculate the new shape
         new_shape = (1, int(np.prod(shape))) if axis == 0 else (
-            int(np.prod(shape[0:axis]).astype(int)), int(np.prod(shape[axis:]).astype(int)))
+            int(np.prod(shape[0:axis]).astype(int)),
+            int(np.prod(shape[axis:]).astype(int)))
         y = singa.Reshape(x, new_shape)
         return y
 
@@ -1043,6 +1056,7 @@ def flatten(x):
 
 
 class Layer(object):
+
     def __init__(self):
         pass
 
@@ -1077,25 +1091,21 @@ class Layer(object):
         # dtype=np.float32)}}})
         for (parameter_name, parameter_value) in parameters.items():
             # assert isinstance(self.__dict__[parameter_name], Layer)
-            assert (
-                parameter_name in self.__dict__
-            ), "please input correct parameters."
+            assert (parameter_name in self.__dict__
+                   ), "please input correct parameters."
             if isinstance(self.__dict__[parameter_name], Layer):
                 self.__dict__[parameter_name].set_params(
-                    **parameters[parameter_name]
-                )
+                    **parameters[parameter_name])
             elif isinstance(self.__dict__[parameter_name], Tensor):
                 self.set_one_param(parameter_name, parameter_value)
             else:
                 raise ValueError("please input correct parameters.")
 
     def set_one_param(self, parameter_name, parameter_value):
-        assert (
-            parameter_name in self.allow_params
-        ), "please input allowed parameters."
-        assert (
-            parameter_value.shape == self.__dict__[parameter_name].shape
-        ), "Shape dismatched."
+        assert (parameter_name in self.allow_params
+               ), "please input allowed parameters."
+        assert (parameter_value.shape == self.__dict__[parameter_name].shape
+               ), "Shape dismatched."
         if isinstance(parameter_value, Tensor):
             self.__dict__[parameter_name].reset_like(parameter_value)
         elif isinstance(parameter_value, np.ndarray):
@@ -1105,6 +1115,7 @@ class Layer(object):
 
 
 class Linear(Layer):
+
     def __init__(self, in_features, out_features, bias=True):
         w_shape = (in_features, out_features)
         b_shape = (out_features,)
@@ -1148,6 +1159,7 @@ class Linear(Layer):
 
 
 class Concat(Operation):
+
     def __init__(self, axis=0):
         super(Concat, self).__init__()
         self.axis = axis
@@ -1164,8 +1176,7 @@ class Concat(Operation):
 
     def backward(self, dy):
         assert hasattr(
-            self, "slice_point"
-        ), "Please set training as True before do BP. "
+            self, "slice_point"), "Please set training as True before do BP. "
         assert self.slice_point[-1] == dy.shape()[self.axis], "Shape mismatch."
         dxs = []
         last_offset = 0
@@ -1180,13 +1191,122 @@ def cat(xs, axis=0):
     return Concat(axis)(*xs)[0]
 
 
+def _handle_same_pad_fwd(y, pad_mode):
+    """
+    handle same padding mode forward
+    Args:dy
+        the forward tensor
+    Returns: 
+        tensor, the output
+    """
+    y_shape = y.shape()
+    y = tensor.from_raw_tensor(y)
+    if y_shape[2] == 1:
+        label_1, label_2 = 0, 1
+    else:
+        label_1, label_2 = 1, 1
+    if pad_mode == "SAME_UPPER":
+        y = y[:, :, label_1:, label_2:]
+    elif pad_mode == "SAME_LOWER":
+        y = y[:, :, :-label_1, :-label_2]
+    return y.data
+
+
+def _handle_same_pad_bwd(dy, pad_mode):
+    """
+    handle same padding mode backward
+    Args:dy
+        the backward tensor
+    Returns: 
+        tensor, the output
+    """
+    dy_shape = dy.shape()
+    # one column zeros at last axis
+    padding_1 = np.zeros([*dy_shape[:3], 1]).astype(np.float32)
+    padding_1 = tensor.Tensor(device=dy.device(), data=padding_1)
+    dy_tensor = tensor.from_raw_tensor(dy)
+    if pad_mode == "SAME_UPPER":
+        concat_left, concat_right = padding_1, dy_tensor
+    else:
+        concat_left, concat_right = dy_tensor, padding_1
+    dy_tensor = tensor.concatenate((concat_left, concat_right), 3)
+    if dy_shape[2] != 1:  # if not 1d
+        # one row zeros at last second axis
+        padding_2 = np.zeros([*dy_shape[:2], 1,
+                              dy_shape[-1] + 1]).astype(np.float32)
+        padding_2 = tensor.Tensor(device=dy.device(), data=padding_2)
+        if pad_mode == "SAME_UPPER":
+            concat_left, concat_right = padding_2, dy_tensor
+        else:
+            concat_left, concat_right = dy_tensor, padding_2
+        dy_tensor = tensor.concatenate((dy_tensor, padding_2), 2)
+    return dy_tensor.data
+
+
+def _get_padding_shape(input_spatial_shape, kernel_spatial_shape,
+                       strides_spatial, output_spatial_shape):
+    """
+    return padding shape of conv2d or pooling,
+    ! borrow from onnx
+    Args:
+        auto_pad: string
+    Args:
+        kernel_spatial_shape: list[int]
+    Args:
+        strides_spatial: list[int]
+    Args:
+        output_spatial_shape: list[int]
+    Returns: 
+        list[int]
+    """
+    pad_shape = [0] * len(input_spatial_shape)
+    for i in range(len(input_spatial_shape)):
+        pad_shape[i] = (output_spatial_shape[i] - 1) * strides_spatial[i] + \
+            kernel_spatial_shape[i] - input_spatial_shape[i]
+        # because we only support one direction padding, we directly divede 2 here
+        pad_shape[i] = int(math.ceil(pad_shape[i] / 2))
+    return pad_shape
+
+
 class _Conv2d(Operation):
-    def __init__(self, handle):
+
+    def __init__(self, handle, pad_mode="NOTSET"):
+        """
+        Init a conv 2d operator
+        Args:
+            handle: ConvHandle for cpu or CudnnConvHandle for gpu
+        Args:
+            pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
+            SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+            In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+        """
         super(_Conv2d, self).__init__()
         self.handle = handle
+        self.pad_mode = pad_mode
 
     def forward(self, x, W, b=None):
+        """
+        Do forward of conv
+        Args:
+            x: CTensor, input
+        Args:
+            W: CTensor, weight
+        Args:
+            b: CTensor, bias
+        Returns:
+            CTensor 
+        """
         assert x.nDim() == 4, "The dimensions of input should be 4D."
+        # check padding shape
+        if self.pad_mode != "NOTSET":
+            _padding = [self.handle.pad_w, self.handle.pad_h]
+            _padding_correct = _get_padding_shape(
+                x.shape()[2:], (self.handle.kernel_w, self.handle.kernel_h),
+                (self.handle.stride_w, self.handle.stride_h),
+                x.shape()[2:])
+            assert _padding == _padding_correct, (
+                'For a same mode, the given padding %s is wrong, the correct one should be %s.'
+                % (_padding, _padding_correct))
 
         if training:
             if self.handle.bias_term:
@@ -1200,74 +1320,120 @@ class _Conv2d(Operation):
             b.SetFloatValue(0.0)
 
         if (type(self.handle) != singa.ConvHandle):
-            return singa.GpuConvForward(x, W, b, self.handle)
+            y = singa.GpuConvForward(x, W, b, self.handle)
         else:
-            return singa.CpuConvForward(x, W, b, self.handle)
+            y = singa.CpuConvForward(x, W, b, self.handle)
+
+        if self.pad_mode != "NOTSET":
+            y = _handle_same_pad_fwd(y, self.pad_mode)
+        return y
 
     def backward(self, dy):
+        """
+        Do backward of conv
+        Args:
+            dy: CTensor, gradient
+        Returns:
+            CTensor 
+        """
         assert training is True and hasattr(
-            self, "inputs"
-        ), "Please set training as True before do BP. "
-        
+            self, "inputs"), "Please set training as True before do BP. "
+
+        if self.pad_mode != "NOTSET":
+            dy = _handle_same_pad_bwd(dy, self.pad_mode)
+
         if (type(self.handle) != singa.ConvHandle):
-            dx = singa.GpuConvBackwardx(
-                dy, self.inputs[1], self.inputs[0], self.handle
-            )
-            dW = singa.GpuConvBackwardW(
-                dy, self.inputs[0], self.inputs[1], self.handle
-            )
+            dx = singa.GpuConvBackwardx(dy, self.inputs[1], self.inputs[0],
+                                        self.handle)
+            dW = singa.GpuConvBackwardW(dy, self.inputs[0], self.inputs[1],
+                                        self.handle)
             if self.handle.bias_term:
                 db = singa.GpuConvBackwardb(dy, self.inputs[2], self.handle)
                 return dx, dW, db
             else:
                 return dx, dW
         else:
-            dx = singa.CpuConvBackwardx(
-                dy, self.inputs[1], self.inputs[0], self.handle
-            )
-            dW = singa.CpuConvBackwardW(
-                dy, self.inputs[0], self.inputs[1], self.handle
-            )
+            dx = singa.CpuConvBackwardx(dy, self.inputs[1], self.inputs[0],
+                                        self.handle)
+            dW = singa.CpuConvBackwardW(dy, self.inputs[0], self.inputs[1],
+                                        self.handle)
             if self.handle.bias_term:
                 db = singa.CpuConvBackwardb(dy, self.inputs[2], self.handle)
                 return dx, dW, db
             else:
                 return dx, dW
 
-def conv2d(handle, x, W, b=None):
+
+def conv2d(handle, x, W, b=None, pad_mode="NOTSET"):
+    """
+    Conv 2d operator
+    Args:
+        handle: ConvHandle for cpu or CudnnConvHandle for gpu
+    Args:
+        x: CTensor, input
+    Args:
+        W: CTensor, weight
+    Args:
+        b: CTensor, bias
+    Args:
+        pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
+        SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+        In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+    """
     if b is None:
-        return _Conv2d(handle)(x, W)[0]
+        return _Conv2d(handle, pad_mode)(x, W)[0]
     else:
-        return _Conv2d(handle)(x, W, b)[0]
+        return _Conv2d(handle, pad_mode)(x, W, b)[0]
 
 
 class Conv2d(Layer):
-    def __init__(
-        self,
-        in_channels,
-        out_channels,
-        kernel_size,
-        stride=1,
-        padding=0,
-        dilation=1,
-        group=1,
-        bias=True,
-        **kwargs
-    ):
 
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 kernel_size,
+                 stride=1,
+                 padding=0,
+                 dilation=1,
+                 group=1,
+                 bias=True,
+                 pad_mode="NOTSET",
+                 **kwargs):
+        """
+        Generate a Conv 2d operator
+        Args:
+            in_channels: int, the channel of input
+        Args:
+            out_channels: int, the channel of output, also is the number of filters
+        Args:
+            kernel_size: int or tuple, kernel size for two direction of each axis. For example, (2, 3), the first 2 means will add 2 at the beginning and also 2 at the end for its axis.
+            and if a int is accepted, the kernel size will be inited as (int, int)
+        Args:
+            stride: int or tuple, stride, the logic is the same as kernel size.
+        Args:
+            padding: int or tuple or None, padding, the logic is the same as kernel size. However, if you set pad_mode as "SAME_UPPER" or "SAME_LOWER" mode, 
+            you can set padding as None, and the padding will be computed automatically.
+        Args:
+            dilation: int, only support 1
+        Args:
+            group: int
+        Args:
+            bias: bool
+        Args:
+            pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
+            SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+            In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+        """
         self.in_channels = in_channels
         self.out_channels = out_channels
 
         self.group = group
 
-        assert (
-            self.group >= 1 and self.in_channels % self.group == 0
-        ), "please set reasonable group."
+        assert (self.group >= 1 and self.in_channels %
+                self.group == 0), "please set reasonable group."
 
-        assert (
-            self.out_channels >= self.group
-            and self.out_channels % self.group == 0
-        ), "out_channels and group dismatched."
+        assert (self.out_channels >= self.group and self.out_channels %
+                self.group == 0), "out_channels and group dismatched."
 
         if isinstance(kernel_size, int):
             self.kernel_size = (kernel_size, kernel_size)
@@ -1287,7 +1453,7 @@ class Conv2d(Layer):
             self.padding = (padding, padding)
         elif isinstance(padding, tuple):
             self.padding = padding
-        else:
+        elif pad_mode == "NOTSET":
             raise TypeError("Wrong padding type.")
 
         if dilation != 1:
@@ -1319,12 +1485,8 @@ class Conv2d(Layer):
         # 2.0 / (self.in_channels * self.kernel_size[0] * self.kernel_size[1] +
         # self.out_channels))
         std = math.sqrt(
-            2.0
-            / (
-                w_shape[1] * self.kernel_size[0] * self.kernel_size[1]
-                + self.out_channels
-            )
-        )
+            2.0 / (w_shape[1] * self.kernel_size[0] * self.kernel_size[1] +
+                   self.out_channels))
         self.W.gaussian(0.0, std)
 
         if self.bias:
@@ -1335,10 +1497,15 @@ class Conv2d(Layer):
             # to keep consistency when to do forward.
             self.b = None
             # Tensor(data=CTensor([]), requires_grad=False, stores_grad=False)
+        self.pad_mode = pad_mode
 
     def __call__(self, x):
-
         assert x.shape[1] == self.in_channels, "in_channels mismatched"
+
+        # if same pad mode, re-compute the padding
+        if self.pad_mode != "NOTSET":
+            self.padding = _get_padding_shape(x.shape[2:], self.kernel_size,
+                                              self.stride, x.shape[2:])
 
         if self.bias:
             self.device_check(x, self.W, self.b)
@@ -1349,9 +1516,8 @@ class Conv2d(Layer):
             if self.group != 1:
                 raise ValueError("Not implemented yet")
             else:
-                if (not hasattr(self, "handle")) or (
-                    x.shape[0] != self.handle.batchsize
-                ):
+                if (not hasattr(self, "handle")) or (x.shape[0] !=
+                                                     self.handle.batchsize):
                     self.handle = singa.ConvHandle(
                         x.data,
                         self.kernel_size,
@@ -1363,9 +1529,8 @@ class Conv2d(Layer):
                         self.group,
                     )
         else:
-            if (not hasattr(self, "handle")) or (
-                x.shape[0] != self.handle.batchsize
-            ):
+            if (not hasattr(self,
+                            "handle")) or (x.shape[0] != self.handle.batchsize):
                 self.handle = singa.CudnnConvHandle(
                     x.data,
                     self.kernel_size,
@@ -1399,6 +1564,7 @@ class Conv2d(Layer):
 
 
 class SeparableConv2d(Layer):
+
     def __init__(
         self,
         in_channels,
@@ -1427,41 +1593,40 @@ class SeparableConv2d(Layer):
 
 
 class BatchNorm2d(Layer):
+
     def __init__(self, num_features, momentum=0.9):
         self.channels = num_features
         self.momentum = momentum
 
         param_shape = (self.channels,)
 
-        self.scale = Tensor(
-            shape=param_shape, requires_grad=True, stores_grad=True
-        )
+        self.scale = Tensor(shape=param_shape,
+                            requires_grad=True,
+                            stores_grad=True)
         self.scale.set_value(1.0)
 
-        self.bias = Tensor(
-            shape=param_shape, requires_grad=True, stores_grad=True
-        )
+        self.bias = Tensor(shape=param_shape,
+                           requires_grad=True,
+                           stores_grad=True)
         self.bias.set_value(0.0)
 
-        self.running_mean = Tensor(
-            shape=param_shape, requires_grad=False, stores_grad=False
-        )
+        self.running_mean = Tensor(shape=param_shape,
+                                   requires_grad=False,
+                                   stores_grad=False)
         self.running_mean.set_value(0.0)
 
-        self.running_var = Tensor(
-            shape=param_shape, requires_grad=False, stores_grad=False
-        )
+        self.running_var = Tensor(shape=param_shape,
+                                  requires_grad=False,
+                                  stores_grad=False)
         self.running_var.set_value(1.0)
 
     def __call__(self, x):
         assert x.shape[1] == self.channels, (
-            "number of channels dismatched. %d vs %d"
-            % (x.shape[1], self.channels)
-        )
+            "number of channels dismatched. %d vs %d" %
+            (x.shape[1], self.channels))
 
-        self.device_check(
-            x, self.scale, self.bias, self.running_mean, self.running_var
-        )
+        self.device_check(x, self.scale, self.bias, self.running_mean,
+                          self.running_var)
 
         if x.device.id() == -1:
             if not hasattr(self, "handle"):
@@ -1498,6 +1663,7 @@ class BatchNorm2d(Layer):
 
 
 class _BatchNorm2d(Operation):
+
     def __init__(self, handle, running_mean, running_var, name=None):
         super(_BatchNorm2d, self).__init__(name)
         self.handle = handle
@@ -1508,14 +1674,14 @@ class _BatchNorm2d(Operation):
         if training:
             if (type(self.handle) == singa.BatchNormHandle):
                 y, mean, var = singa.CpuBatchNormForwardTraining(
-                    self.handle, x, scale, bias, self.running_mean, self.running_var
-                )
+                    self.handle, x, scale, bias, self.running_mean,
+                    self.running_var)
 
                 self.cache = (x, scale, mean, var, y, bias)
             else:
                 y, mean, var = singa.GpuBatchNormForwardTraining(
-                    self.handle, x, scale, bias, self.running_mean, self.running_var
-                )
+                    self.handle, x, scale, bias, self.running_mean,
+                    self.running_var)
 
                 self.cache = (x, scale, mean, var)
 
@@ -1543,22 +1709,17 @@ class _BatchNorm2d(Operation):
 
     def backward(self, dy):
         assert training is True and hasattr(
-            self, "cache"
-        ), "Please set training as True before do BP. "
-
-
+            self, "cache"), "Please set training as True before do BP. "
 
         if (type(self.handle) == singa.BatchNormHandle):
             x, scale, mean, var, y, bias = self.cache
-            dx, ds, db = singa.CpuBatchNormBackwardx(
-                self.handle, y, dy, x, scale, bias, mean, var
-            )
+            dx, ds, db = singa.CpuBatchNormBackwardx(self.handle, y, dy, x,
+                                                     scale, bias, mean, var)
         else:
             x, scale, mean, var = self.cache
-            dx, ds, db = singa.GpuBatchNormBackward(
-                self.handle, dy, x, scale, mean, var
-            )
-            
+            dx, ds, db = singa.GpuBatchNormBackward(self.handle, dy, x, scale,
+                                                    mean, var)
+
         return dx, ds, db
 
 
@@ -1567,40 +1728,91 @@ def batchnorm_2d(handle, x, scale, bias, running_mean, running_var):
 
 
 class _Pooling2d(Operation):
-    def __init__(self, handle):
+
+    def __init__(self, handle, pad_mode="NOTSET"):
+        # Where default value is NOTSET, which means explicit padding is used.
+        # SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+        # In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
         super(_Pooling2d, self).__init__()
         self.handle = handle
+        self.pad_mode = pad_mode
 
     def forward(self, x):
+        # check padding shape
+        if self.pad_mode != "NOTSET":
+            _padding = [self.handle.pad_w, self.handle.pad_h]
+            _padding_correct = _get_padding_shape(
+                x.shape()[2:], (self.handle.kernel_w, self.handle.kernel_h),
+                (self.handle.stride_w, self.handle.stride_h),
+                x.shape()[2:])
+            assert _padding == _padding_correct, (
+                'For a same mode, the given padding %s is wrong, the correct one should be %s.'
+                % (_padding, _padding_correct))
+
         if (type(self.handle) != singa.PoolingHandle):
             y = singa.GpuPoolingForward(self.handle, x)
         else:
             y = singa.CpuPoolingForward(self.handle, x)
-
+        if self.pad_mode != "NOTSET":
+            y = _handle_same_pad_fwd(y, self.pad_mode)
         if training:
             self.cache = (x, y)
 
         return y
 
     def backward(self, dy):
+        if self.pad_mode != "NOTSET":
+            dy = _handle_same_pad_bwd(dy, self.pad_mode)
         if (type(self.handle) != singa.PoolingHandle):
-            dx = singa.GpuPoolingBackward(
-                self.handle, dy, self.cache[0], self.cache[1]
-            )
+            dx = singa.GpuPoolingBackward(self.handle, dy, self.cache[0],
+                                          self.cache[1])
         else:
-            dx = singa.CpuPoolingBackward(
-                self.handle, dy, self.cache[0], self.cache[1]
-            )
-            
+            dx = singa.CpuPoolingBackward(self.handle, dy, self.cache[0],
+                                          self.cache[1])
+
         return dx
 
 
-def pooling_2d(handle, x):
-    return _Pooling2d(handle)(x)[0]
+def pooling_2d(handle, x, pad_mode="NOTSET"):
+    """
+    Pooling 2d operator
+    Args:
+        handle: ConvHandle for cpu or CudnnConvHandle for gpu
+    Args:
+        x: CTensor, input
+    Args:
+        pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
+        SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+        In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+    """
+    return _Pooling2d(handle, pad_mode)(x)[0]
 
 
 class Pooling2d(Layer):
-    def __init__(self, kernel_size, stride=None, padding=0, is_max=True):
+
+    def __init__(self,
+                 kernel_size,
+                 stride=None,
+                 padding=0,
+                 is_max=True,
+                 pad_mode="NOTSET"):
+        """
+        Generate a Pooling 2d operator
+        Args:
+            kernel_size: int or tuple, kernel size for two direction of each axis. For example, (2, 3), the first 2 means will add 2 at the beginning and also 2 at the end for its axis.
+            and if a int is accepted, the kernel size will be inited as (int, int)
+        Args:
+            stride: int or tuple, stride, the logic is the same as kernel size.
+        Args:
+            padding: int or tuple or None, padding, the logic is the same as kernel size. However, if you set pad_mode as "SAME_UPPER" or "SAME_LOWER" mode, 
+            you can set padding as None, and the padding will be computed automatically.
+        Args:
+            is_max: bool, is max pooling or avg pooling
+        Args:
+            pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
+            SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+            In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+        """
         if isinstance(kernel_size, int):
             self.kernel_size = (kernel_size, kernel_size)
         elif isinstance(kernel_size, tuple):
@@ -1615,9 +1827,8 @@ class Pooling2d(Layer):
         elif isinstance(stride, tuple):
             self.stride = stride
             assert stride[0] > 0 or (kernel_size[0] == 1 and padding[0] == 0), (
-                "stride[0]=0, but kernel_size[0]=%d, padding[0]=%d"
-                % (kernel_size[0], padding[0])
-            )
+                "stride[0]=0, but kernel_size[0]=%d, padding[0]=%d" %
+                (kernel_size[0], padding[0]))
         else:
             raise TypeError("Wrong stride type.")
 
@@ -1625,27 +1836,24 @@ class Pooling2d(Layer):
             self.padding = (padding, padding)
         elif isinstance(padding, tuple):
             self.padding = padding
-        else:
+        elif pad_mode == "NOTSET":
             raise TypeError("Wrong padding type.")
 
         self.is_max = is_max
+        self.pad_mode = pad_mode
 
     def __call__(self, x):
+        # if same pad mode, re-compute the padding
+        if self.pad_mode != "NOTSET":
+            self.padding = _get_padding_shape(x.shape[2:], self.kernel_size,
+                                              self.stride, x.shape[2:])
 
-        out_shape_h = (
-            int(
-                (x.shape[2] + 2 * self.padding[0] - self.kernel_size[0])
-                // self.stride[0]
-            )
-            + 1
-        )
-        out_shape_w = (
-            int(
-                (x.shape[3] + 2 * self.padding[1] - self.kernel_size[1])
-                // self.stride[1]
-            )
-            + 1
-        )
+        out_shape_h = (int(
+            (x.shape[2] + 2 * self.padding[0] - self.kernel_size[0]) //
+            self.stride[0]) + 1)
+        out_shape_w = (int(
+            (x.shape[3] + 2 * self.padding[1] - self.kernel_size[1]) //
+            self.stride[1]) + 1)
         if x.device.id() == -1:
             if not hasattr(self, "handle"):
                 self.handle = singa.PoolingHandle(
@@ -1655,11 +1863,9 @@ class Pooling2d(Layer):
                     self.padding,
                     self.is_max,
                 )
-            elif (
-                x.shape[0] != self.handle.batchsize
-                or out_shape_h != self.handle.pooled_height
-                or out_shape_w != self.handle.pooled_width
-            ):
+            elif (x.shape[0] != self.handle.batchsize or
+                  out_shape_h != self.handle.pooled_height or
+                  out_shape_w != self.handle.pooled_width):
                 self.handle = singa.PoolingHandle(
                     x.data,
                     self.kernel_size,
@@ -1676,11 +1882,9 @@ class Pooling2d(Layer):
                     self.padding,
                     self.is_max,
                 )
-            elif (
-                x.shape[0] != self.handle.batchsize
-                or out_shape_h != self.handle.pooled_height
-                or out_shape_w != self.handle.pooled_width
-            ):
+            elif (x.shape[0] != self.handle.batchsize or
+                  out_shape_h != self.handle.pooled_height or
+                  out_shape_w != self.handle.pooled_width):
                 self.handle = singa.CudnnPoolingHandle(
                     x.data,
                     self.kernel_size,
@@ -1689,39 +1893,104 @@ class Pooling2d(Layer):
                     self.is_max,
                 )
 
-        y = pooling_2d(self.handle, x)
+        y = pooling_2d(self.handle, x, self.pad_mode)
         return y
 
 
 class MaxPool2d(Pooling2d):
-    def __init__(self, kernel_size, stride=None, padding=0):
-        super(MaxPool2d, self).__init__(kernel_size, stride, padding, True)
+
+    def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
+        """
+        Generate a Max Pooling 2d operator
+        Args:
+            kernel_size: int or tuple, kernel size for two direction of each axis. For example, (2, 3), the first 2 means will add 2 at the beginning and also 2 at the end for its axis.
+            and if a int is accepted, the kernel size will be inited as (int, int)
+        Args:
+            stride: int or tuple, stride, the logic is the same as kernel size.
+        Args:
+            padding: int or tuple or None, padding, the logic is the same as kernel size. However, if you set pad_mode as "SAME_UPPER" or "SAME_LOWER" mode, 
+            you can set padding as None, and the padding will be computed automatically.
+        Args:
+            pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
+            SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+            In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+        """
+        super(MaxPool2d, self).__init__(kernel_size, stride, padding, True,
+                                        pad_mode)
 
 
 class AvgPool2d(Pooling2d):
-    def __init__(self, kernel_size, stride=None, padding=0):
-        super(AvgPool2d, self).__init__(kernel_size, stride, padding, False)
+
+    def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
+        """
+        Generate a Avg Pooling 2d operator
+        Args:
+            kernel_size: int or tuple, kernel size for two direction of each axis. For example, (2, 3), the first 2 means will add 2 at the beginning and also 2 at the end for its axis.
+            and if a int is accepted, the kernel size will be inited as (int, int)
+        Args:
+            stride: int or tuple, stride, the logic is the same as kernel size.
+        Args:
+            padding: int or tuple or None, padding, the logic is the same as kernel size. However, if you set pad_mode as "SAME_UPPER" or "SAME_LOWER" mode, 
+            you can set padding as None, and the padding will be computed automatically.
+        Args:
+            pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
+            SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+            In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+        """
+        super(AvgPool2d, self).__init__(kernel_size, stride, padding, False,
+                                        pad_mode)
 
 
 class MaxPool1d(Pooling2d):
-    def __init__(self, kernel_size, stride=None, padding=0):
+
+    def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
+        """
+        Generate a Max Pooling 1d operator
+        Args:
+            kernel_size: int or tuple, kernel size for two direction of each axis. For example, (2, 3), the first 2 means will add 2 at the beginning and also 2 at the end for its axis.
+            and if a int is accepted, the kernel size will be inited as (int, int)
+        Args:
+            stride: int or tuple, stride, the logic is the same as kernel size.
+        Args:
+            padding: int or tuple or None, padding, the logic is the same as kernel size. However, if you set pad_mode as "SAME_UPPER" or "SAME_LOWER" mode, 
+            you can set padding as None, and the padding will be computed automatically.
+        Args:
+            pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
+            SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+            In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+        """
         if stride is None:
             stride = kernel_size
-        super(MaxPool1d, self).__init__(
-            (1, kernel_size), (0, stride), (0, padding), True
-        )
+        super(MaxPool1d, self).__init__((1, kernel_size), (1, stride),
+                                        (0, padding), True, pad_mode)
 
 
 class AvgPool1d(Pooling2d):
-    def __init__(self, kernel_size, stride=None, padding=0):
+
+    def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
+        """
+        Generate a Avg Pooling 1d operator
+        Args:
+            kernel_size: int or tuple, kernel size for two direction of each axis. For example, (2, 3), the first 2 means will add 2 at the beginning and also 2 at the end for its axis.
+            and if a int is accepted, the kernel size will be inited as (int, int)
+        Args:
+            stride: int or tuple, stride, the logic is the same as kernel size.
+        Args:
+            padding: int or tuple or None, padding, the logic is the same as kernel size. However, if you set pad_mode as "SAME_UPPER" or "SAME_LOWER" mode, 
+            you can set padding as None, and the padding will be computed automatically.
+        Args:
+            pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
+            SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+            In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+        """
         if stride is None:
             stride = kernel_size
-        super(AvgPool1d, self).__init__(
-            (1, kernel_size), (0, stride), (0, padding), False
-        )
+        super(AvgPool1d, self).__init__((1, kernel_size), (1, stride),
+                                        (0, padding), False, pad_mode)
 
 
 class Tanh(Operation):
+
     def __init__(self):
         super(Tanh, self).__init__()
 
@@ -1742,7 +2011,9 @@ class Tanh(Operation):
 def tanh(x):
     return Tanh()(x)[0]
 
+
 class Cos(Operation):
+
     def __init__(self):
         super(Cos, self).__init__()
 
@@ -1757,10 +2028,13 @@ class Cos(Operation):
         dx *= dy
         return dx
 
+
 def cos(x):
     return Cos()(x)[0]
 
+
 class Cosh(Operation):
+
     def __init__(self):
         super(Cosh, self).__init__()
 
@@ -1774,10 +2048,13 @@ class Cosh(Operation):
         dx *= dy
         return dx
 
+
 def cosh(x):
     return Cosh()(x)[0]
 
+
 class Acos(Operation):
+
     def __init__(self):
         super(Acos, self).__init__()
 
@@ -1788,17 +2065,20 @@ class Acos(Operation):
 
     def backward(self, dy):
         dx = singa.Square(self.input)
-        dx = singa.MultFloat(dx, -1.0)         
+        dx = singa.MultFloat(dx, -1.0)
         dx = singa.AddFloat(dx, 1.0)
         dx = singa.PowFloat(dx, -0.5)
         dx = singa.MultFloat(dx, -1.0)
         dx *= dy
         return dx
 
+
 def acos(x):
     return Acos()(x)[0]
 
+
 class Acosh(Operation):
+
     def __init__(self):
         super(Acosh, self).__init__()
 
@@ -1817,10 +2097,13 @@ class Acosh(Operation):
         dx *= dy
         return dx
 
+
 def acosh(x):
     return Acosh()(x)[0]
 
+
 class Sin(Operation):
+
     def __init__(self):
         super(Sin, self).__init__()
 
@@ -1834,10 +2117,13 @@ class Sin(Operation):
         dx *= dy
         return dx
 
+
 def sin(x):
     return Sin()(x)[0]
 
+
 class Sinh(Operation):
+
     def __init__(self):
         super(Sinh, self).__init__()
 
@@ -1851,10 +2137,13 @@ class Sinh(Operation):
         dx *= dy
         return dx
 
+
 def sinh(x):
     return Sinh()(x)[0]
 
+
 class Asin(Operation):
+
     def __init__(self):
         super(Asin, self).__init__()
 
@@ -1865,16 +2154,19 @@ class Asin(Operation):
 
     def backward(self, dy):
         dx = singa.Square(self.input)
-        dx = singa.MultFloat(dx, -1.0)         
+        dx = singa.MultFloat(dx, -1.0)
         dx = singa.AddFloat(dx, 1.0)
         dx = singa.PowFloat(dx, -0.5)
         dx *= dy
         return dx
 
+
 def asin(x):
     return Asin()(x)[0]
 
+
 class Asinh(Operation):
+
     def __init__(self):
         super(Asinh, self).__init__()
 
@@ -1890,10 +2182,13 @@ class Asinh(Operation):
         dx *= dy
         return dx
 
+
 def asinh(x):
     return Asinh()(x)[0]
 
+
 class Tan(Operation):
+
     def __init__(self):
         super(Tan, self).__init__()
 
@@ -1909,10 +2204,13 @@ class Tan(Operation):
         dx *= dy
         return dx
 
+
 def tan(x):
     return Tan()(x)[0]
 
+
 class Atan(Operation):
+
     def __init__(self):
         super(Atan, self).__init__()
 
@@ -1928,10 +2226,13 @@ class Atan(Operation):
         dx *= dy
         return dx
 
+
 def atan(x):
     return Atan()(x)[0]
 
+
 class Atanh(Operation):
+
     def __init__(self):
         super(Atanh, self).__init__()
 
@@ -1942,16 +2243,19 @@ class Atanh(Operation):
 
     def backward(self, dy):
         dx = singa.Square(self.input)
-        dx = singa.MultFloat(dx, -1.0)         
+        dx = singa.MultFloat(dx, -1.0)
         dx = singa.AddFloat(dx, 1.0)
         dx = singa.PowFloat(dx, -1.0)
         dx *= dy
         return dx
 
+
 def atanh(x):
     return Atanh()(x)[0]
 
+
 class Sigmoid(Operation):
+
     def __init__(self):
         super(Sigmoid, self).__init__()
 
@@ -1974,6 +2278,7 @@ def sigmoid(x):
 
 
 class Mul(Operation):
+
     def __init__(self):
         super(Mul, self).__init__()
 
@@ -1989,7 +2294,7 @@ class Mul(Operation):
     def backward(self, dy):
         dx0 = singa.__mul__(dy, self.input[1])
         dx1 = singa.__mul__(dy, self.input[0])
-        if(type(dy) == float) or self.shape0 == self.shape1:
+        if (type(dy) == float) or self.shape0 == self.shape1:
             assert self.shape0 == self.shape1, ('should have same shape')
             return dx0, dx1
         # handle broadcast
@@ -1999,25 +2304,26 @@ class Mul(Operation):
 
 
 class Unsqueeze(Operation):
-    def __init__(self,axis):
+
+    def __init__(self, axis):
         super(Unsqueeze, self).__init__()
-        if(type(axis) is int):
-            self.axis=list(axis)
+        if (type(axis) is int):
+            self.axis = list(axis)
         else:
-            self.axis=axis
+            self.axis = axis
 
     def forward(self, x):
-        self.cache=x.shape()
+        self.cache = x.shape()
         cur = list(self.cache)
         for i in self.axis:
-            cur.insert(i,1)
+            cur.insert(i, 1)
         return singa.Reshape(x, cur)
 
     def backward(self, dy):
         return singa.Reshape(dy, self.cache)
 
 
-def unsqueeze(x,axis=-1):
+def unsqueeze(x, axis=-1):
     return Unsqueeze(axis)(x)[0]
 
 
@@ -2025,22 +2331,24 @@ def mul(x, y):
     # do pointwise multiplication
     return Mul()(x, y)[0]
 
+
 class Transpose(Operation):
-    def __init__(self,perm):
+
+    def __init__(self, perm):
         super(Transpose, self).__init__()
-        self.perm=list(perm)
+        self.perm = list(perm)
 
     def forward(self, x):
         return singa.Transpose(x, self.perm)
 
     def backward(self, dy):
-        cur=[]
+        cur = []
         for i in range(len(self.perm)):
-            cur+=[self.perm.index(i)]
+            cur += [self.perm.index(i)]
         return singa.Transpose(dy, cur)
 
 
-def transpose(x,shape):
+def transpose(x, shape):
     return Transpose(shape)(x)[0]
 
 
@@ -2053,17 +2361,27 @@ def add_all(*xs):
 
 
 class RNN_Base(Layer):
+
     def __init__(self):
         raise NotImplementedError
 
     def __call__(self):
         raise NotImplementedError
 
-    def step_forward(self, x=None, h=None, c=None, Wx=None, Wh=None, Bx=None, Bh=None, b=None):
+    def step_forward(self,
+                     x=None,
+                     h=None,
+                     c=None,
+                     Wx=None,
+                     Wh=None,
+                     Bx=None,
+                     Bh=None,
+                     b=None):
         raise NotImplementedError
 
 
 class RNN(RNN_Base):
+
     def __init__(
         self,
         input_size,
@@ -2124,6 +2442,7 @@ class RNN(RNN_Base):
 
 
 class LSTM(RNN_Base):
+
     def __init__(
         self,
         input_size,
@@ -2178,15 +2497,13 @@ class LSTM(RNN_Base):
         self.device_check(inputs[0], *(self.Wx + self.Wh + self.Bx + self.Bh))
         batchsize = xs[0].shape[0]
         out = []
-        h, c = self.step_forward(
-            xs[0], h0, c0, self.Wx, self.Wh, self.Bx, self.Bh
-        )
+        h, c = self.step_forward(xs[0], h0, c0, self.Wx, self.Wh, self.Bx,
+                                 self.Bh)
         out.append(h)
         for x in xs[1:]:
             assert x.shape[0] == batchsize
-            h, c = self.step_forward(
-                x, h, c, self.Wx, self.Wh, self.Bx, self.Bh
-            )
+            h, c = self.step_forward(x, h, c, self.Wx, self.Wh, self.Bx,
+                                     self.Bh)
             out.append(h)
         return out, h, c
 
@@ -2229,6 +2546,7 @@ class LSTM(RNN_Base):
 
 
 class Abs(Operation):
+
     def forward(self, a):
         if training:
             self.input = a
@@ -2245,6 +2563,7 @@ def abs(a):
 
 
 class Exp(Operation):
+
     def forward(self, a):
         if training:
             self.input = a
@@ -2261,6 +2580,7 @@ def exp(a):
 
 
 class LeakyRelu(Operation):
+
     def __init__(self, a):
         super(LeakyRelu, self).__init__()
         self.a = a
@@ -2290,6 +2610,7 @@ def leakyrelu(x, a=0.01):
 
 
 class Sign(Operation):
+
     def __init__(self):
         super(Sign, self).__init__()
 
@@ -2308,6 +2629,7 @@ def sign(a):
 
 
 class Pow(Operation):
+
     def __init__(self):
         super(Pow, self).__init__()
 
@@ -2321,11 +2643,14 @@ class Pow(Operation):
         return res
 
     def backward(self, dy):
-        da1 = singa.__mul__(self.input[1], singa.Pow(self.input[0], singa.SubFloat(self.input[1], 1.0)))
+        da1 = singa.__mul__(
+            self.input[1],
+            singa.Pow(self.input[0], singa.SubFloat(self.input[1], 1.0)))
         dx0 = singa.__mul__(da1, dy)
-        db1 = singa.__mul__(singa.Pow(self.input[0], self.input[1]), singa.Log(self.input[0]))
+        db1 = singa.__mul__(singa.Pow(self.input[0], self.input[1]),
+                            singa.Log(self.input[0]))
         dx1 = singa.__mul__(db1, dy)
-        if(type(dy) == float) or self.shape0 == self.shape1:
+        if (type(dy) == float) or self.shape0 == self.shape1:
             assert self.shape0 == self.shape1, ('should have same shape')
             return dx0, dx1
         # handle broadcast
@@ -2333,79 +2658,86 @@ class Pow(Operation):
         dx1 = back_broadcast(self.shape3, self.shape1, dx1)
         return dx0, dx1
 
+
 def pow(a, b):
-    return Pow()(a,b)[0]
+    return Pow()(a, b)[0]
 
 
 class SoftSign(Operation):
+
     def __init__(self):
-        super(SoftSign, self).__init__()  
-    
+        super(SoftSign, self).__init__()
+
     def forward(self, x):
-    # y = x / (1 + np.abs(x))
+        # y = x / (1 + np.abs(x))
         if training:
             self.input = x
-        x1 = singa.AddFloat(singa.Abs(x),1.0)
-        y = singa.__div__(x,x1)
-        
+        x1 = singa.AddFloat(singa.Abs(x), 1.0)
+        y = singa.__div__(x, x1)
+
         return y
-      
+
     def backward(self, dy):
-        dx = singa.AddFloat(singa.Abs(self.input),1.0)
-        dx = singa.PowFloat(singa.Square(dx),-1.0)
+        dx = singa.AddFloat(singa.Abs(self.input), 1.0)
+        dx = singa.PowFloat(singa.Square(dx), -1.0)
         dx = singa.__mul__(dy, dx)
         return dx
-      
+
+
 def softsign(x):
     return SoftSign()(x)[0]
 
 
 class Sqrt(Operation):
+
     def __init__(self):
-        super(Sqrt, self).__init__()  
-    
+        super(Sqrt, self).__init__()
+
     def forward(self, x):
         if training:
             self.input = x
         return singa.Sqrt(x)
-      
+
     def backward(self, dy):
-        dx = singa.PowFloat(self.input,-0.5)
-        dx = singa.MultFloat(dx,0.5)
+        dx = singa.PowFloat(self.input, -0.5)
+        dx = singa.MultFloat(dx, 0.5)
         dx = singa.__mul__(dy, dx)
         return dx
 
+
 def sqrt(x):
     return Sqrt()(x)[0]
-  
+
 
 class SoftPlus(Operation):
+
     def __init__(self):
-        super(SoftPlus, self).__init__()  
-    
+        super(SoftPlus, self).__init__()
+
     def forward(self, x):
-    #f(x) = ln(exp(x) + 1)
+        #f(x) = ln(exp(x) + 1)
         if training:
             self.input = x
-        x1 = singa.AddFloat(singa.Exp(x),1.0)
-        y = singa.Log(x1)    
+        x1 = singa.AddFloat(singa.Exp(x), 1.0)
+        y = singa.Log(x1)
         return y
 
     def backward(self, dy):
         dx = singa.Exp(singa.MultFloat(self.input, -1.0))
-        dx = singa.PowFloat(singa.AddFloat(dx,1.0),-1.0)
+        dx = singa.PowFloat(singa.AddFloat(dx, 1.0), -1.0)
         dx = singa.__mul__(dy, dx)
         return dx
 
-      
+
 def softplus(x):
     return SoftPlus()(x)[0]
 
 
 class Sub(Operation):
+
     def __init__(self):
-        super(Sub, self).__init__()    
-    
+        super(Sub, self).__init__()
+
     def forward(self, a, b):
         res = singa.__sub__(a, b)
         if training:
@@ -2417,7 +2749,7 @@ class Sub(Operation):
     def backward(self, dy):
         dx0 = dy
         dx1 = singa.MultFloat(dy, -1.0)
-        if(type(dy) == float) or self.shape0 == self.shape1:
+        if (type(dy) == float) or self.shape0 == self.shape1:
             assert self.shape0 == self.shape1, ('should have same shape')
             return dx0, dx1
         # handle broadcast
@@ -2425,16 +2757,18 @@ class Sub(Operation):
         dx1 = back_broadcast(self.shape3, self.shape1, dx1)
         return dx0, dx1
 
+
 def sub(a, b):
-    return Sub()(a,b)[0]
+    return Sub()(a, b)[0]
 
 
- # optimize min to support multi inputs
+# optimize min to support multi inputs
 class Min(Operation):
+
     def __init__(self):
         super(Min, self).__init__()
-        self.masks = []    
-    
+        self.masks = []
+
     def _min(self, a, b):
         m = singa.__sub__(a, b)
         mask0 = singa.LEFloat(m, 0)
@@ -2443,7 +2777,7 @@ class Min(Operation):
         return res, (mask0, mask1)
 
     def forward(self, *x):
-        assert(len(x)>0)
+        assert (len(x) > 0)
         self.l = len(x)
         if len(x) == 1:
             res, masks = self._min(x[0], x[0])
@@ -2476,7 +2810,9 @@ class Min(Operation):
 def min(*l):
     return Min()(*l)[0]
 
+
 class Log(Operation):
+
     def __init__(self):
         super(Log, self).__init__()
 
@@ -2484,20 +2820,23 @@ class Log(Operation):
         if training:
             self.input = x
         return singa.Log(x)
+
     def backward(self, dy):
-        dx = singa.PowFloat(self.input,-1)
+        dx = singa.PowFloat(self.input, -1)
         dx = singa.__mul__(dy, dx)
         return dx
+
 
 def log(x):
     return Log()(x)[0]
 
 
 class HardSigmoid(Operation):
-    def __init__(self,alpha=0.2,gamma=0.5):
+
+    def __init__(self, alpha=0.2, gamma=0.5):
         super(HardSigmoid, self).__init__()
-        self.alpha=alpha
-        self.gamma=gamma
+        self.alpha = alpha
+        self.gamma = gamma
 
     def forward(self, x):
         """Do forward propgation.
@@ -2507,7 +2846,7 @@ class HardSigmoid(Operation):
         Returns:
             a CTensor for the result
         """
-        x = singa.AddFloat(singa.MultFloat(x,self.alpha),self.gamma)
+        x = singa.AddFloat(singa.MultFloat(x, self.alpha), self.gamma)
         if training:
             self.cache = x
 
@@ -2515,34 +2854,38 @@ class HardSigmoid(Operation):
         mask1 = singa.LTFloat(x, 1.0)
         mask2 = singa.GEFloat(x, 1.0)
 
-        ans = singa.__add__(singa.__mul__(x, mask1),mask2)
+        ans = singa.__add__(singa.__mul__(x, mask1), mask2)
         return singa.ReLU(ans)
 
     def backward(self, dy):
         mask0 = singa.GTFloat(self.cache, 0.0)
         mask1 = singa.LTFloat(self.cache, 1.0)
-        mask = singa.__mul__(mask0,mask1)
-        return singa.__mul__(singa.MultFloat(mask, self.alpha),dy)
+        mask = singa.__mul__(mask0, mask1)
+        return singa.__mul__(singa.MultFloat(mask, self.alpha), dy)
 
-def hardsigmoid(x,alpha=0.2,gamma=0.5):
-    return HardSigmoid(alpha,gamma)(x)[0]
+
+def hardsigmoid(x, alpha=0.2, gamma=0.5):
+    return HardSigmoid(alpha, gamma)(x)[0]
 
 
 class Squeeze(Operation):
-    def __init__(self,axis=[]):
+
+    def __init__(self, axis=[]):
         super(Squeeze, self).__init__()
-        self.axis=axis
+        self.axis = axis
 
     def forward(self, x):
-        self.cache=x.shape()
+        self.cache = x.shape()
         newshape = []
-        if(self.axis==[]):
-            newshape=list(filter(lambda i: i != 1, self.cache))
+        if (self.axis == []):
+            newshape = list(filter(lambda i: i != 1, self.cache))
         else:
             for i in self.axis:
                 assert i < len(self.cache)
-                assert self.cache[i] == 1, "the length of axis {} is {}, which should be 1".format(i, self.cache[i])
-            for ind,v in enumerate(self.cache):
+                assert self.cache[
+                    i] == 1, "the length of axis {} is {}, which should be 1".format(
+                        i, self.cache[i])
+            for ind, v in enumerate(self.cache):
                 if ind not in self.axis:
                     newshape.append(v)
         return singa.Reshape(x, newshape)
@@ -2551,11 +2894,12 @@ class Squeeze(Operation):
         return singa.Reshape(dy, self.cache)
 
 
-def squeeze(x,axis=[]):
+def squeeze(x, axis=[]):
     return Squeeze(axis)(x)[0]
 
 
 class Div(Operation):
+
     def __init__(self):
         super(Div, self).__init__()
 
@@ -2563,7 +2907,8 @@ class Div(Operation):
         res = singa.__mul__(a, singa.PowFloat(b, -1.0))
         # res = singa.__div__(a, b)
         if training:
-            self.input = (singa.MultFloat(a, -1.0), singa.PowFloat(b, -1.0)) # -a, 1/b
+            self.input = (singa.MultFloat(a, -1.0), singa.PowFloat(b, -1.0)
+                         )  # -a, 1/b
             self.shape0 = list(a.shape())
             self.shape1 = list(b.shape())
             self.shape3 = list(res.shape())
@@ -2575,7 +2920,7 @@ class Div(Operation):
         dx0 = singa.__mul__(dy, self.input[1])
         dx1 = singa.__mul__(self.input[0], singa.PowFloat(self.input[1], 2.0))
         dx1 = singa.__mul__(dy, dx1)
-        if(type(dy) == float) or self.shape0 == self.shape1:
+        if (type(dy) == float) or self.shape0 == self.shape1:
             assert self.shape0 == self.shape1, ('should have same shape')
             return dx0, dx1
         # handle broadcast
@@ -2585,29 +2930,31 @@ class Div(Operation):
 
 
 def div(a, b):
-    return Div()(a,b)[0]
-
+    return Div()(a, b)[0]
 
 
 class Shape(Operation):
+
     def __init__(self):
         super(Shape, self).__init__()
 
     def forward(self, x):
-        cur=list(x.shape())
-        cur=tensor.from_numpy(np.array(cur))
+        cur = list(x.shape())
+        cur = tensor.from_numpy(np.array(cur))
         cur.to_device(x.device())
         return cur.data
 
     def backward(self, dy):
         return list(dy.shape())
 
-        
+
 def shape(x):
     return Shape()(x)[0]
 
+
 # optimize max to support multi inputs
 class Max(Operation):
+
     def __init__(self):
         super(Max, self).__init__()
         self.masks = []
@@ -2618,9 +2965,9 @@ class Max(Operation):
         mask1 = singa.LTFloat(m, 0)
         res = singa.__add__(singa.__mul__(mask0, a), singa.__mul__(mask1, b))
         return res, (mask0, mask1)
-        
+
     def forward(self, *x):
-        assert(len(x)>0)
+        assert (len(x) > 0)
         self.l = len(x)
         if len(x) == 1:
             res, masks = self._max(x[0], x[0])
@@ -2649,10 +2996,13 @@ class Max(Operation):
             ret.insert(0, cumulation)
             return tuple(ret)
 
+
 def max(*l):
     return Max()(*l)[0]
 
+
 class And(Operation):
+
     def __init__(self):
         super(And, self).__init__()
 
@@ -2663,44 +3013,47 @@ class And(Operation):
         return cur
 
     def backward(self, dy):
-        assert False,('no gradient for backward function')
+        assert False, ('no gradient for backward function')
 
 
-def _and(a,b):
-    return And()(a,b)[0]
+def _and(a, b):
+    return And()(a, b)[0]
 
 
 class Or(Operation):
+
     def __init__(self):
         super(Or, self).__init__()
 
     def forward(self, a, b):
-        m = singa.__add__(singa.PowFloat(singa.Sign(a), 2.0), singa.PowFloat(singa.Sign(b), 2.0))
-        cur = singa.Sign(m) 
+        m = singa.__add__(singa.PowFloat(singa.Sign(a), 2.0),
+                          singa.PowFloat(singa.Sign(b), 2.0))
+        cur = singa.Sign(m)
 
         return cur
 
     def backward(self, dy):
-        assert False,('no gradient for backward function')
+        assert False, ('no gradient for backward function')
 
 
-def _or(a,b):
-    return Or()(a,b)[0]
+def _or(a, b):
+    return Or()(a, b)[0]
 
 
 class Not(Operation):
+
     def __init__(self):
         super(Not, self).__init__()
 
     def forward(self, x):
-        mask0 = singa.GEFloat(x,0)
-        mask1 = singa.LEFloat(x,0)
-        cur = singa.__mul__(mask0,mask1)
+        mask0 = singa.GEFloat(x, 0)
+        mask1 = singa.LEFloat(x, 0)
+        cur = singa.__mul__(mask0, mask1)
 
         return cur
 
     def backward(self, dy):
-        assert False,('no gradient for backward function')
+        assert False, ('no gradient for backward function')
 
 
 def _not(x):
@@ -2708,24 +3061,27 @@ def _not(x):
 
 
 class Xor(Operation):
+
     def __init__(self):
         super(Xor, self).__init__()
 
     def forward(self, a, b):
-        m = singa.__sub__(singa.PowFloat(singa.Sign(a), 2.0), singa.PowFloat(singa.Sign(b), 2.0))
-        cur = singa.PowFloat(singa.Sign(m), 2.0)    
+        m = singa.__sub__(singa.PowFloat(singa.Sign(a), 2.0),
+                          singa.PowFloat(singa.Sign(b), 2.0))
+        cur = singa.PowFloat(singa.Sign(m), 2.0)
 
         return cur
 
     def backward(self, dy):
-        assert False,('no gradient for backward function')
+        assert False, ('no gradient for backward function')
 
 
-def _xor(a,b):
-    return Xor()(a,b)[0]
+def _xor(a, b):
+    return Xor()(a, b)[0]
 
 
 class Negative(Operation):
+
     def __init__(self):
         super(Negative, self).__init__()
 
@@ -2742,6 +3098,7 @@ def negative(x):
 
 
 class Reciprocal(Operation):
+
     def __init__(self):
         super(Reciprocal, self).__init__()
 
@@ -2760,3 +3117,75 @@ class Reciprocal(Operation):
 
 def reciprocal(x):
     return Reciprocal()(x)[0]
+
+
+class GlobalAveragePool(Operation):
+
+    def __init__(self, data_format='channels_first'):
+        """
+        init a GlobalAveragePool operator
+        Args:data_format: 
+            A string, we support two formats: channels_last and channels_first, default is channels_first.
+            channels_first means the format of input is (N x C x H x W)
+            channels_last means the format of input is (N x H x W x C)
+        """
+        super(GlobalAveragePool, self).__init__()
+        self.data_format = data_format
+
+    def forward(self, x):
+        """
+        forward propogation of GlobalAveragePool
+        Args:x: 
+            the input tensor
+        Returns: 
+            tensor, the output
+        """
+        if training:
+            self.mask = singa.Tensor(x.shape(), x.device())
+
+        shape = list(x.shape())
+
+        # (N x C x H x W) for channels_first
+        if self.data_format == 'channels_first':
+            axes = tuple(i for i in range(2, len(shape)))
+            self.shape_divisor = 1 / np.prod(shape[2:])
+        else:  # (N x H x W x C) for channels_last
+            axes = tuple(i for i in range(1, len(shape) - 1))
+            self.shape_divisor = 1 / np.prod(shape[1:-1])
+
+        # output shape
+        # (N x C x 1 x 1) for channels_first
+        # (N x 1 x 1 x C) for channels_last
+        for i in axes:
+            shape[i] = 1
+
+        x = tensor.from_raw_tensor(x)
+        x = tensor.sum(x, axis=axes)
+        x = tensor.reshape(x, shape)
+        return singa.MultFloat(x.data, self.shape_divisor)
+
+    def backward(self, dy):
+        """
+        backward propogation of GlobalAveragePool
+        Args:dy: 
+            the gradient tensor from upper operations
+        Returns: 
+            tensor, the gradient over input
+        """
+        self.mask.SetFloatValue(self.shape_divisor)
+        return singa.__mul__(self.mask, dy)
+
+
+def globalaveragepool(x, data_format='channels_first'):
+    """
+    GlobalAveragePool operator
+    Args:x
+        the input tensor
+    Args:data_format: 
+        A string, we support two formats: channels_last and channels_first, default is channels_first.
+        channels_first means the format of input is (N x C x H x W)
+        channels_last means the format of input is (N x H x W x C)
+    Returns: 
+        tensor, the output
+    """
+    return GlobalAveragePool(data_format)(x)[0]

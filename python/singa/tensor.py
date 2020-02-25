@@ -64,7 +64,6 @@ from .proto import core_pb2
 from . import singa_wrap as singa
 from .device import get_default_device
 
-
 int32 = core_pb2.kInt
 float32 = core_pb2.kFloat32
 CTensor = singa.Tensor
@@ -87,9 +86,16 @@ class Tensor(object):
                      then it must require grad.
     '''
     tensor_count = 0
-    def __init__(self, shape=(), device=None, dtype=float32,
-                 data=None, requires_grad=True, stores_grad=False,
-                 creator=None,name=None):
+
+    def __init__(self,
+                 shape=(),
+                 device=None,
+                 dtype=float32,
+                 data=None,
+                 requires_grad=True,
+                 stores_grad=False,
+                 creator=None,
+                 name=None):
         if device is None:
             device = get_default_device()
         if isinstance(data, np.ndarray):
@@ -113,9 +119,41 @@ class Tensor(object):
             self.name = name
         if creator is None:
             from . import autograd
-            self.creator = autograd.Dummy(self,name)
+            self.creator = autograd.Dummy(self, name)
         else:
             self.creator = creator
+
+    def __getitem__(self, keys):
+        if type(keys) != tuple:
+            keys = (keys,)
+
+        ret = self.clone()
+        axis_index = 0
+        for key in keys:
+            if type(key) == int:
+                key += self.shape[axis_index] if key < 0 else 0
+
+                if not (key >= 0 and key < self.shape[axis_index]):
+                    raise ValueError("Invalid Index")
+
+                ret.data = singa.SliceOn(ret.data, key, key + 1, axis_index)
+            elif type(key) == slice:
+                start = key.start if key.start else 0
+                end = key.stop if key.stop else self.shape[axis_index]
+
+                start += self.shape[axis_index] if start < 0 else 0
+                end += self.shape[axis_index] if end < 0 else 0
+
+                if not (start >= 0 and start < end and
+                        end <= self.shape[axis_index]):
+                    raise ValueError("Invalid Index")
+
+                ret.data = singa.SliceOn(ret.data, start, end, axis_index)
+            else:
+                raise ValueError("Invalid Index")
+            axis_index += 1
+
+        return ret
 
     def ndim(self):
         '''
@@ -148,7 +186,7 @@ class Tensor(object):
             t.shape = tuple(tshape)
             t.data = singa.DefaultTranspose(self.data)
         else:
-            if(len(axes) != len(self.shape)):
+            if (len(axes) != len(self.shape)):
                 raise ValueError('dimensions do not match')
             tshape = [self.shape[x] for x in axes]
             t.shape = tuple(tshape)
@@ -245,7 +283,6 @@ class Tensor(object):
             # return new tensor filled with value
             raise NotImplementedError
 
-
         self.data.SetFloatValue(float(x))
         return self
 
@@ -308,26 +345,32 @@ class Tensor(object):
             if axis is None:
                 axis = 9999
                 t.shape = (product(self.shape) * repeats,)
-                Repeats = [repeats, ]
+                Repeats = [
+                    repeats,
+                ]
                 t.data = self.data.Repeat(Repeats, axis)
             elif axis >= 0:
                 t_shape = list(self.shape)
                 t_shape[axis] = self.shape[axis] * repeats
                 t.shape = tuple(t_shape)
-                Repeats = [repeats, ]
+                Repeats = [
+                    repeats,
+                ]
                 t.data = self.data.Repeat(Repeats, axis)
 
         elif isinstance(repeats, tuple) or isinstance(repeats, list):
             for rep in repeats:
                 if rep < 0:
                     raise ValueError(
-                        "'repeats' should be int or sequence: {}".format(repeats))
+                        "'repeats' should be int or sequence: {}".format(
+                            repeats))
 
             if axis != None and axis < 0:
                 axis += t_ndim
             if axis is None:
                 raise ValueError(
-                    "when axis us None, 'repeats' should be int: {}".format(repeats))
+                    "when axis us None, 'repeats' should be int: {}".format(
+                        repeats))
             elif axis >= 0:
                 t_shape = list(self.shape)
                 t_shape[axis] = sum(repeats)
@@ -514,69 +557,55 @@ class Tensor(object):
 
     def __add__(self, rhs):
         if isinstance(rhs, Tensor):
-            return from_raw_tensor(
-                singa.__add__(self.data, rhs.data))
+            return from_raw_tensor(singa.__add__(self.data, rhs.data))
         else:
-            return _call_singa_func(singa.AddFloat,
-                                    self.data, rhs)
+            return _call_singa_func(singa.AddFloat, self.data, rhs)
 
     def __sub__(self, rhs):
         if isinstance(rhs, Tensor):
-            return from_raw_tensor(
-                singa.__sub__(self.data, rhs.data))
+            return from_raw_tensor(singa.__sub__(self.data, rhs.data))
         else:
-            return _call_singa_func(singa.SubFloat,
-                                    self.data, rhs)
+            return _call_singa_func(singa.SubFloat, self.data, rhs)
 
     def __mul__(self, rhs):
         if isinstance(rhs, Tensor):
-            return from_raw_tensor(
-                singa.__mul__(self.data, rhs.data))
+            return from_raw_tensor(singa.__mul__(self.data, rhs.data))
         else:
-            return _call_singa_func(singa.MultFloat,
-                                    self.data, rhs)
+            return _call_singa_func(singa.MultFloat, self.data, rhs)
 
     def __div__(self, rhs):
         if isinstance(rhs, Tensor):
-            return from_raw_tensor(
-                singa.__div__(self.data, rhs.data))
+            return from_raw_tensor(singa.__div__(self.data, rhs.data))
         else:
-            return _call_singa_func(singa.DivFloat,
-                                    self.data, rhs)
+            return _call_singa_func(singa.DivFloat, self.data, rhs)
 
     def __truediv__(self, rhs):
         if isinstance(rhs, Tensor):
-            return from_raw_tensor(
-                singa.__div__(self.data, rhs.data))
+            return from_raw_tensor(singa.__div__(self.data, rhs.data))
         else:
-            return _call_singa_func(singa.DivFloat,
-                                    self.data, rhs)
+            return _call_singa_func(singa.DivFloat, self.data, rhs)
 
     def __lt__(self, rhs):
         if isinstance(rhs, Tensor):
-            return from_raw_tensor(
-                singa.__lt__(self.data, rhs.data))
+            return from_raw_tensor(singa.__lt__(self.data, rhs.data))
         else:
             return _call_singa_func(singa.LTFloat, self.data, rhs)
 
     def __le__(self, rhs):
         if isinstance(rhs, Tensor):
-            return from_raw_tensor(
-                singa.__le__(self.data, rhs.data))
+            return from_raw_tensor(singa.__le__(self.data, rhs.data))
         else:
             return _call_singa_func(singa.LEFloat, self.data, rhs)
 
     def __gt__(self, rhs):
         if isinstance(rhs, Tensor):
-            return from_raw_tensor(
-                singa.__gt__(self.data, rhs.data))
+            return from_raw_tensor(singa.__gt__(self.data, rhs.data))
         else:
             return _call_singa_func(singa.GTFloat, self.data, rhs)
 
     def __ge__(self, rhs):
         if isinstance(rhs, Tensor):
-            return from_raw_tensor(
-                singa.__ge__(self.data, rhs.data))
+            return from_raw_tensor(singa.__ge__(self.data, rhs.data))
         else:
             return _call_singa_func(singa.GEFloat, self.data, rhs)
 
@@ -617,6 +646,7 @@ class Tensor(object):
 
     def __repr__(self):
         return np.array2string(to_numpy(self))
+
 
 ''' python functions for global functions in Tensor.h
 '''
@@ -694,8 +724,7 @@ def copy_data_to_from(dst, src, size, dst_offset=0, src_offset=0):
         dst_offset (int): offset in terms of elements to the start of dst
         src_offset (int): offset in terms of elements to the start of src
     '''
-    singa.CopyDataToFrom(dst.data, src.data, size,
-                         dst_offset, src_offset)
+    singa.CopyDataToFrom(dst.data, src.data, size, dst_offset, src_offset)
 
 
 def from_numpy(np_array):
@@ -879,7 +908,7 @@ def sum(t, axis=None, out=None):
 
         axis_shape = t_shape[axis]
         axis_shape = int(axis_shape)
-        one = Tensor(shape=(axis_shape, ), device=t.device)
+        one = Tensor(shape=(axis_shape,), device=t.device)
         one.set_value(1.0)
         ret = tensordot(t, one, axes=([axis], [0]))
 
@@ -1078,11 +1107,9 @@ def eltwise_mult(lhs, rhs, ret=None):
         return lhs * rhs
     else:
         if isinstance(rhs, Tensor):
-            singa.EltwiseMult(lhs.data, rhs.data,
-                              ret.data)
+            singa.EltwiseMult(lhs.data, rhs.data, ret.data)
         else:
-            singa.EltwiseMultFloatWithRet(lhs.data, rhs,
-                                          ret.data)
+            singa.EltwiseMultFloatWithRet(lhs.data, rhs, ret.data)
         return ret
 
 
@@ -1106,8 +1133,7 @@ def mult(A, B, C=None, alpha=1.0, beta=0.0):
     if C is None:
         return _call_singa_func(singa.Mult, A.data, B.data)
     else:
-        singa.MultWithScale(alpha, A.data, B.data,
-                            beta, C.data)
+        singa.MultWithScale(alpha, A.data, B.data, beta, C.data)
         return C
 
 
@@ -1216,10 +1242,10 @@ def einsum(ops, *args):
 
     # get the the transpose and reshape parameter used in the elementwise
     # calculation
-    transpose_A = [(list(inputops[0]) + broadcast_A).index(x)
-                   for x in outputall]
-    transpose_B = [(list(inputops[1]) + broadcast_B).index(x)
-                   for x in outputall]
+    transpose_A = [(list(inputops[0]) + broadcast_A).index(x) for x in outputall
+                  ]
+    transpose_B = [(list(inputops[1]) + broadcast_B).index(x) for x in outputall
+                  ]
 
     reshape_A = list(A.shape) + broadcast_a
     reshape_B = list(B.shape) + broadcast_b
@@ -1474,8 +1500,7 @@ def add_column(alpha, v, beta, M):
     Returns:
         M
     '''
-    singa.AddColumnWithScale(float(alpha), float(beta), v.data,
-                             M.data)
+    singa.AddColumnWithScale(float(alpha), float(beta), v.data, M.data)
     return M
 
 
@@ -1558,3 +1583,14 @@ def copy_from_numpy(data, np_array):
         data.CopyIntDataFromHostPtr(np_array)
     else:
         print('Not implemented yet for ', dt)
+
+
+def concatenate(tensors, axis):
+    '''
+        concatenate tensors on given axis, all the dim should be the same
+        except the axis to be concatenated.
+    '''
+    ctensors = singa.VecTensor()
+    for t in tensors:
+        ctensors.append(t.data)
+    return _call_singa_func(singa.ConcatOn, ctensors, axis)

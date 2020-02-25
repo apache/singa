@@ -42,10 +42,10 @@ class TestFeedForwardNet(unittest.TestCase):
         y = tensor.Tensor((3,))
         y.set_value(0)
         out, _ = ffn.evaluate(x, y)
-        self.assertAlmostEqual(out * 3,
-                               - math.log(1.0 / (1+math.exp(1))) -
-                               math.log(0.5) - math.log(0.5),
-                               5)
+        self.assertAlmostEqual(
+            out * 3,
+            -math.log(1.0 / (1 + math.exp(1))) - math.log(0.5) - math.log(0.5),
+            5)
 
     def test_mult_inputs(self):
         ffn = net.FeedForwardNet(loss.SoftmaxCrossEntropy())
@@ -99,10 +99,8 @@ class TestFeedForwardNet(unittest.TestCase):
             pval.set_value(0.1)
         x = tensor.Tensor((4, 3, 12, 12))
         x.gaussian(0, 0.01)
-        y = np.asarray([[1, 0, 0],
-                        [0, 0, 1],
-                        [0, 0, 1],
-                        [0, 1, 0]], dtype=np.int32)
+        y = np.asarray([[1, 0, 0], [0, 0, 1], [0, 0, 1], [0, 1, 0]],
+                       dtype=np.int32)
         y = tensor.from_numpy(y)
         o = ffn.forward(True, x)
         ffn.loss.forward(True, o, y)

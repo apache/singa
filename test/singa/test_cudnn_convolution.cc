@@ -1,23 +1,23 @@
 /************************************************************
-*
-* Licensed to the Apache Software Foundation (ASF) under one
-* or more contributor license agreements.  See the NOTICE file
-* distributed with this work for additional information
-* regarding copyright ownership.  The ASF licenses this file
-* to you under the Apache License, Version 2.0 (the
-* "License"); you may not use this file except in compliance
-* with the License.  You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing,
-* software distributed under the License is distributed on an
-* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-* KIND, either express or implied.  See the License for the
-* specific language governing permissions and limitations
-* under the License.
-*
-*************************************************************/
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ *************************************************************/
 #include "../src/model/layer/cudnn_convolution.h"
 #ifdef USE_CUDNN
 
@@ -69,9 +69,9 @@ TEST(CudnnConvolution, Forward) {
 
   // Set weight and bias manually
   const size_t num_filters = 1;
-  const size_t col_height = 1 * 3 * 3; // channels * kernel_w * kernel_h
-  const float we[num_filters * col_height] = {
-      1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f};
+  const size_t col_height = 1 * 3 * 3;  // channels * kernel_w * kernel_h
+  const float we[num_filters * col_height] = {1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
+                                              -1.0f, 0.0f, 1.0f, 0.0f};
   singa::Tensor weight(singa::Shape{num_filters, col_height}, cuda);
   weight.CopyDataFromHostPtr(we, col_height);
   const float b[num_filters] = {1.0f};
@@ -120,11 +120,10 @@ TEST(CudnnConvolution, Backward) {
 
   // Set weight_ and bias_ manually
   const size_t num_filters = 1;
-  const size_t col_height = 1 * 3 * 3; // channels * kernel_w * kernel_h
-  const float we[num_filters * col_height] = {
-      1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f};
-  singa::Tensor weight(singa::Shape{num_filters, col_height},
-                       cuda);
+  const size_t col_height = 1 * 3 * 3;  // channels * kernel_w * kernel_h
+  const float we[num_filters * col_height] = {1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
+                                              -1.0f, 0.0f, 1.0f, 0.0f};
+  singa::Tensor weight(singa::Shape{num_filters, col_height}, cuda);
   weight.CopyDataFromHostPtr(we, col_height);
   const float b[num_filters] = {1.0f};
   singa::Tensor bias(singa::Shape{num_filters}, cuda);
