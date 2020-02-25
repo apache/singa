@@ -1222,7 +1222,7 @@ class _Conv2d(Operation):
         """
         assert x.nDim() == 4, "The dimensions of input should be 4D."
         # check padding shape
-        if self.pad_mode != "NOTSET":
+        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
             _padding = [self.handle.pad_w, self.handle.pad_h]
             _kernel = [self.handle.kernel_w, self.handle.kernel_h]
             _stride = [self.handle.stride_w, self.handle.stride_h]
@@ -1250,7 +1250,7 @@ class _Conv2d(Operation):
         else:
             y = singa.CpuConvForward(x, W, b, self.handle)
 
-        if self.pad_mode != "NOTSET":
+        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
             y = utils.handle_same_pad_fwd(y, self.pad_mode)
         return y
 
@@ -1265,7 +1265,7 @@ class _Conv2d(Operation):
         assert training is True and hasattr(
             self, "inputs"), "Please set training as True before do BP. "
 
-        if self.pad_mode != "NOTSET":
+        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
             dy = utils.handle_same_pad_bwd(dy, self.pad_mode)
 
         if (type(self.handle) != singa.ConvHandle):
@@ -1429,7 +1429,7 @@ class Conv2d(Layer):
         assert x.shape[1] == self.in_channels, "in_channels mismatched"
 
         # if same pad mode, re-compute the padding
-        if self.pad_mode != "NOTSET":
+        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
             output_shape = utils.get_output_shape(self.pad_mode, x.shape()[2:],
                                                   self.kernel_size, self.stride)
             self.padding = utils.get_padding_shape(x.shape[2:],
@@ -1668,7 +1668,7 @@ class _Pooling2d(Operation):
 
     def forward(self, x):
         # check padding shape
-        if self.pad_mode != "NOTSET":
+        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
             _padding = [self.handle.pad_w, self.handle.pad_h]
             _kernel = [self.handle.kernel_w, self.handle.kernel_h]
             _stride = [self.handle.stride_w, self.handle.stride_h]
@@ -1684,7 +1684,7 @@ class _Pooling2d(Operation):
             y = singa.GpuPoolingForward(self.handle, x)
         else:
             y = singa.CpuPoolingForward(self.handle, x)
-        if self.pad_mode != "NOTSET":
+        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
             y = utils.handle_same_pad_fwd(y, self.pad_mode)
         if training:
             self.cache = (x, y)
@@ -1692,7 +1692,7 @@ class _Pooling2d(Operation):
         return y
 
     def backward(self, dy):
-        if self.pad_mode != "NOTSET":
+        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
             dy = utils.handle_same_pad_bwd(dy, self.pad_mode)
         if (type(self.handle) != singa.PoolingHandle):
             dx = singa.GpuPoolingBackward(self.handle, dy, self.cache[0],
@@ -1775,7 +1775,7 @@ class Pooling2d(Layer):
 
     def __call__(self, x):
         # if same pad mode, re-compute the padding
-        if self.pad_mode != "NOTSET":
+        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
             output_shape = utils.get_output_shape(self.pad_mode, x.shape()[2:], self.kernel_size, self.stride)
             self.padding = utils.get_padding_shape(x.shape[2:],
                                                    self.kernel_size,
