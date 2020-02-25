@@ -1268,7 +1268,7 @@ class _Conv2d(Operation):
         assert training is True and hasattr(
             self, "inputs"), "Please set training as True before do BP. "
 
-        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
+        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER") and self.need_crop:
             dy = utils.handle_same_pad_bwd(dy, self.pad_mode)
 
         if (type(self.handle) != singa.ConvHandle):
