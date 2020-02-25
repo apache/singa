@@ -3119,6 +3119,114 @@ def reciprocal(x):
     return Reciprocal()(x)[0]
 
 
+
+class Gemm(Operation):
+    def __init__(self, alpha=1.0, beta=1.0, transA=0, transB=0):
+        """
+        init a General Matrix multiplication(Gemm) operator
+        Compute Y = alpha * A' * B' + beta * C, where input tensor A has shape (M, K) or (K, M), input tensor B has shape (K, N) or (N, K), input tensor C is broadcastable to shape (M, N), and output tensor Y has shape (M, N).
+        A' = transpose(A) if transA else A
+        B' = transpose(B) if transB else B
+        Args:alpha: 
+            float, Scalar multiplier for the product of input tensors A * B.
+        Args:beta: 
+            float, Scalar multiplier for input tensor C.
+        Args:transA: 
+            int, Whether A should be transposed
+        Args:transB: 
+            int, Whether B should be transposed
+        Returns: 
+            tensor, the output
+        """
+        super(Gemm, self).__init__()
+        self.alpha = alpha
+        self.beta = beta
+        self.transA = transA
+        self.transB = transB
+
+    def forward(self, A, B, C=None):
+        """
+        forward propogation of Gemm
+        Args:A: 
+            tensor, The shape of A should be (M, K) if transA is 0, or (K, M) if transA is non-zero.
+        Args:B: 
+            tensor, The shape of B should be (K, N) if transB is 0, or (N, K) if transB is non-zero.
+        Args:C: 
+            tensor(optional), Optional input tensor C. If not specified, the computation is done as if C is a scalar 0. The shape of C should be unidirectional broadcastable to (M, N).
+        Returns: 
+            tensor, the output
+        """
+        _A = singa.DefaultTranspose(A) if self.transA == 1 else A
+        _B = singa.DefaultTranspose(B) if self.transB == 1 else B
+        if training:
+            self.inputs = (_A, _B, C)
+        tmpM = singa.MultFloat(singa.Mult(_A, _B), self.alpha)
+        if C:
+            tmpM = singa.__add__(tmpM, singa.MultFloat(C, self.beta))
+        return tmpM
+
+    def backward(self, dy):
+        """
+        backward propogation of Gemm
+        Args:dy: 
+            tensor, The shape of A should be (M, K) if transA is 0, or (K, M) if transA is non-zero.
+        Returns: 
+            tensor, the gradient over A
+            tensor, the gradient over B
+            tensor(optional), the gradient over C
+        """
+        _A, _B, C = self.inputs
+        # y = alpha * A  * B  => da = alpha * dy * BT
+        # y = alpha * A  * BT => da = alpha * dy * B
+        # y = alpha * AT * B  => da = alpha * B * dyT = alpha * (dy * BT)T
+        # y = alpha * AT * BT => da = alpha * BT * dyT = alpha * (dy * B)T
+        da = singa.MultFloat(singa.Mult(dy, singa.DefaultTranspose(_B)),
+                             self.alpha)
+        if self.transA:
+            da = singa.DefaultTranspose(da)
+
+        # y = alpha * A  * B  => db = alpha * AT * dy
+        # y = alpha * AT * B  => db = alpha * A * dy
+        # y = alpha * A  * BT => db = alpha * dyT * A = alpha * (AT * dy)T
+        # y = alpha * AT * BT => db = alpha * dyT * AT = alpha * (A * dy)T
+        db = singa.MultFloat(singa.Mult(singa.DefaultTranspose(_A), dy),
+                             self.alpha)
+        if self.transB:
+            db = singa.DefaultTranspose(db)
+        if C:
+            dc = back_broadcast(dy.shape(), C.shape(),
+                                singa.MultFloat(dy, self.beta))
+            return da, db, dc
+        else:
+            return da, db
+
+
+def gemm(A, B, C=None, alpha=1.0, beta=1.0, transA=0, transB=0):
+    """
+    init a General Matrix multiplication(Gemm) operator
+    Compute Y = alpha * A' * B' + beta * C, where input tensor A has shape (M, K) or (K, M), input tensor B has shape (K, N) or (N, K), input tensor C is broadcastable to shape (M, N), and output tensor Y has shape (M, N).
+    A' = transpose(A) if transA else A
+    B' = transpose(B) if transB else B
+    Args:A: 
+        tensor, The shape of A should be (M, K) if transA is 0, or (K, M) if transA is non-zero.
+    Args:B: 
+        tensor, The shape of B should be (K, N) if transB is 0, or (N, K) if transB is non-zero.
+    Args:C: 
+        tensor(optional), Optional input tensor C. If not specified, the computation is done as if C is a scalar 0. The shape of C should be unidirectional broadcastable to (M, N).
+    Args:alpha: 
+        float, Scalar multiplier for the product of input tensors A * B.
+    Args:beta: 
+        float, Scalar multiplier for input tensor C.
+    Args:transA: 
+        int, Whether A should be transposed
+    Args:transB: 
+        int, Whether B should be transposed
+    Returns: 
+        tensor, the output
+    """
+    return Gemm(alpha, beta, transA, transB)(A, B, C)[0]
+
+
 class GlobalAveragePool(Operation):
 
     def __init__(self, data_format='channels_first'):

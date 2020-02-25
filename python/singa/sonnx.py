@@ -164,7 +164,7 @@ class SingaFrontend(object):
         'Concat': 'Concat',
         'Flatten': 'Flatten',
         'AddBias': 'Add',
-        # 'GEMM': 'Gemm',
+        'Gemm': 'Gemm',
         'Reshape': 'Reshape',
         'Sum': 'Sum',
         'cos': 'Cos',
@@ -221,7 +221,7 @@ class SingaFrontend(object):
         '_BatchNorm2d': '_create_batchnorm',
         'Concat': '_create_concat',
         'Flatten': '_create_flatten',
-        # 'GEMM': '_create_gemm',
+        'Gemm': '_create_gemm',
         'Reshape': '_create_reshape',
         'SoftMax': '_create_softmax',
         'SeLU': '_create_selu',
@@ -454,27 +454,27 @@ class SingaFrontend(object):
         ])
         return node
 
-    # @classmethod
-    # def _create_gemm(cls, op, op_t):
-    #     """
-    #     get a onnx node from singa gemm operator
-    #     Args:
-    #         op: a given operator
-    #     Args:
-    #         op_t: the tensor of the operator
-    #     Returns:
-    #         the onnx node
-    #     """
-    #     node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+    @classmethod
+    def _create_gemm(cls, op, op_t):
+        """
+        get a onnx node from singa gemm operator
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
 
-    #     node.attribute.extend([
-    #         helper.make_attribute('alpha', float(op.alpha)),
-    #         helper.make_attribute('beta', float(op.beta)),
-    #         helper.make_attribute('transA', 1 if op.transA else 0),
-    #         helper.make_attribute('transB', 1 if op.transB else 0),
-    #     ])
+        node.attribute.extend([
+            helper.make_attribute('alpha', float(op.alpha)),
+            helper.make_attribute('beta', float(op.beta)),
+            helper.make_attribute('transA', op.transA),
+            helper.make_attribute('transB', op.transB),
+        ])
 
-    #     return node
+        return node
 
     @classmethod
     def _create_batchnorm(cls, op, op_t):
@@ -799,7 +799,7 @@ class SingaBackend(Backend):
         'BatchNormalization': 'batchnorm_2d',
         'Concat': 'Concat',
         'Flatten': 'Flatten',
-        # 'Gemm': 'GEMM',
+        'Gemm': 'Gemm',
         'Reshape': 'reshape',
         'Sum': 'sum',
         'Cos': 'cos',
@@ -857,7 +857,7 @@ class SingaBackend(Backend):
         'Concat': '_create_concat',
         'MatMul': '_create_matmul',
         'Flatten': '_create_flatten',
-        # 'Gemm': '_create_gemm',
+        'Gemm': '_create_gemm',
         'Reshape': '_create_reshape',
         'Softmax': '_create_softmax',
         'Selu': '_create_selu',
@@ -1204,36 +1204,36 @@ class SingaBackend(Backend):
         if factor < 0:
             factor = len(inputs[0].shape
                         ) + factor  # in order to support the negative axis
-        # alpha = onnx_node.attrs["alpha"]
-        # beta = onnx_node.attrs["beta"]
-        # transA = False if onnx_node.attrs["transA"] == 0 else True
-        # transB = False if onnx_node.attrs["transB"] == 0 else True
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
         return None, forward(axis=factor)
 
-    # @classmethod
-    # def _create_gemm(cls, onnx_node, inputs, opset_version):
-    #     """
-    #     get the gemm operator from onnx node
-    #     Args:
-    #         onnx_node: a given onnx node
-    #     Args:
-    #         inputs: the input tensor
-    #     Args:
-    #         opset_version: the opset version
-    #     Returns:
-    #         the handle of singa operator
-    #     Returns:
-    #         the autograd of singa operator
-    #     """
-    #     x = inputs[0]
-    #     alpha = onnx_node.attrs["alpha"]
-    #     beta = onnx_node.attrs["beta"]
-    #     transA = False if onnx_node.attrs["transA"] == 0 else True
-    #     transB = False if onnx_node.attrs["transB"] == 0 else True
-    #     _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs, opset_version)
-    #     return None, forward(alpha=alpha, beta=beta, transA=transA, transB=transB)
+    @classmethod
+    def _create_gemm(cls, onnx_node, inputs, opset_version):
+        """
+        get the gemm operator from onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            the handle of singa operator
+        Returns: 
+            the autograd of singa operator
+        """
+        x = inputs[0]
+        alpha = onnx_node.getattr('alpha', 1.)
+        beta = onnx_node.getattr('beta', 1.)
+        transA = onnx_node.getattr('transA', 0)
+        transB = onnx_node.getattr('transB', 0)
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
+                                                       opset_version)
+        return None, forward(alpha=alpha,
+                             beta=beta,
+                             transA=transA,
+                             transB=transB)
 
     @classmethod
     def _create_flatten(cls, onnx_node, inputs, opset_version):
