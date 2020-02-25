@@ -28,6 +28,8 @@ from onnx import (checker, helper, numpy_helper, GraphProto, NodeProto,
 import warnings
 import math
 
+from singa import utils
+
 from . import singa_wrap as singa
 from . import autograd
 from . import tensor
@@ -56,83 +58,6 @@ def postorderRecursive(root, root_t):
     res = deque([])
     recursive(root, None, root_t, res)
     return res
-
-
-def force_unicode(s):
-    """
-    return string of a bytes
-    ! borrow from onnx
-    Args:
-        s: string or bytes
-    Returns: 
-        string
-    """
-    try:
-        return s.decode('utf-8')
-    except AttributeError:
-        return s
-
-
-def get_pad_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
-                  strides_spatial, output_spatial_shape):
-    """
-    return padding shape of conv2d or pooling,
-    ! borrow from onnx
-    Args:
-        auto_pad: string
-    Args:
-        input_spatial_shape: list[int]
-    Args:
-        kernel_spatial_shape: list[int]
-    Args:
-        strides_spatial: list[int]
-    Args:
-        output_spatial_shape: list[int]
-    Returns: 
-        list[int]
-    """
-    pad_shape = [0] * len(input_spatial_shape)
-    if auto_pad in ('SAME_UPPER', 'SAME_LOWER'):
-        for i in range(len(input_spatial_shape)):
-            pad_shape[i] = (output_spatial_shape[i] - 1) * strides_spatial[i] + \
-                kernel_spatial_shape[i] - input_spatial_shape[i]
-            # hanlde the padding at only one dirction
-            if (pad_shape[i] % 2) == 0:
-                pad_shape[i] = int(math.ceil(pad_shape[i] / 2))
-    return pad_shape
-
-
-def get_output_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
-                     strides_spatial):
-    """
-    return output shape of conv2d or pooling,
-    ! borrow from onnx
-    Args:
-        auto_pad: string
-    Args:
-        input_spatial_shape: list[int]
-    Args:
-        kernel_spatial_shape: list[int]
-    Args:
-        strides_spatial: list[int]
-    Returns: 
-        list[int]
-    """
-    out_shape = [0] * len(input_spatial_shape)
-    if auto_pad in ('SAME_UPPER', 'SAME_LOWER'):
-        for i in range(len(input_spatial_shape)):
-            out_shape[i] = int(
-                np.ceil(
-                    float(input_spatial_shape[i]) / float(strides_spatial[i])))
-    elif auto_pad == 'VALID':
-        for i in range(len(input_spatial_shape)):
-            out_shape[i] = int(
-                np.ceil(
-                    float(input_spatial_shape[i] -
-                          (kernel_spatial_shape[i] - 1)) /
-                    float(strides_spatial[i])))
-    return out_shape
-
 
 class SingaFrontend(object):
     """
@@ -1049,10 +974,10 @@ class SingaBackend(Backend):
         stride = onnx_node.getattr("strides", (0, 0))
         auto_pad = None
         if "auto_pad" in onnx_node.attrs:
-            auto_pad = force_unicode(onnx_node.attrs['auto_pad'])
-            out_shape = get_output_shape(auto_pad, inputs[0].shape[2:], kernel,
+            auto_pad = utils.force_unicode(onnx_node.attrs['auto_pad'])
+            out_shape = utils.get_output_shape(auto_pad, inputs[0].shape[2:], kernel,
                                          stride)
-            padding = get_pad_shape(auto_pad, inputs[0].shape[2:], kernel,
+            padding = utils.get_pad_shape(auto_pad, inputs[0].shape[2:], kernel,
                                     stride, out_shape)
         stride = tuple(onnx_node.getattr('strides', (1, 1)))
         dilation = onnx_node.getattr('dilations', 1)
@@ -1112,10 +1037,10 @@ class SingaBackend(Backend):
                                                                              0)
         stride = tuple(onnx_node.getattr('strides', (1, 1)))
         if "auto_pad" in onnx_node.attrs:
-            auto_pad = force_unicode(onnx_node.attrs['auto_pad'])
-            out_shape = get_output_shape(auto_pad, inputs[0].shape[2:], kernel,
+            auto_pad = utils.force_unicode(onnx_node.attrs['auto_pad'])
+            out_shape = utils.get_output_shape(auto_pad, inputs[0].shape[2:], kernel,
                                          stride)
-            padding = get_pad_shape(auto_pad, inputs[0].shape[2:], kernel,
+            padding = utils.get_pad_shape(auto_pad, inputs[0].shape[2:], kernel,
                                     stride, out_shape)
 
         # not support count_include_pad and auto_pad

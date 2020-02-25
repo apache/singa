@@ -158,3 +158,18 @@ def get_output_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
                           (kernel_spatial_shape[i] - 1)) /
                     float(strides_spatial[i])))
     return out_shape
+
+
+def force_unicode(s):
+    """
+    return string of a bytes
+    ! borrow from onnx
+    Args:
+        s: string or bytes
+    Returns: 
+        string
+    """
+    try:
+        return s.decode('utf-8')
+    except AttributeError:
+        return s
