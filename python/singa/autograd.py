@@ -1251,7 +1251,10 @@ class _Conv2d(Operation):
             y = singa.CpuConvForward(x, W, b, self.handle)
 
         if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
-            y = utils.handle_same_pad_fwd(y, self.pad_mode)
+            # because sometimes, the input is valid and doesn't need crop
+            self.need_crop = list(y.shape())[2:] != output_shape
+            if self.need_crop:
+                y = utils.handle_same_pad_fwd(y, self.pad_mode)
         return y
 
     def backward(self, dy):
@@ -1265,7 +1268,7 @@ class _Conv2d(Operation):
         assert training is True and hasattr(
             self, "inputs"), "Please set training as True before do BP. "
 
-        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
+        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER") and self.need_crop:
             dy = utils.handle_same_pad_bwd(dy, self.pad_mode)
 
         if (type(self.handle) != singa.ConvHandle):
@@ -1685,14 +1688,17 @@ class _Pooling2d(Operation):
         else:
             y = singa.CpuPoolingForward(self.handle, x)
         if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
-            y = utils.handle_same_pad_fwd(y, self.pad_mode)
+            # because sometimes, the input is valid and doesn't need crop
+            self.need_crop = list(y.shape())[2:] != output_shape
+            if self.need_crop:
+                y = utils.handle_same_pad_fwd(y, self.pad_mode)
         if training:
             self.cache = (x, y)
 
         return y
 
     def backward(self, dy):
-        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
+        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER") and self.need_crop:
             dy = utils.handle_same_pad_bwd(dy, self.pad_mode)
         if (type(self.handle) != singa.PoolingHandle):
             dx = singa.GpuPoolingBackward(self.handle, dy, self.cache[0],
