@@ -24,19 +24,25 @@ matrix:
     compiler: clang
     # system cblas will be used by cmake for other xcode versions
     osx_image: xcode8
-    name: "macOS 10.11 (C++)" 
+    name: "macOS 10.11 (C++)"
   - os: linux
     dist: trusty
     compiler: gcc
-    name: "Ubuntu 14.04 (C++)" 
+    name: "Ubuntu 14.04 (C++)"
   - os: linux
     dist: xenial
     compiler: gcc
-    name: "Ubuntu 16.04 (C++)" 
+    name: "Ubuntu 16.04 (C++)"
   - os: linux
     dist: bionic
     compiler: gcc
-    name: "Ubuntu 18.04 (C++)" 
+    name: "Ubuntu 18.04 (C++)"
+  - os: linux
+    dist: bionic
+    compiler: gcc
+    name: "Ubuntu 18.04 (Static Analysis)"
+    script:
+      - bash -ex tool/linting/linting.sh
 
 install:
   - travis_wait bash -ex tool/travis/depends.sh
