@@ -1271,14 +1271,31 @@ def _get_padding_shape(input_spatial_shape, kernel_spatial_shape,
 class _Conv2d(Operation):
 
     def __init__(self, handle, pad_mode="NOTSET"):
+        """
+        Init a conv 2d operator
+        Args:
+            handle: ConvHandle for cpu or CudnnConvHandle for gpu
+        Args:
+            pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
+            SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+            In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+        """
         super(_Conv2d, self).__init__()
         self.handle = handle
-        # Where default value is NOTSET, which means explicit padding is used.
-        # SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
-        # In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
         self.pad_mode = pad_mode
 
     def forward(self, x, W, b=None):
+        """
+        Do forward of conv
+        Args:
+            x: CTensor, input
+        Args:
+            W: CTensor, weight
+        Args:
+            b: CTensor, bias
+        Returns:
+            CTensor 
+        """
         assert x.nDim() == 4, "The dimensions of input should be 4D."
         # check padding shape
         if self.pad_mode != "NOTSET":
@@ -1312,6 +1329,13 @@ class _Conv2d(Operation):
         return y
 
     def backward(self, dy):
+        """
+        Do backward of conv
+        Args:
+            dy: CTensor, gradient
+        Returns:
+            CTensor 
+        """
         assert training is True and hasattr(
             self, "inputs"), "Please set training as True before do BP. "
 
@@ -1341,6 +1365,21 @@ class _Conv2d(Operation):
 
 
 def conv2d(handle, x, W, b=None, pad_mode="NOTSET"):
+    """
+    Conv 2d operator
+    Args:
+        handle: ConvHandle for cpu or CudnnConvHandle for gpu
+    Args:
+        x: CTensor, input
+    Args:
+        W: CTensor, weight
+    Args:
+        b: CTensor, bias
+    Args:
+        pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
+        SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+        In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+    """
     if b is None:
         return _Conv2d(handle, pad_mode)(x, W)[0]
     else:
@@ -1360,7 +1399,31 @@ class Conv2d(Layer):
                  bias=True,
                  pad_mode="NOTSET",
                  **kwargs):
-
+        """
+        Generate a Conv 2d operator
+        Args:
+            in_channels: int, the channel of input
+        Args:
+            out_channels: int, the channel of output, also is the number of filters
+        Args:
+            kernel_size: int or tuple, kernel size for two direction of each axis. For example, (2, 3), the first 2 means will add 2 at the beginning and also 2 at the end for its axis.
+            and if a int is accepted, the kernel size will be inited as (int, int)
+        Args:
+            stride: int or tuple, stride, the logic is the same as kernel size.
+        Args:
+            padding: int or tuple or None, padding, the logic is the same as kernel size. However, if you set pad_mode as "SAME_UPPER" or "SAME_LOWER" mode, 
+            you can set padding as None, and the padding will be computed automatically.
+        Args:
+            dilation: int, only support 1
+        Args:
+            group: int
+        Args:
+            bias: bool
+        Args:
+            pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
+            SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+            In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+        """
         self.in_channels = in_channels
         self.out_channels = out_channels
 
@@ -1437,7 +1500,6 @@ class Conv2d(Layer):
         self.pad_mode = pad_mode
 
     def __call__(self, x):
-
         assert x.shape[1] == self.in_channels, "in_channels mismatched"
 
         # if same pad mode, re-compute the padding
@@ -1712,6 +1774,17 @@ class _Pooling2d(Operation):
 
 
 def pooling_2d(handle, x, pad_mode="NOTSET"):
+    """
+    Pooling 2d operator
+    Args:
+        handle: ConvHandle for cpu or CudnnConvHandle for gpu
+    Args:
+        x: CTensor, input
+    Args:
+        pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
+        SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+        In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+    """
     return _Pooling2d(handle, pad_mode)(x)[0]
 
 
@@ -1723,6 +1796,23 @@ class Pooling2d(Layer):
                  padding=0,
                  is_max=True,
                  pad_mode="NOTSET"):
+        """
+        Generate a Pooling 2d operator
+        Args:
+            kernel_size: int or tuple, kernel size for two direction of each axis. For example, (2, 3), the first 2 means will add 2 at the beginning and also 2 at the end for its axis.
+            and if a int is accepted, the kernel size will be inited as (int, int)
+        Args:
+            stride: int or tuple, stride, the logic is the same as kernel size.
+        Args:
+            padding: int or tuple or None, padding, the logic is the same as kernel size. However, if you set pad_mode as "SAME_UPPER" or "SAME_LOWER" mode, 
+            you can set padding as None, and the padding will be computed automatically.
+        Args:
+            is_max: bool, is max pooling or avg pooling
+        Args:
+            pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
+            SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+            In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+        """
         if isinstance(kernel_size, int):
             self.kernel_size = (kernel_size, kernel_size)
         elif isinstance(kernel_size, tuple):
@@ -1810,6 +1900,21 @@ class Pooling2d(Layer):
 class MaxPool2d(Pooling2d):
 
     def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
+        """
+        Generate a Max Pooling 2d operator
+        Args:
+            kernel_size: int or tuple, kernel size for two direction of each axis. For example, (2, 3), the first 2 means will add 2 at the beginning and also 2 at the end for its axis.
+            and if a int is accepted, the kernel size will be inited as (int, int)
+        Args:
+            stride: int or tuple, stride, the logic is the same as kernel size.
+        Args:
+            padding: int or tuple or None, padding, the logic is the same as kernel size. However, if you set pad_mode as "SAME_UPPER" or "SAME_LOWER" mode, 
+            you can set padding as None, and the padding will be computed automatically.
+        Args:
+            pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
+            SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+            In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+        """
         super(MaxPool2d, self).__init__(kernel_size, stride, padding, True,
                                         pad_mode)
 
@@ -1817,6 +1922,21 @@ class MaxPool2d(Pooling2d):
 class AvgPool2d(Pooling2d):
 
     def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
+        """
+        Generate a Avg Pooling 2d operator
+        Args:
+            kernel_size: int or tuple, kernel size for two direction of each axis. For example, (2, 3), the first 2 means will add 2 at the beginning and also 2 at the end for its axis.
+            and if a int is accepted, the kernel size will be inited as (int, int)
+        Args:
+            stride: int or tuple, stride, the logic is the same as kernel size.
+        Args:
+            padding: int or tuple or None, padding, the logic is the same as kernel size. However, if you set pad_mode as "SAME_UPPER" or "SAME_LOWER" mode, 
+            you can set padding as None, and the padding will be computed automatically.
+        Args:
+            pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
+            SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+            In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+        """
         super(AvgPool2d, self).__init__(kernel_size, stride, padding, False,
                                         pad_mode)
 
@@ -1824,6 +1944,21 @@ class AvgPool2d(Pooling2d):
 class MaxPool1d(Pooling2d):
 
     def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
+        """
+        Generate a Max Pooling 1d operator
+        Args:
+            kernel_size: int or tuple, kernel size for two direction of each axis. For example, (2, 3), the first 2 means will add 2 at the beginning and also 2 at the end for its axis.
+            and if a int is accepted, the kernel size will be inited as (int, int)
+        Args:
+            stride: int or tuple, stride, the logic is the same as kernel size.
+        Args:
+            padding: int or tuple or None, padding, the logic is the same as kernel size. However, if you set pad_mode as "SAME_UPPER" or "SAME_LOWER" mode, 
+            you can set padding as None, and the padding will be computed automatically.
+        Args:
+            pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
+            SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+            In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+        """
         if stride is None:
             stride = kernel_size
         super(MaxPool1d, self).__init__((1, kernel_size), (1, stride),
@@ -1833,6 +1968,21 @@ class MaxPool1d(Pooling2d):
 class AvgPool1d(Pooling2d):
 
     def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
+        """
+        Generate a Avg Pooling 1d operator
+        Args:
+            kernel_size: int or tuple, kernel size for two direction of each axis. For example, (2, 3), the first 2 means will add 2 at the beginning and also 2 at the end for its axis.
+            and if a int is accepted, the kernel size will be inited as (int, int)
+        Args:
+            stride: int or tuple, stride, the logic is the same as kernel size.
+        Args:
+            padding: int or tuple or None, padding, the logic is the same as kernel size. However, if you set pad_mode as "SAME_UPPER" or "SAME_LOWER" mode, 
+            you can set padding as None, and the padding will be computed automatically.
+        Args:
+            pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
+            SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
+            In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+        """
         if stride is None:
             stride = kernel_size
         super(AvgPool1d, self).__init__((1, kernel_size), (1, stride),
