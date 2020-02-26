@@ -191,7 +191,7 @@ def train_cifar10(sgd, max_epoch, batch_size, DIST=False, data_partition=None, g
     autograd.training = False
     dev.SetBufferFlag(False)
 
-    input()
+    # input()
 
     # Training and Evaulation Loop
     for epoch in range(max_epoch):
@@ -268,3 +268,5 @@ if __name__ == '__main__':
     batch_size = 16
 
     train_cifar10(sgd=sgd, max_epoch=max_epoch, batch_size=batch_size)
+
+    

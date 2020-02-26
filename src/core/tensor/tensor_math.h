@@ -383,11 +383,6 @@ template <typename DType, typename Lang>
 void Dot(const Tensor &in1, const Tensor &in2, Tensor *out, Context *ctx) {
   LOG(FATAL) << "Dot Not Implemented";
 }
-template <typename DType, typename Lang>
-void Dot(const Tensor &in1, const Tensor &in2, Tensor *out,
-         Context *ctx) {
-  LOG(FATAL) << "Dot Not Implemented";
-}
 
 /// out = alpha * A * v + beta * out.
 /// transA indicates if the internal data layout is transposed of A
