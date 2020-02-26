@@ -231,26 +231,6 @@ class TestPythonOperation(unittest.TestCase):
                                              grad1,
                                              decimal=5)
 
-    def test_conv2d_cpu(self):
-        # (in_channels, out_channels, kernel_size)
-        conv_1 = autograd.Conv2d(3, 1, 2)
-        conv_without_bias_1 = autograd.Conv2d(3, 1, 2, bias=False)
-
-        cpu_input_tensor = tensor.Tensor(shape=(2, 3, 3, 3), device=cpu_dev)
-        cpu_input_tensor.gaussian(0.0, 1.0)
-
-        y = conv_1(cpu_input_tensor)  # PyTensor
-        dx, dW, db = y.creator.backward(dy)  # CTensor
-
-        self.check_shape(y.shape, (2, 1, 2, 2))
-        self.check_shape(dx.shape(), (2, 3, 3, 3))
-        self.check_shape(dW.shape(), (1, 3, 2, 2))
-        self.check_shape(db.shape(), (1,))
-
-        # forward without bias
-        y_without_bias = conv_without_bias_1(cpu_input_tensor)
-        self.check_shape(y_without_bias.shape, (2, 1, 2, 2))
-
     def test_SeparableConv2d_gpu(self):
         # SeparableConv2d(in_channels, out_channels, kernel_size)
         separ_conv = autograd.SeparableConv2d(8, 16, 3, padding=1)
