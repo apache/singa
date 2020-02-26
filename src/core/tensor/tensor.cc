@@ -745,9 +745,9 @@ void Tensor::SetValue(const SType x) {
 
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     // TODO(wangwei) cast x to DType
-    auto thisPtr = std::make_shared<Tensor>(*this);
+    Tensor &thisRef = *this; 
     device_->Exec(
-        [thisPtr, x](Context *ctx) { Set<DType, Lang>(x, thisPtr.get(), ctx); },
+        [thisRef, x](Context *ctx) mutable { Set<DType, Lang>(x, &thisRef, ctx); },
         {}, {ptr});
   });
 }
@@ -777,10 +777,10 @@ template void Tensor::GetValue<int>(int *value, const size_t num);
 #define EltwiseUnaryTensorFn(fn, t, ret)                               \
   do {                                                                 \
     TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, { \
-      auto retPtr = std::make_shared<Tensor>(*ret);                    \
+      Tensor &retRef = *ret;                                           \
       ret->device()->Exec(                                             \
-          [t, retPtr](Context *ctx) {                                  \
-            fn<DType, Lang>(t, retPtr.get(), ctx);                     \
+          [t, retRef](Context *ctx) mutable {                          \
+            fn<DType, Lang>(t, &retRef, ctx);                          \
           },                                                           \
           {t.block()}, {ret->block()});                                \
     });                                                                \
@@ -893,9 +893,10 @@ void SoftMaxBackward(const Tensor &in, Tensor *out, int axis,
 
   do {
     TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
+      Tensor &outRef = *out;
       out->device()->Exec(
-          [in, out, fdout](Context *ctx) {
-            SoftMaxBackward<DType, Lang>(in, out, fdout, ctx);
+          [in, outRef, fdout](Context *ctx) mutable {
+            SoftMaxBackward<DType, Lang>(in, &outRef, fdout, ctx);
           },
           {in.block(), fdout.block()}, {out->block()});
     });
@@ -915,10 +916,10 @@ Tensor SoftMaxBackward(const Tensor &in, int axis, const Tensor &fdout) {
   do {                                                                     \
     TYPE_LANG_SWITCH(lhs.data_type(), DType, lhs.device()->lang(), Lang, { \
       CHECK_EQ(sizeof(DType), SizeOf(rhs.data_type()));                    \
-      auto retPtr = std::make_shared<Tensor>(*ret);                        \
+      Tensor &retRef = *ret;                                               \
       ret->device()->Exec(                                                 \
-          [lhs, rhs, retPtr](Context *ctx) {                               \
-            fn<DType, Lang>(lhs, rhs, retPtr.get(), ctx);                  \
+          [lhs, rhs, retRef](Context *ctx) mutable {                       \
+            fn<DType, Lang>(lhs, rhs, &retRef, ctx);                       \
           },                                                               \
           {lhs.block(), rhs.block()}, {ret->block()});                     \
     });                                                                    \
@@ -970,10 +971,10 @@ GenBinaryTensorFn(ReLUBackward, ReLUBackward);
     TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, {  \
       static_assert(std::is_same<SType, DType>::value,                  \
                     "The Scalar type must match the Tensor data type"); \
-      auto retPtr = std::make_shared<Tensor>(*ret);                     \
+      Tensor &retRef = *ret;                                            \
       ret->device()->Exec(                                              \
-          [t, x, retPtr](Context *ctx) {                                \
-            fn<DType, Lang>(t, x, retPtr.get(), ctx);                   \
+          [t, x, retRef](Context *ctx) mutable {                        \
+            fn<DType, Lang>(t, x, &retRef, ctx);                        \
           },                                                            \
           {t.block()}, {ret->block()});                                 \
     });                                                                 \
@@ -1016,10 +1017,10 @@ void Div(const SType alpha, const Tensor &in, Tensor *out) {
   CHECK(in.shape() == out->shape());
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     // TODO(wangwei) type cast SType to DType;
-    auto outPtr = std::make_shared<Tensor>(*out);
+    Tensor &outRef = *out;
     in.device()->Exec(
-        [alpha, in, outPtr](Context *ctx) {
-          Div<DType, Lang>(alpha, in, outPtr.get(), ctx);
+        [alpha, in, outRef](Context *ctx) mutable {
+          Div<DType, Lang>(alpha, in, &outRef, ctx);
         },
         {in.block()}, {out->block()});
   });
@@ -1057,7 +1058,7 @@ float Sum<float>(const Tensor &in) {
   one.SetValue(1.0f);
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     one.device()->Exec(
-        [in, one, &s](Context *ctx) {
+        [in, one, &s](Context *ctx) mutable {
           DType ret = DType(0);
           Dot<DType, Lang>(in, one, &ret, ctx);
           s = ret;
@@ -1081,34 +1082,32 @@ Tensor Sum(const Tensor &M, int axis) {
 }
 
 Tensor SumAll(const Tensor &in) {
-  auto out =
-      std::make_shared<Tensor>(Shape({(size_t)1}), in.device(), in.data_type());
-  auto one = std::make_shared<Tensor>(in.shape(), in.device(), in.data_type());
-  one->SetValue(1.0f);
+  Tensor out({(size_t)1}, in.device(), in.data_type());
+  Tensor one(in.shape(), in.device(), in.data_type());
+  one.SetValue(1.0f);
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
-    one->device()->Exec(
-        [in, one, out](Context *ctx) {
-          Dot<DType, Lang>(in, *one, out.get(), ctx);
+    one.device()->Exec(
+        [in, one, out](Context *ctx) mutable {
+          Dot<DType, Lang>(in, one, &out, ctx);
         },
-        {in.block(), one->block()}, {out->block()});
+        {in.block(), one.block()}, {out.block()});
   });
-  return *out;
+  return out;
 }
 
 Tensor RowMax(const Tensor &in) {
-  auto retPtr = std::make_shared<Tensor>(Shape({in.shape(0)}), in.device(),
-                                         in.data_type());
+  Tensor ret({in.shape(0)}, in.device(), in.data_type());
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     in.device()->Exec(
-        [in, retPtr](Context *ctx) {
+        [in, ret](Context *ctx) mutable {
           // size_t nrow = 1;
           // if (in.nDim() > 1) nrow = in.shape(0);
           // size_t ncol = in.Size() / nrow;
-          RowMax<DType, Lang>(in, retPtr.get(), ctx);
+          RowMax<DType, Lang>(in, &ret, ctx);
         },
-        {in.block()}, {retPtr->block()});
+        {in.block()}, {ret.block()});
   });
-  return *retPtr;
+  return ret;
 }
 
 void AddColumn(const Tensor &v, Tensor *M) { AddColumn(1, 1, v, M); }
@@ -1320,10 +1319,10 @@ void MultColumn(const Tensor &v, Tensor *M) {
   CHECK_EQ(v.Size(), M->shape(0));
   CheckDataTypeAndLang(*M, v);
   TYPE_LANG_SWITCH(v.data_type(), DType, v.device()->lang(), Lang, {
-    auto MPtr = std::make_shared<Tensor>(*M);
+    Tensor &MRef = *M;
     v.device()->Exec(
-        [MPtr, v](Context *ctx) {
-          DGMM<DType, Lang>(false, *MPtr, v, MPtr.get(), ctx);
+        [MRef, v](Context *ctx) mutable {
+          DGMM<DType, Lang>(false, MRef, v, &MRef, ctx);
         },
         {M->block(), v.block()}, {M->block()});
   });
@@ -1337,10 +1336,10 @@ void MultRow(const Tensor &v, Tensor *M) {
   CHECK_EQ(v.Size(), M->shape(1));
   CheckDataTypeAndLang(*M, v);
   TYPE_LANG_SWITCH(v.data_type(), DType, v.device()->lang(), Lang, {
-    auto MPtr = std::make_shared<Tensor>(*M);
+    Tensor &MRef = *M;
     v.device()->Exec(
-        [MPtr, v](Context *ctx) {
-          DGMM<DType, Lang>(true, *MPtr, v, MPtr.get(), ctx);
+        [MRef, v](Context *ctx) mutable {
+          DGMM<DType, Lang>(true, MRef, v, &MRef, ctx);
         },
         {M->block(), v.block()}, {M->block()});
   });
@@ -1386,10 +1385,10 @@ template <typename SType>
 void Bernoulli(const SType p, Tensor *out) {
   TYPE_LANG_SWITCH(out->data_type(), DType, out->device()->lang(), Lang, {
     auto prob = TypeCast<SType, DType>(p);
-    auto outPtr = std::make_shared<Tensor>(*out);
+    Tensor &outRef = *out;
     out->device()->Exec(
-        [prob, outPtr](Context *ctx) {
-          Bernoulli<DType, Lang>(prob, outPtr.get(), ctx);
+        [prob, outRef](Context *ctx) mutable {
+          Bernoulli<DType, Lang>(prob, &outRef, ctx);
         },
         {}, {out->block()}, true);
   });
@@ -1402,10 +1401,10 @@ void Uniform(const SType low, const SType high, Tensor *out) {
   TYPE_LANG_SWITCH(out->data_type(), DType, out->device()->lang(), Lang, {
     auto l = TypeCast<SType, DType>(low);
     auto h = TypeCast<SType, DType>(high);
-    auto outPtr = std::make_shared<Tensor>(*out);
+    Tensor &outRef = *out;
     out->device()->Exec(
-        [l, h, outPtr](Context *ctx) {
-          Uniform<DType, Lang>(l, h, outPtr.get(), ctx);
+        [l, h, outRef](Context *ctx) mutable {
+          Uniform<DType, Lang>(l, h, &outRef, ctx);
         },
         {}, {out->block()}, true);
   });
@@ -1418,10 +1417,10 @@ void Gaussian(const SType mean, const SType std, Tensor *out) {
   TYPE_LANG_SWITCH(out->data_type(), DType, out->device()->lang(), Lang, {
     auto m = TypeCast<SType, DType>(mean);
     auto s = TypeCast<SType, DType>(std);
-    auto outPtr = std::make_shared<Tensor>(*out);
+    Tensor &outRef = *out;
     out->device()->Exec(
-        [m, s, outPtr](Context *ctx) {
-          Gaussian<DType, Lang>(m, s, outPtr.get(), ctx);
+        [m, s, outRef](Context *ctx) mutable {
+          Gaussian<DType, Lang>(m, s, &outRef, ctx);
         },
         {}, {out->block()}, true);
   });
@@ -1434,10 +1433,10 @@ template <typename SType>
 void Axpy(const SType alpha, const Tensor &in, Tensor *out) {
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     auto a = TypeCast<SType, DType>(alpha);
-    auto outPtr = std::make_shared<Tensor>(*out);
+    Tensor &outRef = *out;
     out->device()->Exec(
-        [a, in, outPtr](Context *ctx) {
-          Axpy<DType, Lang>(a, in, outPtr.get(), ctx);
+        [a, in, outRef](Context *ctx) mutable {
+          Axpy<DType, Lang>(a, in, &outRef, ctx);
         },
         {in.block(), out->block()}, {out->block()});
   });
@@ -1474,10 +1473,10 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
     TYPE_LANG_SWITCH(A.data_type(), DType, A.device()->lang(), Lang, {
       auto a = TypeCast<SType, DType>(alpha);
       auto b = TypeCast<SType, DType>(beta);
-      auto CPtr = std::make_shared<Tensor>(*C);
+      Tensor &CRef = *C;
       C->device()->Exec(
-          [a, A, b, B, CPtr](Context *ctx) {
-            GEMV<DType, Lang>(a, A, B, b, CPtr.get(), ctx);
+          [a, A, b, B, CRef](Context *ctx) mutable {
+            GEMV<DType, Lang>(a, A, B, b, &CRef, ctx);
           },
           {A.block(), B.block()}, {C->block()});
     });
@@ -1487,10 +1486,10 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
     TYPE_LANG_SWITCH(A.data_type(), DType, A.device()->lang(), Lang, {
       auto a = TypeCast<SType, DType>(alpha);
       auto b = TypeCast<SType, DType>(beta);
-      auto CPtr = std::make_shared<Tensor>(*C);
+      Tensor &CRef = *C;
       C->device()->Exec(
-          [a, A, b, B, CPtr](Context *ctx) {
-            GEMM<DType, Lang>(a, A, B, b, CPtr.get(), ctx);
+          [a, A, b, B, CRef](Context *ctx) mutable {
+            GEMM<DType, Lang>(a, A, B, b, &CRef, ctx);
           },
           {A.block(), B.block()}, {C->block()});
     });
@@ -1556,13 +1555,13 @@ void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss) {
   if (p.nDim() == 2u) batchsize = p.shape(0);
   size_t dim = p.Size() / batchsize;
   TYPE_LANG_SWITCH(p.data_type(), DType, p.device()->lang(), Lang, {
-    auto lossPtr = std::make_shared<Tensor>(*loss);
+    Tensor &lossRef = *loss;
     p.device()->Exec(
-        [batchsize, dim, t, p, lossPtr](Context *ctx) {
+        [batchsize, dim, t, p, lossRef](Context *ctx) mutable {
           bool int_target = t.Size() == batchsize;
           ComputeCrossEntropy<DType, Lang>(int_target, batchsize, dim,
                                            p.block(), t.block(),
-                                           lossPtr->block(), ctx);
+                                           lossRef.block(), ctx);
         },
         {p.block(), t.block()}, {loss->block()});
   });
@@ -1575,13 +1574,13 @@ void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p) {
   if (p->nDim() == 2u) batchsize = p->shape(0);
   size_t dim = p->Size() / batchsize;
   TYPE_LANG_SWITCH(p->data_type(), DType, p->device()->lang(), Lang, {
-    auto pPtr = std::make_shared<Tensor>(*p);
+    Tensor &pRef = *p;
     p->device()->Exec(
-        [batchsize, dim, t, pPtr](Context *ctx) {
+        [batchsize, dim, t, pRef](Context *ctx) mutable {
           bool int_target = t.Size() == batchsize;
           SoftmaxCrossEntropyBwd<DType, Lang>(int_target, batchsize, dim,
-                                              pPtr->block(), t.block(),
-                                              pPtr->block(), ctx);
+                                              pRef.block(), t.block(),
+                                              pRef.block(), ctx);
         },
         {p->block(), t.block()}, {p->block()});
   });
