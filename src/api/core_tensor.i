@@ -201,6 +201,7 @@ namespace singa{
   Tensor Average(const Tensor &t, int axis);
   Tensor SoftMax(const Tensor &t);
   Tensor SoftMax(const Tensor &t, int axis);
+  Tensor SoftMaxBackward(const Tensor &t, int axis, const Tensor &fdout);
 
   Tensor Pow(const Tensor &base, const Tensor &exp);
 

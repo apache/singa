@@ -21,17 +21,17 @@
 
 #ifdef USE_DIST
 
-#include <iostream>
-#include <cstdint>
+#include <cuda_runtime.h>
+#include <cusparse.h>
+#include <mpi.h>
+#include <nccl.h>
 #include <unistd.h>
 
-#include <cuda_runtime.h>
-#include <nccl.h>
-#include <mpi.h>
+#include <cstdint>
+#include <iostream>
 
-#include "singa/core/tensor.h"
 #include "cuda_fp16.h"
-#include <cusparse.h>
+#include "singa/core/tensor.h"
 using std::vector;
 
 namespace singa {
@@ -139,7 +139,7 @@ class Communicator {
   float *backupBuff;
   int *fusedIndex;
 };
-}
+}  // namespace singa
 
 #endif  // USE_DIST
 #endif

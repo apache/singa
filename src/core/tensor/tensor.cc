@@ -19,6 +19,7 @@
 // #include "singa/utils/stacktrace.h"
 #include <algorithm>
 #include <utility>
+
 #include "./tensor_math.h"
 #include "./tensor_math_cpp.h"
 #include "./tensor_math_cuda.h"
@@ -230,7 +231,9 @@ void Tensor::FromProto(const singa::TensorProto &proto) {
       break;
     }
     */
-    default: { LOG(FATAL) << "Unsupported Type" << DataType_Name(data_type_); }
+    default: {
+      LOG(FATAL) << "Unsupported Type" << DataType_Name(data_type_);
+    }
   }
 }
 
@@ -283,7 +286,9 @@ void Tensor::to_proto(singa::TensorProto *proto) const {
       break;
     }
     */
-    default: { LOG(FATAL) << "Unsupported Type" << DataType_Name(data_type_); }
+    default: {
+      LOG(FATAL) << "Unsupported Type" << DataType_Name(data_type_);
+    }
   }
 }
 
@@ -778,6 +783,49 @@ Tensor SoftMax(const Tensor &in, int axis) {
   SoftMax(in, retptr, axis);
   return ret;
 }
+void SoftMaxBackward(const Tensor &in, Tensor *out, int axis,
+                     const Tensor &fdout) {
+  // {a_0, a_1, ..., a_k-1, a_k, ... a_n-1}
+  // reshape to
+  // { a_0 * a_1 * ... a_k-1, a_k * ... a_n-1 }
+
+  // assert axis \in {-r, r-1}
+  CHECK_LE(axis, (int)in.shape().size() - 1);
+  CHECK_GE(axis, -1 * (int)in.nDim());
+
+  Shape original_shape = in.shape();
+  if (axis < 0) axis = in.shape().size() + axis;
+
+  Shape coerced_shape = {1, 1};
+  for (std::size_t i = 0, max = in.shape().size(); i != max; ++i) {
+    if (i < axis)
+      coerced_shape[0] *= in.shape()[i];
+    else
+      coerced_shape[1] *= in.shape()[i];
+  }
+
+  Tensor in_reshaped = Reshape(in, coerced_shape);
+  out->Reshape(coerced_shape);
+
+  do {
+    TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
+      out->device()->Exec(
+          [in, out, fdout](Context *ctx) {
+            SoftMaxBackward<DType, Lang>(in, out, fdout, ctx);
+          },
+          {in.block(), fdout.block()}, {out->block()});
+    });
+  } while (0);
+
+  out->Reshape(original_shape);
+}
+
+Tensor SoftMaxBackward(const Tensor &in, int axis, const Tensor &fdout) {
+  Tensor ret(in.shape(), in.device(), in.data_type());
+  auto *retptr = &ret;
+  SoftMaxBackward(in, retptr, axis, fdout);
+  return ret;
+}
 
 #define EltwiseBinaryTensorFn(fn, lhs, rhs, ret)                           \
   do {                                                                     \
@@ -950,13 +998,15 @@ Tensor SumAll(const Tensor &in) {
   auto *outPtr = &out;
   one.SetValue(1.0f);
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
-    one.device()->Exec([in, one, outPtr](Context * ctx) {
-      Dot<DType, Lang>(in, one, outPtr, ctx);
-    }, {in.block(), one.block()}, {outPtr->block()});
+    one.device()->Exec(
+        [in, one, outPtr](Context *ctx) {
+          Dot<DType, Lang>(in, one, outPtr, ctx);
+        },
+        {in.block(), one.block()}, {outPtr->block()});
   });
   return out;
 }
- 
+
 Tensor RowMax(const Tensor &in) {
   Tensor ret({in.shape(0)}, in.device(), in.data_type());
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {

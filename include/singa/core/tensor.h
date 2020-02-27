@@ -28,8 +28,8 @@
 #include "singa/proto/core.pb.h"
 #include "singa/utils/logging.h"
 
-using std::vector;
 using std::tuple;
+using std::vector;
 namespace singa {
 
 typedef vector<size_t> Shape;
@@ -514,6 +514,7 @@ void MultRow(const Tensor &v, Tensor *M);
 /// Do softmax for each row. 'in' could be a 1-d or 2-d Tensor.
 Tensor SoftMax(const Tensor &in);
 Tensor SoftMax(const Tensor &in, int axis);
+Tensor SoftMaxBackward(const Tensor &in, int axis, const Tensor &fdout);
 
 Tensor RowMax(const Tensor &in);
 /// Do softmax for each row. 'in' could be a 1-d or 2-d Tensor.

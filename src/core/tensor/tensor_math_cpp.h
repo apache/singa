@@ -21,11 +21,13 @@
 #include "./tensor_math.h"
 //#include "./stacktrace.h"
 #include <math.h>
+
 #include <algorithm>
 #include <cfloat>
 #include <iostream>
 #include <iterator>
 #include <sstream>
+
 #include "singa/core/common.h"
 #include "singa/core/tensor.h"
 
@@ -240,36 +242,11 @@ void Abs<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
 
 #ifdef USE_DNNL
 template <>
-void SoftMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx,
-                               int axis) {
-  CHECK_EQ(in.device()->lang(), kCpp);
-
-  CHECK_LE(axis, (int)in.shape().size() - 1);
-  CHECK_GE(axis, -1 * (int)in.nDim());
-
-  Shape original_shape = in.shape();
-  if (axis < 0) axis = in.shape().size() + axis;
-
-  Shape coerced_shape = {1, 1};
-  for (int i = 0; i < in.shape().size(); i++) {
-    if (i < axis)
-      coerced_shape[0] *= in.shape()[i];
-    else
-      coerced_shape[1] *= in.shape()[i];
-  }
-  Tensor in_reshaped = Reshape(in, coerced_shape);
-  out->Reshape(coerced_shape);
-
-  // optimise by minus x - x.max()
-  auto in_max = RowMax(in_reshaped);
-  in_max.Reshape({coerced_shape[0], 1});
-  in_reshaped = in_reshaped - in_max;
-
-  auto md = dnnl::memory::desc({coerced_shape[0], coerced_shape[1]},
+void SoftMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
+  auto md = dnnl::memory::desc({in.shape()[0], in.shape()[1]},
                                dnnl::memory::data_type::f32,
                                dnnl::memory::format_tag::ab);
-  auto in_mem =
-      dnnl::memory(md, ctx->dnnl_engine, in_reshaped.block()->mutable_data());
+  auto in_mem = dnnl::memory(md, ctx->dnnl_engine, in.block()->mutable_data());
   auto out_mem =
       dnnl::memory(md, ctx->dnnl_engine, out->block()->mutable_data());
 
@@ -281,9 +258,35 @@ void SoftMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx,
   softmax.execute(ctx->dnnl_stream,
                   {{DNNL_ARG_SRC, in_mem}, {DNNL_ARG_DST, out_mem}});
   ctx->dnnl_stream.wait();
-
-  out->Reshape(original_shape);
 }
+
+template <>
+void SoftMaxBackward<float, lang::Cpp>(const Tensor &in, Tensor *out,
+                                       const Tensor &fdout, Context *ctx) {
+  auto md = dnnl::memory::desc({in.shape()[0], in.shape()[1]},
+                               dnnl::memory::data_type::f32,
+                               dnnl::memory::format_tag::ab);
+  auto in_mem = dnnl::memory(md, ctx->dnnl_engine, in.block()->mutable_data());
+  auto fdout_mem =
+      dnnl::memory(md, ctx->dnnl_engine, fdout.block()->mutable_data());
+  auto out_mem =
+      dnnl::memory(md, ctx->dnnl_engine, out->block()->mutable_data());
+
+  auto softmax_desc =
+      dnnl::softmax_forward::desc(dnnl::prop_kind::forward_scoring, md, 1);
+  auto softmax_prim_desc =
+      dnnl::softmax_forward::primitive_desc(softmax_desc, ctx->dnnl_engine);
+
+  auto softmaxbwd_desc = dnnl::softmax_backward::desc(md, md, 1);
+  auto softmaxbwd_prim_desc = dnnl::softmax_backward::primitive_desc(
+      softmaxbwd_desc, ctx->dnnl_engine, softmax_prim_desc);
+  auto softmaxbwd = dnnl::softmax_backward(softmaxbwd_prim_desc);
+  softmaxbwd.execute(ctx->dnnl_stream, {{DNNL_ARG_DIFF_SRC, out_mem},
+                                        {DNNL_ARG_DIFF_DST, in_mem},
+                                        {DNNL_ARG_DST, fdout_mem}});
+  ctx->dnnl_stream.wait();
+}
+
 #endif  // USE_DNNL
 
 template <>
@@ -927,6 +930,8 @@ void RowMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
   }
 }
 
+// =========Matrix operations ================================================
+/*
 template <>
 void SoftMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
   CHECK_LE(in.nDim(), 2u)
@@ -947,8 +952,6 @@ void SoftMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
   out->Reshape(in.shape());
 }
 
-// =========Matrix operations ================================================
-/*
 template <>
 void AddCol<float, lang::Cpp>(const size_t nrow, const size_t ncol,
                               const Tensor& A, const Tensor& v, Tensor* out,

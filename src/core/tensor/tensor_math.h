@@ -24,6 +24,7 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+
 #include "singa/core/common.h"
 #include "singa/core/tensor.h"
 #include "singa/utils/logging.h"
@@ -369,8 +370,7 @@ void Dot(const Tensor &in1, const Tensor &in2, DType *out, Context *ctx) {
   LOG(FATAL) << "Dot Not Implemented";
 }
 template <typename DType, typename Lang>
-void Dot(const Tensor &in1, const Tensor &in2, Tensor *out,
-         Context *ctx) {
+void Dot(const Tensor &in1, const Tensor &in2, Tensor *out, Context *ctx) {
   LOG(FATAL) << "Dot Not Implemented";
 }
 
@@ -404,7 +404,8 @@ void SoftMax(const Tensor &in, Tensor *out, Context *ctx) {
 }
 
 template <typename DType, typename Lang>
-void SoftMax(const Tensor &in, Tensor *out, Context *ctx, int axis) {
+void SoftMaxBackward(const Tensor &in, Tensor *out, const Tensor &fdout,
+                     Context *ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 

@@ -335,7 +335,7 @@ class Tensor(object):
         '''
         t = Tensor()
         t_ndim = self.ndim()
-        if isinstance(repeats, int) or isinstance(repeats, long):
+        if isinstance(repeats, int) or isinstance(repeats, complex):
             if repeats < 0:
                 raise ValueError(
                     "'repeats' should not be negative: {}".format(repeats))

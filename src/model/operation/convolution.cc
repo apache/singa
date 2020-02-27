@@ -1,27 +1,28 @@
 /*********************************************************
-*
-* Licensed to the Apache Software Foundation (ASF) under one
-* or more contributor license agreements.  See the NOTICE file
-* distributed with this work for additional information
-* regarding copyright ownership.  The ASF licenses this file
-* to you under the Apache License, Version 2.0 (the
-* "License"); you may not use this file except in compliance
-* with the License.  You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing,
-* software distributed under the License is distributed on an
-* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-* KIND, either express or implied.  See the License for the
-* specific language governing permissions and limitations
-* under the License.
-*
-************************************************************/
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ ************************************************************/
+#include "../layer/convolution.h"
+
 #include <cctype>
 
-#include "../layer/convolution.h"
-#include "./convolution.h"
+#include "convolution.h"
 
 namespace singa {
 
@@ -77,21 +78,6 @@ ConvHandle::ConvHandle(const Tensor &input,
     w_dims = dnnl::memory::dims{groups, (int)out_channels / groups,
                                 (int)in_channels / groups, (int)kernel_size[0],
                                 (int)kernel_size[1]};
-
-    x_md = dnnl::memory::desc(x_dims, dtype_, dnnl::memory::format_tag::nchw);
-    w_md = dnnl::memory::desc(w_dims, dtype_, dnnl::memory::format_tag::giohw);
-    b_md = dnnl::memory::desc(b_dims, dtype_, dnnl::memory::format_tag::x);
-    y_md = dnnl::memory::desc(o_dims, dtype_, dnnl::memory::format_tag::nchw);
-
-    // convolution forward primitive descriptor is shared between forward and
-    // backward process
-    conv_d = new dnnl::convolution_forward::desc(
-        dnnl::prop_kind::forward_inference, dnnl::algorithm::convolution_direct,
-        x_md, w_md, b_md, y_md, s_dims, p_dims, p_dims);
-
-    auto eng = input.device()->context(0)->dnnl_engine;
-    conv_pd = new dnnl::convolution_forward::primitive_desc(*conv_d, eng);
-
     // dnnl calculate dw and db in one go, a workaround to be compatible with
     // singa api
     db = new Tensor(Shape{num_filters}, input.device(), input.data_type());
@@ -102,8 +88,6 @@ ConvHandle::ConvHandle(const Tensor &input,
 ConvHandle::~ConvHandle() {
 #ifdef USE_DNNL
   if (use_dnnl) {
-    delete (conv_d);
-    delete (conv_pd);
     delete (db);
   }
 #endif  // USE_DNNL
@@ -130,21 +114,76 @@ Tensor CpuConvForward(const Tensor &x, Tensor &W, Tensor &b,
 
   output.device()->Exec(
       [&output, &x, &W, &b, &ch](Context *ctx) {
-
         using namespace dnnl;
-
+        using tag = memory::format_tag;
         auto eng = ctx->dnnl_engine;
-        auto x_mem = memory(ch.x_md, eng, x.block()->mutable_data());
-        auto w_mem = memory(ch.w_md, eng, W.block()->mutable_data());
-        auto b_mem = memory(ch.b_md, eng, b.block()->mutable_data());
-        auto y_mem = memory(ch.y_md, eng, output.block()->mutable_data());
+        auto s = ctx->dnnl_stream;
+        auto dtype = dnnl::memory::data_type::f32;
 
-        convolution_forward(*ch.conv_pd)
-            .execute(ctx->dnnl_stream, {{DNNL_ARG_SRC, x_mem},
-                                        {DNNL_ARG_WEIGHTS, w_mem},
-                                        {DNNL_ARG_BIAS, b_mem},
-                                        {DNNL_ARG_DST, y_mem}});
-        ctx->dnnl_stream.wait();
+        // dnnl design pattern
+        // xxx_user_xxx_memory(and its format tag) is defined by user, which may
+        // need to be reordered
+        auto conv_user_src_memory = memory({{ch.x_dims}, dtype, tag::nchw}, eng,
+                                           x.block()->mutable_data());
+        auto conv_user_weights_memory = memory({{ch.w_dims}, dtype, tag::goihw},
+                                               eng, W.block()->mutable_data());
+        auto conv_user_bias_memory = memory({{ch.b_dims}, dtype, tag::x}, eng,
+                                            b.block()->mutable_data());
+
+        // xxx_xxx_memory_md is created for creating conv_desc, and format tag
+        // is defined as any
+        auto conv_src_md = memory::desc({ch.x_dims}, dtype, tag::any);
+        auto conv_bias_md = memory::desc({ch.b_dims}, dtype, tag::any);
+        auto conv_weights_md = memory::desc({ch.w_dims}, dtype, tag::any);
+        auto conv_dst_md = memory::desc({ch.o_dims}, dtype,
+                                        tag::nchw);  // could not set to any
+
+        auto conv_desc = convolution_forward::desc(
+            prop_kind::forward, algorithm::convolution_direct, conv_src_md,
+            conv_weights_md, conv_bias_md, conv_dst_md, ch.s_dims, ch.p_dims,
+            ch.p_dims);
+        auto conv_pd = convolution_forward::primitive_desc(conv_desc, eng);
+
+        // auto conv_pd = *ch.conv_pd; // 1ms to 70 ms slower
+
+        // memory placeholder for reorder
+        auto conv_src_memory = conv_user_src_memory;
+        auto conv_weights_memory = conv_user_weights_memory;
+
+        // output memory
+        auto conv_dst_memory =
+            memory(conv_pd.dst_desc(), eng, output.block()->mutable_data());
+
+        // Tensor for reorder  - tesing performance shows no significant improve
+        Tensor x_reo;
+        x_reo.ResetLike(x);
+        Tensor W_reo;
+        W_reo.ResetLike(W);
+
+        if (conv_pd.src_desc() != conv_user_src_memory.get_desc()) {
+          conv_src_memory =
+              memory(conv_pd.src_desc(), eng, x_reo.block()->mutable_data());
+          reorder(conv_user_src_memory, conv_src_memory)
+              .execute(s, {{DNNL_ARG_FROM, conv_user_src_memory},
+                           {DNNL_ARG_TO, conv_src_memory}});
+        }
+        if (conv_pd.weights_desc() != conv_user_weights_memory.get_desc()) {
+          conv_weights_memory = memory(conv_pd.weights_desc(), eng,
+                                       W_reo.block()->mutable_data());
+          reorder(conv_user_weights_memory, conv_weights_memory)
+              .execute(s, {{DNNL_ARG_FROM, conv_user_weights_memory},
+                           {DNNL_ARG_TO, conv_weights_memory}});
+        }
+
+        // execuete forward
+        convolution_forward(conv_pd).execute(
+            s, {{DNNL_ARG_SRC, conv_src_memory},
+                {DNNL_ARG_WEIGHTS, conv_weights_memory},
+                {DNNL_ARG_BIAS, conv_user_bias_memory},
+                {DNNL_ARG_DST, conv_dst_memory}});
+
+        // synchronize stream
+        s.wait();
       },
       {x.block(), W.block(), b.block()}, {output.block()});
 
@@ -161,7 +200,6 @@ Tensor CpuConvForward(const Tensor &x, Tensor &W, Tensor &b,
   auto dev = x.device();
   Shape shape{ch.batchsize, ch.num_filters, ch.conv_height, ch.conv_width};
   Tensor output(shape, dev, dtype);
-
   Tensor col_data(Shape{ch.col_height, ch.col_width});  // broadcasted image
 
   float *data_col = new float[ch.col_height * ch.col_width];
@@ -204,25 +242,42 @@ Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x,
 
   dy.device()->Exec(
       [&x, &dx, &dy, &W, &ch](Context *ctx) {
-        auto eng = ctx->dnnl_engine;
         using namespace dnnl;
-        auto x_mem = memory(ch.x_md, eng, x.block()->mutable_data());
-        auto w_mem = memory(ch.w_md, eng, W.block()->mutable_data());
-        auto dx_mem = memory(ch.x_md, eng, dx.block()->mutable_data());
-        auto dy_mem = memory(ch.y_md, eng, dy.block()->mutable_data());
+        auto eng = ctx->dnnl_engine;
+        auto s = ctx->dnnl_stream;
+        using tag = memory::format_tag;
+        auto dtype = dnnl::memory::data_type::f32;
+
+        auto conv_src_md = memory::desc({ch.x_dims}, dtype, tag::nchw);
+        auto conv_weights_md = memory::desc({ch.w_dims}, dtype, tag::goihw);
+        auto conv_bias_md = memory::desc({ch.b_dims}, dtype, tag::x);
+        auto conv_dst_md = memory::desc({ch.o_dims}, dtype, tag::nchw);
+
+        auto conv_user_src_memory =
+            memory(conv_src_md, eng, dx.block()->mutable_data());
+        auto conv_user_diff_dst_memory =
+            memory(conv_dst_md, eng, dy.block()->mutable_data());
+        auto conv_user_weights_memory =
+            memory(conv_weights_md, eng, W.block()->mutable_data());
+
+        auto conv_desc = convolution_forward::desc(
+            prop_kind::forward, algorithm::convolution_direct, conv_src_md,
+            conv_weights_md, conv_bias_md, conv_dst_md, ch.s_dims, ch.p_dims,
+            ch.p_dims);
+        auto conv_pd = convolution_forward::primitive_desc(conv_desc, eng);
 
         auto conv_bwd_data_d = convolution_backward_data::desc(
-            algorithm::convolution_direct, ch.x_md, ch.w_md, ch.y_md, ch.s_dims,
-            ch.p_dims, ch.p_dims);
+            algorithm::convolution_direct, conv_src_md, conv_weights_md,
+            conv_dst_md, ch.s_dims, ch.p_dims, ch.p_dims);
         auto conv_bwd_data_pd = convolution_backward_data::primitive_desc(
-            conv_bwd_data_d, eng, *ch.conv_pd);
+            conv_bwd_data_d, eng, conv_pd);
 
         convolution_backward_data(conv_bwd_data_pd)
-            .execute(ctx->dnnl_stream, {{DNNL_ARG_DIFF_DST, dy_mem},
-                                        {DNNL_ARG_WEIGHTS, w_mem},
-                                        {DNNL_ARG_DIFF_SRC, dx_mem}});
+            .execute(ctx->dnnl_stream,
+                     {{DNNL_ARG_DIFF_DST, conv_user_diff_dst_memory},
+                      {DNNL_ARG_WEIGHTS, conv_user_weights_memory},
+                      {DNNL_ARG_DIFF_SRC, conv_user_src_memory}});
         ctx->dnnl_stream.wait();
-
       },
       {x.block(), dy.block(), W.block()}, {dx.block()});
 
@@ -271,27 +326,51 @@ Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
 
   dy.device()->Exec(
       [&x, &dy, &dW, &ch](Context *ctx) {
-        auto eng = ctx->dnnl_engine;
         using namespace dnnl;
+        auto eng = ctx->dnnl_engine;
+        auto s = ctx->dnnl_stream;
+        using tag = memory::format_tag;
+        auto dtype = dnnl::memory::data_type::f32;
 
-        auto x_mem = memory(ch.x_md, eng, x.block()->mutable_data());
-        auto dw_mem = memory(ch.w_md, eng, dW.block()->mutable_data());
-        auto dy_mem = memory(ch.y_md, eng, dy.block()->mutable_data());
-        auto db_mem = memory(ch.b_md, eng, ch.db->block()->mutable_data());
+        auto conv_src_md = memory::desc({ch.x_dims}, dtype, tag::nchw);
+        auto conv_weights_md = memory::desc({ch.w_dims}, dtype, tag::goihw);
+        auto conv_bias_md = memory::desc({ch.b_dims}, dtype, tag::x);
+        auto conv_dst_md = memory::desc({ch.o_dims}, dtype, tag::nchw);
 
-        auto conv_dw_d = convolution_backward_weights::desc(
-            algorithm::convolution_direct, ch.x_md, ch.w_md, ch.b_md, ch.y_md,
-            ch.s_dims, ch.p_dims, ch.p_dims);
+        auto conv_user_src_memory =
+            memory(conv_src_md, eng, x.block()->mutable_data());
+        auto conv_user_diff_weights_memory =
+            memory(conv_weights_md, eng, dW.block()->mutable_data());
+        auto conv_diff_bias_memory =
+            memory(conv_bias_md, eng, ch.db->block()->mutable_data());
+        auto conv_user_diff_dst_memory =
+            memory(conv_dst_md, eng, dy.block()->mutable_data());
 
-        auto conv_dw_pd = convolution_backward_weights::primitive_desc(
-            conv_dw_d, eng, *ch.conv_pd);
-        convolution_backward_weights(conv_dw_pd)
-            .execute(ctx->dnnl_stream, {{DNNL_ARG_DIFF_DST, dy_mem},
-                                        {DNNL_ARG_SRC, x_mem},
-                                        {DNNL_ARG_DIFF_WEIGHTS, dw_mem},
-                                        {DNNL_ARG_DIFF_BIAS, db_mem}});
+        auto conv_desc = convolution_forward::desc(
+            prop_kind::forward, algorithm::convolution_direct, conv_src_md,
+            conv_weights_md, conv_bias_md, conv_dst_md, ch.s_dims, ch.p_dims,
+            ch.p_dims);
+        auto conv_pd = convolution_forward::primitive_desc(conv_desc, eng);
+
+        // auto conv_pd = *ch.conv_pd; // very slow
+
+        auto conv_bwd_src_memory = conv_user_src_memory;
+        auto conv_diff_weights_memory = conv_user_diff_weights_memory;
+        auto conv_diff_dst_memory = conv_user_diff_dst_memory;
+
+        auto conv_bwd_weights_desc = convolution_backward_weights::desc(
+            algorithm::convolution_direct, conv_src_md, conv_weights_md,
+            conv_bias_md, conv_dst_md, ch.s_dims, ch.p_dims, ch.p_dims);
+        auto conv_bwd_weights_pd = convolution_backward_weights::primitive_desc(
+            conv_bwd_weights_desc, eng, conv_pd);
+
+        convolution_backward_weights(conv_bwd_weights_pd)
+            .execute(ctx->dnnl_stream,
+                     {{DNNL_ARG_DIFF_DST, conv_diff_dst_memory},
+                      {DNNL_ARG_SRC, conv_bwd_src_memory},
+                      {DNNL_ARG_DIFF_WEIGHTS, conv_diff_weights_memory},
+                      {DNNL_ARG_DIFF_BIAS, conv_diff_bias_memory}});
         ctx->dnnl_stream.wait();
-
       },
       {x.block(), dy.block(), W.block()}, {dW.block()});
 

@@ -442,8 +442,8 @@ class TestPythonOnnxBackend(unittest.TestCase):
                outputs=[y],
                name='test_maxpool_2d_precomputed_strides')
 
-    # type: () -> None
-    def test_maxpool_with_argmax_2d_precomputed_strides(self):
+    def test_maxpool_with_argmax_2d_precomputed_strides(
+        self):  # type: () -> None
         """
         input_shape: [1, 1, 5, 5]
         output_shape: [1, 1, 2, 2]
@@ -572,7 +572,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
     def test_reshape(self):  # type: () -> None
 
         def reshape_reference_implementation(
-                data, shape):  # type: (np.ndarray, np.ndarray) -> np.ndarray
+            data, shape):  # type: (np.ndarray, np.ndarray) -> np.ndarray
             # replace zeros with corresponding dim size
             # we need to do this because np.reshape doesn't support 0
             new_shape = np.copy(shape)
@@ -2032,11 +2032,11 @@ class TestPythonOnnxBackend(unittest.TestCase):
 
 # return padding shape of conv2d or pooling
 def get_pad_shape(
-        auto_pad,  # type: Text
-        input_spatial_shape,  # type: Sequence[int]
-        kernel_spatial_shape,  # type: Sequence[int]
-        strides_spatial,  # type: Sequence[int]
-        output_spatial_shape  # type: Sequence[int]
+    auto_pad,  # type: Text
+    input_spatial_shape,  # type: Sequence[int]
+    kernel_spatial_shape,  # type: Sequence[int]
+    strides_spatial,  # type: Sequence[int]
+    output_spatial_shape  # type: Sequence[int]
 ):  # type: (...) -> Sequence[int]
     pad_shape = [0] * len(input_spatial_shape)
     if auto_pad in ('SAME_UPPER', 'SAME_LOWER'):
@@ -2052,10 +2052,10 @@ def get_pad_shape(
 
 
 def get_output_shape(
-        auto_pad,  # type: Text
-        input_spatial_shape,  # type: Sequence[int]
-        kernel_spatial_shape,  # type: Sequence[int]
-        strides_spatial  # type: Sequence[int]
+    auto_pad,  # type: Text
+    input_spatial_shape,  # type: Sequence[int]
+    kernel_spatial_shape,  # type: Sequence[int]
+    strides_spatial  # type: Sequence[int]
 ):  # type: (...) -> Sequence[int]
     out_shape = [0] * len(input_spatial_shape)
     if auto_pad in ('SAME_UPPER', 'SAME_LOWER'):
@@ -2074,23 +2074,24 @@ def get_output_shape(
 
 
 def pool(
-        padded,  # type: np.ndarray
-        x_shape,  # type: Sequence[int]
-        kernel_shape,  # type: Sequence[int]
-        strides_shape,  # type: Sequence[int]
-        out_shape,  # type: Sequence[int]
-        pad_shape,  # type: Sequence[int]
-        pooling_type,  # type: Text
-        count_include_pad=0  # type: int
+    padded,  # type: np.ndarray
+    x_shape,  # type: Sequence[int]
+    kernel_shape,  # type: Sequence[int]
+    strides_shape,  # type: Sequence[int]
+    out_shape,  # type: Sequence[int]
+    pad_shape,  # type: Sequence[int]
+    pooling_type,  # type: Text
+    count_include_pad=0  # type: int
 ):  # type: (...) -> np.ndarray
     spatial_size = len(x_shape) - 2
     y = np.zeros([x_shape[0], x_shape[1]] + list(out_shape))
 
-    for shape in itertools.product(range(x_shape[0]), range(x_shape[1]), *[
-            range(
-                int((x_shape[i + 2] + pad_shape[i] - kernel_shape[i]) /
-                    strides_shape[i] + 1)) for i in range(spatial_size)
-    ]):
+    for shape in itertools.product(
+            range(x_shape[0]), range(x_shape[1]), *[
+                range(
+                    int((x_shape[i + 2] + pad_shape[i] - kernel_shape[i]) /
+                        strides_shape[i] + 1)) for i in range(spatial_size)
+            ]):
         window = padded[shape[0], shape[1]]
         window_vals = np.array([
             window[i] for i in list(

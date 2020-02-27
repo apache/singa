@@ -302,13 +302,14 @@ int tinydir_readfile(const tinydir_dir *dir, tinydir_file *file) {
     errno = ENOENT;
     return -1;
   }
-  if (strlen(dir->path) + strlen(
+  if (strlen(dir->path) +
+          strlen(
 #ifdef _WIN32
-                              dir->_f.cFileName
+              dir->_f.cFileName
 #else
-                              dir->_e->d_name
+              dir->_e->d_name
 #endif
-                              ) +
+              ) +
           1 + _TINYDIR_PATH_EXTRA >=
       _TINYDIR_PATH_MAX) {
     /* the path for the file will be too long */
@@ -334,7 +335,7 @@ int tinydir_readfile(const tinydir_dir *dir, tinydir_file *file) {
 #else
          dir->_e->d_name
 #endif
-         );
+  );
   strcat(file->path, file->name);
 #ifndef _WIN32
   if (stat(file->path, &file->_s) == -1) {
