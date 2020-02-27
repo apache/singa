@@ -22,10 +22,12 @@
 #define SINGA_MODEL_OPERATION_BATCHNORM_H_
 
 #include <vector>
+
 #include "singa/core/tensor.h"
 
 #ifdef USE_CUDNN
 #include <cudnn.h>
+
 #include "../layer/cudnn_utils.h"  // check_cudnn
 #endif                             // USE_CUDNN
 

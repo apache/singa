@@ -1,5 +1,7 @@
 [MASTER]
 
+errors-only=yes
+
 # A comma-separated list of package or module names from where C extensions may
 # be loaded. Extensions are loading into the active Python interpreter and may
 # run arbitrary code.
@@ -139,7 +141,12 @@ disable=print-statement,
         deprecated-sys-function,
         exception-escape,
         import-error,
-        comprehension-escape
+        comprehension-escape,
+        too-many-function-args, # false positive on np.array([...])
+        not-an-iterable, # false positive on tensor.shape
+        unsubscriptable-object, # false positive on tensor.shape
+        no-name-in-module, # proto object available after compilation
+        access-member-before-definition # conv layer re-instantiate handle when batch number changed
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

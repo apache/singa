@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -15,14 +17,29 @@
 # limitations under the License.
 #
 
-set noparent
+export PATH="$HOME/miniconda/bin:$PATH"
 
-filter=-runtime/threadsafe_fn
-filter=-whitespace/braces
-filter=-readability/todo
-filter=-build/c++11
-filter=-build/c++14
-filter=-build/c++tr1
-filter=-build/namespaces
-filter=-build/header_guard
-filter=-runtime/explicit
+# cpplint
+find src/api/ \
+    src/core/ \
+    src/proto/ \
+    src/utils/ \
+    include/singa/core/ \
+    include/singa/utils/ \
+    src/model/operation/ \
+    include/singa/io/communicator.h \
+    src/io/communicator.cc \
+    test/singa/ -iname *.h -o -iname *.cc | xargs cpplint --quiet --verbose=5
+
+CPPLINTRESULT=$?
+
+if [ $CPPLINTRESULT -ne 0 ]; then
+  echo $CPPLINTRESULT
+  echo "cpplint not passed"
+  exit 1
+else
+  echo "cpplint passed"
+fi
+
+exit 0
+

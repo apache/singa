@@ -115,9 +115,6 @@ class ImageBatchIter(object):
         x, y = self.queue.get()  # dequeue one mini-batch
         return x, y
 
-    def stop(self):
-        self.end()
-
     def end(self):
         if self.p is not None:
             self.stop = True

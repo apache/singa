@@ -158,8 +158,10 @@ class ResNet(autograd.Layer):
             )
             bn = autograd.BatchNorm2d(planes * block.expansion)
 
-            def downsample(x):
+            def _downsample(x):
                 return bn(conv(x))
+
+            downsample = _downsample
 
         layers = []
         layers.append(block(self.inplanes, planes, stride, downsample))

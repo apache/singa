@@ -18,9 +18,9 @@
  * under the License.
  *
  ************************************************************/
-#include <cctype>
+#include "batchnorm.h"
 
-#include "./batchnorm.h"
+#include <cctype>
 
 namespace singa {
 
