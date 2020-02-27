@@ -745,7 +745,7 @@ void Tensor::SetValue(const SType x) {
 
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     // TODO(wangwei) cast x to DType
-    Tensor &thisRef = *this; 
+    Tensor &thisRef = *this;
     device_->Exec(
         [thisRef, x](Context *ctx) mutable { Set<DType, Lang>(x, &thisRef, ctx); },
         {}, {ptr});
@@ -1468,6 +1468,9 @@ void Mult(const Tensor &A, const Tensor &B, Tensor *out) {
 template <typename SType>
 void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
           Tensor *C) {
+  CHECK_EQ(A.shape().size(), 2u);
+  vector<Block*> read_blocks = {A.block(), B.block()};
+  if (beta) read_blocks.push_back(C->block());
   if (B.nDim() == 1u) {
     CHECK_EQ(A.shape().size(), 2u);
     TYPE_LANG_SWITCH(A.data_type(), DType, A.device()->lang(), Lang, {
@@ -1478,7 +1481,7 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
           [a, A, b, B, CRef](Context *ctx) mutable {
             GEMV<DType, Lang>(a, A, B, b, &CRef, ctx);
           },
-          {A.block(), B.block()}, {C->block()});
+          read_blocks, {C->block()});
     });
   } else if (B.nDim() == 2u) {
     CHECK_EQ(A.shape().size(), 2u);
@@ -1491,7 +1494,7 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
           [a, A, b, B, CRef](Context *ctx) mutable {
             GEMM<DType, Lang>(a, A, B, b, &CRef, ctx);
           },
-          {A.block(), B.block()}, {C->block()});
+          read_blocks, {C->block()});
     });
   } else if (B.nDim() == 3u || B.nDim() == 4u) {
     CHECK_EQ(A.shape().size(), B.shape().size());

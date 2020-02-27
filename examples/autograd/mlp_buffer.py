@@ -99,6 +99,7 @@ if __name__ == "__main__":
     x = autograd.add_bias(x, b1)
     # x = autograd.softmax(x)
     loss = autograd.softmax_cross_entropy(x, target)
+    print("start backward")
     for p, gp in autograd.backward(loss):
             sgd.apply(0, gp, p, "")
     dev.SetBufferFlag(False)
@@ -109,3 +110,4 @@ if __name__ == "__main__":
         dev.ExecBuffOps()
         if i % 100 == 0:
             print("training loss = ", tensor.to_numpy(loss)[0])
+        input()

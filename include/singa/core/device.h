@@ -25,12 +25,14 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <map>
 
 #include "singa/core/common.h"
 #include "singa/core/memory.h"
 #include "singa/core/scheduler.h"
 #include "singa/proto/core.pb.h"
 #include "singa/singa_config.h"
+#include "singa/utils/safe_queue.h"
 
 #ifdef USE_CUDA
 #include "singa/utils/cuda_utils.h"
@@ -106,6 +108,11 @@ class Device {
  private:
   Device(){};
   std::vector<std::function<void(Context*)>> buffOps;
+  std::vector<Block *> tensors_;
+  std::map<int, std::vector<Block *> > src2rblk_;
+  std::map<int, std::vector<Block *> > src2blk_;
+  std::map<Block *, std::vector<int> > blk2dst_;
+  std::map<Block *, int> indegree_;
 
  protected:
   /// Execute one operation on one executor.
