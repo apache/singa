@@ -171,7 +171,7 @@ class TestPythonOperation(unittest.TestCase):
 
     def _conv_same_pad(self, dev, pad_mode, is_2d):
         if is_2d:
-            x_w, w_w, k_w, p_w = 32, 4, 4, 2
+            x_w, w_w, k_w, p_w = 32, 4, 4, 1
         else:
             x_w, w_w, k_w, p_w = 1, 1, 1, 0
         x = tensor.Tensor(shape=(3, 3, x_w, 32), device=dev)
@@ -187,7 +187,7 @@ class TestPythonOperation(unittest.TestCase):
         x_shape = x.shape
         kernel = (k_w, 4)
         # we add 4 padding here and hope the conv and trim one padding then
-        padding = (p_w, 2)
+        padding = (p_w, 1)  
         stride = (1, 1)
         group = 1
         bias = False
@@ -232,7 +232,7 @@ class TestPythonOperation(unittest.TestCase):
 
     def _pooling_same_pad(self, dev, pad_mode, is_2d):
         if is_2d:
-            x_w, k_w, p_w = 32, 4, 2
+            x_w, k_w, p_w = 32, 4, 1
         else:
             x_w, k_w, p_w = 1, 1, 0
         x = tensor.Tensor(shape=(3, 3, x_w, 32), device=dev)
@@ -245,7 +245,7 @@ class TestPythonOperation(unittest.TestCase):
         x_shape = x.shape
         kernel = (k_w, 4)
         # we add 4 padding here and hope the conv and trim one padding then
-        padding = (p_w, 2)
+        padding = (p_w, 1)  
         stride = (1, 1)
 
         if dev == cpu_dev:

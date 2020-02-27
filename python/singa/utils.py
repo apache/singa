@@ -20,7 +20,7 @@ import math
 import numpy as np
 
 from singa import tensor
-
+from . import singa_wrap as singa
 
 def update_progress(progress, info):
     """Display progress bar and user info.
@@ -51,56 +51,98 @@ def update_progress(progress, info):
     sys.stdout.flush()
 
 
-def handle_same_pad_fwd(y, pad_mode):
+def handle_same_pad_fwd(x, padding, pad_mode):
     """
     handle same padding mode forward
-    Args:dy
-        the forward tensor
+    Args:x
+        the input tensor
+    Args:padding
+        the padding
     Returns: 
         tensor, the output
     """
-    y_shape = y.shape()
-    y = tensor.from_raw_tensor(y)
-    if y_shape[2] == 1:
-        label_1, label_2 = 0, 1
-    else:
-        label_1, label_2 = 1, 1
-    if pad_mode == "SAME_UPPER":
-        y = y[:, :, label_1:, label_2:]
-    elif pad_mode == "SAME_LOWER":
-        y = y[:, :, :-label_1, :-label_2]
-    return y.data
+    # In case of odd number add the extra padding at the end for SAME_UPPER
+    # at the beginning for SAME_LOWER
+    x_tensor = tensor.from_raw_tensor(x)
+    for axis, pad in zip((2, 3), padding):
+        if pad % 2 != 0:
+            zeros_shape = list(x_tensor.data.shape())
+            zeros_shape[axis] = 1
+            zero_padding = np.zeros(zeros_shape).astype(np.float32)
+            zero_padding = tensor.Tensor(device=x.device(), data=zero_padding)
+            if pad_mode == "SAME_UPPER":
+                x_tensor = tensor.concatenate((x_tensor, zero_padding), axis)
+            else:
+                x_tensor = tensor.concatenate((zero_padding, x_tensor), axis)
+    return x_tensor.data
 
 
-def handle_same_pad_bwd(dy, pad_mode):
+def handle_same_pad_bwd(dx, padding, pad_mode):
     """
     handle same padding mode backward
-    Args:dy
+    Args:dx
         the backward tensor
+    Args:padding
+        the padding
     Returns: 
         tensor, the output
     """
-    dy_shape = dy.shape()
-    # one column zeros at last axis
-    padding_1 = np.zeros([*dy_shape[:3], 1]).astype(np.float32)
-    padding_1 = tensor.Tensor(device=dy.device(), data=padding_1)
-    dy_tensor = tensor.from_raw_tensor(dy)
-    if pad_mode == "SAME_UPPER":
-        concat_left, concat_right = padding_1, dy_tensor
+    for axis, pad in zip((2, 3), padding):
+        if pad % 2 != 0:
+            axis_shape = list(dx.shape())[axis]
+            if pad_mode == "SAME_UPPER":
+                dx = singa.SliceOn(dx, 0, axis_shape - 1, axis)
+            else:
+                dx = singa.SliceOn(dx, 1, axis_shape, axis)
+    return dx
+
+
+def same_pad_shape_check(handle, pad_mode, x, padding):
+    """
+    check the shape is correct for same padding mode
+    Args:handle
+        the handle
+    Args:pad_mode
+        pad_mode
+    Args:x
+        input tensor
+    Args:padding
+        the padding
+    """
+    _kernel = [handle.kernel_h, handle.kernel_w]
+    _stride = [handle.stride_h, handle.stride_w]
+    output_shape = get_output_shape(pad_mode, x.shape()[2:], _kernel, _stride)
+    _padding_correct = get_padding_shape(x.shape()[2:], _kernel, _stride,
+                                         output_shape)
+    _padding_correct = [x // 2 for x in _padding_correct]
+    assert padding == _padding_correct, (
+        'For a same mode, the given padding %s is wrong, the correct one should be %s.'
+        % (padding, _padding_correct))
+
+
+def re_new_handle(handle, x, is_pool=False):
+    """
+    re-new a handle by useing the new input tensor
+    Args:handle
+        the handle
+    Args:x
+        input tensor
+    Returns: 
+        handle, a new handle
+    """
+    kernel_size = [handle.kernel_h, handle.kernel_w]
+    stride = [handle.stride_h, handle.stride_w]
+    padding = [handle.pad_h, handle.pad_w]
+    if is_pool:
+        params = (x, kernel_size, stride, padding, handle.is_max_pooling)
     else:
-        concat_left, concat_right = dy_tensor, padding_1
-    dy_tensor = tensor.concatenate((concat_left, concat_right), 3)
-    if dy_shape[2] != 1:  # if not 1d
-        # one row zeros at last second axis
-        padding_2 = np.zeros([*dy_shape[:2], 1,
-                              dy_shape[-1] + 1]).astype(np.float32)
-        padding_2 = tensor.Tensor(device=dy.device(), data=padding_2)
-        if pad_mode == "SAME_UPPER":
-            concat_left, concat_right = padding_2, dy_tensor
-        else:
-            concat_left, concat_right = dy_tensor, padding_2
-        dy_tensor = tensor.concatenate((dy_tensor, padding_2), 2)
-    return dy_tensor.data
+        params = (x, kernel_size, stride, padding, handle.channels, handle.num_filters,
+                handle.bias_term, handle.group)
+    if (type(handle) == singa.ConvHandle or type(handle) == singa.PoolingHandle):
+        handle = singa.PoolingHandle(*params) if is_pool else singa.ConvHandle(*params) 
+    else:
+        handle = singa.CudnnPoolingHandle(*params) if is_pool else singa.CudnnConvHandle(*params) 
+    return handle
 
 
 def get_padding_shape(input_spatial_shape, kernel_spatial_shape,
@@ -123,11 +165,6 @@ def get_padding_shape(input_spatial_shape, kernel_spatial_shape,
     for i in range(len(input_spatial_shape)):
         pad_shape[i] = (output_spatial_shape[i] - 1) * strides_spatial[i] + \
             kernel_spatial_shape[i] - input_spatial_shape[i]
-        # once need padding along one direction
-        if pad_shape[i] % 2 != 0:
-            pad_shape[i] = int(math.ceil(pad_shape[i] / 2)) * strides_spatial[i]
-        else:
-            pad_shape[i] = pad_shape[i] // 2
     return pad_shape
 
 

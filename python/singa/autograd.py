@@ -1207,6 +1207,9 @@ class _Conv2d(Operation):
         super(_Conv2d, self).__init__()
         self.handle = handle
         self.pad_mode = pad_mode
+        self.padding = [self.handle.pad_h, self.handle.pad_w]
+        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
+            self.re_new_handle = True
 
     def forward(self, x, W, b=None):
         """
@@ -1221,18 +1224,14 @@ class _Conv2d(Operation):
             CTensor 
         """
         assert x.nDim() == 4, "The dimensions of input should be 4D."
-        # check padding shape
         if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
-            _padding = [self.handle.pad_w, self.handle.pad_h]
-            _kernel = [self.handle.kernel_w, self.handle.kernel_h]
-            _stride = [self.handle.stride_w, self.handle.stride_h]
-            output_shape = utils.get_output_shape(self.pad_mode, x.shape()[2:],
-                                                  _kernel, _stride)
-            _padding_correct = utils.get_padding_shape(
-                x.shape()[2:], _kernel, _stride, output_shape)
-            assert _padding == _padding_correct, (
-                'For a same mode, the given padding %s is wrong, the correct one should be %s.'
-                % (_padding, _padding_correct))
+            utils.same_pad_shape_check(self.handle, self.pad_mode, x,
+                                       self.padding)
+            x = utils.handle_same_pad_fwd(x, self.padding, self.pad_mode)
+            # re-new a handle with update x
+            if self.re_new_handle:
+                self.re_new_handle = False
+                self.handle = utils.re_new_handle(self.handle, x)
 
         if training:
             if self.handle.bias_term:
@@ -1246,16 +1245,9 @@ class _Conv2d(Operation):
             b.SetFloatValue(0.0)
 
         if (type(self.handle) != singa.ConvHandle):
-            y = singa.GpuConvForward(x, W, b, self.handle)
+            return singa.GpuConvForward(x, W, b, self.handle)
         else:
-            y = singa.CpuConvForward(x, W, b, self.handle)
-
-        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
-            # because sometimes, the input is valid and doesn't need crop
-            self.need_crop = list(y.shape())[2:] != output_shape
-            if self.need_crop:
-                y = utils.handle_same_pad_fwd(y, self.pad_mode)
-        return y
+            return singa.CpuConvForward(x, W, b, self.handle)
 
     def backward(self, dy):
         """
@@ -1268,29 +1260,31 @@ class _Conv2d(Operation):
         assert training is True and hasattr(
             self, "inputs"), "Please set training as True before do BP. "
 
-        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER") and self.need_crop:
-            dy = utils.handle_same_pad_bwd(dy, self.pad_mode)
-
         if (type(self.handle) != singa.ConvHandle):
             dx = singa.GpuConvBackwardx(dy, self.inputs[1], self.inputs[0],
                                         self.handle)
             dW = singa.GpuConvBackwardW(dy, self.inputs[0], self.inputs[1],
                                         self.handle)
-            if self.handle.bias_term:
-                db = singa.GpuConvBackwardb(dy, self.inputs[2], self.handle)
-                return dx, dW, db
-            else:
-                return dx, dW
+            db = singa.GpuConvBackwardb(
+                dy, self.inputs[2],
+                self.handle) if self.handle.bias_term else None
         else:
             dx = singa.CpuConvBackwardx(dy, self.inputs[1], self.inputs[0],
                                         self.handle)
             dW = singa.CpuConvBackwardW(dy, self.inputs[0], self.inputs[1],
                                         self.handle)
-            if self.handle.bias_term:
-                db = singa.CpuConvBackwardb(dy, self.inputs[2], self.handle)
-                return dx, dW, db
-            else:
-                return dx, dW
+            db = singa.CpuConvBackwardb(
+                dy, self.inputs[2],
+                self.handle) if self.handle.bias_term else None
+
+        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
+            dx = utils.handle_same_pad_bwd(dx, self.padding, self.pad_mode)
+
+        if db:
+            return dx, dW, db
+
+        else:
+            return dx, dW
 
 
 def conv2d(handle, x, W, b=None, pad_mode="NOTSET"):
@@ -1433,12 +1427,12 @@ class Conv2d(Layer):
 
         # if same pad mode, re-compute the padding
         if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
-            output_shape = utils.get_output_shape(self.pad_mode, x.shape()[2:],
+            output_shape = utils.get_output_shape(self.pad_mode,
+                                                  x.shape()[2:],
                                                   self.kernel_size, self.stride)
             self.padding = utils.get_padding_shape(x.shape[2:],
                                                    self.kernel_size,
                                                    self.stride, output_shape)
-
         if self.bias:
             self.device_check(x, self.W, self.b)
         else:
@@ -1668,44 +1662,39 @@ class _Pooling2d(Operation):
         super(_Pooling2d, self).__init__()
         self.handle = handle
         self.pad_mode = pad_mode
+        self.padding = [self.handle.pad_h, self.handle.pad_w]
+        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
+            self.re_new_handle = True
+
 
     def forward(self, x):
         # check padding shape
         if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
-            _padding = [self.handle.pad_w, self.handle.pad_h]
-            _kernel = [self.handle.kernel_w, self.handle.kernel_h]
-            _stride = [self.handle.stride_w, self.handle.stride_h]
-            output_shape = utils.get_output_shape(self.pad_mode, x.shape()[2:],
-                                                  _kernel, _stride)
-            _padding_correct = utils.get_padding_shape(
-                x.shape()[2:], _kernel, _stride, output_shape)
-            assert _padding == _padding_correct, (
-                'For a same mode, the given padding %s is wrong, the correct one should be %s.'
-                % (_padding, _padding_correct))
+            utils.same_pad_shape_check(self.handle, self.pad_mode, x,
+                                       self.padding)
+            x = utils.handle_same_pad_fwd(x, self.padding, self.pad_mode)
+            # re-new a handle with update x
+            if self.re_new_handle:
+                self.re_new_handle = False
+                self.handle = utils.re_new_handle(self.handle, x, True)
 
         if (type(self.handle) != singa.PoolingHandle):
             y = singa.GpuPoolingForward(self.handle, x)
         else:
             y = singa.CpuPoolingForward(self.handle, x)
-        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
-            # because sometimes, the input is valid and doesn't need crop
-            self.need_crop = list(y.shape())[2:] != output_shape
-            if self.need_crop:
-                y = utils.handle_same_pad_fwd(y, self.pad_mode)
         if training:
             self.cache = (x, y)
-
         return y
 
     def backward(self, dy):
-        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER") and self.need_crop:
-            dy = utils.handle_same_pad_bwd(dy, self.pad_mode)
         if (type(self.handle) != singa.PoolingHandle):
             dx = singa.GpuPoolingBackward(self.handle, dy, self.cache[0],
                                           self.cache[1])
         else:
             dx = singa.CpuPoolingBackward(self.handle, dy, self.cache[0],
                                           self.cache[1])
+        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
+            dx = utils.handle_same_pad_bwd(dx, self.padding, self.pad_mode)
 
         return dx
 
@@ -1782,7 +1771,9 @@ class Pooling2d(Layer):
     def __call__(self, x):
         # if same pad mode, re-compute the padding
         if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
-            output_shape = utils.get_output_shape(self.pad_mode, x.shape()[2:], self.kernel_size, self.stride)
+            output_shape = utils.get_output_shape(self.pad_mode,
+                                                  x.shape()[2:],
+                                                  self.kernel_size, self.stride)
             self.padding = utils.get_padding_shape(x.shape[2:],
                                                    self.kernel_size,
                                                    self.stride, output_shape)
