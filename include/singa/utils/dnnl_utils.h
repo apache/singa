@@ -27,7 +27,7 @@ using namespace dnnl;
 
 inline dnnl::memory::format_tag get_dnnl_format_tag(const Tensor &x){
   memory::format_tag format_tag_;
-  switch(x.nDim()){
+  switch (x.nDim()){
   case 1:{
   format_tag_ = memory::format_tag::a;
   break;
@@ -51,5 +51,5 @@ inline dnnl::memory::format_tag get_dnnl_format_tag(const Tensor &x){
   return format_tag_;
 }
 
-}
+}  // namespace singa
 #endif // SINGA_UTILS_MKLDNN_UTILS_H_

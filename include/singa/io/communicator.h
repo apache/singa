@@ -139,7 +139,7 @@ class Communicator {
   float *backupBuff;
   int *fusedIndex;
 };
-}
+}  // namespace singa
 
 #endif  // USE_DIST
 #endif

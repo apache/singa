@@ -66,5 +66,5 @@ static int readInteger(char* buf, Type& value, Types&... values) {
   value = ntoh(*(Type*)buf);
   return sizeof(Type) + readInteger(buf + sizeof(Type), values...);
 }
-}
+}  // namespace singa
 #endif

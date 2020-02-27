@@ -20,7 +20,7 @@
 ************************************************************/
 #include <cctype>
 
-#include "./batchnorm.h"
+#include "src/model/operation/batchnorm.h"
 
 namespace singa {
 
@@ -405,4 +405,4 @@ const std::vector<Tensor> GpuBatchNormBackward(
 }
 
 #endif  // USE_CUDNN
-}
+}  // namespace singa

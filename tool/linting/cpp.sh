@@ -30,8 +30,10 @@ find src/api/ \
     include/singa/io/communicator.h \
     src/io/communicator.cc \
     test/singa/ -iname *.h -o -iname *.cc | xargs cpplint --quiet --verbose=5
+
 CPPLINTRESULT=$?
-if [[ $CPPLINTRESULT ]]; then
+
+if [ $CPPLINTRESULT -ne 0 ]; then
   echo $CPPLINTRESULT
   echo "cpplint not passed"
   exit 1

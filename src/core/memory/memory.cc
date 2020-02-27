@@ -110,7 +110,7 @@ void CudaMemPool::Free(void *ptr) {
   cudaError_t status = cudaFree(ptr);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
 }
-}
+}  // namespace singa
 #endif
 
 #endif

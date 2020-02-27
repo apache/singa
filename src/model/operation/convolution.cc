@@ -21,7 +21,7 @@
 #include <cctype>
 
 #include "../layer/convolution.h"
-#include "./convolution.h"
+#include "src/model/operation/convolution.h"
 
 namespace singa {
 

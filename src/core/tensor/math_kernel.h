@@ -152,7 +152,7 @@ void removezeroidx(const size_t n, int *in, cudaStream_t s, int *address);
 
 void sortbykey(const size_t n, float *key, int *value, cudaStream_t s);
 
-}  // cuda
+}  // namespace cuda
 
 }  // namespace singa
 

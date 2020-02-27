@@ -542,6 +542,6 @@ void Communicator::topKSparsAllReduce(size_t num, float *accumulation) {
                                   fusedRecvBuff, CUSPARSE_INDEX_BASE_ONE));
   }
 }
-}
+}  // namespace singa
 
 #endif  // USE_DIST
