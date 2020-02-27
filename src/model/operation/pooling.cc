@@ -18,7 +18,8 @@
  * under the License.
  *
  ************************************************************/
-#include "./pooling.h"
+#include "pooling.h"
+
 #include <cmath>
 
 namespace singa {

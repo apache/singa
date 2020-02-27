@@ -21,15 +21,15 @@
 
 #ifdef USE_DIST
 
+#include <cuda_runtime.h>
+#include <cusparse.h>
+#include <mpi.h>
+#include <nccl.h>
 #include <unistd.h>
+
 #include <cstdint>
 #include <iostream>
 
-#include <cuda_runtime.h>
-#include <mpi.h>
-#include <nccl.h>
-
-#include <cusparse.h>
 #include "cuda_fp16.h"
 #include "singa/core/tensor.h"
 using std::vector;

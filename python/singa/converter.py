@@ -59,7 +59,7 @@ class CaffeConverter(object):
     def read_proto(self, filepath, parser_object):
         file = open(filepath, "r")
         if not file:
-            raise self.ProcessException("ERROR (" + filepath + ")!")
+            raise FileNotFoundError("ERROR (" + filepath + ")!")
         # Merges an ASCII representation of a protocol message into a message.
         text_format.Merge(str(file.read()), parser_object)
         file.close()
@@ -153,7 +153,7 @@ class CaffeConverter(object):
                 net.loss = loss.SoftmaxCrossEntropy()
             elif layer_confs[i].type == 'EuclideanLoss' or layer_confs[
                     i].type == 7:
-                net.loss = loss.SquareError()
+                net.loss = loss.SquaredError()
             elif layer_confs[i].type == 'Accuracy' or layer_confs[i].type == 1:
                 net.metric = metric.Accuracy()
             else:

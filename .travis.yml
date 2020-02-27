@@ -18,25 +18,47 @@
 sudo: required
 language: cpp
 
+stages:
+  - linting
+  - build
+
 matrix:
   include:
   - os: osx
+    stage: build
     compiler: clang
     # system cblas will be used by cmake for other xcode versions
     osx_image: xcode8
-    name: "macOS 10.11 (C++)" 
+    name: "macOS 10.11 (C++)"
   - os: linux
+    stage: build
     dist: trusty
     compiler: gcc
-    name: "Ubuntu 14.04 (C++)" 
+    name: "Ubuntu 14.04 (C++)"
   - os: linux
+    stage: build
     dist: xenial
     compiler: gcc
-    name: "Ubuntu 16.04 (C++)" 
+    name: "Ubuntu 16.04 (C++)"
   - os: linux
+    stage: build
     dist: bionic
     compiler: gcc
-    name: "Ubuntu 18.04 (C++)" 
+    name: "Ubuntu 18.04 (C++)"
+  - os: linux
+    stage: linting
+    dist: bionic
+    compiler: gcc
+    name: "Ubuntu 18.04 (Static Analysis Python)"
+    script:
+      - bash -ex tool/linting/py.sh
+  - os: linux
+    stage: linting
+    dist: bionic
+    compiler: gcc
+    name: "Ubuntu 18.04 (Static Analysis Cpp)"
+    script:
+      - bash -ex tool/linting/cpp.sh
 
 install:
   - travis_wait bash -ex tool/travis/depends.sh

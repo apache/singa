@@ -23,12 +23,14 @@
 
 #include <string>
 #include <vector>
+
 #include "singa/core/tensor.h"
 #include "singa/singa_config.h"
 #include "singa/utils/logging.h"
 
 #ifdef USE_CUDNN
 #include <cudnn.h>
+
 #include "../layer/cudnn_utils.h"
 #endif  // USE_CUDNN
 

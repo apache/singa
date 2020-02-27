@@ -24,6 +24,7 @@
 
 #include <chrono>
 #include <iostream>
+
 #include "../src/model/operation/convolution.h"
 #include "gtest/gtest.h"
 
