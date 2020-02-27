@@ -18,10 +18,11 @@
  * under the License.
  *
  ************************************************************/
+#include "../layer/convolution.h"
+
 #include <cctype>
 
-#include "../layer/convolution.h"
-#include "src/model/operation/convolution.h"
+#include "convolution.h"
 
 namespace singa {
 

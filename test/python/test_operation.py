@@ -1486,7 +1486,6 @@ class TestPythonOperation(unittest.TestCase):
     def test_unsqueeze_cpu(self):
         data = [0.1, -1.0, 0.4, 4.0, -0.9, 9.0]
 
-
         x = np.array(data).reshape(1, 2, 3).astype(np.float32)
         y = x.reshape(1, 1, 2, 3, 1)
         dy = np.ones((1, 1, 2, 3, 1), dtype=np.float32)
@@ -2747,7 +2746,6 @@ class TestPythonOperation(unittest.TestCase):
             np.testing.assert_array_almost_equal(tensor.to_numpy(result),
                                                  y,
                                                  decimal=5)
-
 
     def test_xor_broadcast_gpu(self):
         dev = gpu_dev

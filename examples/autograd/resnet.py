@@ -160,6 +160,7 @@ class ResNet(autograd.Layer):
 
             def _downsample(x):
                 return bn(conv(x))
+
             downsample = _downsample
 
         layers = []
