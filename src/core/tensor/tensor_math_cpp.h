@@ -21,11 +21,13 @@
 #include "./tensor_math.h"
 //#include "./stacktrace.h"
 #include <math.h>
+
 #include <algorithm>
 #include <cfloat>
 #include <iostream>
 #include <iterator>
 #include <sstream>
+
 #include "singa/core/common.h"
 #include "singa/core/tensor.h"
 

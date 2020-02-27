@@ -21,17 +21,17 @@
 
 #ifdef USE_DIST
 
-#include <iostream>
-#include <cstdint>
 #include <unistd.h>
+#include <cstdint>
+#include <iostream>
 
 #include <cuda_runtime.h>
-#include <nccl.h>
 #include <mpi.h>
+#include <nccl.h>
 
-#include "singa/core/tensor.h"
-#include "cuda_fp16.h"
 #include <cusparse.h>
+#include "cuda_fp16.h"
+#include "singa/core/tensor.h"
 using std::vector;
 
 namespace singa {

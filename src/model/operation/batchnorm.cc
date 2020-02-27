@@ -1,23 +1,23 @@
 /*********************************************************
-*
-* Licensed to the Apache Software Foundation (ASF) under one
-* or more contributor license agreements.  See the NOTICE file
-* distributed with this work for additional information
-* regarding copyright ownership.  The ASF licenses this file
-* to you under the Apache License, Version 2.0 (the
-* "License"); you may not use this file except in compliance
-* with the License.  You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing,
-* software distributed under the License is distributed on an
-* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-* KIND, either express or implied.  See the License for the
-* specific language governing permissions and limitations
-* under the License.
-*
-************************************************************/
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ ************************************************************/
 #include <cctype>
 
 #include "src/model/operation/batchnorm.h"
@@ -113,7 +113,6 @@ Tensor CpuBatchNormForwardInference(const BatchNormHandle& bnh, const Tensor& x,
                                {DNNL_ARG_MEAN, m_mem},
                                {DNNL_ARG_VARIANCE, v_mem}});
         ctx->dnnl_stream.wait();
-
       },
       {x.block(), w.block(), running_mean.block(), running_var.block()},
       {y.block(), running_mean.block(), running_var.block()});
@@ -141,7 +140,6 @@ const std::vector<Tensor> CpuBatchNormForwardTraining(
   y.device()->Exec(
       [&x, &y, &mean, &var, &w, &running_mean, &running_var,
        &bnh](Context* ctx) {
-
         auto eng = ctx->dnnl_engine;
         using namespace dnnl;
 
@@ -238,7 +236,6 @@ const std::vector<Tensor> CpuBatchNormBackwardx(
                                {DNNL_ARG_DIFF_SCALE_SHIFT, dw_mem},
                                {DNNL_ARG_SCALE_SHIFT, w_mem}});
         ctx->dnnl_stream.wait();
-
       },
       {x.block(), dy.block(), mean.block(), var.block()},
       {dx.block(), dw.block()});
@@ -385,7 +382,6 @@ const std::vector<Tensor> GpuBatchNormBackward(
 
   dx.device()->Exec(
       [&](Context* ctx) {
-
         const float alpha = 1.0f, beta = .0f;
         double epsilon = CUDNN_BN_MIN_EPSILON;
         CUDNN_CHECK(cudnnBatchNormalizationBackward(

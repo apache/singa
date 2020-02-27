@@ -18,7 +18,9 @@
 #ifndef DISABLE_WARNINGS
 
 #include "singa/core/memory.h"
+
 #include <iostream>
+
 #include "singa/proto/core.pb.h"
 #include "singa/utils/logging.h"
 

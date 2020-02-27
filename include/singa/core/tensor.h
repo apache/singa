@@ -28,8 +28,8 @@
 #include "singa/proto/core.pb.h"
 #include "singa/utils/logging.h"
 
-using std::vector;
 using std::tuple;
+using std::vector;
 namespace singa {
 
 typedef vector<size_t> Shape;

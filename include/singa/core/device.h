@@ -40,11 +40,10 @@
 #include "singa/utils/opencl_utils.h"
 #endif  // USE_OPENCL
 
-
-using std::vector;
-using std::string;
 using std::function;
 using std::shared_ptr;
+using std::string;
+using std::vector;
 
 namespace singa {
 

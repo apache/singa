@@ -24,6 +24,7 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+
 #include "singa/core/common.h"
 #include "singa/core/tensor.h"
 #include "singa/utils/logging.h"

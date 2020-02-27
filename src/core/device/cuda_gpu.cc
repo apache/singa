@@ -21,8 +21,10 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <curand.h>
+
 #include <chrono>
 #include <iostream>
+
 #include "singa/core/device.h"
 #include "singa/utils/cuda_utils.h"
 namespace singa {

@@ -16,13 +16,13 @@
  * limitations under the License.
  */
 
-#include "singa/utils/cuda_utils.h"
 #include <iostream>
+#include "singa/utils/cuda_utils.h"
 
 #ifdef USE_DIST
 
-#include "singa/io/communicator.h"
 #include "./math_kernel.h"
+#include "singa/io/communicator.h"
 
 namespace singa {
 
