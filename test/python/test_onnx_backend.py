@@ -2086,11 +2086,12 @@ def pool(
     spatial_size = len(x_shape) - 2
     y = np.zeros([x_shape[0], x_shape[1]] + list(out_shape))
 
-    for shape in itertools.product(range(x_shape[0]), range(x_shape[1]), *[
-            range(
-                int((x_shape[i + 2] + pad_shape[i] - kernel_shape[i]) /
-                    strides_shape[i] + 1)) for i in range(spatial_size)
-    ]):
+    for shape in itertools.product(
+            range(x_shape[0]), range(x_shape[1]), *[
+                range(
+                    int((x_shape[i + 2] + pad_shape[i] - kernel_shape[i]) /
+                        strides_shape[i] + 1)) for i in range(spatial_size)
+            ]):
         window = padded[shape[0], shape[1]]
         window_vals = np.array([
             window[i] for i in list(
