@@ -123,6 +123,38 @@ class Tensor(object):
         else:
             self.creator = creator
 
+    def __getitem__(self, keys):
+        if type(keys) != tuple:
+            keys = (keys,)
+
+        ret = self.clone()
+        axis_index = 0
+        for key in keys:
+            if type(key) == int:
+                key += self.shape[axis_index] if key < 0 else 0
+
+                if not (key >= 0 and key < self.shape[axis_index]):
+                    raise ValueError("Invalid Index")
+
+                ret.data = singa.SliceOn(ret.data, key, key + 1, axis_index)
+            elif type(key) == slice:
+                start = key.start if key.start else 0
+                end = key.stop if key.stop else self.shape[axis_index]
+
+                start += self.shape[axis_index] if start < 0 else 0
+                end += self.shape[axis_index] if end < 0 else 0
+
+                if not (start >= 0 and start < end and
+                        end <= self.shape[axis_index]):
+                    raise ValueError("Invalid Index")
+
+                ret.data = singa.SliceOn(ret.data, start, end, axis_index)
+            else:
+                raise ValueError("Invalid Index")
+            axis_index += 1
+
+        return ret
+
     def ndim(self):
         '''
         Returns:
