@@ -442,8 +442,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
                outputs=[y],
                name='test_maxpool_2d_precomputed_strides')
 
-    # type: () -> None
-    def test_maxpool_with_argmax_2d_precomputed_strides(self):
+    def test_maxpool_with_argmax_2d_precomputed_strides(self):  # type: () -> None
         """
         input_shape: [1, 1, 5, 5]
         output_shape: [1, 1, 2, 2]

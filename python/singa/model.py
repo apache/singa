@@ -17,5 +17,5 @@
 # */
 
 
-class Model(Object):
+class Model(object):
     pass

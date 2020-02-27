@@ -1058,6 +1058,7 @@ def flatten(x):
 class Layer(object):
 
     def __init__(self):
+        self.allow_params = []
         pass
 
     def device_check(self, *inputs):

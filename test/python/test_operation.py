@@ -1484,8 +1484,10 @@ class TestPythonOperation(unittest.TestCase):
                                              decimal=5)
 
     def test_unsqueeze_cpu(self):
-        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
-                      9.0]).reshape(1, 2, 3).astype(np.float32)
+        data = [0.1, -1.0, 0.4, 4.0, -0.9, 9.0]
+
+
+        x = np.array(data).reshape(1, 2, 3).astype(np.float32)
         y = x.reshape(1, 1, 2, 3, 1)
         dy = np.ones((1, 1, 2, 3, 1), dtype=np.float32)
         grad = dy.reshape(1, 2, 3)
@@ -2746,53 +2748,6 @@ class TestPythonOperation(unittest.TestCase):
                                                  y,
                                                  decimal=5)
 
-    def test_xor_broadcast_gpu(self):
-        dev = gpu_dev
-        cases = [
-            ([3, 4, 5], [5]),  # 3d vs 1d
-            ([3, 4, 5], [4, 5]),  # 3d vs 2d
-            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
-            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
-            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
-        ]
-        for in1, in2 in cases:
-            x = (np.random.randn(*in1) > 0).astype(np.float32)
-            x1 = (np.random.randn(*in2) > 0).astype(np.float32)
-            y = np.logical_xor(x, x1)
-
-            x = tensor.from_numpy(x)
-            x1 = tensor.from_numpy(x1)
-            x.to_device(dev)
-            x1.to_device(dev)
-
-            result = autograd._xor(x, x1)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(result),
-                                                 y,
-                                                 decimal=5)
-
-    def test_xor_broadcast_cpu(self):
-        dev = cpu_dev
-        cases = [
-            ([3, 4, 5], [5]),  # 3d vs 1d
-            ([3, 4, 5], [4, 5]),  # 3d vs 2d
-            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
-            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
-            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
-        ]
-        for in1, in2 in cases:
-            x = (np.random.randn(*in1) > 0).astype(np.float32)
-            x1 = (np.random.randn(*in2) > 0).astype(np.float32)
-            y = np.logical_xor(x, x1)
-
-            x = tensor.from_numpy(x)
-            x1 = tensor.from_numpy(x1)
-            x.to_device(dev)
-            x1.to_device(dev)
-
-            result = autograd._xor(x, x1)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(result),
-                                                 y,
-                                                 decimal=5)
 
     def test_xor_broadcast_gpu(self):
         dev = gpu_dev
