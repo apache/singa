@@ -964,14 +964,16 @@ class SingaBackend(Backend):
             forward, the autograd of singa operator
         """
         kernel = tuple(onnx_node.attrs["kernel_shape"])
-        padding = onnx_node.getattr("pads", (0, 0))
+        padding = onnx_node.getattr('pads', [0, 0, 0, 0])
         # twe only support the padding with tuple
         if padding[0] != padding[1] or padding[2] != padding[3]:
             raise ValueError(
                 "Not implemented yet for padding only along one dimension")
         else:
             padding = padding[1:3]
-        stride = onnx_node.getattr("strides", (0, 0))
+        stride = onnx_node.getattr("strides", (1, 1))
+        dilation = onnx_node.getattr('dilations', 1)
+        group = onnx_node.getattr('group', 1)
         auto_pad = None
         if "auto_pad" in onnx_node.attrs:
             auto_pad = utils.force_unicode(onnx_node.attrs['auto_pad'])
@@ -979,10 +981,8 @@ class SingaBackend(Backend):
                                          stride)
             padding = utils.get_padding_shape(inputs[0].shape[2:], kernel,
                                     stride, out_shape)
-        stride = tuple(onnx_node.getattr('strides', (1, 1)))
-        dilation = onnx_node.getattr('dilations', 1)
-        group = onnx_node.getattr('group', 1)
-
+            padding = [x // 2 for x in padding]
+            
         # not support dilation
         if dilation != 1 and list(dilation) != [1, 1]:
             raise ValueError("Not implemented yet for dilation")
@@ -1031,10 +1031,13 @@ class SingaBackend(Backend):
             forward, the autograd of singa operator
         """
         kernel = tuple(onnx_node.attrs["kernel_shape"])
-        # todo: we only support the padding with tuple
-        padding = tuple(
-            onnx_node.attrs["pads"][0:2]) if "pads" in onnx_node.attrs else (0,
-                                                                             0)
+        padding = onnx_node.getattr('pads', [0, 0, 0, 0])
+        # twe only support the padding with tuple
+        if padding[0] != padding[1] or padding[2] != padding[3]:
+            raise ValueError(
+                "Not implemented yet for padding only along one dimension")
+        else:
+            padding = padding[1:3]
         stride = tuple(onnx_node.getattr('strides', (1, 1)))
         auto_pad = None
         if "auto_pad" in onnx_node.attrs:
@@ -1043,6 +1046,7 @@ class SingaBackend(Backend):
                                          stride)
             padding = utils.get_padding_shape(inputs[0].shape[2:], kernel,
                                     stride, out_shape)
+            padding = [x // 2 for x in padding]
 
         # not support count_include_pad and auto_pad
         if "count_include_pad" in onnx_node.attrs or "ceil_mode" in onnx_node.attrs:
@@ -1349,11 +1353,11 @@ class SingaBackend(Backend):
         singa_op = collections.namedtuple('SingaOps',
                                           ['name', 'op', 'handle', 'forward'])
         # init the input, output, and intermidate nodes as singa tensors
-        cls._onnx_node_to_singa_tensor(optimized_model.graph.input, tensor_map,
+        cls._onnx_node_to_singa_tensor(optimized_model.graph.input, weights, tensor_map,
                                        device)
-        cls._onnx_node_to_singa_tensor(optimized_model.graph.output, tensor_map,
+        cls._onnx_node_to_singa_tensor(optimized_model.graph.output, weights, tensor_map,
                                        device)
-        cls._onnx_node_to_singa_tensor(optimized_model.graph.value_info,
+        cls._onnx_node_to_singa_tensor(optimized_model.graph.value_info, weights, 
                                        tensor_map, device)
         # convert constant nodes to tensor, other nodes to handler
         for node in optimized_model.graph.node:
