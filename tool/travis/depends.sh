@@ -38,5 +38,6 @@ conda config --add channels conda-forge
 # linting
 conda install -c conda-forge pylint
 conda install -c conda-forge cpplint
-conda install -c conda-forge deprecated
-
+#conda install -c conda-forge deprecated
+echo "installing py package Deprecated"
+pip3 install Deprecated
