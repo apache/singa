@@ -1194,20 +1194,19 @@ def cat(xs, axis=0):
 
 class _Conv2d(Operation):
 
-    def __init__(self, handle, pad_mode="NOTSET"):
+    def __init__(self, handle, odd_padding=(0, 0, 0, 0)):
         """
         Init a conv 2d operator
         Args:
             handle: ConvHandle for cpu or CudnnConvHandle for gpu
         Args:
-            pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
-            SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
-            In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+            odd_padding:tuple of four bins, the odd paddding is the value that cannot be handled by the tuple padding (w, h) mode
+            so we need to firstly handle the input, then use the nomal padding method.
         """
         super(_Conv2d, self).__init__()
         self.handle = handle
-        self.pad_mode = pad_mode
-        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
+        self.odd_padding = odd_padding
+        if self.odd_padding != (0, 0, 0, 0):
             self.re_new_handle = True
 
     def forward(self, x, W, b=None):
@@ -1223,11 +1222,9 @@ class _Conv2d(Operation):
             CTensor 
         """
         assert x.nDim() == 4, "The dimensions of input should be 4D."
-        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
-            self.padding = utils.same_pad_shape_check(self.handle,
-                                                      self.pad_mode, x)
-            x = utils.handle_same_pad_fwd(x, self.padding, self.pad_mode)
-            # re-new a handle with update x
+        if self.odd_padding != (0, 0, 0, 0):
+            x = utils.handle_odd_pad_fwd(x, self.odd_padding)
+            # re-new a handle with updated x
             if self.re_new_handle:
                 self.re_new_handle = False
                 self.handle = utils.re_new_handle(self.handle, x)
@@ -1242,7 +1239,6 @@ class _Conv2d(Operation):
             # create empty bias tensor for Cpp API
             b = CTensor((self.handle.num_filters,), x.device())
             b.SetFloatValue(0.0)
-
         if (type(self.handle) != singa.ConvHandle):
             return singa.GpuConvForward(x, W, b, self.handle)
         else:
@@ -1275,9 +1271,8 @@ class _Conv2d(Operation):
             db = singa.CpuConvBackwardb(
                 dy, self.inputs[2],
                 self.handle) if self.handle.bias_term else None
-
-        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
-            dx = utils.handle_same_pad_bwd(dx, self.padding, self.pad_mode)
+        if self.odd_padding != (0, 0, 0, 0):
+            dx = utils.handle_odd_pad_bwd(dx, self.odd_padding)
 
         if db:
             return dx, dW, db
@@ -1286,7 +1281,7 @@ class _Conv2d(Operation):
             return dx, dW
 
 
-def conv2d(handle, x, W, b=None, pad_mode="NOTSET"):
+def conv2d(handle, x, W, b=None, odd_padding=(0, 0, 0, 0)):
     """
     Conv 2d operator
     Args:
@@ -1298,14 +1293,13 @@ def conv2d(handle, x, W, b=None, pad_mode="NOTSET"):
     Args:
         b: CTensor, bias
     Args:
-        pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
-        SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
-        In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+        odd_padding:tuple of four bins, the odd paddding is the value that cannot be handled by the tuple padding (w, h) mode
+        so we need to firstly handle the input, then use the nomal padding method.
     """
     if b is None:
-        return _Conv2d(handle, pad_mode)(x, W)[0]
+        return _Conv2d(handle, odd_padding)(x, W)[0]
     else:
-        return _Conv2d(handle, pad_mode)(x, W, b)[0]
+        return _Conv2d(handle, odd_padding)(x, W, b)[0]
 
 
 class Conv2d(Layer):
@@ -1371,15 +1365,25 @@ class Conv2d(Layer):
         else:
             raise TypeError("Wrong stride type.")
 
+        self.odd_padding = (0, 0, 0, 0)
         if isinstance(padding, int):
             self.padding = (padding, padding)
-        elif isinstance(padding, tuple):
-            self.padding = padding
-        elif pad_mode == "NOTSET":
-            raise TypeError("Wrong padding type.")
-
-        if dilation != 1:
-            raise ValueError("Not implemented yet")
+        elif isinstance(padding, tuple) or isinstance(padding, list):
+            if len(padding) == 2:
+                self.padding = padding
+            elif len(padding) == 4:
+                _h_mask = padding[0] - padding[1]
+                _w_mask = padding[2] - padding[3]
+                # the odd paddding is the value that cannot be handled by the tuple padding (w, h) mode
+                # so we need to firstly handle the input, then use the nomal padding method.
+                self.odd_padding = (max(_h_mask, 0), max(-_h_mask, 0),
+                                    max(_w_mask, 0), max(-_w_mask, 0))
+                self.padding = (
+                    padding[0] - self.odd_padding[0],
+                    padding[2] - self.odd_padding[2],
+                )
+            else:
+                raise TypeError("Wrong padding value.")
 
         self.bias = bias
 
@@ -1426,12 +1430,9 @@ class Conv2d(Layer):
 
         # if same pad mode, re-compute the padding
         if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
-            output_shape = utils.get_output_shape(self.pad_mode,
-                                                  x.shape()[2:],
-                                                  self.kernel_size, self.stride)
-            self.padding = utils.get_padding_shape(x.shape[2:],
-                                                   self.kernel_size,
-                                                   self.stride, output_shape)
+            self.padding, self.odd_padding = utils.get_padding_shape(
+                self.pad_mode, x.shape[2:], self.kernel_size, self.stride)
+
         if self.bias:
             self.device_check(x, self.W, self.b)
         else:
@@ -1467,7 +1468,7 @@ class Conv2d(Layer):
                     self.group,
                 )
 
-        y = conv2d(self.handle, x, self.W, self.b)
+        y = conv2d(self.handle, x, self.W, self.b, self.odd_padding)
         return y
 
     def get_params(self):
@@ -1654,23 +1655,26 @@ def batchnorm_2d(handle, x, scale, bias, running_mean, running_var):
 
 class _Pooling2d(Operation):
 
-    def __init__(self, handle, pad_mode="NOTSET"):
-        # Where default value is NOTSET, which means explicit padding is used.
-        # SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
-        # In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+    def __init__(self, handle, odd_padding=(0, 0, 0, 0)):
+        """
+        Init a pool 2d operator
+        Args:
+            handle: PoolingHandle for cpu or CudnnPoolingHandle for gpu
+        Args:
+            odd_padding:tuple of four bins, the odd paddding is the value that cannot be handled by the tuple padding (w, h) mode
+            so we need to firstly handle the input, then use the nomal padding method.
+        """
         super(_Pooling2d, self).__init__()
         self.handle = handle
-        self.pad_mode = pad_mode
-        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
+        self.odd_padding = odd_padding
+        if self.odd_padding != (0, 0, 0, 0):
             self.re_new_handle = True
 
     def forward(self, x):
-        # check padding shape
-        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
-            self.padding = utils.same_pad_shape_check(self.handle,
-                                                      self.pad_mode, x)
-            x = utils.handle_same_pad_fwd(x, self.padding, self.pad_mode)
-            # re-new a handle with update x
+        assert x.nDim() == 4, "The dimensions of input should be 4D."
+        if self.odd_padding != (0, 0, 0, 0):
+            x = utils.handle_odd_pad_fwd(x, self.odd_padding)
+            # re-new a handle with updated x
             if self.re_new_handle:
                 self.re_new_handle = False
                 self.handle = utils.re_new_handle(self.handle, x, True)
@@ -1690,13 +1694,13 @@ class _Pooling2d(Operation):
         else:
             dx = singa.CpuPoolingBackward(self.handle, dy, self.cache[0],
                                           self.cache[1])
-        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
-            dx = utils.handle_same_pad_bwd(dx, self.padding, self.pad_mode)
+        if self.odd_padding != (0, 0, 0, 0):
+            dx = utils.handle_odd_pad_bwd(dx, self.odd_padding)
 
         return dx
 
 
-def pooling_2d(handle, x, pad_mode="NOTSET"):
+def pooling_2d(handle, x, odd_padding=(0, 0, 0, 0)):
     """
     Pooling 2d operator
     Args:
@@ -1704,11 +1708,10 @@ def pooling_2d(handle, x, pad_mode="NOTSET"):
     Args:
         x: CTensor, input
     Args:
-        pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
-        SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
-        In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+        odd_padding:tuple of four bins, the odd paddding is the value that cannot be handled by the tuple padding (w, h) mode
+        so we need to firstly handle the input, then use the nomal padding method.
     """
-    return _Pooling2d(handle, pad_mode)(x)[0]
+    return _Pooling2d(handle, odd_padding)(x)[0]
 
 
 class Pooling2d(Layer):
@@ -1755,12 +1758,25 @@ class Pooling2d(Layer):
         else:
             raise TypeError("Wrong stride type.")
 
+        self.odd_padding = (0, 0, 0, 0)
         if isinstance(padding, int):
             self.padding = (padding, padding)
-        elif isinstance(padding, tuple):
-            self.padding = padding
-        elif pad_mode == "NOTSET":
-            raise TypeError("Wrong padding type.")
+        elif isinstance(padding, tuple) or isinstance(padding, list):
+            if len(padding) == 2:
+                self.padding = padding
+            elif len(padding) == 4:
+                _h_mask = padding[0] - padding[1]
+                _w_mask = padding[2] - padding[3]
+                # the odd paddding is the value that cannot be handled by the tuple padding (w, h) mode
+                # so we need to firstly handle the input, then use the nomal padding method.
+                self.odd_padding = (max(_h_mask, 0), max(-_h_mask, 0),
+                                    max(_w_mask, 0), max(-_w_mask, 0))
+                self.padding = (
+                    padding[0] - self.odd_padding[0],
+                    padding[2] - self.odd_padding[2],
+                )
+            else:
+                raise TypeError("Wrong padding value.")
 
         self.is_max = is_max
         self.pad_mode = pad_mode
@@ -1768,12 +1784,8 @@ class Pooling2d(Layer):
     def __call__(self, x):
         # if same pad mode, re-compute the padding
         if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
-            output_shape = utils.get_output_shape(self.pad_mode,
-                                                  x.shape()[2:],
-                                                  self.kernel_size, self.stride)
-            self.padding = utils.get_padding_shape(x.shape[2:],
-                                                   self.kernel_size,
-                                                   self.stride, output_shape)
+            self.padding, self.odd_padding = utils.get_padding_shape(
+                self.pad_mode, x.shape[2:], self.kernel_size, self.stride)
 
         out_shape_h = (int(
             (x.shape[2] + 2 * self.padding[0] - self.kernel_size[0]) //
@@ -1820,13 +1832,13 @@ class Pooling2d(Layer):
                     self.is_max,
                 )
 
-        y = pooling_2d(self.handle, x, self.pad_mode)
+        y = pooling_2d(self.handle, x, self.odd_padding)
         return y
 
 
 class MaxPool2d(Pooling2d):
 
-    def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
+    def __init__(self, kernel_size, stride=None, padding=0, odd_padding=(0, 0, 0, 0)):
         """
         Generate a Max Pooling 2d operator
         Args:
@@ -1843,12 +1855,12 @@ class MaxPool2d(Pooling2d):
             In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
         """
         super(MaxPool2d, self).__init__(kernel_size, stride, padding, True,
-                                        pad_mode)
+                                        odd_padding)
 
 
 class AvgPool2d(Pooling2d):
 
-    def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
+    def __init__(self, kernel_size, stride=None, padding=0, odd_padding=(0, 0, 0, 0)):
         """
         Generate a Avg Pooling 2d operator
         Args:
@@ -1860,17 +1872,16 @@ class AvgPool2d(Pooling2d):
             padding: int or tuple or None, padding, the logic is the same as kernel size. However, if you set pad_mode as "SAME_UPPER" or "SAME_LOWER" mode, 
             you can set padding as None, and the padding will be computed automatically.
         Args:
-            pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
-            SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
-            In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+            odd_padding:tuple of four bins, the odd paddding is the value that cannot be handled by the tuple padding (w, h) mode
+            so we need to firstly handle the input, then use the nomal padding method.
         """
         super(AvgPool2d, self).__init__(kernel_size, stride, padding, False,
-                                        pad_mode)
+                                        odd_padding)
 
 
 class MaxPool1d(Pooling2d):
 
-    def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
+    def __init__(self, kernel_size, stride=None, padding=0, odd_padding=(0, 0, 0, 0)):
         """
         Generate a Max Pooling 1d operator
         Args:
@@ -1882,19 +1893,18 @@ class MaxPool1d(Pooling2d):
             padding: int or tuple or None, padding, the logic is the same as kernel size. However, if you set pad_mode as "SAME_UPPER" or "SAME_LOWER" mode, 
             you can set padding as None, and the padding will be computed automatically.
         Args:
-            pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
-            SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
-            In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+            odd_padding:tuple of four bins, the odd paddding is the value that cannot be handled by the tuple padding (w, h) mode
+            so we need to firstly handle the input, then use the nomal padding method.
         """
         if stride is None:
             stride = kernel_size
         super(MaxPool1d, self).__init__((1, kernel_size), (1, stride),
-                                        (0, padding), True, pad_mode)
+                                        (0, padding), True, odd_padding)
 
 
 class AvgPool1d(Pooling2d):
 
-    def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
+    def __init__(self, kernel_size, stride=None, padding=0, odd_padding=(0, 0, 0, 0)):
         """
         Generate a Avg Pooling 1d operator
         Args:
@@ -1906,14 +1916,13 @@ class AvgPool1d(Pooling2d):
             padding: int or tuple or None, padding, the logic is the same as kernel size. However, if you set pad_mode as "SAME_UPPER" or "SAME_LOWER" mode, 
             you can set padding as None, and the padding will be computed automatically.
         Args:
-            pad_mode: string, can be NOTSET, SAME_UPPER, or SAME_LOWER, where default value is NOTSET, which means explicit padding is used.
-            SAME_UPPER or SAME_LOWER mean pad the input so that the output spatial size match the input.
-            In case of odd number add the extra padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+            odd_padding:tuple of four bins, the odd paddding is the value that cannot be handled by the tuple padding (w, h) mode
+            so we need to firstly handle the input, then use the nomal padding method.
         """
         if stride is None:
             stride = kernel_size
         super(AvgPool1d, self).__init__((1, kernel_size), (1, stride),
-                                        (0, padding), False, pad_mode)
+                                        (0, padding), False, odd_padding)
 
 
 class Tanh(Operation):

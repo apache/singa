@@ -171,23 +171,30 @@ class TestPythonOperation(unittest.TestCase):
 
     def _conv_same_pad(self, dev, pad_mode, is_2d):
         if is_2d:
-            x_w, w_w, k_w, p_w = 32, 4, 4, 1
+            x_h, w_h, k_h, p_h = 32, 4, 4, 1
+            if pad_mode == "SAME_LOWER":
+                o_p = (0, 1, 0, 1)
+            else:
+                o_p = (1, 0, 1, 0)
         else:
-            x_w, w_w, k_w, p_w = 1, 1, 1, 0
-        x = tensor.Tensor(shape=(3, 3, x_w, 32), device=dev)
+            x_h, w_h, k_h, p_h = 1, 1, 1, 0
+            if pad_mode == "SAME_LOWER":
+                o_p = (0, 0, 0, 1)
+            else:
+                o_p = (0, 0, 1, 0)
+        x = tensor.Tensor(shape=(3, 3, x_h, 32), device=dev)
         x.gaussian(0.0, 1.0)
 
-        w = tensor.Tensor(shape=(3, 3, w_w, 4), device=dev)
+        w = tensor.Tensor(shape=(3, 3, w_h, 4), device=dev)
         w.gaussian(0.0, 1.0)
 
         # with the same padding, the padding should be 3
-        # for SAME_UPPER, is (1, 2)
-        # for SAME_LOWER, is (2, 1)
+        # for SAME_UPPER, is (1, 1) + (0, 1)
+        # for SAME_LOWER, is (1, 1) + (1, 0)
 
         x_shape = x.shape
-        kernel = (k_w, 4)
-        # we add 4 padding here and hope the conv and trim one padding then
-        padding = (p_w, 1)  
+        kernel = (k_h, 4)
+        padding = (p_h, 1)
         stride = (1, 1)
         group = 1
         bias = False
@@ -203,16 +210,16 @@ class TestPythonOperation(unittest.TestCase):
             handle = singa.CudnnConvHandle(x.data, kernel, stride, padding,
                                            in_channels, out_channels, bias,
                                            group)
-        y = autograd._Conv2d(handle, pad_mode)(x, w)[0]
+        y = autograd._Conv2d(handle, o_p)(x, w)[0]
 
-        dy = np.ones((3, 3, x_w, 32), dtype=np.float32)
+        dy = np.ones((3, 3, x_h, 32), dtype=np.float32)
         dy = tensor.from_numpy(dy)
         dy.to_device(dev)
 
         dx, dW = y.creator.backward(dy.data)
-        self.check_shape(y.shape, (3, 3, x_w, 32))
-        self.check_shape(dx.shape(), (3, 3, x_w, 32))
-        self.check_shape(dW.shape(), (3, 3, w_w, 4))
+        self.check_shape(y.shape, (3, 3, x_h, 32))
+        self.check_shape(dx.shape(), (3, 3, x_h, 32))
+        self.check_shape(dW.shape(), (3, 3, w_h, 4))
 
     def test_conv2d_same_pad_cpu(self):
         self._conv_same_pad(cpu_dev, "SAME_LOWER", True)
@@ -232,38 +239,45 @@ class TestPythonOperation(unittest.TestCase):
 
     def _pooling_same_pad(self, dev, pad_mode, is_2d):
         if is_2d:
-            x_w, k_w, p_w = 32, 4, 1
+            x_h, k_h, p_h = 32, 4, 1
+            if pad_mode == "SAME_LOWER":
+                o_p = (0, 1, 0, 1)
+            else:
+                o_p = (1, 0, 1, 0)
         else:
-            x_w, k_w, p_w = 1, 1, 0
-        x = tensor.Tensor(shape=(3, 3, x_w, 32), device=dev)
+            x_h, k_h, p_h = 1, 1, 0
+            if pad_mode == "SAME_LOWER":
+                o_p = (0, 0, 0, 1)
+            else:
+                o_p = (0, 0, 1, 0)
+        x = tensor.Tensor(shape=(3, 3, x_h, 32), device=dev)
         x.gaussian(0.0, 1.0)
 
         # with the same padding, the padding should be 3
-        # for SAME_UPPER, is (1, 2)
-        # for SAME_LOWER, is (2, 1)
+        # for SAME_UPPER, is (1, 1) + (0, 1)
+        # for SAME_LOWER, is (1, 1) + (1, 0)
 
         x_shape = x.shape
-        kernel = (k_w, 4)
+        kernel = (k_h, 4)
         # we add 4 padding here and hope the conv and trim one padding then
-        padding = (p_w, 1)  
+        padding = (p_h, 1)
         stride = (1, 1)
 
         if dev == cpu_dev:
-            handle = singa.PoolingHandle(x.data, kernel, stride, padding,
-                                         True)
+            handle = singa.PoolingHandle(x.data, kernel, stride, padding, True)
         else:
             handle = singa.CudnnPoolingHandle(x.data, kernel, stride, padding,
                                               True)
-       
-        y = autograd._Pooling2d(handle, pad_mode)(x)[0]
 
-        dy = np.ones((3, 3, x_w, 32), dtype=np.float32)
+        y = autograd._Pooling2d(handle, o_p)(x)[0]
+
+        dy = np.ones((3, 3, x_h, 32), dtype=np.float32)
         dy = tensor.from_numpy(dy)
         dy.to_device(dev)
 
         dx = y.creator.backward(dy.data)
-        self.check_shape(y.shape, (3, 3, x_w, 32))
-        self.check_shape(dx.shape(), (3, 3, x_w, 32))
+        self.check_shape(y.shape, (3, 3, x_h, 32))
+        self.check_shape(dx.shape(), (3, 3, x_h, 32))
 
     def test_pooling2d_same_pad_cpu(self):
         self._pooling_same_pad(cpu_dev, "SAME_LOWER", True)
