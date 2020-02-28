@@ -1207,7 +1207,6 @@ class _Conv2d(Operation):
         super(_Conv2d, self).__init__()
         self.handle = handle
         self.pad_mode = pad_mode
-        self.padding = [self.handle.pad_h, self.handle.pad_w]
         if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
             self.re_new_handle = True
 
@@ -1225,8 +1224,8 @@ class _Conv2d(Operation):
         """
         assert x.nDim() == 4, "The dimensions of input should be 4D."
         if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
-            utils.same_pad_shape_check(self.handle, self.pad_mode, x,
-                                       self.padding)
+            self.padding = utils.same_pad_shape_check(self.handle,
+                                                      self.pad_mode, x)
             x = utils.handle_same_pad_fwd(x, self.padding, self.pad_mode)
             # re-new a handle with update x
             if self.re_new_handle:
@@ -1334,7 +1333,7 @@ class Conv2d(Layer):
         Args:
             stride: int or tuple, stride, the logic is the same as kernel size.
         Args:
-            padding: int or tuple or None, padding, the logic is the same as kernel size. However, if you set pad_mode as "SAME_UPPER" or "SAME_LOWER" mode, 
+            padding: int, tuple, list or None, padding, the logic is the same as kernel size. However, if you set pad_mode as "SAME_UPPER" or "SAME_LOWER" mode, 
             you can set padding as None, and the padding will be computed automatically.
         Args:
             dilation: int, only support 1
@@ -1662,16 +1661,14 @@ class _Pooling2d(Operation):
         super(_Pooling2d, self).__init__()
         self.handle = handle
         self.pad_mode = pad_mode
-        self.padding = [self.handle.pad_h, self.handle.pad_w]
         if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
             self.re_new_handle = True
-
 
     def forward(self, x):
         # check padding shape
         if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
-            utils.same_pad_shape_check(self.handle, self.pad_mode, x,
-                                       self.padding)
+            self.padding = utils.same_pad_shape_check(self.handle,
+                                                      self.pad_mode, x)
             x = utils.handle_same_pad_fwd(x, self.padding, self.pad_mode)
             # re-new a handle with update x
             if self.re_new_handle:

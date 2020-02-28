@@ -97,7 +97,7 @@ def handle_same_pad_bwd(dx, padding, pad_mode):
     return dx
 
 
-def same_pad_shape_check(handle, pad_mode, x, padding):
+def same_pad_shape_check(handle, pad_mode, x):
     """
     check the shape is correct for same padding mode
     Args:handle
@@ -106,18 +106,20 @@ def same_pad_shape_check(handle, pad_mode, x, padding):
         pad_mode
     Args:x
         input tensor
-    Args:padding
-        the padding
+    Returns: 
+        tuple, the correct padding(before divide 2)
     """
     _kernel = [handle.kernel_h, handle.kernel_w]
     _stride = [handle.stride_h, handle.stride_w]
+    _padding = [handle.pad_h, handle.pad_w]
     output_shape = get_output_shape(pad_mode, x.shape()[2:], _kernel, _stride)
     _padding_correct = get_padding_shape(x.shape()[2:], _kernel, _stride,
                                          output_shape)
-    _padding_correct = [x // 2 for x in _padding_correct]
-    assert padding == _padding_correct, (
+    _padding_crop = [x // 2 for x in _padding_correct]
+    assert _padding == _padding_crop, (
         'For a same mode, the given padding %s is wrong, the correct one should be %s.'
-        % (padding, _padding_correct))
+        % (_padding, _padding_crop))
+    return _padding_correct
 
 
 def re_new_handle(handle, x, is_pool=False):
