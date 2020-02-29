@@ -2028,6 +2028,167 @@ class TestPythonOnnxBackend(unittest.TestCase):
         y = np.random.randn(5).astype(np.float32)
         z = x * y
         expect(node, inputs=[x, y], outputs=[z], name='test_mul_bcast')
+        
+    def test_gemm_default_zero_bias(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b', 'c'],
+            outputs=['y']
+        )
+        a = np.random.ranf([3, 5]).astype(np.float32)
+        b = np.random.ranf([5, 4]).astype(np.float32)
+        c = np.zeros([1, 4]).astype(np.float32)
+        y = gemm_reference_implementation(a, b, c)
+        expect(node, inputs=[a, b, c], outputs=[y],
+                name='test_gemm_default_zero_bias')
+
+    def test_gemm_default_no_bias(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b'],
+            outputs=['y']
+        )
+        a = np.random.ranf([2, 10]).astype(np.float32)
+        b = np.random.ranf([10, 3]).astype(np.float32)
+        y = gemm_reference_implementation(a, b)
+        expect(node, inputs=[a, b], outputs=[y],
+                name='test_gemm_default_no_bias')
+
+    def test_gemm_default_scalar_bias(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b', 'c'],
+            outputs=['y']
+        )
+        a = np.random.ranf([2, 3]).astype(np.float32)
+        b = np.random.ranf([3, 4]).astype(np.float32)
+        c = np.array(3.14).astype(np.float32)
+        y = gemm_reference_implementation(a, b, c)
+        expect(node, inputs=[a, b, c], outputs=[y],
+                name='test_gemm_default_scalar_bias')
+
+    def test_gemm_default_single_elem_vector_bias(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b', 'c'],
+            outputs=['y']
+        )
+        a = np.random.ranf([3, 7]).astype(np.float32)
+        b = np.random.ranf([7, 3]).astype(np.float32)
+        c = np.random.ranf([1]).astype(np.float32)
+        y = gemm_reference_implementation(a, b, c)
+        expect(node, inputs=[a, b, c], outputs=[y],
+                name='test_gemm_default_single_elem_vector_bias')
+
+    def test_gemm_default_vector_bias(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b', 'c'],
+            outputs=['y']
+        )
+        a = np.random.ranf([2, 7]).astype(np.float32)
+        b = np.random.ranf([7, 4]).astype(np.float32)
+        c = np.random.ranf([1, 4]).astype(np.float32)
+        y = gemm_reference_implementation(a, b, c)
+        expect(node, inputs=[a, b, c], outputs=[y],
+                name='test_gemm_default_vector_bias')
+
+    def test_gemm_default_matrix_bias(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b', 'c'],
+            outputs=['y']
+        )
+        a = np.random.ranf([3, 6]).astype(np.float32)
+        b = np.random.ranf([6, 4]).astype(np.float32)
+        c = np.random.ranf([3, 4]).astype(np.float32)
+        y = gemm_reference_implementation(a, b, c)
+        expect(node, inputs=[a, b, c], outputs=[y],
+                name='test_gemm_default_matrix_bias')
+
+    def test_gemm_transposeA(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b', 'c'],
+            outputs=['y'],
+            transA=1
+        )
+        a = np.random.ranf([6, 3]).astype(np.float32)
+        b = np.random.ranf([6, 4]).astype(np.float32)
+        c = np.zeros([1, 4]).astype(np.float32)
+        y = gemm_reference_implementation(a, b, c, transA=1)
+        expect(node, inputs=[a, b, c], outputs=[y],
+                name='test_gemm_transposeA')
+
+    def test_gemm_transposeB(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b', 'c'],
+            outputs=['y'],
+            transB=1
+        )
+        a = np.random.ranf([3, 6]).astype(np.float32)
+        b = np.random.ranf([4, 6]).astype(np.float32)
+        c = np.zeros([1, 4]).astype(np.float32)
+        y = gemm_reference_implementation(a, b, c, transB=1)
+        expect(node, inputs=[a, b, c], outputs=[y],
+                name='test_gemm_transposeB')
+
+    def test_gemm_alpha(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b', 'c'],
+            outputs=['y'],
+            alpha=0.5
+        )
+        a = np.random.ranf([3, 5]).astype(np.float32)
+        b = np.random.ranf([5, 4]).astype(np.float32)
+        c = np.zeros([1, 4]).astype(np.float32)
+        y = gemm_reference_implementation(a, b, c, alpha=0.5)
+        expect(node, inputs=[a, b, c], outputs=[y],
+                name='test_gemm_alpha')
+
+    def test_gemm_beta(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b', 'c'],
+            outputs=['y'],
+            beta=0.5
+        )
+        a = np.random.ranf([2, 7]).astype(np.float32)
+        b = np.random.ranf([7, 4]).astype(np.float32)
+        c = np.random.ranf([1, 4]).astype(np.float32)
+        y = gemm_reference_implementation(a, b, c, beta=0.5)
+        expect(node, inputs=[a, b, c], outputs=[y],
+                name='test_gemm_beta')
+
+    def test_gemm_all_attributes(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b', 'c'],
+            outputs=['y'],
+            alpha=0.25,
+            beta=0.35,
+            transA=1,
+            transB=1
+        )
+        a = np.random.ranf([4, 3]).astype(np.float32)
+        b = np.random.ranf([5, 4]).astype(np.float32)
+        c = np.random.ranf([1, 5]).astype(np.float32)
+        y = gemm_reference_implementation(a, b, c, transA=1, transB=1, alpha=0.25, beta=0.35)
+        expect(node, inputs=[a, b, c], outputs=[y],
+                name='test_gemm_all_attributes')
+
+
+def gemm_reference_implementation(A, B, C=None, alpha=1., beta=1., transA=0,
+                                transB=0):  # type: (np.ndarray, np.ndarray, Optional[np.ndarray], float, float, int, int) -> np.ndarray
+    A = A if transA == 0 else A.T
+    B = B if transB == 0 else B.T
+    C = C if C is not None else np.array(0)
+
+    Y = alpha * np.dot(A, B) + beta * C
+
+    return Y
 
 
 # return padding shape of conv2d or pooling
