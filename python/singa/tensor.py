@@ -1583,3 +1583,14 @@ def copy_from_numpy(data, np_array):
         data.CopyIntDataFromHostPtr(np_array)
     else:
         print('Not implemented yet for ', dt)
+
+
+def concatenate(tensors, axis):
+    '''
+        concatenate tensors on given axis, all the dim should be the same
+        except the axis to be concatenated.
+    '''
+    ctensors = singa.VecTensor()
+    for t in tensors:
+        ctensors.append(t.data)
+    return _call_singa_func(singa.ConcatOn, ctensors, axis)
