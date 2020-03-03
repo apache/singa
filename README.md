@@ -16,6 +16,9 @@
     specific language governing permissions and limitations
     under the License.
 -->
+
+![Logo](doc/_static/singa.png)
+
 # Apache SINGA
 
 [![Build Status](https://travis-ci.org/apache/singa.png)](https://travis-ci.org/apache/singa)
@@ -40,6 +43,8 @@ Distributed deep learning system
 
 ![LGTM C++ Grade](https://img.shields.io/lgtm/grade/cpp/github/apache/incubator-singa)
 ![LGTM Python Grade](https://img.shields.io/lgtm/grade/python/github/apache/incubator-singa)
+
+[![Stargazers over time](https://starchart.cc/apache/singa.svg)](https://starchart.cc/apache/singa)
 
 ## Mailing Lists
 

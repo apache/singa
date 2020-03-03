@@ -15,40 +15,5 @@
 # limitations under the License.
 #
 
-sudo: required
-language: cpp
-
-matrix:
-  include:
-  - os: osx
-    compiler: clang
-    # system cblas will be used by cmake for other xcode versions
-    osx_image: xcode8
-    name: "macOS 10.11 (C++)" 
-  - os: linux
-    dist: trusty
-    compiler: gcc
-    name: "Ubuntu 14.04 (C++)" 
-  - os: linux
-    dist: xenial
-    compiler: gcc
-    name: "Ubuntu 16.04 (C++)" 
-  - os: linux
-    dist: bionic
-    compiler: gcc
-    name: "Ubuntu 18.04 (C++)" 
-  - os: linux
-    dist: bionic
-    compiler: gcc
-    name: "Ubuntu 18.04 (Rat)" 
-    script:
-    - bash -ex tool/rat.sh
-
-install:
-  - travis_wait bash -ex tool/travis/depends.sh
-
-after_success:
-  - bash <(curl -s https://codecov.io/bash)
-
-script:
-  - bash -ex tool/travis/build.sh
+cd java
+mvn apache-rat:check -Pcheck-licence -Drat.basedir=..
