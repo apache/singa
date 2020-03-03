@@ -152,7 +152,11 @@ class SGD(Optimizer):
                 self.param2state[param] = {}
             param_state = self.param2state[param]
             if 'momentum_buffer' not in param_state:
+                flag = param.device.GetBufferFlag()
+                param.device.SetBufferFlag(False)
                 buf = param_state['momentum_buffer'] = tensor.zeros_like(param)
+                param.device.SetBufferFlag(flag)
+
                 buf *= momentum
                 singa.Axpy(1.0, grad.data, buf.data)
             else:
