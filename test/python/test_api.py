@@ -590,6 +590,21 @@ class TestAPI(unittest.TestCase):
             np.testing.assert_array_almost_equal(
                 tensor.to_numpy(_cTensor_to_pyTensor(t3_ct)), np3)
 
+    def test_ceil(self):
+
+        for dev in [cpu_dev, gpu_dev]:
+
+            np1 = np.random.random([5, 6, 7, 8]).astype(np.float32)
+            np1 = np1 * 10
+            np2 = np.ceil(np1)
+
+            t1 = tensor.Tensor(device=dev, data=np1)
+
+            t2_ct = singa_api.Ceil(t1.data)
+
+            np.testing.assert_array_almost_equal(
+                tensor.to_numpy(_cTensor_to_pyTensor(t2_ct)), np2)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -171,6 +171,7 @@ namespace singa{
   Tensor Transpose(const Tensor &in);
 
   Tensor Abs(const Tensor &t);
+  Tensor Ceil(const Tensor &t);
   Tensor Exp(const Tensor &t);
   Tensor Log(const Tensor &t);
   Tensor ReLU(const Tensor &t);

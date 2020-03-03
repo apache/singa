@@ -324,6 +324,20 @@ class TestTensorMethods(unittest.TestCase):
         np.testing.assert_array_almost_equal((tensor.to_numpy(sg_tensor_ret)),
                                              np1[1:3, :, 1:, :-1])
 
+    def test_ceil(self):
+
+        for dev in [cpu_dev, gpu_dev]:
+
+            np1 = np.random.random([5, 6, 7, 8]).astype(np.float32)
+            np1 = np1 * 10
+            np2 = np.ceil(np1)
+
+            t1 = tensor.Tensor(device=dev, data=np1)
+
+            t2 = tensor.ceil(t1)
+
+            np.testing.assert_array_almost_equal(tensor.to_numpy(t2), np2)
+
 
 if __name__ == '__main__':
     unittest.main()

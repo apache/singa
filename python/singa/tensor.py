@@ -805,6 +805,17 @@ def exp(t):
     return _call_singa_func(singa.Exp, t.data)
 
 
+def ceil(t):
+    '''
+    Args:
+        t (Tensor): input Tensor
+
+    Returns:
+        a new Tensor whose element y = ceil(x), x is an element of t
+    '''
+    return _call_singa_func(singa.Ceil, t.data)
+
+
 def log(t):
     '''
     Args:

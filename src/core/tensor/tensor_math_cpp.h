@@ -240,6 +240,11 @@ void Abs<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
   traverse_unary<float>(in, out, [](float x) { return fabs(x); });
 }
 
+template <>
+void Ceil<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
+  traverse_unary<float>(in, out, [](float x) { return std::ceil(x); });
+}
+
 #ifdef USE_DNNL
 template <>
 void SoftMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
