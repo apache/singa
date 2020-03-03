@@ -26,6 +26,7 @@
 #include <type_traits>
 #include <vector>
 #include <map>
+#include <unordered_set>
 
 #include "singa/core/common.h"
 #include "singa/core/memory.h"
@@ -130,6 +131,7 @@ class Device {
     std::vector<Edge *> edges;
     std::map<Block *, int> blk2index;
     std::map<OpNode *, int> node2index;
+    std::vector<std::unordered_set<int> > circle;
   };
 
   struct Graph graph_;

@@ -37,6 +37,7 @@ void Device::Exec(function<void(Context*)>&& fn,
     opNode->op = std::move(fn);
     graph_.node2index[opNode] = op_index;
     graph_.nodes.push_back(opNode);
+    graph_.circle.push_back(std::unordered_set<int>());
 
     auto &blk2index = graph_.blk2index;
     for (size_t i = 0; i < read_blocks.size(); ++i) {
@@ -63,9 +64,11 @@ void Device::Exec(function<void(Context*)>&& fn,
     for (size_t i = 0; i < write_blocks.size(); ++i) {
       auto blk = write_blocks[i];
 
+      size_t edge_index;
       auto it = blk2index.find(blk);
       if (it != blk2index.end()) {
-	Edge *edge = graph_.edges[it->second];
+	edge_index = it->second;
+	Edge *edge = graph_.edges[edge_index];
 	edge->indegree += 1;
 	if (edge->type == EdgeType::kInput) {
 	  edge->type = EdgeType::kParam;
@@ -75,8 +78,17 @@ void Device::Exec(function<void(Context*)>&& fn,
 	edge->type = EdgeType::kEnd;
 	edge->block = blk;
 	edge->indegree = 1;
-	graph_.blk2index[blk] = graph_.edges.size();
+
+	edge_index = graph_.edges.size();
+	graph_.blk2index[blk] = edge_index;
 	graph_.edges.push_back(edge);
+      }
+
+      for (size_t j = 0; j < read_blocks.size(); ++j) {
+	if (blk == read_blocks[j]) {
+	  graph_.circle[op_index].emplace(edge_index);
+	  // printf("emplace op:[%2d], edge:[%2d]\n", op_index,edge_index);
+	}
       }
     }
 
@@ -98,6 +110,7 @@ void Device::ExecBuffOps() {
   auto &edges = graph_.edges;
   auto &blk2index = graph_.blk2index;
   auto &node2index = graph_.node2index;
+  auto &circle = graph_.circle;
 
   /*
   for (size_t i = 0; i < nodes.size(); ++i) {
@@ -137,6 +150,8 @@ void Device::ExecBuffOps() {
   }
   */
 
+  std::vector<int> ans;
+  std::vector<std::vector<int> > anss;
   SafeQueue<int> node_queue;
   std::vector<int> node_ref; 
   std::vector<int> edge_ref;
@@ -162,34 +177,24 @@ void Device::ExecBuffOps() {
 	size_t index = node2index[dst_nodes[j]];
 	node_ref[index] -= 1;
 
-	bool circle = false;
-	for (auto it : dst_nodes[j]->write_blocks) {
-	  if (it == edges[i]->block) {
-	    edge_state[i] = false;
-	    circle = true;
-	    break;
-	  }
-	}
-
-	if (circle) {
+	if (circle[index].find(i) != circle[index].end()) {
+	  edge_state[i] = false;
 	  break;
 	}
-
       }
     } else {
       edge_state[i] = false;
     }
   }
 
-  std::vector<std::vector<int> > anss;
-  std::vector<int> ans;
   for (size_t i = 0; i < node_ref.size(); ++i) {
     if (node_ref[i] == 0) {
       node_queue.Push(i);
-      ans.push_back(i);
+      // ans.push_back(i);
     }
   }
-  anss.push_back(ans);
+
+  // anss.push_back(ans);
 
   int de_count = 0;
   while (node_queue.Size()) {
@@ -211,7 +216,7 @@ void Device::ExecBuffOps() {
     }
 
     // step 3: activate output blocks
-    std::vector<int> ans;
+    // ans.clear();
     for (size_t i = 0; i < curNode->write_blocks.size(); ++i) {
       Block *write_block = curNode->write_blocks[i];
       size_t edge_index = blk2index[write_block];
@@ -226,34 +231,20 @@ void Device::ExecBuffOps() {
 	  continue;
 	}
 
-	bool circle = false;
-	for (auto it : dst_node->write_blocks) {
-	  if (it == write_block) {
-	    circle = true;
-	    break;
-	  }
-	}
-
 	node_ref[node_index] -= 1;
-	if (node_ref[node_index] != 0) {
-	  if (circle) {
-	    break;
-	  } else {
-	    continue;
-	  }
+	if (node_ref[node_index] == 0) {
+	  // printf("push op[%2d]\n", node_index);
+	  node_queue.Push(node_index);
+	  ans.push_back(node_index);
+	  edge_state[edge_index] = false;
 	}
 
-	node_queue.Push(node_index);
-	ans.push_back(node_index);
-	// printf("push op[%2d]\n", node_index);
-
-	if (circle) {
-	  edge_ref[edge_index] = false;
+	if (circle[node_index].find(edge_index) != circle[node_index].end()) {
 	  break;
 	}
       }
     }
-    if (!ans.empty()) anss.push_back(ans);
+    // if (!ans.empty()) anss.push_back(ans);
   }
 
   /*
