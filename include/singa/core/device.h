@@ -107,12 +107,32 @@ class Device {
 
  private:
   Device(){};
-  std::vector<std::function<void(Context*)>> buffOps;
-  std::vector<Block *> tensors_;
-  std::map<int, std::vector<Block *> > src2rblk_;
-  std::map<int, std::vector<Block *> > src2blk_;
-  std::map<Block *, std::vector<int> > blk2dst_;
-  std::map<Block *, int> indegree_;
+
+  enum EdgeType {
+    kInput, kParam, kInter, kEnd
+  };
+
+  struct OpNode {
+    std::function<void(Context*)> op;
+    std::vector<Block *> read_blocks;
+    std::vector<Block *> write_blocks;
+  };
+
+  struct Edge {
+    EdgeType type;
+    Block *block;
+    int indegree;
+    std::vector<OpNode *> dst_nodes;
+  };
+
+  struct Graph {
+    std::vector<OpNode *> nodes;
+    std::vector<Edge *> edges;
+    std::map<Block *, int> blk2index;
+    std::map<OpNode *, int> node2index;
+  };
+
+  struct Graph graph_;
 
  protected:
   /// Execute one operation on one executor.

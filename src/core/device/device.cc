@@ -28,60 +28,60 @@ Device::Device(int id, int num_executors)
 void Device::Exec(function<void(Context*)>&& fn,
                   const vector<Block*> read_blocks,
                   const vector<Block*> write_blocks, bool use_rand_generator) {
-  // buffer_flag_ = false;
   if (buffer_flag_== true)
   {
-    size_t op_index = buffOps.size();
-    // printf("EnterEXEC, %d\n", buffOps.size());
-    buffOps.push_back(fn);
-    printf("OP[%d]:\n", buffOps.size());
+    size_t op_index = graph_.nodes.size();
+    // printf("Exec Op[%2d]\n", op_index);
 
-    printf("\tRead:\n");
+    OpNode *opNode = new OpNode();
+    opNode->op = std::move(fn);
+    graph_.node2index[opNode] = op_index;
+    graph_.nodes.push_back(opNode);
+
+    auto &blk2index = graph_.blk2index;
     for (size_t i = 0; i < read_blocks.size(); ++i) {
       auto blk = read_blocks[i];
-      printf("\t\t[%d]: %#x\n", i, blk->mutable_data()); 
-      auto it1 = blk2dst_.find(blk);
-      if (it1 != blk2dst_.end()) {
-	it1->second.push_back(op_index);
-      } else {
-	blk2dst_[blk] = {op_index};
-	tensors_.push_back(blk);
-      }
 
-      auto it2 = indegree_.find(blk);
-      if (it2 == indegree_.end()) {
-	indegree_[blk] = 0;
-      } else {
-	if (it2->second == 3) {
-	  indegree_[blk] = 2;
+      auto it = blk2index.find(blk);
+      if (it != blk2index.end()) {
+	Edge *edge = graph_.edges[it->second];
+	edge->dst_nodes.push_back(opNode);
+	if (edge->type == EdgeType::kEnd) {
+	  edge->type = EdgeType::kInter;
 	}
+      } else {
+	Edge * edge = new Edge();
+	edge->type = EdgeType::kInput;
+	edge->block = blk;
+	edge->indegree = 0;
+	edge->dst_nodes.push_back(opNode);
+	graph_.blk2index[blk] = graph_.edges.size();
+	graph_.edges.push_back(edge);
       }
     }
 
-    printf("\tWrite:\n");
     for (size_t i = 0; i < write_blocks.size(); ++i) {
       auto blk = write_blocks[i];
-      printf("\t\t[%d]: %#x\n", i, blk->mutable_data());
 
-      auto it = indegree_.find(blk);
-      if (it != indegree_.end()) {
-	if (it->second == 0) {
-	  it->second = 1;
+      auto it = blk2index.find(blk);
+      if (it != blk2index.end()) {
+	Edge *edge = graph_.edges[it->second];
+	edge->indegree += 1;
+	if (edge->type == EdgeType::kInput) {
+	  edge->type = EdgeType::kParam;
 	}
       } else {
-	indegree_[blk] = 2;
-      }
-
-      auto iter = blk2dst_.find(blk);
-      if (iter == blk2dst_.end() && indegree_[blk] == 2) {
-	blk2dst_[blk] = {};
-	tensors_.push_back(blk);
-	indegree_[blk] = 3;
+	Edge * edge = new Edge();
+	edge->type = EdgeType::kEnd;
+	edge->block = blk;
+	edge->indegree = 1;
+	graph_.blk2index[blk] = graph_.edges.size();
+	graph_.edges.push_back(edge);
       }
     }
 
-    src2rblk_[op_index] = std::move(read_blocks);
-    src2blk_[op_index] = std::move(write_blocks);
+    opNode->read_blocks = std::move(read_blocks);
+    opNode->write_blocks = std::move(write_blocks);
   }
   else
   {
@@ -93,179 +93,171 @@ void Device::Exec(function<void(Context*)>&& fn,
 void Device::ExecBuffOps() {
   bool previous_state = buffer_flag_;
   buffer_flag_ = false;
-  for (size_t i = 0; i < buffOps.size(); ++i) {
-    // printf("EnterBuffStart, %d\n", i);
-    DoExec(std::move(buffOps[i]), 0);
-    // buffOps.erase(buffOps.begin());
-    // printf("EnterBuffExit\n");
-  }
-  buffer_flag_ = previous_state;
 
-  for (auto it = src2blk_.begin(); it != src2blk_.end(); ++it) {
-    printf("OP[%2d]: ", it->first);
+  auto &nodes = graph_.nodes;
+  auto &edges = graph_.edges;
+  auto &blk2index = graph_.blk2index;
+  auto &node2index = graph_.node2index;
+
+  /*
+  for (size_t i = 0; i < nodes.size(); ++i) {
+    auto node = nodes[i];
+    printf("OP[%2d]: ", i);
+    printf("Inputs: ");
+    auto &read_blocks = node->read_blocks;
+    for (size_t j = 0; j < read_blocks.size(); ++j) {
+      printf("%d\t", blk2index[read_blocks[j]]);
+    }
+    for (size_t j = read_blocks.size(); j < 3; ++j) {
+      printf("\t");
+    }
     printf("Outputs: ");
-    for (size_t i = 0; i < it->second.size(); ++i) {
-      printf("%#x\t", it->second[i]);
+    auto &write_blocks = node->write_blocks;
+    for (size_t j = 0; j < write_blocks.size(); ++j) {
+      printf("%d\t", blk2index[write_blocks[j]]);
     }
     printf("\n");
   }
-  for (size_t i = 0; i < tensors_.size(); ++i) {
-    auto blk = tensors_[i];
-    printf("Blocks[%2d]: addr[%#x] ", i, blk);
-    if (indegree_[blk] == 0) {
-      printf("type[input] ");
-    } else if (indegree_[blk] == 1) {
-      printf("type[param] ");
-    } else if (indegree_[blk] == 2) {
-      printf("type[inter] ");
-    } else if (indegree_[blk] == 3){
-      printf("type[_end_] ");
+
+  for (size_t i = 0; i < edges.size(); ++i) {
+    auto edge = edges[i];
+    printf("Edge[%2d]: block[%#x] ", i, edge->block);
+    switch (edge->type) {
+      case EdgeType::kInput: printf("type[input] "); break;
+      case EdgeType::kParam: printf("type[param] "); break;
+      case EdgeType::kInter: printf("type[inter] "); break;
+      case EdgeType::kEnd: printf("type[_end_] "); break;
+      default: break;
     }
     printf("OPs: \t");
-    for (auto it : blk2dst_[blk]) {
-      printf("%2d\t", it);
-    }
-    printf("\n");
-  }
-  /*
-  for (auto it = blk2dst_.begin(); it != blk2dst_.end(); ++it) {
-    printf("Blocks[%#x]: ", it->first);
-    if (indegree_[it->first] == 0) {
-      printf("type[input] ");
-    } else if (indegree_[it->first] == 1) {
-      printf("type[param] ");
-    } else if (indegree_[it->first] == 2) {
-      printf("type[inter] ");
-    } else if (indegree_[it->first] == 3){
-      printf("type[_end_] ");
-    }
-    printf("OPs: ");
-    for (size_t i = 0; i < it->second.size(); ++i) {
-      printf("%d\t", it->second[i]);
+    for (size_t j = 0; j < edge->dst_nodes.size(); ++j) {
+      printf("%2d\t", node2index[edge->dst_nodes[j]]);
     }
     printf("\n");
   }
   */
-  
-  SafeQueue<int> op_queue;
-  std::vector<int>  op_ref;
-  std::vector<bool> op_exec;
-  std::map<Block *, int> blk_ref;
-  std::map<Block *, bool> blk_state;
-  std::map<Block *, int> blk_index;
-  for (int i = 0; i < src2blk_.size(); ++i) {
-    op_ref.push_back(0);
-    op_exec.push_back(false);
-  }
-  for (auto it : tensors_) {
-    blk_ref[it] = 0;
-    int type = indegree_[it];
-    blk_state[it] = type == 0 || type == 1;
-    blk_index[it] = 0;
-  }
-  for (auto it1 : blk2dst_) {
-    blk_ref[it1.first] = it1.second.size();
-    if (!blk_state[it1.first]) {
-      for (auto it2 : it1.second) {
-	op_ref[it2] += 1;
-      }
-    }
+
+  SafeQueue<int> node_queue;
+  std::vector<int> node_ref; 
+  std::vector<int> edge_ref;
+  std::vector<int> edge_wait;
+  std::vector<bool> edge_state;
+
+  node_ref.resize(nodes.size());
+  edge_ref.resize(edges.size());
+  edge_wait.resize(edges.size());
+  edge_state.resize(edges.size());
+
+  for (size_t i = 0; i < nodes.size(); ++i) {
+    node_ref[i] = nodes[i]->read_blocks.size();
   }
 
-  printf("finished init\n");
-  for (auto it : tensors_) {
-    printf("blk[%#x]: %d\n", it, blk_state[it]);
-  }
+  for (size_t i = 0; i < edges.size(); ++i) {
+    edge_ref[i] = edges[i]->indegree;
+    edge_wait[i] = edges[i]->dst_nodes.size();
+    if (edges[i]->type == EdgeType::kInput || edges[i]->type == EdgeType::kParam) {
+      edge_state[i] = true;
+      auto &dst_nodes = edges[i]->dst_nodes;
+      for (size_t j = 0; j < dst_nodes.size(); ++j) {
+	size_t index = node2index[dst_nodes[j]];
+	node_ref[index] -= 1;
 
-  for (size_t i = 0; i < op_ref.size(); ++i) {
-    printf("op[%d]: %d\n", i, op_ref[i]);
-  }
-
-  std::vector<int> temp = op_ref;
-  std::vector<int> ans;
-  for (int i = 0; i < op_ref.size(); ++i) {
-    if (temp[i] == 0) {
-      op_queue.Push(i);
-      ans.push_back(i);
-      op_exec[i] = true;
-      printf("push op[%d]\n", i);
-      for (auto it1 : src2blk_[i]) {
-	blk_state[it1] = true;
-	for (int j = blk_index[it1]; blk_state[it1] && j < blk2dst_[it1].size(); ++j) {
-	  int dstIndex = blk2dst_[it1][j];
-	  for (auto it2 : src2blk_[dstIndex]) {
-	    if (it2 == it1) {
-	      printf("in-place operation\n");
-	      blk_state[it1] = false;
-	      break;
-	    }
+	bool circle = false;
+	for (auto it : dst_nodes[j]->write_blocks) {
+	  if (it == edges[i]->block) {
+	    edge_state[i] = false;
+	    circle = true;
+	    break;
 	  }
-	  op_ref[dstIndex] -= 1;
-	  printf("sub op[%d] ref[%d]\n", dstIndex, op_ref[dstIndex]);
 	}
+
+	if (circle) {
+	  break;
+	}
+
       }
+    } else {
+      edge_state[i] = false;
     }
   }
 
-  printf("start dag-sort\n");
-  int de_count = 0;
   std::vector<std::vector<int> > anss;
+  std::vector<int> ans;
+  for (size_t i = 0; i < node_ref.size(); ++i) {
+    if (node_ref[i] == 0) {
+      node_queue.Push(i);
+      ans.push_back(i);
+    }
+  }
   anss.push_back(ans);
-  while (op_queue.Size()) {
-    // step 1: pop the first element and execute the operation
+
+  int de_count = 0;
+  while (node_queue.Size()) {
+    // step 1: pop the first element and execte the operation
     int curIndex = -1;
-    op_queue.Pop(curIndex);
-    printf("pop op[%d]\n", curIndex);
-    DoExec(std::move(buffOps[curIndex]), 0);
+    node_queue.Pop(curIndex);
+    OpNode *curNode = nodes[curIndex];
+    // printf("pop op[%2d]\n", curIndex);
+    DoExec(std::move(curNode->op), 0);
 
     // step 2: decrease the ref count of the input tensors
-    for (auto it : src2rblk_[curIndex]) {
-      blk_ref[it] -= 1;
-      if (blk_ref[it] == 0) {
-	printf("deallocate block[%#x]\n", it);
-	de_count++;
+    for (size_t i = 0; i < curNode->read_blocks.size(); ++i) {
+      size_t edge_index = blk2index[curNode->read_blocks[i]];
+      edge_wait[edge_index] -= 1;
+      if (edge_wait[edge_index] == 0) {
+	++de_count;
+	// printf("deallocate block[%2d]\n", edge_index);
       }
     }
 
-    // step 3: decrease the ref count of operations that use the output tensor as input tensor
+    // step 3: activate output blocks
     std::vector<int> ans;
-    for (auto it : src2blk_[curIndex]) {
-      blk_state[it] = true;
-      for (int i = 0; blk_state[it] && i < blk2dst_[it].size(); ++i) {
-	int dstIndex = blk2dst_[it][i];
-	printf("dstIndex %d[%d]\n", dstIndex, op_ref[dstIndex]);
-	if (op_ref[dstIndex] == 0 && op_exec[dstIndex] == false) {
-	  op_queue.Push(dstIndex);
-	  ans.push_back(dstIndex);
-	  op_exec[dstIndex] = true;
-	  printf("push op[%d]\n", dstIndex);
-	  for (auto t : src2blk_[dstIndex]) {
-	    if (t != it)  blk_state[t] = true;
-	    printf("update blk[%#x]\n", t);
-	    for (int j = 0; blk_state[t] && j < blk2dst_[t].size(); ++j) {
-	      int dstIndex = blk2dst_[t][j];
-	      if (op_exec[dstIndex]) {
-		printf("op[%d] has executed\n", dstIndex);
-		continue;
-	      }
-	      for (auto t1 : src2blk_[dstIndex]) {
-		if (t1 == t) {
-		  printf("in-place operation\n");
-		  blk_state[t1] = false;
-		  break;
-		}
-	      }
-	      op_ref[dstIndex] -= 1;
-	      printf("sub op[%d] ref[%d]\n", dstIndex, op_ref[dstIndex]);
-	    }
+    for (size_t i = 0; i < curNode->write_blocks.size(); ++i) {
+      Block *write_block = curNode->write_blocks[i];
+      size_t edge_index = blk2index[write_block];
+      edge_state[edge_index] = true;
+
+      auto &dst_nodes = edges[edge_index]->dst_nodes;
+      for (size_t j = 0; j < dst_nodes.size(); ++j) {
+	OpNode *dst_node = dst_nodes[j];
+	size_t node_index = node2index[dst_node];
+
+	if (node_ref[node_index] <= 0) {
+	  continue;
+	}
+
+	bool circle = false;
+	for (auto it : dst_node->write_blocks) {
+	  if (it == write_block) {
+	    circle = true;
+	    break;
 	  }
+	}
+
+	node_ref[node_index] -= 1;
+	if (node_ref[node_index] != 0) {
+	  if (circle) {
+	    break;
+	  } else {
+	    continue;
+	  }
+	}
+
+	node_queue.Push(node_index);
+	ans.push_back(node_index);
+	// printf("push op[%2d]\n", node_index);
+
+	if (circle) {
+	  edge_ref[edge_index] = false;
+	  break;
 	}
       }
     }
     if (!ans.empty()) anss.push_back(ans);
   }
 
-  printf("total released count: %d/%d(without tensor of type _end_)\n", de_count, tensors_.size());
+  /*
+  printf("total released count: %d/%d(without tensor of type _end_)\n", de_count, edges.size());
   for (int i = 0; i < anss.size(); i++) {
     printf("group %d: ", i);
     for (auto it : anss[i]) {
@@ -273,6 +265,9 @@ void Device::ExecBuffOps() {
     }
     printf("\n");
   }
+  */
+
+  buffer_flag_ = previous_state;
 }
 
 // Todo(Wangwei) Get Block From The Memory manager

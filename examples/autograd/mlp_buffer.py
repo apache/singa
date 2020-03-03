@@ -110,4 +110,3 @@ if __name__ == "__main__":
         dev.ExecBuffOps()
         if i % 100 == 0:
             print("training loss = ", tensor.to_numpy(loss)[0])
-        input()
