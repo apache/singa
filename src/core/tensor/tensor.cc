@@ -719,6 +719,7 @@ template void Tensor::GetValue<int>(int *value, const size_t num);
   void fn(const Tensor &in, Tensor *out) { EltwiseUnaryTensorFn(fn, in, out); }
 
 GenUnaryTensorFn(Abs);
+GenUnaryTensorFn(Ceil);
 GenUnaryTensorFn(Exp);
 GenUnaryTensorFn(Log);
 GenUnaryTensorFn(ReLU);
