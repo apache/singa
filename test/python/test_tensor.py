@@ -338,6 +338,21 @@ class TestTensorMethods(unittest.TestCase):
 
             np.testing.assert_array_almost_equal(tensor.to_numpy(t2), np2)
 
+    def test_astype(self):
+        for dev in [cpu_dev, gpu_dev]:
+
+            np1 = np.random.random([5, 6, 7, 8]).astype(np.float32)
+            np1 = np1 * 10 - 5
+
+            np2 = np1.astype(np.int32)
+            np3 = np2.astype(np.float32)
+
+            t1 = tensor.Tensor(device=dev, data=np1)
+            t1.as_type('int')
+            np.testing.assert_array_almost_equal(tensor.to_numpy(t1), np2)
+            t1.as_type('float')
+            np.testing.assert_array_almost_equal(tensor.to_numpy(t1), np3)
+
 
 if __name__ == '__main__':
     unittest.main()
