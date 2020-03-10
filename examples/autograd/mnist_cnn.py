@@ -142,8 +142,8 @@ def augmentation(x, batch_size):
     xpad = np.pad(x, [[0, 0], [0, 0], [4, 4], [4, 4]], 'symmetric')
     for data_num in range(0, batch_size):
         offset = np.random.randint(8, size=2)
-        x[data_num, :, :, :] = xpad[data_num, :, offset[0]:offset[0] + 28,
-                                    offset[1]:offset[1] + 28]
+        x[data_num, :, :, :] = xpad[data_num, :, offset[0]:offset[0] +
+                                    28, offset[1]:offset[1] + 28]
         if_flip = np.random.randint(2)
         if (if_flip):
             x[data_num, :, :, :] = x[data_num, :, :, ::-1]
@@ -187,23 +187,17 @@ def train_mnist_cnn(sgd,
         world_size = sgd.world_size
     else:
         # For Single GPU
-        dev = device.create_cuda_gpu_on(0)
+        dev = device.create_cuda_gpu()
         world_size = 1
-
-    print("pass0")
 
     # create model
     model = CNN()
-
-    print("pass0a")
 
     tx = tensor.Tensor((batch_size, 1, IMG_SIZE, IMG_SIZE), dev, tensor.float32)
     ty = tensor.Tensor((batch_size, num_classes), dev, tensor.int32)
     num_train_batch = train_x.shape[0] // batch_size
     num_test_batch = test_x.shape[0] // batch_size
     idx = np.arange(train_x.shape[0], dtype=np.int32)
-
-    print("pass1")
 
     if DIST:
         #Sychronize the initial parameters
@@ -217,8 +211,6 @@ def train_mnist_cnn(sgd,
         loss = autograd.softmax_cross_entropy(out, ty)
         for p, g in autograd.backward(loss):
             sychronize(p, sgd)
-    dev.ExecBuffOps()
-    print("pass2")
 
     # Training and Evaulation Loop
     for epoch in range(max_epoch):
@@ -277,7 +269,6 @@ def train_mnist_cnn(sgd,
             tx.copy_from_numpy(x)
             ty.copy_from_numpy(y)
             out_test = model.forward(tx)
-            dev.ExecBuffOps()
             test_correct += accuracy(tensor.to_numpy(out_test), y)
 
         if DIST:

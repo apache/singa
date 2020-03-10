@@ -104,8 +104,8 @@ def augmentation(x, batch_size):
     xpad = np.pad(x, [[0, 0], [0, 0], [4, 4], [4, 4]], 'symmetric')
     for data_num in range(0, batch_size):
         offset = np.random.randint(8, size=2)
-        x[data_num, :, :, :] = xpad[data_num, :, offset[0]:offset[0] + 32,
-                                    offset[1]:offset[1] + 32]
+        x[data_num, :, :, :] = xpad[data_num, :, offset[0]:offset[0] +
+                                    32, offset[1]:offset[1] + 32]
         if_flip = np.random.randint(2)
         if (if_flip):
             x[data_num, :, :, :] = x[data_num, :, :, ::-1]
