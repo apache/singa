@@ -211,7 +211,10 @@ void Device::ExecBuffOps() {
       edge_wait[edge_index] -= 1;
       if (edge_wait[edge_index] == 0) {
 	++de_count;
-	// printf("deallocate block[%2d]\n", edge_index);
+	if (edges[edge_index]->type != EdgeType::kInput && edges[edge_index]->type != EdgeType::kParam) {
+	  curNode->read_blocks[i]->free_data();
+	  // printf("deallocate block[%2d]\n", edge_index);
+	}
       }
     }
 
@@ -267,8 +270,10 @@ Block* Device::NewBlock(int size) {
       << "size is negative, could be caused by the type cast "
       << "from size_t to int. In that case, the size is too large.";
   if (size > 0) {
-    void* ptr = Malloc(size);
-    return new Block(ptr, size);
+    // void* ptr = Malloc(size);
+    // return new Block(ptr, size, this);
+    // support lazy allocation
+    return new Block(nullptr, size, this);
   } else {
     return nullptr;
   }

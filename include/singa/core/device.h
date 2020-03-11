@@ -164,6 +164,8 @@ class Device {
   std::shared_ptr<Device> host_;
   // TODO(wangwei) define multiple contexts, one per executor
   Context ctx_;
+
+  friend class Block;
 };
 
 /// a singleton CppDevice as the host for all devices.

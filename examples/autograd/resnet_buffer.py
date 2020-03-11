@@ -254,7 +254,7 @@ if __name__ == "__main__":
     model = resnet50()
     print("Start intialization............")
     niters = 100
-    batch_size = 16
+    batch_size = 32
     IMG_SIZE = 224
     sgd = opt.SGD(lr=0.1, momentum=0.9, weight_decay=1e-5)
 
