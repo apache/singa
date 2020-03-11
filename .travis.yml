@@ -37,12 +37,6 @@ matrix:
     dist: bionic
     compiler: gcc
     name: "Ubuntu 18.04 (C++)" 
-  - os: linux
-    dist: bionic
-    compiler: gcc
-    name: "Ubuntu 18.04 (Rat)" 
-    script:
-    - bash -ex tool/rat.sh
 
 install:
   - travis_wait bash -ex tool/travis/depends.sh
