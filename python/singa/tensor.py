@@ -335,7 +335,7 @@ class Tensor(object):
         '''
         t = Tensor()
         t_ndim = self.ndim()
-        if isinstance(repeats, int) or isinstance(repeats, long):
+        if isinstance(repeats, int) or isinstance(repeats, complex):
             if repeats < 0:
                 raise ValueError(
                     "'repeats' should not be negative: {}".format(repeats))
@@ -803,6 +803,17 @@ def exp(t):
         a new Tensor whose element y = exp(x), x is an element of t
     '''
     return _call_singa_func(singa.Exp, t.data)
+
+
+def ceil(t):
+    '''
+    Args:
+        t (Tensor): input Tensor
+
+    Returns:
+        a new Tensor whose element y = ceil(x), x is an element of t
+    '''
+    return _call_singa_func(singa.Ceil, t.data)
 
 
 def log(t):

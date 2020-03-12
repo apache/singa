@@ -171,23 +171,30 @@ class TestPythonOperation(unittest.TestCase):
 
     def _conv_same_pad(self, dev, pad_mode, is_2d):
         if is_2d:
-            x_w, w_w, k_w, p_w = 32, 4, 4, 1
+            x_h, w_h, k_h, p_h = 32, 4, 4, 1
+            if pad_mode == "SAME_LOWER":
+                o_p = (0, 1, 0, 1)
+            else:
+                o_p = (1, 0, 1, 0)
         else:
-            x_w, w_w, k_w, p_w = 1, 1, 1, 0
-        x = tensor.Tensor(shape=(3, 3, x_w, 32), device=dev)
+            x_h, w_h, k_h, p_h = 1, 1, 1, 0
+            if pad_mode == "SAME_LOWER":
+                o_p = (0, 0, 0, 1)
+            else:
+                o_p = (0, 0, 1, 0)
+        x = tensor.Tensor(shape=(3, 3, x_h, 32), device=dev)
         x.gaussian(0.0, 1.0)
 
-        w = tensor.Tensor(shape=(3, 3, w_w, 4), device=dev)
+        w = tensor.Tensor(shape=(3, 3, w_h, 4), device=dev)
         w.gaussian(0.0, 1.0)
 
         # with the same padding, the padding should be 3
-        # for SAME_UPPER, is (1, 2)
-        # for SAME_LOWER, is (2, 1)
+        # for SAME_UPPER, is (1, 1) + (0, 1)
+        # for SAME_LOWER, is (1, 1) + (1, 0)
 
         x_shape = x.shape
-        kernel = (k_w, 4)
-        # we add 4 padding here and hope the conv and trim one padding then
-        padding = (p_w, 1)  
+        kernel = (k_h, 4)
+        padding = (p_h, 1)
         stride = (1, 1)
         group = 1
         bias = False
@@ -203,9 +210,102 @@ class TestPythonOperation(unittest.TestCase):
             handle = singa.CudnnConvHandle(x.data, kernel, stride, padding,
                                            in_channels, out_channels, bias,
                                            group)
-        y = autograd._Conv2d(handle, pad_mode)(x, w)[0]
+        y = autograd._Conv2d(handle, o_p)(x, w)[0]
 
-        dy = np.ones((3, 3, x_w, 32), dtype=np.float32)
+        dy = np.ones((3, 3, x_h, 32), dtype=np.float32)
+        dy = tensor.from_numpy(dy)
+        dy.to_device(dev)
+
+        dx, dW = y.creator.backward(dy.data)
+        self.check_shape(y.shape, (3, 3, x_h, 32))
+        self.check_shape(dx.shape(), (3, 3, x_h, 32))
+        self.check_shape(dW.shape(), (3, 3, w_h, 4))
+
+    def test_conv2d_same_pad_cpu(self):
+        self._conv_same_pad(cpu_dev, "SAME_LOWER", True)
+        self._conv_same_pad(cpu_dev, "SAME_UPPER", True)
+
+    def test_conv2d_same_pad_gpu(self):
+        self._conv_same_pad(gpu_dev, "SAME_LOWER", True)
+        self._conv_same_pad(gpu_dev, "SAME_UPPER", True)
+
+    def test_conv1d_same_pad_cpu(self):
+        self._conv_same_pad(cpu_dev, "SAME_LOWER", False)
+        self._conv_same_pad(cpu_dev, "SAME_UPPER", False)
+
+    def test_conv1d_same_pad_gpu(self):
+        self._conv_same_pad(gpu_dev, "SAME_LOWER", False)
+        self._conv_same_pad(gpu_dev, "SAME_UPPER", False)
+
+    def _pooling_same_pad(self, dev, pad_mode, is_2d):
+        if is_2d:
+            x_h, k_h, p_h = 32, 4, 1
+            if pad_mode == "SAME_LOWER":
+                o_p = (0, 1, 0, 1)
+            else:
+                o_p = (1, 0, 1, 0)
+        else:
+            x_h, k_h, p_h = 1, 1, 0
+            if pad_mode == "SAME_LOWER":
+                o_p = (0, 0, 0, 1)
+            else:
+                o_p = (0, 0, 1, 0)
+        x = tensor.Tensor(shape=(3, 3, x_h, 32), device=dev)
+        x.gaussian(0.0, 1.0)
+
+        # with the same padding, the padding should be 3
+        # for SAME_UPPER, is (1, 1) + (0, 1)
+        # for SAME_LOWER, is (1, 1) + (1, 0)
+
+        x_shape = x.shape
+        kernel = (k_h, 4)
+        # we add 4 padding here and hope the conv and trim one padding then
+        padding = (p_h, 1)
+        stride = (1, 1)
+
+        if dev == cpu_dev:
+            handle = singa.PoolingHandle(x.data, kernel, stride, padding, True)
+        else:
+            handle = singa.CudnnPoolingHandle(x.data, kernel, stride, padding,
+                                              True)
+
+        y = autograd._Pooling2d(handle, o_p)(x)[0]
+
+        dy = np.ones((3, 3, x_h, 32), dtype=np.float32)
+        dy = tensor.from_numpy(dy)
+        dy.to_device(dev)
+
+        dx = y.creator.backward(dy.data)
+        self.check_shape(y.shape, (3, 3, x_h, 32))
+        self.check_shape(dx.shape(), (3, 3, x_h, 32))
+
+    def test_pooling2d_same_pad_cpu(self):
+        self._pooling_same_pad(cpu_dev, "SAME_LOWER", True)
+        self._pooling_same_pad(cpu_dev, "SAME_UPPER", True)
+
+    def test_pooling2d_same_pad_gpu(self):
+        self._pooling_same_pad(gpu_dev, "SAME_LOWER", True)
+        self._pooling_same_pad(gpu_dev, "SAME_UPPER", True)
+
+    def test_pooling1d_same_pad_cpu(self):
+        self._pooling_same_pad(cpu_dev, "SAME_LOWER", False)
+        self._pooling_same_pad(cpu_dev, "SAME_UPPER", False)
+
+    def test_pooling1d_same_pad_gpu(self):
+        self._pooling_same_pad(gpu_dev, "SAME_LOWER", False)
+        self._pooling_same_pad(gpu_dev, "SAME_UPPER", False)
+
+    def test_sum_cpu(self):
+        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
+                      9.0]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0.1, 1.0, 0.4, 4.0, 0.9,
+                       9.0]).reshape(3, 2).astype(np.float32)
+        y = x + x1
+        dy = np.ones((3, 2), dtype=np.float32)
+        grad0 = dy
+        grad1 = dy
+        x = tensor.from_numpy(x)
+        x1 = tensor.from_numpy(x1)
         dy = tensor.from_numpy(dy)
         dy.to_device(dev)
 
@@ -310,26 +410,6 @@ class TestPythonOperation(unittest.TestCase):
             tensor.from_raw_tensor(dx1)),
                                              grad1,
                                              decimal=5)
-
-    def test_conv2d_cpu(self):
-        # (in_channels, out_channels, kernel_size)
-        conv_1 = autograd.Conv2d(3, 1, 2)
-        conv_without_bias_1 = autograd.Conv2d(3, 1, 2, bias=False)
-
-        cpu_input_tensor = tensor.Tensor(shape=(2, 3, 3, 3), device=cpu_dev)
-        cpu_input_tensor.gaussian(0.0, 1.0)
-
-        y = conv_1(cpu_input_tensor)  # PyTensor
-        dx, dW, db = y.creator.backward(dy)  # CTensor
-
-        self.check_shape(y.shape, (2, 1, 2, 2))
-        self.check_shape(dx.shape(), (2, 3, 3, 3))
-        self.check_shape(dW.shape(), (1, 3, 2, 2))
-        self.check_shape(db.shape(), (1,))
-
-        # forward without bias
-        y_without_bias = conv_without_bias_1(cpu_input_tensor)
-        self.check_shape(y_without_bias.shape, (2, 1, 2, 2))
 
     def test_SeparableConv2d_gpu(self):
         # SeparableConv2d(in_channels, out_channels, kernel_size)
@@ -1584,8 +1664,9 @@ class TestPythonOperation(unittest.TestCase):
                                              decimal=5)
 
     def test_unsqueeze_cpu(self):
-        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
-                      9.0]).reshape(1, 2, 3).astype(np.float32)
+        data = [0.1, -1.0, 0.4, 4.0, -0.9, 9.0]
+
+        x = np.array(data).reshape(1, 2, 3).astype(np.float32)
         y = x.reshape(1, 1, 2, 3, 1)
         dy = np.ones((1, 1, 2, 3, 1), dtype=np.float32)
         grad = dy.reshape(1, 2, 3)
@@ -2894,54 +2975,6 @@ class TestPythonOperation(unittest.TestCase):
                                                  y,
                                                  decimal=5)
 
-    def test_xor_broadcast_gpu(self):
-        dev = gpu_dev
-        cases = [
-            ([3, 4, 5], [5]),  # 3d vs 1d
-            ([3, 4, 5], [4, 5]),  # 3d vs 2d
-            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
-            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
-            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
-        ]
-        for in1, in2 in cases:
-            x = (np.random.randn(*in1) > 0).astype(np.float32)
-            x1 = (np.random.randn(*in2) > 0).astype(np.float32)
-            y = np.logical_xor(x, x1)
-
-            x = tensor.from_numpy(x)
-            x1 = tensor.from_numpy(x1)
-            x.to_device(dev)
-            x1.to_device(dev)
-
-            result = autograd._xor(x, x1)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(result),
-                                                 y,
-                                                 decimal=5)
-
-    def test_xor_broadcast_cpu(self):
-        dev = cpu_dev
-        cases = [
-            ([3, 4, 5], [5]),  # 3d vs 1d
-            ([3, 4, 5], [4, 5]),  # 3d vs 2d
-            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
-            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
-            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
-        ]
-        for in1, in2 in cases:
-            x = (np.random.randn(*in1) > 0).astype(np.float32)
-            x1 = (np.random.randn(*in2) > 0).astype(np.float32)
-            y = np.logical_xor(x, x1)
-
-            x = tensor.from_numpy(x)
-            x1 = tensor.from_numpy(x1)
-            x.to_device(dev)
-            x1.to_device(dev)
-
-            result = autograd._xor(x, x1)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(result),
-                                                 y,
-                                                 decimal=5)
-
     def test_greater_broadcast_gpu(self):
         dev = gpu_dev
         cases = [
@@ -3676,6 +3709,75 @@ class TestPythonOperation(unittest.TestCase):
         self.globalaveragepool_channel_first(gpu_dev)
         self.globalaveragepool_channel_last(gpu_dev)
 
+
+    def gemm_test(self, dev):
+        configs = [
+            # alpha, beta, transA, transB, shapeA, shapeB, shapeC, shapeY
+            [0.25, 0.35, 0, 0, (3, 4), (4, 5), (1, 5), (3, 5)],
+            [0.25, 0.35, 0, 1, (3, 4), (5, 4), (1, 5), (3, 5)],
+            [0.25, 0.35, 1, 0, (4, 3), (4, 5), (1, 5), (3, 5)],
+            [0.25, 0.35, 1, 1, (4, 3), (5, 4), (1, 5), (3, 5)],
+        ]
+        for config in configs:
+            alpha = config[0]
+            beta = config[1]
+            transA = config[2]
+            transB = config[3]
+            shapeA = config[4]
+            shapeB = config[5]
+            shapeC = config[6]
+            shapeY = config[7]
+            A = np.random.randn(*shapeA).astype(np.float32)
+            B = np.random.randn(*shapeB).astype(np.float32)
+            C = np.random.randn(*shapeC).astype(np.float32)
+            DY = np.ones(shapeY, dtype=np.float32)
+
+            a = tensor.from_numpy(A)
+            a.to_device(dev)
+            b = tensor.from_numpy(B)
+            b.to_device(dev)
+            c = tensor.from_numpy(C)
+            c.to_device(dev)
+            dy = tensor.from_numpy(DY)
+            dy.to_device(dev)
+
+            result = autograd.gemm(a, b, c, alpha, beta, transA, transB)
+            da, db, dc = result.creator.backward(dy.data)
+
+            # Y = alpha * A' * B' + beta * C
+            _A = A if transA == 0 else A.T
+            _B = B if transB == 0 else B.T
+            C = C if C is not None else np.array(0)
+            Y = alpha * np.dot(_A, _B) + beta * C
+
+            DA = alpha * np.matmul(DY, _B.T)
+            DA = DA if transA == 0 else DA.T
+            DB = alpha * np.matmul(_A.T, DY)
+            DB = DB if transB == 0 else DB.T
+            DC = beta * np.sum(DY, axis=axis_helper(Y.shape, C.shape)).reshape(
+                C.shape)
+
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result),
+                                                 Y,
+                                                 decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(
+                tensor.from_raw_tensor(da)),
+                                                 DA,
+                                                 decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(
+                tensor.from_raw_tensor(db)),
+                                                 DB,
+                                                 decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(
+                tensor.from_raw_tensor(dc)),
+                                                 DC,
+                                                 decimal=5)
+
+    def test_gemm_cpu(self):
+        self.gemm_test(cpu_dev)
+
+    def test_gemm_gpu(self):
+        self.gemm_test(gpu_dev)
 
 if __name__ == '__main__':
     unittest.main()

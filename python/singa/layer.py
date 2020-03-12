@@ -272,7 +272,7 @@ class Layer(object):
     def __copy__(self):
         pass
 
-    def __deepcopy__(self):
+    def __deepcopy__(self, memo):
         pass
 
 

@@ -17,6 +17,7 @@
  */
 
 #include <iostream>
+
 #include "singa/utils/cuda_utils.h"
 
 #ifdef USE_DIST

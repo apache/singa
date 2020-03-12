@@ -17,8 +17,13 @@
 # limitations under the License.
 #
 
+export PATH="$HOME/miniconda/bin:$PATH"
+
 # pylint
-pylint $(find python/ test/python/ examples/ -name '*.py')
+find python/singa/ \
+    examples/autograd \
+    test/python/ -iname *.py | xargs pylint
+
 LINTRESULT=$?
 if [ $LINTRESULT == 0 ]; then
   echo "pylint passed"
@@ -27,14 +32,5 @@ else
   exit $LINTRESULT
 fi
 
-# cpplint
-CPPLINTRESULT=$(cpplint --quiet $(find src/ include/ test/singa/ -name *.cc -or -name *.h) )
-if [[ $CPPLINTRESULT ]]; then
-  echo $CPPLINTRESULT
-  echo "cpplint not passed"
-  exit 1
-else
-  echo "cpplint passed"
-fi
-
 exit 0
+

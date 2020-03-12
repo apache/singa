@@ -40,7 +40,8 @@ For Python Code:
 
 ## Linting the whole project
 
-usage: `bash tool/linting/linting.sh`
+usage: `bash tool/linting/py.sh`
+usage: `bash tool/linting/cpp.sh`
 
 ## Configuration
 Currently the configuration are customized to respect google style.

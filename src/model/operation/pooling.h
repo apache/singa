@@ -22,10 +22,12 @@
 #define SINGA_MODEL_OPERATION_POOLING_H_
 
 #include <string>
+
 #include "singa/core/tensor.h"
 
 #ifdef USE_CUDNN
 #include <cudnn.h>
+
 #include "../layer/cudnn_utils.h"
 #endif
 

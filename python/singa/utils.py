@@ -22,6 +22,9 @@ import numpy as np
 from singa import tensor
 from . import singa_wrap as singa
 
+from singa import tensor
+from . import singa_wrap as singa
+
 def update_progress(progress, info):
     """Display progress bar and user info.
 
@@ -51,53 +54,57 @@ def update_progress(progress, info):
     sys.stdout.flush()
 
 
-def handle_same_pad_fwd(x, padding, pad_mode):
+def handle_odd_pad_fwd(x, odd_padding):
     """
-    handle same padding mode forward
+    handle odd padding mode forward
     Args:x
         the input tensor
-    Args:padding
-        the padding
+    Args:odd_padding
+        the odd_padding
     Returns: 
         tensor, the output
     """
-    # In case of odd number add the extra padding at the end for SAME_UPPER
-    # at the beginning for SAME_LOWER
     x_tensor = tensor.from_raw_tensor(x)
-    for axis, pad in zip((2, 3), padding):
-        if pad % 2 != 0:
-            zeros_shape = list(x_tensor.data.shape())
-            zeros_shape[axis] = 1
-            zero_padding = np.zeros(zeros_shape).astype(np.float32)
-            zero_padding = tensor.Tensor(device=x.device(), data=zero_padding)
-            if pad_mode == "SAME_UPPER":
-                x_tensor = tensor.concatenate((x_tensor, zero_padding), axis)
-            else:
-                x_tensor = tensor.concatenate((zero_padding, x_tensor), axis)
+    # (axis, left padding if True else right padding)
+    flags = [(2, True), (2, False), (3, True), (3, False)]
+    for (axis, left), pad in zip(flags, odd_padding):
+        if pad == 0:
+            continue
+        zeros_shape = list(x_tensor.data.shape())
+        zeros_shape[axis] = pad
+        zero_padding = np.zeros(zeros_shape).astype(np.float32)
+        zero_padding = tensor.Tensor(device=x.device(), data=zero_padding)
+        if left:
+            x_tensor = tensor.concatenate((zero_padding, x_tensor), axis)
+        else:
+            x_tensor = tensor.concatenate((x_tensor, zero_padding), axis)
     return x_tensor.data
 
 
-def handle_same_pad_bwd(dx, padding, pad_mode):
+def handle_odd_pad_bwd(dx, odd_padding):
     """
-    handle same padding mode backward
+    handle odd padding mode backward
     Args:dx
         the backward tensor
-    Args:padding
-        the padding
+    Args:odd_padding
+        the odd_padding
     Returns: 
         tensor, the output
     """
-    for axis, pad in zip((2, 3), padding):
-        if pad % 2 != 0:
-            axis_shape = list(dx.shape())[axis]
-            if pad_mode == "SAME_UPPER":
-                dx = singa.SliceOn(dx, 0, axis_shape - 1, axis)
-            else:
-                dx = singa.SliceOn(dx, 1, axis_shape, axis)
+    # (axis, left padding if True else right padding)
+    flags = [(2, True), (2, False), (3, True), (3, False)]
+    for (axis, left), pad in zip(flags, odd_padding):
+        if pad == 0:
+            continue
+        axis_shape = list(dx.shape())[axis]
+        if left:
+            dx = singa.SliceOn(dx, pad, axis_shape, axis)
+        else:
+            dx = singa.SliceOn(dx, 0, axis_shape - pad, axis)
     return dx
 
 
-def same_pad_shape_check(handle, pad_mode, x, padding):
+def same_pad_shape_check(handle, pad_mode, x):
     """
     check the shape is correct for same padding mode
     Args:handle
@@ -106,18 +113,19 @@ def same_pad_shape_check(handle, pad_mode, x, padding):
         pad_mode
     Args:x
         input tensor
-    Args:padding
-        the padding
+    Returns: 
+        tuple, the correct padding(before divide 2)
     """
     _kernel = [handle.kernel_h, handle.kernel_w]
     _stride = [handle.stride_h, handle.stride_w]
-    output_shape = get_output_shape(pad_mode, x.shape()[2:], _kernel, _stride)
-    _padding_correct = get_padding_shape(x.shape()[2:], _kernel, _stride,
-                                         output_shape)
-    _padding_correct = [x // 2 for x in _padding_correct]
-    assert padding == _padding_correct, (
+    _padding = [handle.pad_h, handle.pad_w]
+    _padding_correct = get_padding_shape(pad_mode,
+                                         x.shape()[2:], _kernel, _stride)
+    _padding_crop, _ = [x // 2 for x in _padding_correct]
+    assert _padding == _padding_crop, (
         'For a same mode, the given padding %s is wrong, the correct one should be %s.'
-        % (padding, _padding_correct))
+        % (_padding, _padding_crop))
+    return _padding_correct
 
 
 def re_new_handle(handle, x, is_pool=False):
@@ -136,36 +144,48 @@ def re_new_handle(handle, x, is_pool=False):
     if is_pool:
         params = (x, kernel_size, stride, padding, handle.is_max_pooling)
     else:
-        params = (x, kernel_size, stride, padding, handle.channels, handle.num_filters,
-                handle.bias_term, handle.group)
-    if (type(handle) == singa.ConvHandle or type(handle) == singa.PoolingHandle):
-        handle = singa.PoolingHandle(*params) if is_pool else singa.ConvHandle(*params) 
+        params = (x, kernel_size, stride, padding, handle.channels,
+                  handle.num_filters, handle.bias_term, handle.group)
+    if (type(handle) == singa.ConvHandle or
+            type(handle) == singa.PoolingHandle):
+        handle = singa.PoolingHandle(*params) if is_pool else singa.ConvHandle(
+            *params)
     else:
-        handle = singa.CudnnPoolingHandle(*params) if is_pool else singa.CudnnConvHandle(*params) 
+        handle = singa.CudnnPoolingHandle(
+            *params) if is_pool else singa.CudnnConvHandle(*params)
     return handle
 
 
-def get_padding_shape(input_spatial_shape, kernel_spatial_shape,
-                      strides_spatial, output_spatial_shape):
+def get_padding_shape(pad_mode, input_spatial_shape, kernel_spatial_shape,
+                      strides_spatial):
     """
     return padding shape of conv2d or pooling,
-    ! borrow from onnx
     Args:
-        auto_pad: string
+        pad_mode: string
     Args:
         kernel_spatial_shape: list[int]
     Args:
         strides_spatial: list[int]
-    Args:
-        output_spatial_shape: list[int]
     Returns: 
         list[int]
     """
-    pad_shape = [0] * len(input_spatial_shape)
+    output_spatial_shape = get_output_shape(pad_mode, input_spatial_shape,
+                                            kernel_spatial_shape,
+                                            strides_spatial)
+    pad_shape = [0] * len(input_spatial_shape) * 2  # 2 means left and right
+    # the odd paddding is the value that cannot be handled by the tuple padding (w, h) mode
+    # so we need to firstly handle the input, then use the nomal padding method.
+    odd_padd_shape = [0] * len(input_spatial_shape) * 2
     for i in range(len(input_spatial_shape)):
-        pad_shape[i] = (output_spatial_shape[i] - 1) * strides_spatial[i] + \
+        whole_pad = (output_spatial_shape[i] - 1) * strides_spatial[i] + \
             kernel_spatial_shape[i] - input_spatial_shape[i]
-    return pad_shape
+        pad_shape[2 * i] = pad_shape[2 * i + 1] = whole_pad // 2
+        if whole_pad % 2 != 0:
+            if pad_mode == "SAME_UPPER":
+                odd_padd_shape[2 * i + 1] += 1
+            else:
+                odd_padd_shape[2 * i] += 1
+    return pad_shape, odd_padd_shape
 
 
 def get_output_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
