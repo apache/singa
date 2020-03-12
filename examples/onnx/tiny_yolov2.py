@@ -4,7 +4,6 @@ import gzip
 import numpy as np
 import codecs
 import tarfile
-import cv2
 import warnings
 import glob
 
