@@ -107,7 +107,7 @@ class Device {
   int id() const { return id_; }
 
  private:
-  Device(){};
+  Device() : graph_test(this) {};
 
   enum EdgeType {
     kInput, kParam, kInter, kEnd
@@ -126,7 +126,7 @@ class Device {
     std::vector<OpNode *> dst_nodes;
   };
 
-  struct Graph {
+  struct Graph_ {
     std::vector<OpNode *> nodes;
     std::vector<Edge *> edges;
     std::map<Block *, int> blk2index;
@@ -134,7 +134,8 @@ class Device {
     std::vector<std::unordered_set<int> > circle;
   };
 
-  struct Graph graph_;
+  struct Graph_ graph_;
+  class Graph graph_test;
 
  protected:
   /// Execute one operation on one executor.
@@ -166,6 +167,7 @@ class Device {
   Context ctx_;
 
   friend class Block;
+  friend class Graph;
 };
 
 /// a singleton CppDevice as the host for all devices.

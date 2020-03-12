@@ -20,7 +20,7 @@
 
 namespace singa {
 Device::Device(int id, int num_executors)
-    : id_(id), num_executors_(num_executors) {
+  : id_(id), num_executors_(num_executors), graph_test(this) {
   // TODO(wangwei) create scheduler and vm.
   host_ = defaultDevice;
 }
@@ -30,6 +30,9 @@ void Device::Exec(function<void(Context*)>&& fn,
                   const vector<Block*> write_blocks, bool use_rand_generator) {
   if (buffer_flag_== true)
   {
+    graph_test.AddOperation(std::move(fn), read_blocks, write_blocks);
+
+    /*
     size_t op_index = graph_.nodes.size();
     // printf("Exec Op[%2d]\n", op_index);
 
@@ -94,6 +97,7 @@ void Device::Exec(function<void(Context*)>&& fn,
 
     opNode->read_blocks = std::move(read_blocks);
     opNode->write_blocks = std::move(write_blocks);
+    */
   }
   else
   {
@@ -106,13 +110,15 @@ void Device::ExecBuffOps() {
   bool previous_state = buffer_flag_;
   buffer_flag_ = false;
 
+  graph_test.Run();
+
+  /*
   auto &nodes = graph_.nodes;
   auto &edges = graph_.edges;
   auto &blk2index = graph_.blk2index;
   auto &node2index = graph_.node2index;
   auto &circle = graph_.circle;
 
-  /*
   for (size_t i = 0; i < nodes.size(); ++i) {
     auto node = nodes[i];
     printf("OP[%2d]: ", i);
@@ -148,7 +154,6 @@ void Device::ExecBuffOps() {
     }
     printf("\n");
   }
-  */
 
   std::vector<int> ans;
   std::vector<std::vector<int> > anss;
@@ -250,7 +255,7 @@ void Device::ExecBuffOps() {
     // if (!ans.empty()) anss.push_back(ans);
   }
 
-  /*
+  
   printf("total released count: %d/%d(without tensor of type _end_)\n", de_count, edges.size());
   for (int i = 0; i < anss.size(); i++) {
     printf("group %d: ", i);
