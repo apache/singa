@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-#include "gtest/gtest.h"
-#include "singa/utils/timer.h"
-
 #include <chrono>
 #include <thread>
+
+#include "gtest/gtest.h"
+#include "singa/utils/timer.h"
 
 TEST(TimerTest, TestTick) {
   singa::Timer t;

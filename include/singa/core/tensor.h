@@ -19,25 +19,24 @@
 #ifndef SINGA_CORE_TENSOR_H_
 #define SINGA_CORE_TENSOR_H_
 
-#include <vector>
-#include <tuple>
 #include <memory>
+#include <tuple>
+#include <vector>
 
 #include "singa/core/common.h"
 #include "singa/core/device.h"
 #include "singa/proto/core.pb.h"
 #include "singa/utils/logging.h"
 
-using std::vector;
 using std::tuple;
+using std::vector;
 namespace singa {
 
 typedef vector<size_t> Shape;
 /// hardcode the width of types defined in DataType
 const size_t kDataWidth[] = {sizeof(float),  sizeof(float) / 2,
                              sizeof(int),    sizeof(char),
-                             sizeof(double), sizeof(unsigned char)
-                            };
+                             sizeof(double), sizeof(unsigned char)};
 inline size_t SizeOf(DataType t) {
   static_assert(kNumDataType == sizeof(kDataWidth) / sizeof(size_t),
                 "Num of data types not match num of data width");
@@ -62,8 +61,7 @@ class Tensor {
   explicit Tensor(const Shape &shape, DataType dtype = kFloat32);
 
   /// Constructor with shape, device and data type
-  Tensor(const Shape &shape,
-         std::shared_ptr<Device> dev,
+  Tensor(const Shape &shape, std::shared_ptr<Device> dev,
          DataType dtype = kFloat32);
 
   /// Copy constructor.  No deep copy.
@@ -99,9 +97,7 @@ class Tensor {
     return shape_.at(idx);
   }
 
-  size_t nDim() const {
-    return shape_.size();
-  }
+  size_t nDim() const { return shape_.size(); }
 
   size_t n_dim() const { return shape_.size(); }
 
@@ -112,16 +108,14 @@ class Tensor {
     if (!stride_.empty()) {
       auto last = stride_.front();
       for (auto s : stride_) {
-        if (s > last && last > 0)
-          return true;
-        if (s > 0)
-          last = s;
+        if (s > last && last > 0) return true;
+        if (s > 0) last = s;
       }
     }
     return false;
   }
 
-  const vector<int>& stride() const { return stride_; }
+  const vector<int> &stride() const { return stride_; }
 
   /// Return true if the content of the tensor is initialized
   bool initailized() const {
@@ -129,9 +123,7 @@ class Tensor {
   }
 
   /// Return number of total elements
-  size_t Size() const {
-    return size();
-  }
+  size_t Size() const { return size(); }
 
   size_t size() const {
     if (block_ == nullptr) return 0u;
@@ -140,9 +132,7 @@ class Tensor {
   }
 
   /// Return memory size (i.e., Bytes)
-  size_t MemSize() const {
-    return block_->size();
-  }
+  size_t MemSize() const { return block_->size(); }
 
   size_t mem_size() const { return block_->size(); }
 
@@ -189,16 +179,15 @@ class Tensor {
   /// Deserialize data, shape and transpose from protobuf object.
   void FromProto(const singa::TensorProto &proto);
 
-
   /// TODO(wangwei) merge RepeatData into  Repeat?
-  void RepeatData(const vector<size_t>& repeats, int axis, int total_repeats,
+  void RepeatData(const vector<size_t> &repeats, int axis, int total_repeats,
                   const Tensor &other);
 
   // --------------------------------------------------------------------------
   // ---Following methods returns a new Tensor without change original tensor
   // --------------------------------------------------------------------------
 
-  Tensor Repeat(const vector<size_t>& repeats, int axis,
+  Tensor Repeat(const vector<size_t> &repeats, int axis,
                 std::shared_ptr<Device> device = nullptr);
 
   /// return an exactly the same Tensor with data been deep copied to the given
@@ -243,41 +232,39 @@ class Tensor {
   /// change the shape (and stride); the block may be reallocated.
   Tensor &Reshape(const Shape &shape);
 
-
   /// Resize the memory and return itself
-  Tensor& Resize(const Shape& shape);
+  Tensor &Resize(const Shape &shape);
 
   /// Matrix transpose.  Valid only if shape.size() == 2.
-  Tensor& T();
+  Tensor &T();
 
   /// Reverse the shape vector
-  Tensor& Transpose();
+  Tensor &Transpose();
 
   /// Change the axes
-  Tensor& Transpose(const vector<size_t> &axes);
+  Tensor &Transpose(const vector<size_t> &axes);
 
   /// Return a view of the input tensor whose shape is broadcasted to be
   /// compitable with the given shape
-  Tensor& Broadcast(const Shape& shape);
+  Tensor &Broadcast(const Shape &shape);
 
   /// Reset the shape, device, and data type as given tensor.
   /// If block size changes, then reallocate a new block.
   /// The previous block would be deleted.
-  Tensor& ResetLike(const Tensor &t);
+  Tensor &ResetLike(const Tensor &t);
 
   /// Reset the data type, it would reallocate block if type changes.
-  Tensor& AsType(const DataType type);
+  Tensor &AsType(const DataType type);
 
   /// Reset the device.
   /// If the target device is a diff device, then do deep data copy.
-  Tensor& ToDevice(std::shared_ptr<Device> dev);
+  Tensor &ToDevice(std::shared_ptr<Device> dev);
 
   /// Equivalent to ToDevice(host_dev).
-  Tensor& ToHost();
+  Tensor &ToHost();
 
  protected:
-
-  //generate strides automatically if stride field is not passed
+  // generate strides automatically if stride field is not passed
   void generate_stride() {
     stride_.clear();
     if (shape_.size() == 0) {
@@ -293,9 +280,7 @@ class Tensor {
     }
   }
 
-  void set_strides(const vector<int> new_strides) {
-    stride_ = new_strides;
-  }
+  void set_strides(const vector<int> new_strides) { stride_ = new_strides; }
 
  protected:
   DataType data_type_ = kFloat32;
@@ -305,8 +290,7 @@ class Tensor {
   Block *block_ = nullptr;
   Shape shape_ = {};
   vector<int> stride_ = {};
-}; //end of tensor class
-
+};  // end of tensor class
 
 inline size_t Product(const Shape &shape, int start = 0, size_t len = 0) {
   if (len == 0) len = shape.size();
@@ -317,12 +301,10 @@ inline size_t Product(const Shape &shape, int start = 0, size_t len = 0) {
   return v;
 }
 
-
 inline void CheckDataTypeAndLang(const Tensor &in1, const Tensor &in2) {
   CHECK_EQ(in1.data_type(), in2.data_type());
   CHECK_EQ(in1.device()->lang(), in2.device()->lang());
 }
-
 
 template <typename FromType, typename ToType>
 ToType TypeCast(const FromType &x) {
@@ -330,35 +312,37 @@ ToType TypeCast(const FromType &x) {
   return static_cast<ToType>(x);
 }
 
-Tensor Boradcast(const Shape& shape);
+Tensor Boradcast(const Shape &shape);
 
-/// Reshape the given tensor and generate a new tensor; the total vol should match
+/// Reshape the given tensor and generate a new tensor; the total vol should
+/// match
 /// which shares the memory with in if possible
 Tensor Reshape(const Tensor &in, const Shape &s);
 
 Tensor Resize(const Tensor &in, const Shape &s);
 
 /// Reverse the shape vector
-Tensor Transpose(const Tensor& in);
+Tensor Transpose(const Tensor &in);
 
 /// Return a view of the input tensor whose shape is broadcasted to be
 /// compitable with the given shape
-Tensor Broadcast(const Tensor& in, const Shape& shape);
+Tensor Broadcast(const Tensor &in, const Shape &shape);
 
 /// Change the axes
-Tensor Transpose(const Tensor& in, const vector<size_t> &axes);
+Tensor Transpose(const Tensor &in, const vector<size_t> &axes);
 
 /// Copy 'num' elements of src to dst.
 /// The first 'src_offset' ('dst_offset') elements will be skipped.
 void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
                     const size_t dst_offset = 0, const size_t src_offset = 0);
 
-
-void RepeatDataToFrom(bool broadcast_flag, const vector<size_t>& repeats, int axis,
-                      Tensor *dst, const Tensor &in, const size_t num);
+void RepeatDataToFrom(bool broadcast_flag, const vector<size_t> &repeats,
+                      int axis, Tensor *dst, const Tensor &in,
+                      const size_t num);
 
 // =============Element-wise operations====================================
 Tensor Abs(const Tensor &in);
+Tensor Ceil(const Tensor &in);
 Tensor Exp(const Tensor &in);
 Tensor Log(const Tensor &in);
 Tensor ReLU(const Tensor &in);
@@ -383,6 +367,7 @@ Tensor Atanh(const Tensor &in);
 Tensor Transform(const Tensor &in);
 
 void Abs(const Tensor &in, Tensor *out);
+void Ceil(const Tensor &in, Tensor *out);
 void Exp(const Tensor &in, Tensor *out);
 void Log(const Tensor &in, Tensor *out);
 void ReLU(const Tensor &in, Tensor *out);
@@ -407,8 +392,8 @@ void Atanh(const Tensor &in, Tensor *out);
 void Transform(const Tensor &in, Tensor *out);
 
 /// Element-wise operation, out[i]= (in2[i] > 0) ? in1[i] : 0.f
-Tensor ReLUBackward(const Tensor &in1, const Tensor& in2);
-void ReLUBackward(const Tensor &in1, const Tensor& in2, Tensor *out);
+Tensor ReLUBackward(const Tensor &in1, const Tensor &in2);
+void ReLUBackward(const Tensor &in1, const Tensor &in2, Tensor *out);
 
 /// Element-wise opeartion, out[i]=in[i]^x
 template <typename SType>
@@ -428,8 +413,8 @@ template <typename SType>
 void LT(const Tensor &in, const SType x, Tensor *out);
 
 /// Element-wise operation, out[i]= (in1[i] < in2[i]) ? 1.f : 0.f
-Tensor operator<(const Tensor &in1, const Tensor& in2);
-void LT(const Tensor &in1, const Tensor& in2, Tensor *out);
+Tensor operator<(const Tensor &in1, const Tensor &in2);
+void LT(const Tensor &in1, const Tensor &in2, Tensor *out);
 
 /// Element-wise operation, out[i]= (in[i] <= x) ? 1.f : 0.f
 template <typename SType>
@@ -438,8 +423,8 @@ template <typename SType>
 void LE(const Tensor &in, const SType x, Tensor *out);
 
 /// Element-wise operation, out[i]= (in1[i] <= in2[i]) ? 1.f : 0.f
-Tensor operator<=(const Tensor &in1, const Tensor& in2);
-void LE(const Tensor &in1, const Tensor& in2, Tensor *out);
+Tensor operator<=(const Tensor &in1, const Tensor &in2);
+void LE(const Tensor &in1, const Tensor &in2, Tensor *out);
 
 /// Element-wise operation, out[i]= (in[i] > x) ? 1.f : 0.f
 template <typename SType>
@@ -448,9 +433,8 @@ template <typename SType>
 void GT(const Tensor &in, const SType x, Tensor *out);
 
 /// Element-wise operation, out[i]= (in1[i] > in2[i]) ? 1.f : 0.f
-Tensor operator>(const Tensor &in1, const Tensor& in2);
-void GT(const Tensor &in1, const Tensor& in2, Tensor *out);
-
+Tensor operator>(const Tensor &in1, const Tensor &in2);
+void GT(const Tensor &in1, const Tensor &in2, Tensor *out);
 
 /// Element-wise operation, out[i]= (in[i] >= x) ? 1.f : 0.f
 template <typename SType>
@@ -459,9 +443,8 @@ template <typename SType>
 void GE(const Tensor &in, const SType x, Tensor *out);
 
 /// Element-wise operation, out[i]= (in1[i] >= in2[i]) ? 1.f : 0.f
-Tensor operator>=(const Tensor &in1, const Tensor& in2);
-void GE(const Tensor &in1, const Tensor& in2, Tensor *out);
-
+Tensor operator>=(const Tensor &in1, const Tensor &in2);
+void GE(const Tensor &in1, const Tensor &in2, Tensor *out);
 
 Tensor operator+(const Tensor &lhs, const Tensor &rhs);
 void Add(const Tensor &lhs, const Tensor &rhs, Tensor *out);
@@ -504,7 +487,6 @@ void Div(const SType x, const Tensor &in, Tensor *out);
 template <typename SType = float>
 SType Sum(const Tensor &in);
 
-
 // ============Matrix (row/column) operations==================================
 /// Average elements in the Tensor, currently only support vector and matrix.
 /// if 'axis' is 0, average all rows into a single row
@@ -534,6 +516,7 @@ void MultRow(const Tensor &v, Tensor *M);
 /// Do softmax for each row. 'in' could be a 1-d or 2-d Tensor.
 Tensor SoftMax(const Tensor &in);
 Tensor SoftMax(const Tensor &in, int axis);
+Tensor SoftMaxBackward(const Tensor &in, int axis, const Tensor &fdout);
 
 Tensor RowMax(const Tensor &in);
 /// Do softmax for each row. 'in' could be a 1-d or 2-d Tensor.
@@ -553,6 +536,7 @@ void SumRows(const Tensor &M, Tensor *out);
 /// if 'axis' is 1, sum all columns into a single column
 /// TODO(wangwei) support arbitrary Tensor like numpy.sum
 Tensor Sum(const Tensor &in, const int axis);
+Tensor SumAll(const Tensor &in);
 
 // ================Random operations==========================================
 /// For each element x set x = 1 if random() < p; otherwise x = 1.
@@ -605,9 +589,10 @@ void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss);
 void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p);
 
 /// To be called by pysinga autograd operations;
-/// swig ignores the const qualifier http://www.swig.org/Doc3.0/SWIGPlus.html#SWIGPlus_const
-Tensor CrossEntropyFwd(const Tensor& p, const Tensor& t);
-Tensor SoftmaxCrossEntropyBwd(const Tensor& p, const Tensor& t);
+/// swig ignores the const qualifier
+/// http://www.swig.org/Doc3.0/SWIGPlus.html#SWIGPlus_const
+Tensor CrossEntropyFwd(const Tensor &p, const Tensor &t);
+Tensor SoftmaxCrossEntropyBwd(const Tensor &p, const Tensor &t);
 
 /// Return a tensor consisting of rows ([start, end)) from 'in'. It copies the
 /// values from 'in'. 'in' ia a 2D Tensor.

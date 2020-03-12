@@ -21,18 +21,20 @@ from singa import opt
 from resnet_cifar10 import *
 import multiprocessing
 
+
 def data_partition(dataset_x, dataset_y, rank_in_global, world_size):
     data_per_rank = dataset_x.shape[0] // world_size
     idx_start = rank_in_global * data_per_rank
     idx_end = (rank_in_global + 1) * data_per_rank
-    return dataset_x[idx_start: idx_end], dataset_y[idx_start: idx_end]
+    return dataset_x[idx_start:idx_end], dataset_y[idx_start:idx_end]
+
 
 if __name__ == '__main__':
 
     # Generate a NCCL ID to be used for collective communication
     nccl_id = singa.NcclIdHolder()
 
-    sgd = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)    
+    sgd = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)
 
     gpu_per_node = 4
     max_epoch = 100
@@ -42,9 +44,12 @@ if __name__ == '__main__':
     partial_update = True
 
     process = []
-    for gpu_num in range(0, gpu_per_node):        
-        process.append(multiprocessing.Process(target=train_cifar10, args=(sgd, max_epoch, batch_size, True, 
-        										data_partition, gpu_num, gpu_per_node, nccl_id, partial_update))) 
+    for gpu_num in range(0, gpu_per_node):
+        process.append(
+            multiprocessing.Process(target=train_cifar10,
+                                    args=(sgd, max_epoch, batch_size, True,
+                                          data_partition, gpu_num, gpu_per_node,
+                                          nccl_id, partial_update)))
 
     for p in process:
         p.start()

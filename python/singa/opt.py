@@ -14,7 +14,6 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
 '''This module includes a set of optimizers for updating model parameters.
 It replaces the old optimizers from optimizer.py'''
 
@@ -106,16 +105,23 @@ class SGD(Optimizer):
         The Nesterov version is analogously modified.
     """
 
-    def __init__(self, lr=0.1, momentum=0, dampening=0,
-                 weight_decay=0, nesterov=False):
+    def __init__(self,
+                 lr=0.1,
+                 momentum=0,
+                 dampening=0,
+                 weight_decay=0,
+                 nesterov=False):
         if momentum < 0.0:
             raise ValueError("Invalid momentum value: {}".format(momentum))
         if weight_decay < 0.0:
             raise ValueError(
                 "Invalid weight_decay value: {}".format(weight_decay))
 
-        defaults = dict(lr=lr, momentum=momentum, dampening=dampening,
-                        weight_decay=weight_decay, nesterov=nesterov)
+        defaults = dict(lr=lr,
+                        momentum=momentum,
+                        dampening=dampening,
+                        weight_decay=weight_decay,
+                        nesterov=nesterov)
         if nesterov and (momentum <= 0 or dampening != 0):
             raise ValueError(
                 "Nesterov momentum requires a momentum and zero dampening")
@@ -129,8 +135,8 @@ class SGD(Optimizer):
                 grad(Tensor): param gradients; the values may be updated
                         in this function; cannot use it anymore
         """
-        assert param.shape == grad.shape, ("shape mismatch",
-                                           param.shape, grad.shape)
+        assert param.shape == grad.shape, ("shape mismatch", param.shape,
+                                           grad.shape)
         group = self.default_config
         if param in self.param2config:
             group = self.param2config[param]
@@ -146,8 +152,7 @@ class SGD(Optimizer):
                 self.param2state[param] = {}
             param_state = self.param2state[param]
             if 'momentum_buffer' not in param_state:
-                buf = param_state[
-                    'momentum_buffer'] = tensor.zeros_like(param)
+                buf = param_state['momentum_buffer'] = tensor.zeros_like(param)
                 buf *= momentum
                 singa.Axpy(1.0, grad.data, buf.data)
             else:
@@ -205,14 +210,20 @@ class DistOpt(object):
 
     """
 
-    def __init__(self, opt=SGD(), nccl_id=None, gpu_num=None, gpu_per_node=None, buffSize=4194304):
+    def __init__(self,
+                 opt=SGD(),
+                 nccl_id=None,
+                 gpu_num=None,
+                 gpu_per_node=None,
+                 buffSize=4194304):
         self.opt = opt
         if nccl_id is None:
             # constructure for application using MPI
             self.communicator = singa.Communicator(buffSize)
         else:
             # constructor for application using python multi-process module
-            self.communicator = singa.Communicator(gpu_num, gpu_per_node, nccl_id, buffSize)
+            self.communicator = singa.Communicator(gpu_num, gpu_per_node,
+                                                   nccl_id, buffSize)
 
         self.world_size = self.communicator.totalMPIRanksInGlobal
         self.rank_in_local = self.communicator.MPIRankInLocal
@@ -295,13 +306,14 @@ class DistOpt(object):
         if accumulation is None:
             self.communicator.fusedSparsification(tensor, spars, topK)
         else:
-            self.communicator.fusedSparsification(tensor, accumulation, spars, topK)
+            self.communicator.fusedSparsification(tensor, accumulation, spars,
+                                                  topK)
 
     def wait(self):
         """Wait for the cuda streams used by the communicator to finish their operations."""
         self.communicator.wait()
 
-    def backward_and_update(self, loss, threshold = 2097152):
+    def backward_and_update(self, loss, threshold=2097152):
         """Performs backward propagation from the loss and parameter update.
 
         From the loss, it performs backward propagation to get the gradients and do the parameter 
@@ -327,7 +339,7 @@ class DistOpt(object):
                 self.all_reduce(g.data)
             else:
                 # smaller than threshold -> accumulate
-                glist.append(g.data)                    
+                glist.append(g.data)
                 acc += g.size()
                 if (acc > threshold):
                     self.fused_all_reduce(glist)
@@ -338,9 +350,13 @@ class DistOpt(object):
             self.fused_all_reduce(glist)
         self.wait()
         for p, g in plist:
-            self.update(p, g)  
+            self.update(p, g)
 
-    def backward_and_update_half(self, loss, threshold = 2097152, clipping = False, clip_Value = 100):
+    def backward_and_update_half(self,
+                                 loss,
+                                 threshold=2097152,
+                                 clipping=False,
+                                 clip_Value=100):
         """Performs backward propagation and parameter update, with FP16 precision communication. 
 
         THIS IS A EXPERIMENTAL FUNCTION FOR RESEARCH PURPOSE:
@@ -373,7 +389,7 @@ class DistOpt(object):
                 self.all_reduce_half(g.data)
             else:
                 # smaller than threshold -> accumulate
-                glist.append(g.data)                    
+                glist.append(g.data)
                 acc += g.size()
                 if (acc > threshold):
                     self.fused_all_reduce_half(glist)
@@ -384,9 +400,9 @@ class DistOpt(object):
             self.fused_all_reduce_half(glist)
         self.wait()
         for p, g in plist:
-            self.update(p, g)  
+            self.update(p, g)
 
-    def backward_and_partial_update(self, loss, threshold = 2097152):
+    def backward_and_partial_update(self, loss, threshold=2097152):
         """Performs backward propagation from the loss and parameter update using asychronous training.
 
         THIS IS A EXPERIMENTAL FUNCTION FOR RESEARCH PURPOSE:
@@ -455,7 +471,12 @@ class DistOpt(object):
         if (k == self.partial):
             self.partial = 0
 
-    def backward_and_spars_update(self, loss, threshold = 2097152, spars = 0.05, topK = False, corr = True):
+    def backward_and_spars_update(self,
+                                  loss,
+                                  threshold=2097152,
+                                  spars=0.05,
+                                  topK=False,
+                                  corr=True):
         """ Performs backward propagation from the loss and parameter update with sparsification.
 
         THIS IS A EXPERIMENTAL FUNCTION FOR RESEARCH PURPOSE:
@@ -497,24 +518,29 @@ class DistOpt(object):
                 k += 1
                 if (corr and (not self.sparsInit)):
                     # create a tensor for the gradient accumulation
-                    self.gradAccumulation.append(tensor.Tensor((g.size(),), p.device, p.dtype))
+                    self.gradAccumulation.append(
+                        tensor.Tensor((g.size(),), p.device, p.dtype))
                     self.gradAccumulation[k].set_value(0.0)
                 if corr:
-                    self.sparsification(g.data, self.gradAccumulation[k].data, spars, topK)
+                    self.sparsification(g.data, self.gradAccumulation[k].data,
+                                        spars, topK)
                 else:
                     self.sparsification(g.data, None, spars, topK)
             else:
                 # smaller than threshold -> accumulate
-                glist.append(g.data)                    
+                glist.append(g.data)
                 acc += g.size()
                 if (acc > threshold):
                     k += 1
                     if (corr and (not self.sparsInit)):
                         # create a tensor for the gradient accumulation
-                        self.gradAccumulation.append(tensor.Tensor((acc,), p.device, p.dtype))
+                        self.gradAccumulation.append(
+                            tensor.Tensor((acc,), p.device, p.dtype))
                         self.gradAccumulation[k].set_value(0.0)
                     if corr:
-                        self.fused_sparsification(glist, self.gradAccumulation[k].data, spars, topK)
+                        self.fused_sparsification(glist,
+                                                  self.gradAccumulation[k].data,
+                                                  spars, topK)
                     else:
                         self.fused_sparsification(glist, None, spars, topK)
                     acc = 0
@@ -524,10 +550,12 @@ class DistOpt(object):
             k += 1
             if (corr and (not self.sparsInit)):
                 # create a tensor for the gradient accumulation
-                self.gradAccumulation.append(tensor.Tensor((acc,), p.device, p.dtype))
+                self.gradAccumulation.append(
+                    tensor.Tensor((acc,), p.device, p.dtype))
                 self.gradAccumulation[k].set_value(0.0)
             if corr:
-                self.fused_sparsification(glist, self.gradAccumulation[k].data, spars, topK)
+                self.fused_sparsification(glist, self.gradAccumulation[k].data,
+                                          spars, topK)
             else:
                 self.fused_sparsification(glist, None, spars, topK)
         self.wait()

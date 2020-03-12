@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-
 set -ex
 
 # anaconda login user name
