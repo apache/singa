@@ -32,7 +32,7 @@ else
 fi
 
 
-if [ $CUDA == "DIST" ]; then
+if [ $DIST == "ON" ]; then
 	USE_DIST=ON
 else
 	USE_DIST=OFF

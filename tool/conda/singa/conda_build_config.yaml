@@ -26,7 +26,6 @@ CONDA_BUILD_SYSROOT:
     - "/tmp/MacOSX10.9.sdk" # [osx]
 cudnn:                      # [linux]
     - "7.3.1 cuda10.0_0"    # [environ.get("CUDA")=="10.0"]
-    - "7.3.1 cuda10.0_0"    # [environ.get("CUDA")=="DIST"]
     - "7.3.1 cuda9.0_0"     # [environ.get("CUDA")=="9.0"]
 python:
     - 3.6
@@ -36,7 +35,8 @@ nccl:
 mpich:
     - 3.3.2
 build_str:
-    - "cudnn7.3.1_cuda10.0"   # [environ.get("CUDA")=="10.0"]
-    - "cudnn7.3.1_cuda9.0"    # [environ.get("CUDA")=="9.0"]
+    - "cudnn7.3.1_cuda10.0"   # [environ.get("CUDA")=="10.0"] && [environ.get("DIST")=="OFF"]
+    - "cudnn7.3.1_cuda9.0"    # [environ.get("CUDA")=="9.0"] && [environ.get("DIST")=="OFF"]
     - "cpu"              # [environ.get("CUDA", "")== ""]
-    - "cudnn7.3.1_cuda10.0_nccl2.4.8.1_mpich3.3.2"     # [environ.get("CUDA")=="DIST"]
+    - "cudnn7.3.1_cuda10.0_nccl2.4.8.1_mpich3.3.2"     # [environ.get("CUDA")=="10.0"] && [environ.get("DIST")=="ON"]
+    - "cudnn7.3.1_cuda9.0_nccl2.4.8.1_mpich3.3.2"     # [environ.get("CUDA")=="9.0"] && [environ.get("DIST")=="ON"]

@@ -34,6 +34,7 @@ build:
   number: 0
   script_env:
     - CUDA   # run `export CUDA=9.0` in the terminal
+    - DIST   # run `export DIST=ON` in the terminal
   string: {{ build_str }}_py{{ py }}
 
 requirements:
