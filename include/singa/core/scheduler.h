@@ -33,8 +33,11 @@ namespace singa {
 class Node;
 class Edge;
 class Graph;
-class EdgeType;
 class Device;
+
+enum BlockType {
+  kUnknow, kInput, kParam, kInter, kEnd
+};
 
 class Node {
 public:
@@ -69,6 +72,20 @@ private:
   Node *dst_node_;
 };
 
+class BlockInfo {
+public:
+  BlockInfo(int id, Block *blk, BlockType type = BlockType::kUnknow);
+
+private:
+  friend Graph;
+
+  int id_;
+  Block *blk_;
+  BlockType type_;
+  Node *write_node_;  // last node that writes the block
+  Node *last_node_;   // last edge that uses the block
+};
+
 class Graph {
 public:
   typedef std::vector<Block*> BlockSet;
@@ -84,9 +101,7 @@ private:
   Device *device_;
   std::vector<Node *> nodes_;
   std::vector<Edge *> edges_;
-  std::unordered_map<Block *, Node *> last_node_;
-  std::unordered_map<Block *, Edge *> last_edge_;
-  std::unordered_map<Block *, int> blk2index_;
+  std::unordered_map<Block *, BlockInfo *> blocks_;
 };
 
 

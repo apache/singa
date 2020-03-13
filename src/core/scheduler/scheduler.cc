@@ -42,6 +42,9 @@ void Edge::SetSrcNode(Node* src_node) { src_node_ = src_node; }
 
 void Edge::SetDstNode(Node* dst_node) { dst_node_ = dst_node; }
 
+BlockInfo::BlockInfo(int id, Block *blk, BlockType type)
+  : id_(id), blk_(blk), type_(type), write_node_(nullptr), last_node_(nullptr) {}
+
 void Graph::Run() {
   SafeQueue<int> node_queue;
   std::vector<int> node_ref;
@@ -52,18 +55,45 @@ void Graph::Run() {
     printf("Inputs: ");
     auto node = nodes_[i];
     for (size_t j = 0; j < node->in_edges_.size(); ++j) {
-      printf("%d\t", blk2index_[node->in_edges_[j]->blk_]);
+      printf("%d\t", blocks_[node->in_edges_[j]->blk_]->id_);
     }
     for (size_t j = node->in_edges_.size(); j < 3; ++j) {
       printf("\t");
     }
     printf("Outputs: ");
     for (size_t j = 0; j < node->out_edges_.size(); ++j) {
-      printf("%d\t", blk2index_[node->out_edges_[j]->blk_]);
+      printf("%d\t", blocks_[node->out_edges_[j]->blk_]->id_);
     }
     printf("\n");
   }
+
+  for (auto it : blocks_) {
+    auto blkInfo = it.second;
+    printf("Edge[%2d]: block[%#x] ", blkInfo->id_, blkInfo->blk_);
+    switch (blkInfo->type_) {
+      case BlockType::kInput: printf("type[input] "); break;
+      case BlockType::kParam: printf("type[param] "); break;
+      case BlockType::kInter: printf("type[inter] "); break;
+      case BlockType::kEnd: printf("type[_end_] "); break;
+      default: break;
+    }
+    int id = -1;
+    if (blkInfo->write_node_) {
+      id = blkInfo->write_node_->id_;
+    }
+    printf(" write_node[%d]", id);
+    id = -1;
+    if (blkInfo->last_node_) {
+      id = blkInfo->last_node_->id_;
+    }
+    printf(" write_node[%d]", id);
+    printf("\n");
+  }
   */
+
+  for (size_t i = 0; i < edges_.size(); ++i) {
+    auto edge = edges_[i];
+  }
 
   // init node ref
   node_ref.resize(nodes_.size());
@@ -94,7 +124,7 @@ void Graph::Run() {
     int curIndex = -1;
     node_queue.Pop(curIndex);
     Node *curNode = nodes_[curIndex];
-    printf("pop node[%2d]\n", curIndex);
+    // printf("pop node[%2d]\n", curIndex);
 
     // step 2: execute the operation
     device_->DoExec(std::move(curNode->op_), 0);
@@ -103,10 +133,12 @@ void Graph::Run() {
     for (size_t i = 0; i < curNode->in_edges_.size(); ++i) {
       Edge *edge = curNode->in_edges_[i];
       Block *blk = edge->blk_;
-      if (last_edge_[blk] == edge) {
-	if (last_node_[blk] != curNode && edge->src_node_) {
+      BlockInfo *blkInfo = blocks_[blk];
+      if (blkInfo->last_node_ == curNode && blkInfo->write_node_ != curNode) {
+	BlockType type = blkInfo->type_;
+	if (type == BlockType::kInter) {
 	  blk->free_data();
-	  printf("free block[%2d]\n", blk2index_[blk]);
+	  // printf("free block[%2d]\n", blkInfo->id_);
 	}
       }
     }
@@ -126,8 +158,6 @@ void Graph::Run() {
       }
     }
   }
-
-  // printf("end\n");
 }
 
 void Graph::AddOperation(function<void(Context*)>&& op, const BlockSet &read_blocks, const BlockSet &write_blocks) {
@@ -138,39 +168,51 @@ void Graph::AddOperation(function<void(Context*)>&& op, const BlockSet &read_blo
   for (size_t i = 0; i < read_blocks.size(); ++i) {
     Block *blk = read_blocks[i];
     Edge *edge = nullptr;
+    BlockInfo *blkInfo = nullptr;
 
-    auto it = last_node_.find(blk);
-    if (it == last_node_.end()) {
+    auto it = blocks_.find(blk);
+    if (it == blocks_.end()) {
       edge = new Edge(blk, nullptr, node);
-      last_node_[blk] = nullptr;
+      blkInfo = new BlockInfo(blocks_.size(), blk, BlockType::kInput);
+      blocks_[blk] = blkInfo;
     } else {
-      edge = new Edge(blk, it->second, node);
-      it->second->AddOutEdge(edge);
+      blkInfo = it->second;
+      if (blkInfo->type_ == BlockType::kEnd) {
+	blkInfo->type_ = BlockType::kInter;
+      }
+
+      Node *write_node = blkInfo->write_node_;
+      edge = new Edge(blk, write_node, node);
+      if (write_node) {
+	write_node->AddOutEdge(edge);
+      }
     }
 
     edge->id_ = edges_.size();
+    blkInfo->last_node_ = node;
 
     node->AddInEdge(edge);
-    last_edge_[blk] = edge;
     edges_.push_back(edge);
-
-    if (blk2index_.find(blk) == blk2index_.end()) {
-      blk2index_[blk] = blk2index_.size();
-      last_node_[blk] = nullptr;
-    }
   }
 
   // update last node for write_blocks
   for (size_t i = 0; i < write_blocks.size(); ++i) {
     Block *blk = write_blocks[i];
+    BlockInfo *blkInfo = nullptr;
 
-    last_node_[blk] = node;
-
-    if (blk2index_.find(blk) == blk2index_.end()) {
-      blk2index_[blk] = blk2index_.size();
-      last_edge_[blk] = nullptr;
+    auto it = blocks_.find(blk);
+    if (it == blocks_.end()) {
+      blkInfo = new BlockInfo(blocks_.size(), blk, BlockType::kEnd);
+      blocks_[blk] = blkInfo;
+    } else {
+      blkInfo = it->second;
+      if (blkInfo->type_ == BlockType::kInput) {
+	blkInfo->type_ = BlockType::kParam;
+      }
     }
 
+    blkInfo->write_node_ = node;
+    blkInfo->last_node_ = node;
   }
 
   // add node into nodes

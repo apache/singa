@@ -101,7 +101,7 @@ if __name__ == "__main__":
     loss = autograd.softmax_cross_entropy(x, target)
     print("start backward")
     for p, gp in autograd.backward(loss):
-            sgd.apply(0, gp, p, "")
+        sgd.apply(0, gp, p, "")
     dev.SetBufferFlag(False)
 
     # exec the buffered ops
