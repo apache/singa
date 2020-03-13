@@ -26,13 +26,17 @@ CONDA_BUILD_SYSROOT:
     - "/tmp/MacOSX10.9.sdk" # [osx]
 cudnn:                      # [linux]
     - "7.3.1 cuda10.0_0"    # [environ.get("CUDA")=="10.0"]
+    - "7.3.1 cuda10.0_0"    # [environ.get("CUDA")=="DIST"]
     - "7.3.1 cuda9.0_0"     # [environ.get("CUDA")=="9.0"]
-mkldnn:
-    - 0.14
 python:
     - 3.6
     - 3.7
+nccl:
+    - 2.4.8.1
+mpich:
+    - 3.3.2
 build_str:
     - "cudnn7.3.1_cuda10.0"   # [environ.get("CUDA")=="10.0"]
     - "cudnn7.3.1_cuda9.0"    # [environ.get("CUDA")=="9.0"]
     - "cpu"              # [environ.get("CUDA", "")== ""]
+    - "cudnn7.3.1_cuda10.0_nccl2.4.8.1_mpich3.3.2"     # [environ.get("CUDA")=="DIST"]

@@ -50,22 +50,23 @@ requirements:
     - glog 0.3.5
     - numpy 1.16.0
     - cudnn {{ cudnn }}       # ['cudnn' in str(build_str)]
-    - mkl-dnn {{ mkldnn }}
     - python {{ python }}
+    - nccl {{ nccl }}         # ['nccl' in str(build_str)]
+    - mpich {{ mpich }}       # ['mpich' in str(build_str)]
 
   run:
     - {{ pin_compatible('glog', max_pin='x.x') }}
     - {{ pin_compatible('numpy', max_pin='x.x') }}
-    - {{ pin_compatible('mkl-dnn', max_pin='x.x') }}
     - cudnn {{ cudnn }}       # ['cudnn' in str(build_str)]
     - python {{ python }}
+    - nccl {{ nccl }}         # ['nccl' in str(build_str)]
+    - mpich {{ mpich }}       # ['mpich' in str(build_str)]
     - libprotobuf 3.6.1
     - libopenblas 0.3.3
     - pillow
     - future
     - tqdm
     - onnx >=1.3.0
-
 
 test:
   source_files:
