@@ -307,78 +307,24 @@ class TestPythonOperation(unittest.TestCase):
         x = tensor.from_numpy(x)
         x1 = tensor.from_numpy(x1)
         dy = tensor.from_numpy(dy)
-        dy.to_device(dev)
+        x.to_device(cpu_dev)
+        x1.to_device(cpu_dev)
+        dy.to_device(cpu_dev)
 
-        dx, dW = y.creator.backward(dy.data)
-        self.check_shape(y.shape, (3, 3, x_w, 32))
-        self.check_shape(dx.shape(), (3, 3, x_w, 32))
-        self.check_shape(dW.shape(), (3, 3, w_w, 4))
+        result = autograd.sum(x, x1)
+        dx0, dx1 = result.creator.backward(dy.data)
 
-    def test_conv2d_same_pad_cpu(self):
-        self._conv_same_pad(cpu_dev, "SAME_LOWER", True)
-        self._conv_same_pad(cpu_dev, "SAME_UPPER", True)
-
-    def test_conv2d_same_pad_gpu(self):
-        self._conv_same_pad(gpu_dev, "SAME_LOWER", True)
-        self._conv_same_pad(gpu_dev, "SAME_UPPER", True)
-
-    def test_conv1d_same_pad_cpu(self):
-        self._conv_same_pad(cpu_dev, "SAME_LOWER", False)
-        self._conv_same_pad(cpu_dev, "SAME_UPPER", False)
-
-    def test_conv1d_same_pad_gpu(self):
-        self._conv_same_pad(gpu_dev, "SAME_LOWER", False)
-        self._conv_same_pad(gpu_dev, "SAME_UPPER", False)
-
-    def _pooling_same_pad(self, dev, pad_mode, is_2d):
-        if is_2d:
-            x_w, k_w, p_w = 32, 4, 1
-        else:
-            x_w, k_w, p_w = 1, 1, 0
-        x = tensor.Tensor(shape=(3, 3, x_w, 32), device=dev)
-        x.gaussian(0.0, 1.0)
-
-        # with the same padding, the padding should be 3
-        # for SAME_UPPER, is (1, 2)
-        # for SAME_LOWER, is (2, 1)
-
-        x_shape = x.shape
-        kernel = (k_w, 4)
-        # we add 4 padding here and hope the conv and trim one padding then
-        padding = (p_w, 1)  
-        stride = (1, 1)
-
-        if dev == cpu_dev:
-            handle = singa.PoolingHandle(x.data, kernel, stride, padding, True)
-        else:
-            handle = singa.CudnnPoolingHandle(x.data, kernel, stride, padding,
-                                              True)
-
-        y = autograd._Pooling2d(handle, pad_mode)(x)[0]
-
-        dy = np.ones((3, 3, x_w, 32), dtype=np.float32)
-        dy = tensor.from_numpy(dy)
-        dy.to_device(dev)
-
-        dx = y.creator.backward(dy.data)
-        self.check_shape(y.shape, (3, 3, x_w, 32))
-        self.check_shape(dx.shape(), (3, 3, x_w, 32))
-
-    def test_pooling2d_same_pad_cpu(self):
-        self._pooling_same_pad(cpu_dev, "SAME_LOWER", True)
-        self._pooling_same_pad(cpu_dev, "SAME_UPPER", True)
-
-    def test_pooling2d_same_pad_gpu(self):
-        self._pooling_same_pad(gpu_dev, "SAME_LOWER", True)
-        self._pooling_same_pad(gpu_dev, "SAME_UPPER", True)
-
-    def test_pooling1d_same_pad_cpu(self):
-        self._pooling_same_pad(cpu_dev, "SAME_LOWER", False)
-        self._pooling_same_pad(cpu_dev, "SAME_UPPER", False)
-
-    def test_pooling1d_same_pad_gpu(self):
-        self._pooling_same_pad(gpu_dev, "SAME_LOWER", False)
-        self._pooling_same_pad(gpu_dev, "SAME_UPPER", False)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result),
+                                             y,
+                                             decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(
+            tensor.from_raw_tensor(dx0)),
+                                             grad0,
+                                             decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(
+            tensor.from_raw_tensor(dx1)),
+                                             grad1,
+                                             decimal=5)
 
     def test_sum_gpu(self):
         x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,
@@ -3576,6 +3522,7 @@ class TestPythonOperation(unittest.TestCase):
                                                  grad1,
                                                  decimal=5)
 
+
     def gemm_test(self, dev):
         configs = [
             # alpha, beta, transA, transB, shapeA, shapeB, shapeC, shapeY
@@ -3665,13 +3612,8 @@ class TestPythonOperation(unittest.TestCase):
         DX = np.ones(X.shape, dtype=np.float32)
         DX = np.multiply(DX, DY) / np.prod(X.shape[2:])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(result),
-                                             XT,
-                                             decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(
-            tensor.from_raw_tensor(dx)),
-                                             DX,
-                                             decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
 
     def globalaveragepool_channel_last(self, dev):
         X = np.array([[
@@ -3693,13 +3635,8 @@ class TestPythonOperation(unittest.TestCase):
         DX = np.ones(X.shape, dtype=np.float32)
         DX = np.multiply(DX, DY) / np.prod(X.shape[1:-1])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(result),
-                                             XT,
-                                             decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(
-            tensor.from_raw_tensor(dx)),
-                                             DX,
-                                             decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
 
     def test_globalaveragepool_cpu(self):
         self.globalaveragepool_channel_first(cpu_dev)
@@ -3708,76 +3645,6 @@ class TestPythonOperation(unittest.TestCase):
     def test_globalaveragepool_gpu(self):
         self.globalaveragepool_channel_first(gpu_dev)
         self.globalaveragepool_channel_last(gpu_dev)
-
-
-    def gemm_test(self, dev):
-        configs = [
-            # alpha, beta, transA, transB, shapeA, shapeB, shapeC, shapeY
-            [0.25, 0.35, 0, 0, (3, 4), (4, 5), (1, 5), (3, 5)],
-            [0.25, 0.35, 0, 1, (3, 4), (5, 4), (1, 5), (3, 5)],
-            [0.25, 0.35, 1, 0, (4, 3), (4, 5), (1, 5), (3, 5)],
-            [0.25, 0.35, 1, 1, (4, 3), (5, 4), (1, 5), (3, 5)],
-        ]
-        for config in configs:
-            alpha = config[0]
-            beta = config[1]
-            transA = config[2]
-            transB = config[3]
-            shapeA = config[4]
-            shapeB = config[5]
-            shapeC = config[6]
-            shapeY = config[7]
-            A = np.random.randn(*shapeA).astype(np.float32)
-            B = np.random.randn(*shapeB).astype(np.float32)
-            C = np.random.randn(*shapeC).astype(np.float32)
-            DY = np.ones(shapeY, dtype=np.float32)
-
-            a = tensor.from_numpy(A)
-            a.to_device(dev)
-            b = tensor.from_numpy(B)
-            b.to_device(dev)
-            c = tensor.from_numpy(C)
-            c.to_device(dev)
-            dy = tensor.from_numpy(DY)
-            dy.to_device(dev)
-
-            result = autograd.gemm(a, b, c, alpha, beta, transA, transB)
-            da, db, dc = result.creator.backward(dy.data)
-
-            # Y = alpha * A' * B' + beta * C
-            _A = A if transA == 0 else A.T
-            _B = B if transB == 0 else B.T
-            C = C if C is not None else np.array(0)
-            Y = alpha * np.dot(_A, _B) + beta * C
-
-            DA = alpha * np.matmul(DY, _B.T)
-            DA = DA if transA == 0 else DA.T
-            DB = alpha * np.matmul(_A.T, DY)
-            DB = DB if transB == 0 else DB.T
-            DC = beta * np.sum(DY, axis=axis_helper(Y.shape, C.shape)).reshape(
-                C.shape)
-
-            np.testing.assert_array_almost_equal(tensor.to_numpy(result),
-                                                 Y,
-                                                 decimal=5)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(
-                tensor.from_raw_tensor(da)),
-                                                 DA,
-                                                 decimal=5)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(
-                tensor.from_raw_tensor(db)),
-                                                 DB,
-                                                 decimal=5)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(
-                tensor.from_raw_tensor(dc)),
-                                                 DC,
-                                                 decimal=5)
-
-    def test_gemm_cpu(self):
-        self.gemm_test(cpu_dev)
-
-    def test_gemm_gpu(self):
-        self.gemm_test(gpu_dev)
 
     def constantOfShape_test(self, dev):
         # float_ones
