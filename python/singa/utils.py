@@ -233,3 +233,25 @@ def force_unicode(s):
         return s.decode('utf-8')
     except AttributeError:
         return s
+
+
+def postorderRecursive(root, root_t):
+    """
+    return a list by the topological ordering (postorder of Depth-first search)
+    Args:
+        root: singa operator
+    Args:
+        root_t: tensor
+    Returns: 
+        deque[int]
+    """
+
+    def recursive(root, yid, root_t, res):
+        if root:
+            for srcop, yid, y, _ in root.src:
+                recursive(srcop, yid, y, res)
+            res.append((root, yid, root_t))
+
+    res = deque([])
+    recursive(root, None, root_t, res)
+    return res

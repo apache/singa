@@ -15,7 +15,6 @@ from singa import sonnx
 import onnx
 from onnx import version_converter, helper, numpy_helper
 import onnx.utils
-from onnx.tools import update_model_dims
 
 
 def load_model():
@@ -33,20 +32,20 @@ def load_dataset(test_data_dir):
     inputs_num = len(glob.glob(os.path.join(test_data_dir, 'input_*.pb')))
     for i in range(inputs_num):
         input_file = os.path.join(test_data_dir, 'input_{}.pb'.format(i))
-        tensor = onnx.TensorProto()
+        onnx_tensor = onnx.TensorProto()
         with open(input_file, 'rb') as f:
-            tensor.ParseFromString(f.read())
-        inputs.append(numpy_helper.to_array(tensor))
+            onnx_tensor.ParseFromString(f.read())
+        inputs.append(numpy_helper.to_array(onnx_tensor))
 
     # Load reference outputs
     ref_outputs = []
     ref_outputs_num = len(glob.glob(os.path.join(test_data_dir, 'output_*.pb')))
     for i in range(ref_outputs_num):
         output_file = os.path.join(test_data_dir, 'output_{}.pb'.format(i))
-        tensor = onnx.TensorProto()
+        onnx_tensor = onnx.TensorProto()
         with open(output_file, 'rb') as f:
-            tensor.ParseFromString(f.read())
-        ref_outputs.append(numpy_helper.to_array(tensor))
+            onnx_tensor.ParseFromString(f.read())
+        ref_outputs.append(numpy_helper.to_array(onnx_tensor))
     return inputs, ref_outputs
 
 
@@ -99,4 +98,4 @@ if __name__ == "__main__":
 
     # Compare the results with reference outputs.
     for ref_o, o in zip(ref_outputs, outputs):
-        np.testing.assert_almost_equal(ref_o, o)
+        np.testing.assert_almost_equal(ref_o, tensor.to_numpy(o))
