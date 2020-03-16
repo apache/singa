@@ -23,8 +23,8 @@ build/
 thirdparty/*
 !thirdparty/install.sh
 test/samples/
-.idea
-.vscode
+.idea/
+.vscode/
 
 # Sphinx and Doxygen Doc-Site
 doc/_build/*

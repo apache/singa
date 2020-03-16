@@ -17,6 +17,7 @@
  */
 
 #include "singa/core/common.h"
+
 #include "singa/core/device.h"
 
 namespace singa {

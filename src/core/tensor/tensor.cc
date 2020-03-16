@@ -747,7 +747,9 @@ void Tensor::SetValue(const SType x) {
     // TODO(wangwei) cast x to DType
     Tensor &thisRef = *this;
     device_->Exec(
-        [thisRef, x](Context *ctx) mutable { Set<DType, Lang>(x, &thisRef, ctx); },
+        [thisRef, x](Context *ctx) mutable {
+          Set<DType, Lang>(x, &thisRef, ctx);
+        },
         {}, {ptr});
   });
 }
@@ -1469,7 +1471,7 @@ template <typename SType>
 void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
           Tensor *C) {
   CHECK_EQ(A.shape().size(), 2u);
-  vector<Block*> read_blocks = {A.block(), B.block()};
+  vector<Block *> read_blocks = {A.block(), B.block()};
   if (beta) read_blocks.push_back(C->block());
   if (B.nDim() == 1u) {
     CHECK_EQ(A.shape().size(), 2u);

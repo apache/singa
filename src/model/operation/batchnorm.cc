@@ -321,8 +321,8 @@ const std::vector<Tensor> GpuBatchNormForwardTraining(
       },
       {input.block(), bnScale.block(), bnBias.block(), running_mean.block(),
        running_var.block()},
-      {output.block(), running_mean.block(), running_var.block(),
-       mean.block(), var.block()});
+      {output.block(), running_mean.block(), running_var.block(), mean.block(),
+       var.block()});
   if (cbnh.is_2d) output.Reshape(Shape{shape.at(0), shape.at(1)});
   return {output, mean, var};
 }

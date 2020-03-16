@@ -120,7 +120,7 @@ def create_cuda_gpus_on(device_ids):
     return singa.Platform.CreateCudaGPUsOn(device_ids)
 
 
-def create_cuda_gpu_on(device_id, set_default = True):
+def create_cuda_gpu_on(device_id, set_default=True):
     '''Create a CudaGPU device on the given device ID.
 
     Args:
@@ -153,9 +153,11 @@ def get_default_device():
     '''Get the default host device which is a CppCPU device'''
     return Device.default_device
 
+
 def set_default_device(device):
     '''Set the Device class static variable default_device'''
     Device.default_device = device
+
 
 def enbale_lazy_alloc(enable):
     singa.Device.EnableLazyAlloc(enable)

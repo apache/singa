@@ -624,8 +624,7 @@ Tensor GpuConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x,
 
   dy.device()->Exec(
       [dx, dy, &W, &cch](Context *ctx) {
-        Block *wblock = W.block(), *dyblock = dy.block(),
-              *dxblock = dx.block();
+        Block *wblock = W.block(), *dyblock = dy.block(), *dxblock = dx.block();
         float alpha = 1.f, beta = 0.f;
         cudnnConvolutionBackwardData(
             ctx->cudnn_handle, &alpha, cch.filter_desc, wblock->data(),

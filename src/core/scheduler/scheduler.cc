@@ -23,25 +23,17 @@
 
 namespace singa {
 
-void Node::AddInEdge(Edge *in_edge) {
-  in_edges_.push_back(in_edge);
-}
+void Node::AddInEdge(Edge *in_edge) { in_edges_.push_back(in_edge); }
 
-void Node::AddOutEdge(Edge *out_edge) {
-  out_edges_.push_back(out_edge);
-}
+void Node::AddOutEdge(Edge *out_edge) { out_edges_.push_back(out_edge); }
 
+void Edge::SetBlock(Block *blk) { blk_ = blk; }
 
-void Edge::SetBlock(Block* blk) { blk_ = blk; }
+void Edge::SetSrcNode(Node *src_node) { src_node_ = src_node; }
 
-void Edge::SetSrcNode(Node* src_node) { src_node_ = src_node; }
+void Edge::SetDstNode(Node *dst_node) { dst_node_ = dst_node; }
 
-void Edge::SetDstNode(Node* dst_node) { dst_node_ = dst_node; }
-
-
-Graph::~Graph() {
-  Reset();
-}
+Graph::~Graph() { Reset(); }
 
 void Graph::Reset() {
   for (auto it : nodes_) {
@@ -82,11 +74,20 @@ void Graph::Debug() {
     auto blkInfo = it.second;
     printf("Edge[%2d]: block[%#x] ", blkInfo->id_, blkInfo->blk_);
     switch (blkInfo->type_) {
-      case BlockType::kInput: printf("type[input] "); break;
-      case BlockType::kParam: printf("type[param] "); break;
-      case BlockType::kInter: printf("type[inter] "); break;
-      case BlockType::kEnd: printf("type[_end_] "); break;
-      default: break;
+      case BlockType::kInput:
+        printf("type[input] ");
+        break;
+      case BlockType::kParam:
+        printf("type[param] ");
+        break;
+      case BlockType::kInter:
+        printf("type[inter] ");
+        break;
+      case BlockType::kEnd:
+        printf("type[_end_] ");
+        break;
+      default:
+        break;
     }
     int id = -1;
     if (blkInfo->write_node_) {
@@ -146,11 +147,11 @@ void Graph::RunGraph() {
       Block *blk = edge->blk_;
       BlockInfo *blkInfo = blocks_[blk];
       if (blkInfo->last_node_ == curNode && blkInfo->write_node_ != curNode) {
-	BlockType type = blkInfo->type_;
-	if (type == BlockType::kInter) {
-	  blk->free_data();
-	  // printf("free block[%2d]\n", blkInfo->id_);
-	}
+        BlockType type = blkInfo->type_;
+        if (type == BlockType::kInter) {
+          blk->free_data();
+          // printf("free block[%2d]\n", blkInfo->id_);
+        }
       }
     }
 
@@ -160,18 +161,20 @@ void Graph::RunGraph() {
       Node *nextNode = edge->dst_node_;
 
       if (nextNode) {
-	int nodeId = nextNode->id_;
-	node_ref[nodeId] -= 1;
-	if (node_ref[nodeId] <= 0) {
-	  node_queue.Push(nodeId);
-	  // printf("push node[%2d]\n", nodeId);
-	}
+        int nodeId = nextNode->id_;
+        node_ref[nodeId] -= 1;
+        if (node_ref[nodeId] <= 0) {
+          node_queue.Push(nodeId);
+          // printf("push node[%2d]\n", nodeId);
+        }
       }
     }
   }
 }
 
-void Graph::AddOperation(function<void(Context*)>&& op, const BlockSet &read_blocks, const BlockSet &write_blocks) {
+void Graph::AddOperation(function<void(Context *)> &&op,
+                         const BlockSet &read_blocks,
+                         const BlockSet &write_blocks) {
   // create new node
   Node *node = new Node(nodes_.size(), std::move(op));
 
@@ -189,13 +192,13 @@ void Graph::AddOperation(function<void(Context*)>&& op, const BlockSet &read_blo
     } else {
       blkInfo = it->second;
       if (blkInfo->type_ == BlockType::kEnd) {
-	blkInfo->type_ = BlockType::kInter;
+        blkInfo->type_ = BlockType::kInter;
       }
 
       Node *write_node = blkInfo->write_node_;
       edge = new Edge(edges_.size(), blk, write_node, node);
       if (write_node) {
-	write_node->AddOutEdge(edge);
+        write_node->AddOutEdge(edge);
       }
     }
 
@@ -217,7 +220,7 @@ void Graph::AddOperation(function<void(Context*)>&& op, const BlockSet &read_blo
     } else {
       blkInfo = it->second;
       if (blkInfo->type_ == BlockType::kInput) {
-	blkInfo->type_ = BlockType::kParam;
+        blkInfo->type_ = BlockType::kParam;
       }
     }
 

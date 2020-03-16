@@ -20,13 +20,13 @@
 #define SINGA_CORE_DEVICE_H_
 
 #include <functional>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <type_traits>
-#include <vector>
-#include <map>
 #include <unordered_set>
+#include <vector>
 
 #include "singa/core/common.h"
 #include "singa/core/memory.h"
@@ -67,7 +67,6 @@ class Device {
 
   static void EnableLazyAlloc(bool enbale) { lazy_alloc_ = enbale; }
 
-
   /// Called by Tensor.
   Block* NewBlock(int size);
 
@@ -80,15 +79,15 @@ class Device {
 
   /// Copy data within or across devices.
   virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
-			      CopyDirection direction, int dst_offset,
-			      int src_offset);
+                              CopyDirection direction, int dst_offset,
+                              int src_offset);
 
   void CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
-			   size_t dst_offset = 0);
+                           size_t dst_offset = 0);
   /// Submit the operation to the device, which may execute it right now or
   /// delay it depending on the scheduler.
   void Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
-	    const vector<Block*> write_blocks, bool use_rand_generator = false);
+            const vector<Block*> write_blocks, bool use_rand_generator = false);
 
   void RunGraph();
 
@@ -97,7 +96,6 @@ class Device {
 
   /// wait for all operations submitted to this device.
   virtual void Sync();
-
 
   int id() const { return id_; }
 
@@ -115,7 +113,7 @@ class Device {
   virtual void DoExec(function<void(Context*)>&& fn, int executor) = 0;
 
   virtual void CopyToFrom(void* dst, const void* src, size_t nBytes,
-			  CopyDirection direction, Context* ctx) = 0;
+                          CopyDirection direction, Context* ctx) = 0;
 
   /// Allocate device memory.
   virtual void* Malloc(int size) = 0;
@@ -124,7 +122,7 @@ class Device {
   virtual void Free(void* ptr) = 0;
 
  private:
-  Device() {};
+  Device(){};
 
  protected:
   friend class Block;
@@ -135,7 +133,7 @@ class Device {
   unsigned seed_ = 0;
   bool graph_enabled_ = false;
   /// The computational graph
-  Graph *graph_ = nullptr;
+  Graph* graph_ = nullptr;
   /// Programming language type, could be kCpp, kCuda, kOpencl
   LangType lang_;
   /// The host device
@@ -167,7 +165,7 @@ class CppCPU : public Device {
   void DoExec(function<void(Context*)>&& fn, int executor) override;
 
   void CopyToFrom(void* dst, const void* src, size_t nBytes,
-		  CopyDirection direction, Context* ctx) override;
+                  CopyDirection direction, Context* ctx) override;
 
   /// Allocate cpu memory.
   void* Malloc(int size) override;
@@ -197,7 +195,7 @@ class CudaGPU : public Device {
   void DoExec(function<void(Context*)>&& fn, int executor) override;
 
   void CopyToFrom(void* dst, const void* src, size_t nBytes,
-		  CopyDirection direction, Context* ctx) override;
+                  CopyDirection direction, Context* ctx) override;
 
   /// Allocate cpu memory.
   void* Malloc(int size) override;
@@ -231,8 +229,8 @@ class OpenclDevice : public singa::Device {
   void SetRandSeed(unsigned seed) override;
 
   virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
-			      CopyDirection direction, int dst_offset = 0,
-			      int src_offset = 0) override;
+                              CopyDirection direction, int dst_offset = 0,
+                              int src_offset = 0) override;
 
  protected:
   /// The OpenCL device that this object represents.
@@ -253,7 +251,7 @@ class OpenclDevice : public singa::Device {
   void DoExec(function<void(Context*)>&& fn, int executor) override;
 
   void CopyToFrom(void* dst, const void* src, size_t nBytes,
-		  CopyDirection direction, Context* ctx = nullptr) override;
+                  CopyDirection direction, Context* ctx = nullptr) override;
 
   /// Allocates memory on this OpenCL device
   /// by creating and returning an empty cl::Buffer object.
