@@ -52,6 +52,7 @@ requirements:
     - cudnn {{ cudnn }}       # ['cudnn' in str(build_str)]
     - dnnl {{ dnnl }}
     - python {{ python }}
+    - deprecated 1.2.7
 
   run:
     - {{ pin_compatible('glog', max_pin='x.x') }}
