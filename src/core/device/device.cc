@@ -20,87 +20,18 @@
 
 namespace singa {
 Device::Device(int id, int num_executors)
-  : id_(id), num_executors_(num_executors), graph_test(this) {
+  : id_(id), num_executors_(num_executors) {
   // TODO(wangwei) create scheduler and vm.
   host_ = defaultDevice;
+  graph_ = new Graph(this);
 }
 
 void Device::Exec(function<void(Context*)>&& fn,
                   const vector<Block*> read_blocks,
                   const vector<Block*> write_blocks, bool use_rand_generator) {
-  if (buffer_flag_== true)
-  {
-    graph_test.AddOperation(std::move(fn), read_blocks, write_blocks);
-
-    /*
-    size_t op_index = graph_.nodes.size();
-    // printf("Exec Op[%2d]\n", op_index);
-
-    OpNode *opNode = new OpNode();
-    opNode->op = std::move(fn);
-    graph_.node2index[opNode] = op_index;
-    graph_.nodes.push_back(opNode);
-    graph_.circle.push_back(std::unordered_set<int>());
-
-    auto &blk2index = graph_.blk2index;
-    for (size_t i = 0; i < read_blocks.size(); ++i) {
-      auto blk = read_blocks[i];
-
-      auto it = blk2index.find(blk);
-      if (it != blk2index.end()) {
-	Edge *edge = graph_.edges[it->second];
-	edge->dst_nodes.push_back(opNode);
-	if (edge->type == EdgeType::kEnd) {
-	  edge->type = EdgeType::kInter;
-	}
-      } else {
-	Edge * edge = new Edge();
-	edge->type = EdgeType::kInput;
-	edge->block = blk;
-	edge->indegree = 0;
-	edge->dst_nodes.push_back(opNode);
-	graph_.blk2index[blk] = graph_.edges.size();
-	graph_.edges.push_back(edge);
-      }
-    }
-
-    for (size_t i = 0; i < write_blocks.size(); ++i) {
-      auto blk = write_blocks[i];
-
-      size_t edge_index;
-      auto it = blk2index.find(blk);
-      if (it != blk2index.end()) {
-	edge_index = it->second;
-	Edge *edge = graph_.edges[edge_index];
-	edge->indegree += 1;
-	if (edge->type == EdgeType::kInput) {
-	  edge->type = EdgeType::kParam;
-	}
-      } else {
-	Edge * edge = new Edge();
-	edge->type = EdgeType::kEnd;
-	edge->block = blk;
-	edge->indegree = 1;
-
-	edge_index = graph_.edges.size();
-	graph_.blk2index[blk] = edge_index;
-	graph_.edges.push_back(edge);
-      }
-
-      for (size_t j = 0; j < read_blocks.size(); ++j) {
-	if (blk == read_blocks[j]) {
-	  graph_.circle[op_index].emplace(edge_index);
-	  // printf("emplace op:[%2d], edge:[%2d]\n", op_index,edge_index);
-	}
-      }
-    }
-
-    opNode->read_blocks = std::move(read_blocks);
-    opNode->write_blocks = std::move(write_blocks);
-    */
-  }
-  else
-  {
+  if (buffer_flag_== true) {
+    graph_->AddOperation(std::move(fn), read_blocks, write_blocks);
+  } else {
     // printf("immediately ops\n");
     DoExec(std::move(fn), 0);
   }
@@ -110,161 +41,7 @@ void Device::ExecBuffOps() {
   bool previous_state = buffer_flag_;
   buffer_flag_ = false;
 
-  graph_test.Run();
-
-  /*
-  auto &nodes = graph_.nodes;
-  auto &edges = graph_.edges;
-  auto &blk2index = graph_.blk2index;
-  auto &node2index = graph_.node2index;
-  auto &circle = graph_.circle;
-
-  for (size_t i = 0; i < nodes.size(); ++i) {
-    auto node = nodes[i];
-    printf("OP[%2d]: ", i);
-    printf("Inputs: ");
-    auto &read_blocks = node->read_blocks;
-    for (size_t j = 0; j < read_blocks.size(); ++j) {
-      printf("%d\t", blk2index[read_blocks[j]]);
-    }
-    for (size_t j = read_blocks.size(); j < 3; ++j) {
-      printf("\t");
-    }
-    printf("Outputs: ");
-    auto &write_blocks = node->write_blocks;
-    for (size_t j = 0; j < write_blocks.size(); ++j) {
-      printf("%d\t", blk2index[write_blocks[j]]);
-    }
-    printf("\n");
-  }
-
-  for (size_t i = 0; i < edges.size(); ++i) {
-    auto edge = edges[i];
-    printf("Edge[%2d]: block[%#x] ", i, edge->block);
-    switch (edge->type) {
-      case EdgeType::kInput: printf("type[input] "); break;
-      case EdgeType::kParam: printf("type[param] "); break;
-      case EdgeType::kInter: printf("type[inter] "); break;
-      case EdgeType::kEnd: printf("type[_end_] "); break;
-      default: break;
-    }
-    printf("OPs: \t");
-    for (size_t j = 0; j < edge->dst_nodes.size(); ++j) {
-      printf("%2d\t", node2index[edge->dst_nodes[j]]);
-    }
-    printf("\n");
-  }
-
-  std::vector<int> ans;
-  std::vector<std::vector<int> > anss;
-  SafeQueue<int> node_queue;
-  std::vector<int> node_ref; 
-  std::vector<int> edge_ref;
-  std::vector<int> edge_wait;
-  std::vector<bool> edge_state;
-
-  node_ref.resize(nodes.size());
-  edge_ref.resize(edges.size());
-  edge_wait.resize(edges.size());
-  edge_state.resize(edges.size());
-
-  for (size_t i = 0; i < nodes.size(); ++i) {
-    node_ref[i] = nodes[i]->read_blocks.size();
-  }
-
-  for (size_t i = 0; i < edges.size(); ++i) {
-    edge_ref[i] = edges[i]->indegree;
-    edge_wait[i] = edges[i]->dst_nodes.size();
-    if (edges[i]->type == EdgeType::kInput || edges[i]->type == EdgeType::kParam) {
-      edge_state[i] = true;
-      auto &dst_nodes = edges[i]->dst_nodes;
-      for (size_t j = 0; j < dst_nodes.size(); ++j) {
-	size_t index = node2index[dst_nodes[j]];
-	node_ref[index] -= 1;
-
-	if (circle[index].find(i) != circle[index].end()) {
-	  edge_state[i] = false;
-	  break;
-	}
-      }
-    } else {
-      edge_state[i] = false;
-    }
-  }
-
-  for (size_t i = 0; i < node_ref.size(); ++i) {
-    if (node_ref[i] == 0) {
-      node_queue.Push(i);
-      // ans.push_back(i);
-    }
-  }
-
-  // anss.push_back(ans);
-
-  int de_count = 0;
-  while (node_queue.Size()) {
-    // step 1: pop the first element and execte the operation
-    int curIndex = -1;
-    node_queue.Pop(curIndex);
-    OpNode *curNode = nodes[curIndex];
-    // printf("pop op[%2d]\n", curIndex);
-    DoExec(std::move(curNode->op), 0);
-
-    // step 2: decrease the ref count of the input tensors
-    for (size_t i = 0; i < curNode->read_blocks.size(); ++i) {
-      size_t edge_index = blk2index[curNode->read_blocks[i]];
-      edge_wait[edge_index] -= 1;
-      if (edge_wait[edge_index] == 0) {
-	++de_count;
-	if (edges[edge_index]->type != EdgeType::kInput && edges[edge_index]->type != EdgeType::kParam) {
-	  curNode->read_blocks[i]->free_data();
-	  // printf("deallocate block[%2d]\n", edge_index);
-	}
-      }
-    }
-
-    // step 3: activate output blocks
-    // ans.clear();
-    for (size_t i = 0; i < curNode->write_blocks.size(); ++i) {
-      Block *write_block = curNode->write_blocks[i];
-      size_t edge_index = blk2index[write_block];
-      edge_state[edge_index] = true;
-
-      auto &dst_nodes = edges[edge_index]->dst_nodes;
-      for (size_t j = 0; j < dst_nodes.size(); ++j) {
-	OpNode *dst_node = dst_nodes[j];
-	size_t node_index = node2index[dst_node];
-
-	if (node_ref[node_index] <= 0) {
-	  continue;
-	}
-
-	node_ref[node_index] -= 1;
-	if (node_ref[node_index] == 0) {
-	  // printf("push op[%2d]\n", node_index);
-	  node_queue.Push(node_index);
-	  ans.push_back(node_index);
-	  edge_state[edge_index] = false;
-	}
-
-	if (circle[node_index].find(edge_index) != circle[node_index].end()) {
-	  break;
-	}
-      }
-    }
-    // if (!ans.empty()) anss.push_back(ans);
-  }
-
-  
-  printf("total released count: %d/%d(without tensor of type _end_)\n", de_count, edges.size());
-  for (int i = 0; i < anss.size(); i++) {
-    printf("group %d: ", i);
-    for (auto it : anss[i]) {
-      printf("%d ", it);
-    }
-    printf("\n");
-  }
-  */
+  graph_->Run();
 
   buffer_flag_ = previous_state;
 }

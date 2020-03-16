@@ -106,37 +106,6 @@ class Device {
 
   int id() const { return id_; }
 
- private:
-  Device() : graph_test(this) {};
-
-  enum EdgeType {
-    kInput, kParam, kInter, kEnd
-  };
-
-  struct OpNode {
-    std::function<void(Context*)> op;
-    std::vector<Block *> read_blocks;
-    std::vector<Block *> write_blocks;
-  };
-
-  struct Edge {
-    EdgeType type;
-    Block *block;
-    int indegree;
-    std::vector<OpNode *> dst_nodes;
-  };
-
-  struct Graph_ {
-    std::vector<OpNode *> nodes;
-    std::vector<Edge *> edges;
-    std::map<Block *, int> blk2index;
-    std::map<OpNode *, int> node2index;
-    std::vector<std::unordered_set<int> > circle;
-  };
-
-  struct Graph_ graph_;
-  class Graph graph_test;
-
  protected:
   /// Execute one operation on one executor.
   virtual void DoExec(function<void(Context*)>&& fn, int executor) = 0;
@@ -150,24 +119,29 @@ class Device {
   /// Free device memory.
   virtual void Free(void* ptr) = 0;
 
+ private:
+  Device() {};
+
  protected:
+  friend class Block;
+  friend class Graph;
+
   int id_ = 0;
   int num_executors_ = 0;
   unsigned seed_ = 0;
   bool buffer_flag_ = false;
-  // Scheduler* scheduler_ = nullptr;
-  // VirtualMemory* vm_ = nullptr;
+  /// The computational graph
+  Graph *graph_ = nullptr;
   /// Programming language type, could be kCpp, kCuda, kOpencl
   LangType lang_;
-  // SafeQueue<Operation> op_queue_;
-  // SafeQueue<Operation> op_log_;
   /// The host device
   std::shared_ptr<Device> host_;
   // TODO(wangwei) define multiple contexts, one per executor
   Context ctx_;
-
-  friend class Block;
-  friend class Graph;
+  // Scheduler* scheduler_ = nullptr;
+  // VirtualMemory* vm_ = nullptr;
+  // SafeQueue<Operation> op_queue_;
+  // SafeQueue<Operation> op_log_;
 };
 
 /// a singleton CppDevice as the host for all devices.
