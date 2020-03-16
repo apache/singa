@@ -652,7 +652,6 @@ class Reshape(Operation):
         # handle the shape with -1
         hidden_shape = int(np.prod(self._shape) // np.abs(np.prod(shape)))
         self.cache = [s if s != -1 else hidden_shape for s in shape]
-        print(self.cache)
         return singa.Reshape(x, self.cache)
 
     def backward(self, dy):

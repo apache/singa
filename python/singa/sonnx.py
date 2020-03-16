@@ -1325,8 +1325,8 @@ class SingaBackend(Backend):
             a list of SingaOps('name', 'op', 'handle', 'forward')
         """
         onnx_op_type = onnx_node.op_type
-        autograd_op = getattr(
-            autograd, cls._rename_operators.get(onnx_op_type, onnx_op_type))
+        assert onnx_op_type in cls._rename_operators, "not support operator: {}".format(onnx_op_type)
+        autograd_op = getattr(autograd, cls._rename_operators[onnx_op_type])
         return None, autograd_op
 
     @classmethod
@@ -1414,14 +1414,23 @@ class SingaBackend(Backend):
             graph: a given onnx graph
         Args:
             device: the used device
+        Returns:
+            a dict of tensors
         """
         tensor_map = {}
-        initializers = {t.name: t for t in graph.initializer}
-        for x in graph.input:
-            if x.name in initializers:
-                np_tensor = numpy_helper.to_array(initializers[x.name])
+        # due to https://github.com/onnx/onnx/issues/2417
+        # we need to handle this bug
+        all_inputs = {t.name: t for t in graph.input}
+        initializers = {t.name for t in graph.initializer}
+        for t in graph.initializer:
+            all_inputs[t.name] = t
+        for name, x in all_inputs.items():
+            if name in initializers:
+                np_tensor = numpy_helper.to_array(x)
                 if np_tensor.dtype == "int64":
                     np_tensor = np_tensor.astype(np.int32)
+                if np.ndim(np_tensor) == 0:
+                    np_tensor = np.array(np_tensor, ndmin=1)
             else:
                 x_shape = tuple(
                     dim.dim_value for dim in x.type.tensor_type.shape.dim)
@@ -1477,8 +1486,12 @@ class SingaBackend(Backend):
             a list of output values
         """
         super(SingaBackend, cls).prepare(model, device, **kwargs)
-        # optimize the model
-        model = onnx.utils.polish_model(model)
+        # optimize and infer the shape of the model
+        try:
+            model = onnx.utils.polish_model(model)
+        except:
+            model = onnx.shape_inference.infer_shapes(model)
+
         # check the opset version and ir version
         opset_version = None
         for imp in model.opset_import:
