@@ -700,7 +700,7 @@ class OnnxNode(object):
         self.op_type = str(node.op_type)
         self.attrs = OnnxAttributes.from_onnx(node.attribute)
         # there may some inputs which we regard as attribute, so we mark them there
-        self.consumed_inputs = self.attrs.pop("consumed_inputs", None)
+        self.consumed_inputs = list()
         self.inputs = list(node.input)
         self.outputs = list(node.output)
 
@@ -742,7 +742,7 @@ class SingaBackend(Backend):
         'Concat': 'Concat',
         'Flatten': 'Flatten',
         'Gemm': 'Gemm',
-        'Reshape': 'reshape',
+        'Reshape': 'Reshape',
         'Sum': 'sum',
         'Cos': 'cos',
         'Cosh': 'cosh',
@@ -1058,9 +1058,12 @@ class SingaBackend(Backend):
         Returns: 
             the autograd of singa operator
         """
+        shape = tensor.to_numpy(inputs[1]).tolist()
+        onnx_node.consumed_inputs.append(onnx_node.inputs[1])
+        del inputs[1]
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
-        return _, forward
+        return _, forward(shape)
 
     @classmethod
     def _create_conv(cls, onnx_node, inputs, opset_version):
@@ -1229,12 +1232,8 @@ class SingaBackend(Backend):
         """
         factor = onnx_node.getattr('axis', 1)
         if factor < 0:
-            factor = len(inputs[0].shape
-                        ) + factor  # in order to support the negative axis
-        # alpha = onnx_node.attrs["alpha"]
-        # beta = onnx_node.attrs["beta"]
-        # transA = False if onnx_node.attrs["transA"] == 0 else True
-        # transB = False if onnx_node.attrs["transB"] == 0 else True
+            # in order to support the negative axis
+            factor = len(inputs[0].shape) + factor
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
         return None, forward(axis=factor)
@@ -1283,8 +1282,8 @@ class SingaBackend(Backend):
         """
         factor = onnx_node.getattr('axis', 1)
         if factor < 0:
-            factor = len(inputs[0].shape
-                        ) + factor  # in order to support the negative axis
+            # in order to support the negative axis
+            factor = len(inputs[0].shape) + factor
 
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
@@ -1421,11 +1420,14 @@ class SingaBackend(Backend):
         for x in graph.input:
             if x.name in initializers:
                 np_tensor = numpy_helper.to_array(initializers[x.name])
+                if np_tensor.dtype == "int64":
+                    np_tensor = np_tensor.astype(np.int32)
             else:
                 x_shape = tuple(
                     dim.dim_value for dim in x.type.tensor_type.shape.dim)
                 np_tensor = np.random.randn(*x_shape).astype(np.float32)
-            tmp_tensor = tensor.Tensor(device=device, data=np_tensor)
+            tmp_tensor = tensor.from_numpy(np_tensor)
+            tmp_tensor.to_device(device)
             tensor_map[x.name] = tmp_tensor
         return tensor_map
 
@@ -1454,10 +1456,9 @@ class SingaBackend(Backend):
                                           ['name', 'op', 'handle', 'forward'])
         for node in model.graph.node:
             node = OnnxNode(node)
-            inputs = [tensor_map[x] for x in node.inputs]
+            inputs = [tensor_map[x] for x in node.inputs if x not in node.consumed_inputs]
             handle, forward = cls._onnx_node_to_singa_op(
                 node, inputs, opset_version)
-            # print(node.name, node.op_type, node.inputs, inputs)
             outputs = cls._run_node(node, inputs, handle, forward)
             for key, val in outputs.items():
                 tensor_map[key] = val
@@ -1552,7 +1553,7 @@ class SingaRep(BackendRep):
             if inp.name not in self.tensor_map:
                 self.tensor_map[inp.name] = inputs.pop(0)
         for _, op, handle, forward in self.singa_ops[:last_layers]:
-            inputs = [self.tensor_map[x] for x in op.inputs]
+            inputs = [self.tensor_map[x] for x in op.inputs if x not in op.consumed_inputs]
             outputs = _run_node(op, inputs, handle, forward)
             for key, val in outputs.items():
                 self.tensor_map[key] = val

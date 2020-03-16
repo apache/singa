@@ -638,11 +638,7 @@ class Reshape(Operation):
 
     def __init__(self, shape):
         super(Reshape, self).__init__()
-        if isinstance(shape, tensor.Tensor):
-            self.shape = np.asarray(tensor.to_numpy(shape).astype(
-                np.int32)).tolist()
-        else:
-            self.shape = list(shape)
+        self.shape = list(shape)
 
     def forward(self, x):
         self._shape = x.shape()
@@ -656,7 +652,7 @@ class Reshape(Operation):
         # handle the shape with -1
         hidden_shape = int(np.prod(self._shape) // np.abs(np.prod(shape)))
         self.cache = [s if s != -1 else hidden_shape for s in shape]
-
+        print(self.cache)
         return singa.Reshape(x, self.cache)
 
     def backward(self, dy):
