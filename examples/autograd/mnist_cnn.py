@@ -227,7 +227,6 @@ def train_mnist_cnn(sgd,
         train_loss = np.zeros(shape=[1], dtype=np.float32)
 
         for b in range(num_train_batch):
-            print("pass2b")
             x = train_x[idx[b * batch_size:(b + 1) * batch_size]]
             x = augmentation(x, batch_size)
             y = train_y[idx[b * batch_size:(b + 1) * batch_size]]

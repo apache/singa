@@ -285,13 +285,10 @@ if __name__ == "__main__":
             dev.Sync()
             softmax += time.time() - tick
             for p, g in autograd.backward(loss):
-                r += 1
-                print(g.name)
                 dev.Sync(
                 )  # this "for" loops for a large number of times, so can slow down
                 tick = time.time()
                 sgd.update(p, g)
-                print("pass4", r)
                 dev.Sync(
                 )  # this "for" loops for a large number of times, so can slow down
                 update += time.time() - tick

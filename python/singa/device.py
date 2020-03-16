@@ -45,7 +45,7 @@ class Device(object):
     def set_rand_seed(self, seed):
         self.singa_device.SetRandSeed(seed)
 
-    def enable_graph(self, enbale):
+    def enable_graph(self, enable):
         self.singa_device.EnableGraph(enable)
 
     def get_host(self):

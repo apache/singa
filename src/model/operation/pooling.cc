@@ -199,20 +199,8 @@ Tensor GpuPoolingForward(const CudnnPoolingHandle &cph, const Tensor &x) {
                             cph.x_desc, x.block()->data(), &beta, cph.y_desc,
                             output.block()->mutable_data());
       },
-      auto output =
-          std::make_shared<Tensor>(Shape({cph.batchsize, cph.channels,
-                                          cph.pooled_height, cph.pooled_width}),
-                                   x.device(), x.data_type());
+      {x.block()}, {output.block()});
 
-      output->device()->Exec(
-          [x, output, &cph](Context *ctx) {
-            float alpha = 1.0f, beta = 0.0f;
-            cudnnPoolingForward(ctx->cudnn_handle, cph.pool_desc, &alpha,
-                                cph.x_desc, x.block()->data(), &beta,
-                                cph.y_desc, output->block()->mutable_data());
-          },
-          {x.block()}, {output->block()});
-      return *output; {x.block()}, {output.block()});
   return output;
 }
 
@@ -226,22 +214,14 @@ Tensor GpuPoolingBackward(const CudnnPoolingHandle &cph, const Tensor &dy,
 
   dx.device()->Exec(
       [dx, dy, x, y, &cph](Context *ctx) mutable {
-    float alpha = 1.0f, beta = 0.0f;
-    cudnnPoolingBackward(ctx->cudnn_handle, cph.pool_desc, &alpha, cph.y_desc,
-                         y.block()->data(), cph.y_desc, dy.block()->data(),
-                         cph.x_desc, x.block()->data(), &beta, cph.x_desc,
-                         dx.block()->mutable_data());
+        float alpha = 1.0f, beta = 0.0f;
+        cudnnPoolingBackward(ctx->cudnn_handle, cph.pool_desc, &alpha,
+                             cph.y_desc, y.block()->data(), cph.y_desc,
+                             dy.block()->data(), cph.x_desc, x.block()->data(),
+                             &beta, cph.x_desc, dx.block()->mutable_data());
       },
-  auto dx = std::make_shared<Tensor>();
-  dx->ResetLike(x);
+      {dy.block(), y.block(), x.block()}, {dx.block()});
 
-  dx->device()->Exec([dx, dy, x, y, &cph](Context * ctx) {
-    float alpha = 1.0f, beta = 0.0f;
-    cudnnPoolingBackward(ctx->cudnn_handle, cph.pool_desc, &alpha, cph.y_desc,
-                         y.block()->data(), cph.y_desc, dy.block()->data(),
-                         cph.x_desc, x.block()->data(), &beta, cph.x_desc,
-                         dx->block()->mutable_data());
-  }, {dy.block(), y.block(), x.block()}, {dx->block()});
   return dx;
 };
 #endif  // USE_CUDNN

@@ -54,7 +54,7 @@ void Graph::Reset() {
 
 void Graph::Debug() {
   for (size_t i = 0; i < nodes_.size(); ++i) {
-    printf("OP[%2d]: ", i);
+    printf("OP[%2lu]: ", i);
     printf("Inputs: ");
     auto node = nodes_[i];
     for (size_t j = 0; j < node->in_edges_.size(); ++j) {
@@ -72,7 +72,7 @@ void Graph::Debug() {
 
   for (auto it : blocks_) {
     auto blkInfo = it.second;
-    printf("Edge[%2d]: block[%#x] ", blkInfo->id_, blkInfo->blk_);
+    printf("Edge[%2d]: block[%p] ", blkInfo->id_, blkInfo->blk_);
     switch (blkInfo->type_) {
       case BlockType::kInput:
         printf("type[input] ");

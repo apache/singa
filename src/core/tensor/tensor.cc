@@ -858,16 +858,10 @@ void SoftMax(const Tensor &in, Tensor *out, int axis) {
 }
 
 Tensor SoftMax(const Tensor &in, int axis) {
-  auto retPtr =
-      std::make_shared<Tensor>(in.shape(), in.device(), in.data_type());
-  TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
-    retPtr->device()->Exec(
-        [in, retPtr, axis](Context *ctx) {
-          SoftMax<DType, Lang>(in, retPtr.get(), ctx, axis);
-        },
-        {in.block()}, {retPtr->block()});
-  });
-  return *retPtr;
+  Tensor ret(in.shape(), in.device(), in.data_type());
+  auto *retptr = &ret;
+  SoftMax(in, retptr, axis);
+  return ret;
 }
 void SoftMaxBackward(const Tensor &in, Tensor *out, int axis,
                      const Tensor &fdout) {

@@ -229,13 +229,13 @@ def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None,
             # Execute the buffered Ops
             # print("execute the buffered ops")
             dev.RunGraph()
-            train_correct += accuracy(tensor.to_numpy(out), y)
+            # train_correct += accuracy(tensor.to_numpy(out), y)
             train_loss += tensor.to_numpy(loss)[0]
 
         if DIST:
             # Reduce the Evaluation Accuracy and Loss from Multiple Devices
             reducer = tensor.Tensor((1,), dev, tensor.float32)
-            train_correct = reduce_variable(train_correct, sgd, reducer)
+            # train_correct = reduce_variable(train_correct, sgd, reducer)
             train_loss = reduce_variable(train_loss, sgd, reducer)
 
         # Output the Training Loss and Accuracy
