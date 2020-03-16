@@ -23,8 +23,6 @@
 
 namespace singa {
 
-Node::Node(function<void(Context*)>&& op) : op_(std::move(op)) {}
-
 void Node::AddInEdge(Edge *in_edge) {
   in_edges_.push_back(in_edge);
 }
@@ -33,8 +31,6 @@ void Node::AddOutEdge(Edge *out_edge) {
   out_edges_.push_back(out_edge);
 }
 
-Edge::Edge(Block *blk, Node *src_node, Node *dst_node)
-  : blk_(blk), src_node_(src_node), dst_node_(dst_node) {}
 
 void Edge::SetBlock(Block* blk) { blk_ = blk; }
 
@@ -42,14 +38,29 @@ void Edge::SetSrcNode(Node* src_node) { src_node_ = src_node; }
 
 void Edge::SetDstNode(Node* dst_node) { dst_node_ = dst_node; }
 
-BlockInfo::BlockInfo(int id, Block *blk, BlockType type)
-  : id_(id), blk_(blk), type_(type), write_node_(nullptr), last_node_(nullptr) {}
 
-void Graph::Run() {
-  SafeQueue<int> node_queue;
-  std::vector<int> node_ref;
+Graph::~Graph() {
+  Reset();
+}
 
-  /*
+void Graph::Reset() {
+  for (auto it : nodes_) {
+    delete it;
+  }
+  nodes_.clear();
+
+  for (auto it : edges_) {
+    delete it;
+  }
+  edges_.clear();
+
+  for (auto it : blocks_) {
+    delete it.second;
+  }
+  blocks_.clear();
+}
+
+void Graph::Debug() {
   for (size_t i = 0; i < nodes_.size(); ++i) {
     printf("OP[%2d]: ", i);
     printf("Inputs: ");
@@ -89,11 +100,11 @@ void Graph::Run() {
     printf(" write_node[%d]", id);
     printf("\n");
   }
-  */
+}
 
-  for (size_t i = 0; i < edges_.size(); ++i) {
-    auto edge = edges_[i];
-  }
+void Graph::RunGraph() {
+  SafeQueue<int> node_queue;
+  std::vector<int> node_ref;
 
   // init node ref
   node_ref.resize(nodes_.size());
@@ -162,7 +173,7 @@ void Graph::Run() {
 
 void Graph::AddOperation(function<void(Context*)>&& op, const BlockSet &read_blocks, const BlockSet &write_blocks) {
   // create new node
-  Node *node = new Node(std::move(op));
+  Node *node = new Node(nodes_.size(), std::move(op));
 
   // create edges for read_blocks
   for (size_t i = 0; i < read_blocks.size(); ++i) {
@@ -172,7 +183,7 @@ void Graph::AddOperation(function<void(Context*)>&& op, const BlockSet &read_blo
 
     auto it = blocks_.find(blk);
     if (it == blocks_.end()) {
-      edge = new Edge(blk, nullptr, node);
+      edge = new Edge(edges_.size(), blk, nullptr, node);
       blkInfo = new BlockInfo(blocks_.size(), blk, BlockType::kInput);
       blocks_[blk] = blkInfo;
     } else {
@@ -182,13 +193,12 @@ void Graph::AddOperation(function<void(Context*)>&& op, const BlockSet &read_blo
       }
 
       Node *write_node = blkInfo->write_node_;
-      edge = new Edge(blk, write_node, node);
+      edge = new Edge(edges_.size(), blk, write_node, node);
       if (write_node) {
 	write_node->AddOutEdge(edge);
       }
     }
 
-    edge->id_ = edges_.size();
     blkInfo->last_node_ = node;
 
     node->AddInEdge(edge);
@@ -216,7 +226,6 @@ void Graph::AddOperation(function<void(Context*)>&& op, const BlockSet &read_blo
   }
 
   // add node into nodes
-  node->id_ = nodes_.size();
   nodes_.push_back(node);
 }
 

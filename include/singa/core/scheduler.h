@@ -41,7 +41,7 @@ enum BlockType {
 
 class Node {
 public:
-  Node(std::function<void(Context*)>&& op);
+  Node(int id, std::function<void(Context*)>&& op) : id_(id), op_(std::move(op)) {}
 
   void AddInEdge(Edge *in_edge);
   void AddOutEdge(Edge *out_edge);
@@ -57,7 +57,8 @@ private:
 
 class Edge {
 public:
-  Edge(Block *blk, Node *src_node, Node *dst_node);
+  Edge(int id, Block *blk, Node *src_node, Node *dst_node)
+    : id_(id), blk_(blk), src_node_(src_node), dst_node_(dst_node) {}
 
   void SetBlock(Block *blk);
   void SetSrcNode(Node *src_node);
@@ -74,7 +75,8 @@ private:
 
 class BlockInfo {
 public:
-  BlockInfo(int id, Block *blk, BlockType type = BlockType::kUnknow);
+  BlockInfo(int id, Block *blk, BlockType type = BlockType::kUnknow)
+    : id_(id), blk_(blk), type_(type), write_node_(nullptr), last_node_(nullptr) {}
 
 private:
   friend Graph;
@@ -83,20 +85,22 @@ private:
   Block *blk_;
   BlockType type_;
   Node *write_node_;  // last node that writes the block
-  Node *last_node_;   // last edge that uses the block
+  Node *last_node_;   // last node that uses the block
 };
 
 class Graph {
 public:
   typedef std::vector<Block*> BlockSet;
 
+  ~Graph();
   Graph(Device *device) : device_(device) {}
 
-  void Run();
   void Reset();
+  void Debug();
+  void RunGraph();
   void AddOperation(function<void(Context*)>&& op,
 		    const BlockSet &read_blocks, const BlockSet &write_blocks);
-  
+
 private:
   Device *device_;
   std::vector<Node *> nodes_;

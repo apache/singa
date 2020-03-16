@@ -56,7 +56,7 @@ namespace singa {
 class Device {
  public:
   // Device() = default;
-  virtual ~Device() {}
+  virtual ~Device();
   /// Constructor with device ID, num of executors (e.g., cuda streams),
   /// max mem size to use (in MB)
   Device(int id, int num_executors);

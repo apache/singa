@@ -26,6 +26,12 @@ Device::Device(int id, int num_executors)
   graph_ = new Graph(this);
 }
 
+Device::~Device() {
+  if (graph_) {
+    delete graph_;
+  }
+}
+
 void Device::Exec(function<void(Context*)>&& fn,
                   const vector<Block*> read_blocks,
                   const vector<Block*> write_blocks, bool use_rand_generator) {
@@ -41,7 +47,7 @@ void Device::ExecBuffOps() {
   bool previous_state = buffer_flag_;
   buffer_flag_ = false;
 
-  graph_->Run();
+  graph_->RunGraph();
 
   buffer_flag_ = previous_state;
 }
