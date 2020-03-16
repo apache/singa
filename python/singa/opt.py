@@ -152,10 +152,10 @@ class SGD(Optimizer):
                 self.param2state[param] = {}
             param_state = self.param2state[param]
             if 'momentum_buffer' not in param_state:
-                flag = param.device.GetBufferFlag()
-                param.device.SetBufferFlag(False)
+                flag = param.device.graph_enabled()
+                param.device.EnableGraph(False)
                 buf = param_state['momentum_buffer'] = tensor.zeros_like(param)
-                param.device.SetBufferFlag(flag)
+                param.device.EnableGraph(flag)
 
                 buf *= momentum
                 singa.Axpy(1.0, grad.data, buf.data)
@@ -176,7 +176,7 @@ class SGD(Optimizer):
         and do the parameter update.
 
         Args:
-                loss(Tensor): loss is the objective function of the deep learning model 
+                loss(Tensor): loss is the objective function of the deep learning model
                 optimization, e.g. for classification problem it can be the output of the
                 softmax_cross_entropy function.
         """
@@ -283,8 +283,8 @@ class DistOpt(object):
         Args:
                 tensor(Tensor): a tensor to be all-reduced
                 accumulation(Tensor): local gradient accumulation
-                spars(float): a parameter to control sparsity as defined below 
-                topK(bool): When topK is False, it sparsifies the gradient with absolute 
+                spars(float): a parameter to control sparsity as defined below
+                topK(bool): When topK is False, it sparsifies the gradient with absolute
                 value >= sparsWhen topK is True, it sparsifies a fraction of total gradient
                 number equals to spars,  E.g. when spars = 0.01, it sparsifies 1 % of the
                 total gradient elements
@@ -300,8 +300,8 @@ class DistOpt(object):
         Args:
                 tensor(List of Tensors): a list of tensors to be all-reduced
                 accumulation(Tensor): local gradient accumulation
-                spars(float): a parameter to control sparsity as defined below 
-                topK(bool): When topK is False, it sparsifies the gradient with absolute 
+                spars(float): a parameter to control sparsity as defined below
+                topK(bool): When topK is False, it sparsifies the gradient with absolute
                 value >= sparsWhen topK is True, it sparsifies a fraction of total gradient
                 number equals to spars,  E.g. when spars = 0.01, it sparsifies 1 % of the
                 total gradient elements
@@ -320,17 +320,17 @@ class DistOpt(object):
     def backward_and_update(self, loss, threshold=2097152):
         """Performs backward propagation from the loss and parameter update.
 
-        From the loss, it performs backward propagation to get the gradients and do the parameter 
+        From the loss, it performs backward propagation to get the gradients and do the parameter
         update. For gradient communication, it fuses all the tensor smaller than the threshold
         value to reduce network latency.
 
         Args:
-                loss(Tensor): loss is the objective function of the deep learning model 
+                loss(Tensor): loss is the objective function of the deep learning model
                 optimization, e.g. for classification problem it can be the output of the
                 softmax_cross_entropy function.
                 threshold(int): threshold is a parameter to control performance in fusing
                 the tensors. For the tensors of sizes smaller than threshold, they are to
-                be accumulated and fused before the all reduce operation. For the tensors 
+                be accumulated and fused before the all reduce operation. For the tensors
                 of its size larger than the threshold value, they are to be reduced directly
                 without fusion.
         """
@@ -361,22 +361,22 @@ class DistOpt(object):
                                  threshold=2097152,
                                  clipping=False,
                                  clip_Value=100):
-        """Performs backward propagation and parameter update, with FP16 precision communication. 
+        """Performs backward propagation and parameter update, with FP16 precision communication.
 
         THIS IS A EXPERIMENTAL FUNCTION FOR RESEARCH PURPOSE:
-        From the loss, it performs backward propagation to get the gradients and do the parameter 
+        From the loss, it performs backward propagation to get the gradients and do the parameter
         update. For gradient communication, it fuses all the tensor smaller than the threshold value
         to reduce network latency, as well as converting them to FP16 half precision format before
         sending them out. To assist training, this functions provide an option to perform gradient
         clipping.
 
         Args:
-                loss(Tensor): loss is the objective function of the deep learning model 
+                loss(Tensor): loss is the objective function of the deep learning model
                 optimization, e.g. for classification problem it can be the output of the
                 softmax_cross_entropy function.
                 threshold(int): threshold is a parameter to control performance in fusing
                 the tensors. For the tensors of sizes smaller than threshold, they are to
-                be accumulated and fused before the all reduce operation. For the tensors 
+                be accumulated and fused before the all reduce operation. For the tensors
                 of its size larger than the threshold value, they are to be reduced directly
                 without fusion.
                 clipping(bool): a boolean flag to choose whether to clip the gradient value
@@ -410,18 +410,18 @@ class DistOpt(object):
         """Performs backward propagation from the loss and parameter update using asychronous training.
 
         THIS IS A EXPERIMENTAL FUNCTION FOR RESEARCH PURPOSE:
-        From the loss, it performs backward propagation to get the gradients and do the parameter 
-        update. It fuses the tensors smaller than the threshold value to reduce network latency, 
+        From the loss, it performs backward propagation to get the gradients and do the parameter
+        update. It fuses the tensors smaller than the threshold value to reduce network latency,
         as well as performing asychronous training where one parameter partition is all-reduced
         per iteration. The size of the parameter partition depends on the threshold value.
 
         Args:
-                loss(Tensor): loss is the objective function of the deep learning model 
+                loss(Tensor): loss is the objective function of the deep learning model
                 optimization, e.g. for classification problem it can be the output of the
                 softmax_cross_entropy function.
                 threshold(int): threshold is a parameter to control performance in fusing
                 the tensors. For the tensors of sizes smaller than threshold, they are to
-                be accumulated and fused before the all reduce operation. For the tensors 
+                be accumulated and fused before the all reduce operation. For the tensors
                 of its size larger than the threshold value, they are to be reduced directly
                 without fusion.
 
@@ -484,22 +484,22 @@ class DistOpt(object):
         """ Performs backward propagation from the loss and parameter update with sparsification.
 
         THIS IS A EXPERIMENTAL FUNCTION FOR RESEARCH PURPOSE:
-        From the loss, it performs backward propagation to get the gradients and do the parameter 
+        From the loss, it performs backward propagation to get the gradients and do the parameter
         update. It fuses the tensors with size smaller than the threshold value to reduce network
         latency, as well as using sparsification schemes to transfer only the gradient elements which
         are significant.
 
         Args:
-                loss(Tensor): loss is the objective function of the deep learning model 
+                loss(Tensor): loss is the objective function of the deep learning model
                 optimization, e.g. for classification problem it can be the output of the
                 softmax_cross_entropy function.
                 threshold(int): threshold is a parameter to control performance in fusing
                 the tensors. For the tensors of sizes smaller than threshold, they are to
-                be accumulated and fused before the all reduce operation. For the tensors 
+                be accumulated and fused before the all reduce operation. For the tensors
                 of its size larger than the threshold value, they are to be reduced directly
                 without fusion.
-                spars(float): a parameter to control sparsity as defined below 
-                topK(bool): When topK is False, it sparsifies the gradient with absolute 
+                spars(float): a parameter to control sparsity as defined below
+                topK(bool): When topK is False, it sparsifies the gradient with absolute
                 value >= sparsWhen topK is True, it sparsifies a fraction of total gradient
                 number equals to spars,  E.g. when spars = 0.01, it sparsifies 1 % of the
                 total gradient elements

@@ -21,7 +21,7 @@ try:
     import pickle
 except ImportError:
     import cPickle as pickle
-    
+
 from singa import singa_wrap as singa
 from singa import autograd
 from singa import tensor
@@ -70,9 +70,9 @@ def check_dataset_exist(dirpath):
         sys.exit(0)
     return dirpath
 
-def normalize_for_resnet(train_x, test_x):   
+def normalize_for_resnet(train_x, test_x):
     mean=[0.4914, 0.4822, 0.4465]
-    std=[0.2023, 0.1994, 0.2010] 
+    std=[0.2023, 0.1994, 0.2010]
     train_x /= 255
     test_x /= 255
     for ch in range(0,2):
@@ -179,7 +179,7 @@ def train_cifar10(sgd, max_epoch, batch_size, DIST=False, data_partition=None, g
 
     # buffer all the operations in one iteration
     print("buffer all the operations")
-    dev.SetBufferFlag(True)
+    dev.EnableGraph(True)
     autograd.training = True
     out = model(tx)
     loss = autograd.softmax_cross_entropy(out, ty)
@@ -189,7 +189,7 @@ def train_cifar10(sgd, max_epoch, batch_size, DIST=False, data_partition=None, g
     else:
         sgd.backward_and_partial_update(loss)
     autograd.training = False
-    dev.SetBufferFlag(False)
+    dev.EnableGraph(False)
 
     # input()
 
@@ -221,7 +221,7 @@ def train_cifar10(sgd, max_epoch, batch_size, DIST=False, data_partition=None, g
             # Execute the buffered Ops
             # print("execute the buffered ops")
             # print("training patch ", b)
-            dev.ExecBuffOps()
+            dev.RunGraph()
             train_correct += accuracy(tensor.to_numpy(out), to_categorical(y, num_classes)).astype(np.float32)
             train_loss += tensor.to_numpy(loss)[0]
 
@@ -268,5 +268,3 @@ if __name__ == '__main__':
     batch_size = 16
 
     train_cifar10(sgd=sgd, max_epoch=max_epoch, batch_size=batch_size)
-
-    

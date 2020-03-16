@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     autograd.training = True
     np.random.seed(0)
-    
+
     # prepare training data in numpy array
 
     # generate the boundary
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     print("start training")
 
     # Buffer the operations
-    dev.SetBufferFlag(True)
+    dev.EnableGraph(True)
     x = autograd.matmul(inputs, w0)
     x = autograd.add_bias(x, b0)
     x = autograd.relu(x)
@@ -102,11 +102,11 @@ if __name__ == "__main__":
     print("start backward")
     for p, gp in autograd.backward(loss):
         sgd.apply(0, gp, p, "")
-    dev.SetBufferFlag(False)
+    dev.EnableGraph(False)
 
     # exec the buffered ops
     print("start executing buffered functions")
     for i in range(1001):
-        dev.ExecBuffOps()
+        dev.RunGraph()
         if i % 100 == 0:
             print("training loss = ", tensor.to_numpy(loss)[0])

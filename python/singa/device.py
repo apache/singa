@@ -45,8 +45,8 @@ class Device(object):
     def set_rand_seed(self, seed):
         self.singa_device.SetRandSeed(seed)
 
-    def set_buffer_flag(self, buffer_flag):
-        self.singa_device.SetBufferFlag(buffer_flag)
+    def enable_graph(self, enbale):
+        self.singa_device.EnableGraph(enable)
 
     def get_host(self):
         return self.singa_device.host()
@@ -156,3 +156,6 @@ def get_default_device():
 def set_default_device(device):
     '''Set the Device class static variable default_device'''
     Device.default_device = device
+
+def enbale_lazy_alloc(enable):
+    singa.Device.EnableLazyAlloc(enable)

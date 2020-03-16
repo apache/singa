@@ -136,7 +136,7 @@ def augmentation(x, batch_size):
             x[data_num, :, :, :] = x[data_num, :, :, ::-1]
     return x
 
-def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None, 
+def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None,
                     gpu_num=None, gpu_per_node=None, nccl_id=None, spars=0, topK=False, corr=True):
     # Prepare training and valadiation data
     train_x, train_y, test_x, test_y = load_dataset()
@@ -191,7 +191,7 @@ def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None,
 
     # buffer all the operations in one iteration
     print("buffer all the operations")
-    dev.SetBufferFlag(True)
+    dev.EnableGraph(True)
     autograd.training = True
     out = model.forward(tx)
     loss = autograd.softmax_cross_entropy(out, ty)
@@ -200,7 +200,7 @@ def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None,
         sgd.update(p, g)
         # print("update sgd")
     autograd.training = False
-    dev.SetBufferFlag(False)
+    dev.EnableGraph(False)
 
     # Training and Evaulation Loop
     for epoch in range(max_epoch):
@@ -228,7 +228,7 @@ def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None,
 
             # Execute the buffered Ops
             # print("execute the buffered ops")
-            dev.ExecBuffOps()
+            dev.RunGraph()
             train_correct += accuracy(tensor.to_numpy(out), y)
             train_loss += tensor.to_numpy(loss)[0]
 

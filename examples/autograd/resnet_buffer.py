@@ -270,18 +270,18 @@ if __name__ == "__main__":
 
     # buffer all the operations
     print("start buffer")
-    dev.SetBufferFlag(True)
+    dev.EnableGraph(True)
     x = model(tx)
     loss = autograd.softmax_cross_entropy(x, ty)
     for p, g in autograd.backward(loss):
         sgd.update(p, g)
-    dev.SetBufferFlag(False)
+    dev.EnableGraph(False)
 
     dev.Sync()
     start = time.time()
     with trange(niters) as t:
         for _ in t:
-            dev.ExecBuffOps()
+            dev.RunGraph()
 
     dev.Sync()
     end = time.time()

@@ -63,9 +63,10 @@ class Device {
 
   virtual void SetRandSeed(unsigned seed) = 0;
 
-  bool GetBufferFlag() const { return buffer_flag_; }
+  void EnableGraph(bool enable) { graph_enabled_ = enable; }
 
-  void SetBufferFlag(bool buffer_flag) { buffer_flag_ = buffer_flag; }
+  static void EnableLazyAlloc(bool enbale) { lazy_alloc_ = enbale; }
+
 
   /// Called by Tensor.
   Block* NewBlock(int size);
@@ -79,17 +80,17 @@ class Device {
 
   /// Copy data within or across devices.
   virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
-                              CopyDirection direction, int dst_offset,
-                              int src_offset);
+			      CopyDirection direction, int dst_offset,
+			      int src_offset);
 
   void CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
-                           size_t dst_offset = 0);
+			   size_t dst_offset = 0);
   /// Submit the operation to the device, which may execute it right now or
   /// delay it depending on the scheduler.
   void Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
-            const vector<Block*> write_blocks, bool use_rand_generator = false);
+	    const vector<Block*> write_blocks, bool use_rand_generator = false);
 
-  void ExecBuffOps();
+  void RunGraph();
 
   // Wait for one event.
   // void WaitFor();
@@ -97,21 +98,24 @@ class Device {
   /// wait for all operations submitted to this device.
   virtual void Sync();
 
+
+  int id() const { return id_; }
+
   /// Return the programming language for this device.
   LangType lang() const { return lang_; }
 
-  virtual std::shared_ptr<Device> host() const { return host_; }
-
   Context* context(int k) { return &ctx_; }
 
-  int id() const { return id_; }
+  bool graph_enabled() const { return graph_enabled_; }
+
+  virtual std::shared_ptr<Device> host() const { return host_; }
 
  protected:
   /// Execute one operation on one executor.
   virtual void DoExec(function<void(Context*)>&& fn, int executor) = 0;
 
   virtual void CopyToFrom(void* dst, const void* src, size_t nBytes,
-                          CopyDirection direction, Context* ctx) = 0;
+			  CopyDirection direction, Context* ctx) = 0;
 
   /// Allocate device memory.
   virtual void* Malloc(int size) = 0;
@@ -129,7 +133,7 @@ class Device {
   int id_ = 0;
   int num_executors_ = 0;
   unsigned seed_ = 0;
-  bool buffer_flag_ = false;
+  bool graph_enabled_ = false;
   /// The computational graph
   Graph *graph_ = nullptr;
   /// Programming language type, could be kCpp, kCuda, kOpencl
@@ -142,6 +146,8 @@ class Device {
   // VirtualMemory* vm_ = nullptr;
   // SafeQueue<Operation> op_queue_;
   // SafeQueue<Operation> op_log_;
+
+  static bool lazy_alloc_;
 };
 
 /// a singleton CppDevice as the host for all devices.
@@ -161,7 +167,7 @@ class CppCPU : public Device {
   void DoExec(function<void(Context*)>&& fn, int executor) override;
 
   void CopyToFrom(void* dst, const void* src, size_t nBytes,
-                  CopyDirection direction, Context* ctx) override;
+		  CopyDirection direction, Context* ctx) override;
 
   /// Allocate cpu memory.
   void* Malloc(int size) override;
@@ -191,7 +197,7 @@ class CudaGPU : public Device {
   void DoExec(function<void(Context*)>&& fn, int executor) override;
 
   void CopyToFrom(void* dst, const void* src, size_t nBytes,
-                  CopyDirection direction, Context* ctx) override;
+		  CopyDirection direction, Context* ctx) override;
 
   /// Allocate cpu memory.
   void* Malloc(int size) override;
@@ -225,8 +231,8 @@ class OpenclDevice : public singa::Device {
   void SetRandSeed(unsigned seed) override;
 
   virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
-                              CopyDirection direction, int dst_offset = 0,
-                              int src_offset = 0) override;
+			      CopyDirection direction, int dst_offset = 0,
+			      int src_offset = 0) override;
 
  protected:
   /// The OpenCL device that this object represents.
@@ -247,7 +253,7 @@ class OpenclDevice : public singa::Device {
   void DoExec(function<void(Context*)>&& fn, int executor) override;
 
   void CopyToFrom(void* dst, const void* src, size_t nBytes,
-                  CopyDirection direction, Context* ctx = nullptr) override;
+		  CopyDirection direction, Context* ctx = nullptr) override;
 
   /// Allocates memory on this OpenCL device
   /// by creating and returning an empty cl::Buffer object.
