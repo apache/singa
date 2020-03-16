@@ -3254,6 +3254,8 @@ def globalaveragepool(x, data_format='channels_first'):
         tensor, the output
     """
     return GlobalAveragePool(data_format)(x)[0]
+
+
 class ConstantOfShape(Operation):
 
     def __init__(self, value=0):

@@ -790,6 +790,7 @@ class SingaBackend(Backend):
         'ReduceSum': 'ReduceSum',
         'ReduceMean': 'ReduceMean',
         'LeakyRelu': 'LeakyRelu',
+        'GlobalAveragePool': 'GlobalAveragePool',
     }
 
     # this dict indicates the operators that need extra handle
@@ -815,12 +816,33 @@ class SingaBackend(Backend):
         'ReduceSum': '_create_reduceOp',
         'ReduceMean': '_create_reduceOp',
         'LeakyRelu': '_create_leakyrelu',
+        'GlobalAveragePool': '_create_globalaveragepool',
     }
+
+    @classmethod
+    def _create_globalaveragepool(cls, onnx_node, inputs, opset_version):
+        """
+        get the GlobalAveragePool operator from onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        data_format = onnx_node.getattr("data_format", 'channels_first')
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
+                                                       opset_version)
+        return _, forward(data_format)
 
     @classmethod
     def _create_leakyrelu(cls, onnx_node, inputs, opset_version):
         """
-        get the ReduceSum, ReduceMean, ReduceMax, ReduceMin, etc, operator from onnx node
+        get the LeakyRelu operator from onnx node
         Args:
             onnx_node: a given onnx node
         Args:
@@ -1435,6 +1457,7 @@ class SingaBackend(Backend):
             inputs = [tensor_map[x] for x in node.inputs]
             handle, forward = cls._onnx_node_to_singa_op(
                 node, inputs, opset_version)
+            # print(node.name, node.op_type, node.inputs, inputs)
             outputs = cls._run_node(node, inputs, handle, forward)
             for key, val in outputs.items():
                 tensor_map[key] = val

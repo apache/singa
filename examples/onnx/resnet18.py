@@ -17,10 +17,11 @@ from onnx import version_converter, helper, numpy_helper
 import onnx.utils
 
 
+
 def load_model():
-    url = 'https://onnxzoo.blob.core.windows.net/models/opset_8/tiny_yolov2/tiny_yolov2.tar.gz'
+    url = 'https://s3.amazonaws.com/onnx-model-zoo/resnet/resnet18v1/resnet18v1.tar.gz'
     download_dir = '/tmp/'
-    filename = os.path.join(download_dir, 'tiny_yolov2', '.', 'Model.onnx')
+    filename = os.path.join(download_dir, 'resnet18v1', '.', 'resnet18v1.onnx')
     with tarfile.open(check_exist_or_download(url), 'r') as t:
         t.extractall(path=download_dir)
     return filename
@@ -62,6 +63,8 @@ def check_exist_or_download(url):
 def update_batch_size(onnx_model, batch_size):
     model_input = onnx_model.graph.input[0]
     model_input.type.tensor_type.shape.dim[0].dim_value = batch_size
+    model_output = onnx_model.graph.output[0]
+    model_output.type.tensor_type.shape.dim[0].dim_value = batch_size
     return onnx_model
 
 
@@ -90,12 +93,11 @@ if __name__ == "__main__":
 
     # inference
     autograd.training = False
-    print('The inference result is:')
     model = Infer(sg_ir)
-    inputs, ref_outputs = load_dataset(os.path.join('/tmp', 'tiny_yolov2', 'test_data_set_0'))
+    inputs, ref_outputs = load_dataset(os.path.join('/tmp', 'resnet18v1', 'test_data_set_0'))
     x_batch = tensor.Tensor(device=dev, data=inputs[0])
     outputs = model.forward(x_batch)
 
     # Compare the results with reference outputs.
     for ref_o, o in zip(ref_outputs, outputs):
-        np.testing.assert_almost_equal(ref_o, tensor.to_numpy(o), 5)
+        np.testing.assert_almost_equal(ref_o, tensor.to_numpy(o), 4)
