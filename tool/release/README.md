@@ -19,45 +19,60 @@
 
 # Auto tagging for release
 
-Usage: `$ ./tool/release/release.py [--pre] [-y] <type>`
+### Usage: `$ ./tool/release/release.py [-h] [--pre] [-y] <type>`
 
-Options:
-  - --pre 
-    Pre release increments current version by 1 according to release type,
-    and increments release candidate version by 1.
-    It is available to release type `major` and `minor`.
-  - -y
-    In interactive mode, it is for user to confirm. Could be used in sript.
+### Options:
+  - `[--pre]`
+    - Pre release increments current version by 1 according to release type,
+      and increments release candidate version by 1.
+      It is available to release type `major` and `minor`.
+  - `[-y]`
+    - In interactive mode, it is for user to confirm. Could be used in sript.
 
-Argument:
-  - <type>
+### Argument:
+  - `<type>`
     Allowed release types are `major`, `minor`, `patch`, `rc`, `stable`.
-    `major` increments major version by 1.
-    `minor` increments minor version by 1.
-    `patch` increments patch version by 1.
-    `rc` increments rc version by 1.
-    `stable` removes rc version.
+    - `major` increments major version by 1.
+    - `minor` increments minor version by 1.
+    - `patch` increments patch version by 1.
+    - `rc` increments rc version by 1.
+    - `stable` removes rc version.
 
 
-Example 1: releasing patch will update from 2.1.1 to 2.1.2
+### Example 1:
+
+releasing patch will update from 2.1.1 to 2.1.2
+
 run `$ ./tool/release/release.py patch`
 
-Example 2: releasing minor will update from 2.1.1 to 2.2.0
+### Example 2:
+
+releasing minor will update from 2.1.1 to 2.2.0
+
 run `$ ./tool/release/release.py minor`
 
-Example 3: releasing major will update from 2.1.1 to 3.0.0
+### Example 3:
+
+releasing major will update from 2.1.1 to 3.0.0
+
 run `$ ./tool/release/release.py major`
 
-Example 4:
+### Example 4:
+
   1. Pre-releasing major will update from 2.1.1 to 3.0.0-rc0
+
     run `$ ./tool/release/release.py --pre major`
+
   2. The release candidate needs some revise, from 3.0.0-rc0 to 3.0.0-rc1
+
     run `$ ./tool/release/release.py rc`
+
   3. The current version is released as stable, from 3.0.0-rc1 to 3.0.0
+
     run `$ ./tool/release/release.py stable`
 
 
-## In the release.sh
+## In the release.py
 
 Internally, the script retrieve latest git tag by `git describe`,
 and increment the version accroding to semantic versioning,
