@@ -86,6 +86,11 @@ void Abs(const Tensor &in, Tensor *out, Context *ctx) {
   LOG(FATAL) << "Abs Not Implemented";
 }
 
+template <typename DTypeSrc, typename DTypeDst, typename Lang>
+void CastAsType(const Tensor *src, Block *dst, int offset, Context *ctx) {
+  LOG(FATAL) << "CastAsType Not Implemented";
+}
+
 template <typename DType, typename Lang>
 void Ceil(const Tensor &in, Tensor *out, Context *ctx) {
   LOG(FATAL) << "Ceil Not Implemented";
