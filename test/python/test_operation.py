@@ -3592,5 +3592,329 @@ class TestPythonOperation(unittest.TestCase):
     def test_gemm_gpu(self):
         self.gemm_test(gpu_dev)
 
+    def constantOfShape_test(self, dev):
+        # float_ones
+        X = np.array([4, 3, 2]).astype(np.int64)
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        y = np.ones(X, dtype=np.float32)
+        result = autograd.constant_of_shape(x, 1.0)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result),
+                                             y,
+                                             decimal=5)
+        # int32_zeros
+        X = np.array([10, 6]).astype(np.int64)
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        y = np.ones(X, dtype=np.int32)
+        result = autograd.constant_of_shape(x, 1)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result),
+                                             y,
+                                             decimal=5)
+
+    def test_constantOfShape_cpu(self):
+        self.constantOfShape_test(cpu_dev)
+
+    def test_constantOfShape_gpu(self):
+        self.constantOfShape_test(gpu_dev)
+
+    def dropout_test(self, dev):
+        X = np.random.randn(3, 4, 5).astype(np.float32)
+        dy = np.random.randn(3, 4, 5).astype(np.float32)
+
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(dy)
+        x.to_device(dev)
+        dy.to_device(dev)
+
+        result = autograd.dropout(x, 0.5)
+        dx = result.creator.backward(dy.data)
+        self.check_shape(result.shape, (3, 4, 5))
+        self.check_shape(dx.shape(), (3, 4, 5))
+
+    def test_dropout_cpu(self):
+        self.dropout_test(cpu_dev)
+
+    def test_dropout_gpu(self):
+        self.dropout_test(gpu_dev)
+
+    def reduceSum_test(self, dev):
+        shape = [3, 2, 2]
+        cases = [
+            (None, 1),
+            ([1], 0),
+            ([1], 1),
+            ([-2], 1),
+            ([1, 2], 1)
+        ]
+        for axes, keepdims in cases:
+            X = np.random.uniform(-10, 10, shape).astype(np.float32)
+            _axes = tuple(axes) if axes is not None else None
+            y = np.sum(X, axis=_axes, keepdims=keepdims == 1)
+            dy = np.random.randn(*y.shape).astype(np.float32)
+
+            x = tensor.from_numpy(X)
+            dy = tensor.from_numpy(dy)
+            x.to_device(dev)
+            dy.to_device(dev)
+
+            result = autograd.reduce_sum(x, axes, keepdims)
+            dx = result.creator.backward(dy.data)
+
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result),
+                                                y,
+                                                decimal=5)
+            self.check_shape(dx.shape(), tuple(shape))
+
+    def test_reduceSum_cpu(self):
+        self.reduceSum_test(cpu_dev)
+
+    def test_reduceSum_gpu(self):
+        self.reduceSum_test(gpu_dev)
+
+    def reduceMean_test(self, dev):
+        shape = [3, 2, 2]
+        cases = [
+            (None, 1),
+            ([1], 0),
+            ([1], 1),
+            ([-2], 1),
+            ([1, 2], 1)
+        ]
+        for axes, keepdims in cases:
+            X = np.random.uniform(-10, 10, shape).astype(np.float32)
+            _axes = tuple(axes) if axes is not None else None
+            y = np.mean(X, axis=_axes, keepdims=keepdims == 1)
+            dy = np.random.randn(*y.shape).astype(np.float32)
+
+            x = tensor.from_numpy(X)
+            dy = tensor.from_numpy(dy)
+            x.to_device(dev)
+            dy.to_device(dev)
+
+            result = autograd.reduce_mean(x, axes, keepdims)
+            dx = result.creator.backward(dy.data)
+
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result),
+                                                y,
+                                                decimal=5)
+            self.check_shape(dx.shape(), tuple(shape))
+
+    def test_reduceMean_cpu(self):
+        self.reduceMean_test(cpu_dev)
+
+    def test_reduceMean_gpu(self):
+        self.reduceMean_test(gpu_dev)
+
+    def slice_test(self, dev):
+        X = np.random.randn(20, 10, 5).astype(np.float32)
+        indexes = np.array(range(20*10*5)).reshape(20, 10, 5)
+        configs = [
+            # starts, ends, axes, steps, y
+            [[0, 0], [3, 10], [0, 1], [1, 1], X[0:3, 0:10], indexes[0:3, 0:10]],  # slice
+            [[0, 0, 3], [20, 10, 4], None, None, X[:, :, 3:4], indexes[:, :, 3:4]],  # slice_default_axes
+            [[1], [1000], [1], [1], X[:, 1:1000], indexes[:, 1:1000]],  # slice_end_out_of_bounds
+            [[0], [-1], [1], [1], X[:, 0:-1], indexes[:, 0:-1]],  # slice_end_out_of_bounds
+            [[20, 10, 4], [0, 0, 1], [0, 1, 2], [-1, -3, -2], X[20:0:-1, 10:0:-3, 4:1:-2],
+                indexes[20:0:-1, 10:0:-3, 4:1:-2]],  # slice_neg_steps
+            [[0, 0, 3], [20, 10, 4], [0, -2, -1], None, X[:, :, 3:4], indexes[:, :, 3:4]],  # slice_negative_axes
+            # [[1000], [1000], [1], [1], X[:, 1000:1000], indexes[:, 1000:1000]], # slice_start_out_of_bounds # cannot support empty tensor
+        ]
+        for starts, ends, axes, steps, y, dx_idx in configs:
+            dy = np.ones(y.shape).astype(np.float32)
+
+            x = tensor.from_numpy(X)
+            dy = tensor.from_numpy(dy)
+            x.to_device(dev)
+            dy.to_device(dev)
+
+            result = autograd.slice(x, starts, ends, axes, steps)
+            dx = result.creator.backward(dy.data)
+
+            dx_idx = tuple(dx_idx.flatten().tolist())
+            dX = np.array([1. if i in dx_idx else 0. for i in range(20*10*5)]).reshape(X.shape)
+
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result),
+                                                y,
+                                                decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)),
+                                                dX,
+                                                decimal=5)
+
+    def test_slice_cpu(self):
+        self.slice_test(cpu_dev)
+
+    def test_slice_gpu(self):
+        self.slice_test(gpu_dev)
+
+    def ceil_test(self, dev):
+        X = np.array([-1.5, 1.2]).astype(np.float32)
+        DY = np.ones((2), dtype=np.float32)
+        y = np.ceil(X)
+
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
+        x.to_device(dev)
+        dy.to_device(dev)
+
+        result = autograd.ceil(x)
+        dx = result.creator.backward(dy.data)
+        DX = np.zeros((2), dtype=np.float32)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result),
+                                             y,
+                                             decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(
+            tensor.from_raw_tensor(dx)),
+                                             DX,
+                                             decimal=5)
+
+    def test_ceil_cpu(self):
+        self.ceil_test(cpu_dev)
+
+    def test_ceil_gpu(self):
+        self.ceil_test(gpu_dev)
+
+    def split_test(self, dev):
+        X = np.array([1., 2., 3., 4., 5., 6.]).astype(np.float32)
+        DY1 = np.ones((2), dtype=np.float32)
+        DY2 = np.ones((4), dtype=np.float32)
+        y = [
+            np.array([1., 2.]).astype(np.float32),
+            np.array([3., 4., 5., 6.]).astype(np.float32)
+        ]
+
+        x = tensor.from_numpy(X)
+        dy1 = tensor.from_numpy(DY1)
+        dy2 = tensor.from_numpy(DY2)
+        x.to_device(dev)
+        dy1.to_device(dev)
+        dy2.to_device(dev)
+
+        result = autograd.split(x, 0, (2, 4))
+        dx = result[0].creator.backward(dy1.data, dy2.data)
+        DX = np.ones((6), dtype=np.float32)
+
+        for idx, _r in enumerate(result):
+            np.testing.assert_array_almost_equal(
+                tensor.to_numpy(_r), y[idx], decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(
+            tensor.from_raw_tensor(dx)),
+                                             DX,
+                                             decimal=5)
+
+    def test_split_cpu(self):
+        self.split_test(cpu_dev)
+
+    def test_split_gpu(self):
+        self.split_test(gpu_dev)
+
+    def gather_test(self, dev):
+        config = [
+            ([0, 1, 3], 0), ([0, 1, 3], 1),
+                  ([[0, 1], [1, 2], [2, 3]], 1),
+                  ([0, -1, -2], 0)
+                  ]  # (indices, axis)
+        for indices, _axis in config:
+            X = np.random.randn(5, 4, 3, 2).astype(np.float32)
+            y = np.take(X, indices, axis=_axis)
+            DY = np.ones(y.shape, dtype=np.float32)
+
+            x = tensor.from_numpy(X)
+            dy = tensor.from_numpy(DY)
+            x.to_device(dev)
+            dy.to_device(dev)
+
+            result = autograd.gather(x, _axis, indices)
+            dx = result.creator.backward(dy.data)
+
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result),
+                                                 y,
+                                                 decimal=5)
+            self.check_shape(dx.shape(), tuple(X.shape))
+
+    def test_gather_cpu(self):
+        self.gather_test(cpu_dev)
+
+    def test_gather_gpu(self):
+        self.gather_test(gpu_dev)
+
+    def tile_test(self, dev):
+        config_repeats = [
+            2,
+            [2, 2],
+            [2, 1, 2],
+        ]
+        for repeats in config_repeats:
+            X = np.array([0, 1, 2]).astype(np.float32)
+            y = np.tile(X, repeats)
+            DY = np.copy(y)
+
+            x = tensor.from_numpy(X)
+            dy = tensor.from_numpy(DY)
+            x.to_device(dev)
+            dy.to_device(dev)
+
+            result = autograd.tile(x, repeats)
+            dx = result.creator.backward(dy.data)
+            DX = np.multiply(X, np.prod(repeats))
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result),
+                                                 y,
+                                                 decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(
+                tensor.from_raw_tensor(dx)),
+                                                 DX,
+                                                 decimal=5)
+
+    def test_tile_cpu(self):
+        self.tile_test(cpu_dev)
+
+    def test_tile_gpu(self):
+        self.tile_test(gpu_dev)
+
+    def noneZero_test(self, dev):
+        X = np.array([[1, 0], [1, 1]]).astype(np.float32)
+        y = np.array((np.nonzero(X)))
+
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        result = autograd.nonzero(x)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result),
+                                                y,
+                                                decimal=5)
+
+    def test_noneZero_cpu(self):
+        self.noneZero_test(cpu_dev)
+
+    def test_noneZero_gpu(self):
+        self.noneZero_test(gpu_dev)
+
+    def cast_test(self, dev):
+        config = [
+            (np.float32, np.int32, tensor.int32),
+            (np.int32, np.float32, tensor.float32),
+        ]
+        for t1, t2, t3 in config:
+            X = np.array([[1, 0], [1, 1]]).astype(t1)
+            y = np.array([[1, 0], [1, 1]]).astype(t2)
+
+            x = tensor.from_numpy(X)
+            x.to_device(dev)
+
+            result = autograd.cast(x, t3)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result),
+                                                    y,
+                                                    decimal=5)
+
+    def test_cast_cpu(self):
+        self.cast_test(cpu_dev)
+
+    def test_cast_gpu(self):
+        self.cast_test(gpu_dev)
+
 if __name__ == '__main__':
     unittest.main()
