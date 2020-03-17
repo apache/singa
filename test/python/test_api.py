@@ -605,6 +605,33 @@ class TestAPI(unittest.TestCase):
             np.testing.assert_array_almost_equal(
                 tensor.to_numpy(_cTensor_to_pyTensor(t2_ct)), np2)
 
+    def test_as_type(self):
+        np1 = np.random.random([3]).astype(np.float32)
+        np1 = np1 * 10 - 5
+        np2 = np1.astype(np.int32)
+        np3 = np2.astype(np.float32)
+
+        for dev in [cpu_dev, gpu_dev]:
+            t1 = tensor.Tensor(device=dev, data=np1)
+
+            t1_ct = t1.data
+
+            self.assertEqual(t1_ct.data_type(), singa_api.kFloat32)
+
+            t1_ct.AsType(singa_api.kInt)
+
+            self.assertEqual(t1_ct.data_type(), singa_api.kInt)
+
+            np.testing.assert_array_almost_equal(
+                tensor.to_numpy(_cTensor_to_pyTensor(t1_ct)), np2)
+
+            t1_ct.AsType(singa_api.kFloat32)
+
+            self.assertEqual(t1_ct.data_type(), singa_api.kFloat32)
+
+            np.testing.assert_array_almost_equal(
+                tensor.to_numpy(_cTensor_to_pyTensor(t1_ct)), np3)
+
 
 if __name__ == '__main__':
     unittest.main()

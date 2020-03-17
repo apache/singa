@@ -184,6 +184,20 @@ __global__ void KernelAbs(const size_t n, const float *in, float *out) {
   }
 }
 
+__global__ void KernelCastFloat2Int(const size_t n, const float *in, int *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = int(in[i]);
+  }
+}
+
+__global__ void KernelCastInt2Float(const size_t n, const int *in, float *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = float(in[i]);
+  }
+}
+
 __global__ void KernelSoftplus(const size_t n, const float *in, float *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
@@ -507,6 +521,14 @@ void set(const size_t n, const float v, float *out, cudaStream_t s) {
 
 void abs(const size_t n, const float *in, float *out, cudaStream_t s) {
   KernelAbs <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
+}
+
+void cast_float_2_int(const size_t n, const float *src, int *dst, cudaStream_t s) {
+  KernelCastFloat2Int <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, src, dst);
+}
+
+void cast_int_2_float(const size_t n, const int *src, float *dst, cudaStream_t s) {
+  KernelCastInt2Float <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, src, dst);
 }
 
 void sign(const size_t n, const float *in, float *out, cudaStream_t s) {

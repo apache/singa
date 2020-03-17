@@ -241,6 +241,22 @@ void Abs<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
 }
 
 template <>
+void CastAsType<float, int, lang::Cpp>(const Tensor *src, Block *dst,
+                                       int offset, Context *ctx) {
+  int *dst_array = static_cast<int *>(dst->mutable_data());
+  const float *src_array = static_cast<const float *>(src->block()->data());
+  for (int i = 0; i < offset; ++i) dst_array[i] = (int)src_array[i];
+}
+
+template <>
+void CastAsType<int, float, lang::Cpp>(const Tensor *src, Block *dst,
+                                       int offset, Context *ctx) {
+  float *dst_array = static_cast<float *>(dst->mutable_data());
+  const int *src_array = static_cast<const int *>(src->block()->data());
+  for (int i = 0; i < offset; ++i) dst_array[i] = (float)src_array[i];
+}
+
+template <>
 void Ceil<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
   traverse_unary<float>(in, out, [](float x) { return std::ceil(x); });
 }
