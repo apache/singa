@@ -17,15 +17,13 @@
 # under the License.
 #
 
-{% set version = "2.1.0.dev" %}
-
 package:
   name: singa-gpu
-  version: {{ version }}
+  version: {{ environ.get('GIT_DESCRIBE_TAG') }}
 
 requirements:
   run:
-    - singa {{ version }} cudnn7.3.1_cuda10.0_py{{ py }}
+    - singa {{ environ.get('GIT_DESCRIBE_TAG') }} cudnn7.3.1_cuda10.0_py{{ py }}
 
 build:
   number: 0
