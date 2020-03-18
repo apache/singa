@@ -6,6 +6,7 @@ import codecs
 import tarfile
 import warnings
 import glob
+from PIL import Image
 
 from singa import device
 from singa import tensor
@@ -20,7 +21,8 @@ import onnx.utils
 def load_model():
     url = 'https://s3.amazonaws.com/onnx-model-zoo/mobilenet/mobilenetv2-1.0/mobilenetv2-1.0.tar.gz'
     download_dir = '/tmp/'
-    filename = os.path.join(download_dir, 'mobilenetv2-1.0', '.', 'mobilenetv2-1.0.onnx')
+    filename = os.path.join(download_dir, 'mobilenetv2-1.0', '.',
+                            'mobilenetv2-1.0.onnx')
     with tarfile.open(check_exist_or_download(url), 'r') as t:
         t.extractall(path=download_dir)
     return filename
@@ -67,7 +69,43 @@ def update_batch_size(onnx_model, batch_size):
     return onnx_model
 
 
+def preprocess(img):
+    img = img.resize((256, 256))
+    img = img.crop((16, 16, 240, 240))
+    img = np.array(img).astype(np.float32) / 255
+    img = np.rollaxis(img, 2, 0)
+    for channel, mean, std in zip(range(3), [0.485, 0.456, 0.406],
+                                  [0.229, 0.224, 0.225]):
+        img[channel, :, :] -= mean
+        img[channel, :, :] /= std
+    img = np.expand_dims(img, axis=0)
+    return img
+
+
+def get_image_labe():
+    download_dir = '/tmp/'
+
+    # download label
+    label_url = 'https://s3.amazonaws.com/onnx-model-zoo/synset.txt'
+    label_file = os.path.join(download_dir, 'synset.txt')
+    urllib.request.urlretrieve(label_url, label_file)
+
+    # read label
+    with open(label_file, 'r') as f:
+        labels = [l.rstrip() for l in f]
+
+    # download image
+    image_url = 'https://s3.amazonaws.com/model-server/inputs/kitten.jpg'
+    image_file = os.path.join(download_dir, 'kitten.jpg')
+    urllib.request.urlretrieve(image_url, image_file)
+
+    # read image
+    img = Image.open(image_file)
+    return img, labels
+
+
 class Infer:
+
     def __init__(self, sg_ir):
         self.sg_ir = sg_ir
         for idx, tens in sg_ir.tensor_map.items():
@@ -94,10 +132,23 @@ if __name__ == "__main__":
     # inference
     autograd.training = False
     model = Infer(sg_ir)
-    inputs, ref_outputs = load_dataset(os.path.join('/tmp', 'mobilenetv2-1.0', 'test_data_set_0'))
-    x_batch = tensor.Tensor(device=dev, data=inputs[0])
-    outputs = model.forward(x_batch)
 
-    # Compare the results with reference outputs.
-    for ref_o, o in zip(ref_outputs, outputs):
-        np.testing.assert_almost_equal(ref_o, tensor.to_numpy(o), 4)
+    # verifty the test dataset
+    # inputs, ref_outputs = load_dataset(os.path.join('/tmp', 'mobilenetv2-1.0', 'test_data_set_0'))
+    # x_batch = tensor.Tensor(device=dev, data=inputs[0])
+    # outputs = model.forward(x_batch)
+    # for ref_o, o in zip(ref_outputs, outputs):
+    #     np.testing.assert_almost_equal(ref_o, tensor.to_numpy(o), 4)
+
+    # inference
+    img, labels = get_image_labe()
+    img = preprocess(img)
+
+    x_batch = tensor.Tensor(device=dev, data=img)
+    y = model.forward(x_batch)
+    y = tensor.softmax(y)
+    scores = tensor.to_numpy(y)
+    scores = np.squeeze(scores)
+    a = np.argsort(scores)[::-1]
+    for i in a[0:5]:
+        print('class=%s ; probability=%f' % (labels[i], scores[i]))
