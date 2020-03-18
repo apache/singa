@@ -1,12 +1,15 @@
 import os
 import urllib.request
 import gzip
+import zipfile
 import numpy as np
 import codecs
 import tarfile
 import warnings
 import glob
 from PIL import Image
+import pandas as pd
+from sklearn import preprocessing
 
 from singa import device
 from singa import tensor
@@ -20,9 +23,9 @@ import onnx.utils
 
 
 def load_model():
-    url = 'https://s3.amazonaws.com/onnx-model-zoo/resnet/resnet18v1/resnet18v1.tar.gz'
+    url = 'https://s3.amazonaws.com/onnx-model-zoo/arcface/resnet100/resnet100.tar.gz'
     download_dir = '/tmp/'
-    filename = os.path.join(download_dir, 'resnet18v1', '.', 'resnet18v1.onnx')
+    filename = os.path.join(download_dir, 'resnet100', '.', 'resnet100.onnx')
     with tarfile.open(check_exist_or_download(url), 'r') as t:
         t.extractall(path=download_dir)
     return filename
@@ -71,28 +74,24 @@ def update_batch_size(onnx_model, batch_size):
 
 
 def preprocess(img):
-    img = img.resize((256, 256))
-    img = img.crop((16, 16, 240, 240))
+    w, h = img.size
+    img = img.crop((0, (h-w)//2, w, h-(h-w)//2))
+    img = img.resize((112, 112))
     img = np.array(img).astype(np.float32) / 255
     img = np.rollaxis(img, 2, 0)
-    for channel, mean, std in zip(range(3), [0.485, 0.456, 0.406],
-                                  [0.229, 0.224, 0.225]):
-        img[channel, :, :] -= mean
-        img[channel, :, :] /= std
+    # for channel, mean, std in zip(range(3), [0.485, 0.456, 0.406],
+    #                               [0.229, 0.224, 0.225]):
+    #     img[channel, :, :] -= mean
+    #     img[channel, :, :] /= std
     img = np.expand_dims(img, axis=0)
     return img
 
 
-def get_image_labe():
-    # download label
-    label_url = 'https://s3.amazonaws.com/onnx-model-zoo/synset.txt'
-    with open(check_exist_or_download(label_url), 'r') as f:
-        labels = [l.rstrip() for l in f]
-
+def get_image():
     # download image
-    image_url = 'https://s3.amazonaws.com/model-server/inputs/kitten.jpg'
-    img = Image.open(check_exist_or_download(image_url))
-    return img, labels
+    img1 = Image.open(check_exist_or_download('https://angus-doc.readthedocs.io/en/latest/_images/aurelien.jpg'))
+    img2 = Image.open(check_exist_or_download('https://angus-doc.readthedocs.io/en/latest/_images/gwenn.jpg'))
+    return img1, img2
 
 
 class Infer:
@@ -123,21 +122,36 @@ if __name__ == "__main__":
     model = Infer(sg_ir)
 
     # verifty the test dataset
-    # inputs, ref_outputs = load_dataset(os.path.join('/tmp', 'resnet18v1', 'test_data_set_0'))
+    # inputs, ref_outputs = load_dataset(os.path.join('/tmp', 'resnet100', 'test_data_set_0'))
     # x_batch = tensor.Tensor(device=dev, data=inputs[0])
     # outputs = model.forward(x_batch)
     # for ref_o, o in zip(ref_outputs, outputs):
     #     np.testing.assert_almost_equal(ref_o, tensor.to_numpy(o), 4)
 
     # inference
-    img, labels = get_image_labe()
-    img = preprocess(img)
+    img1, img2 = get_image()
+    img1 = preprocess(img1)
+    img2 = preprocess(img2)
 
-    x_batch = tensor.Tensor(device=dev, data=img)
+    onnx_model = onnx.load(model_path)
+    onnx_model = update_batch_size(onnx_model, 2)
+    sg_ir = sonnx.prepare(onnx_model, device=dev)
+
+    autograd.training = False
+    model = Infer(sg_ir)
+
+    x_batch = tensor.Tensor(device=dev, data=np.concatenate((img1, img2), axis=0))
     y = model.forward(x_batch)
-    y = tensor.softmax(y)
-    scores = tensor.to_numpy(y)
-    scores = np.squeeze(scores)
-    a = np.argsort(scores)[::-1]
-    for i in a[0:5]:
-        print('class=%s ; probability=%f' % (labels[i], scores[i]))
+    embedding = tensor.to_numpy(y)
+    embedding = preprocessing.normalize(embedding)
+    embedding1 = embedding[0]
+    embedding2 = embedding[1]
+
+    # Compute squared distance between embeddings
+    dist = np.sum(np.square(embedding1-embedding2))
+    # Compute cosine similarity between embedddings
+    sim = np.dot(embedding1, embedding2.T)
+    # Print predictions
+    print('Distance = %f' %(dist))
+    print('Similarity = %f' %(sim))
+    #     print('class=%s ; probability=%f' % (labels[i], scores[i]))

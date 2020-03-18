@@ -81,24 +81,14 @@ def preprocess(img):
 
 
 def get_image_labe():
-    download_dir = '/tmp/'
-
     # download label
     label_url = 'https://s3.amazonaws.com/onnx-model-zoo/synset.txt'
-    label_file = os.path.join(download_dir, 'synset.txt')
-    urllib.request.urlretrieve(label_url, label_file)
-
-    # read label
-    with open(label_file, 'r') as f:
+    with open(check_exist_or_download(label_url), 'r') as f:
         labels = [l.rstrip() for l in f]
 
     # download image
     image_url = 'https://s3.amazonaws.com/model-server/inputs/kitten.jpg'
-    image_file = os.path.join(download_dir, 'kitten.jpg')
-    urllib.request.urlretrieve(image_url, image_file)
-
-    # read image
-    img = Image.open(image_file)
+    img = Image.open(check_exist_or_download(image_url))
     return img, labels
 
 
@@ -130,7 +120,7 @@ if __name__ == "__main__":
     model = Infer(sg_ir)
 
     # verifty the test dataset
-    # inputs, ref_outputs = load_dataset(os.path.join('/tmp', 'mobilenetv2-1.0', 'test_data_set_0'))
+    # inputs, ref_outputs = load_dataset(os.path.join('/tmp', 'vgg16', 'test_data_set_0'))
     # x_batch = tensor.Tensor(device=dev, data=inputs[0])
     # outputs = model.forward(x_batch)
     # for ref_o, o in zip(ref_outputs, outputs):

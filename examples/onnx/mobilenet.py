@@ -83,24 +83,14 @@ def preprocess(img):
 
 
 def get_image_labe():
-    download_dir = '/tmp/'
-
     # download label
     label_url = 'https://s3.amazonaws.com/onnx-model-zoo/synset.txt'
-    label_file = os.path.join(download_dir, 'synset.txt')
-    urllib.request.urlretrieve(label_url, label_file)
-
-    # read label
-    with open(label_file, 'r') as f:
+    with open(check_exist_or_download(label_url), 'r') as f:
         labels = [l.rstrip() for l in f]
 
     # download image
     image_url = 'https://s3.amazonaws.com/model-server/inputs/kitten.jpg'
-    image_file = os.path.join(download_dir, 'kitten.jpg')
-    urllib.request.urlretrieve(image_url, image_file)
-
-    # read image
-    img = Image.open(image_file)
+    img = Image.open(check_exist_or_download(image_url))
     return img, labels
 
 
