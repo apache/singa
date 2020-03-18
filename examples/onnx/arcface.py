@@ -79,10 +79,6 @@ def preprocess(img):
     img = img.resize((112, 112))
     img = np.array(img).astype(np.float32) / 255
     img = np.rollaxis(img, 2, 0)
-    # for channel, mean, std in zip(range(3), [0.485, 0.456, 0.406],
-    #                               [0.229, 0.224, 0.225]):
-    #     img[channel, :, :] -= mean
-    #     img[channel, :, :] /= std
     img = np.expand_dims(img, axis=0)
     return img
 
