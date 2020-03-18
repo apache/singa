@@ -154,4 +154,3 @@ if __name__ == "__main__":
     # Print predictions
     print('Distance = %f' %(dist))
     print('Similarity = %f' %(sim))
-    #     print('class=%s ; probability=%f' % (labels[i], scores[i]))
