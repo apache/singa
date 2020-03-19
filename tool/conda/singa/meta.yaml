@@ -51,6 +51,7 @@ requirements:
     - glog 0.3.5
     - numpy 1.16.0
     - cudnn {{ cudnn }}       # ['cudnn' in str(build_str)]
+    - dnnl {{ dnnl }}
     - python {{ python }}
     - nccl {{ nccl }}         # ['nccl' in str(build_str)]
     - mpich {{ mpich }}       # ['mpich' in str(build_str)]
@@ -58,6 +59,7 @@ requirements:
   run:
     - {{ pin_compatible('glog', max_pin='x.x') }}
     - {{ pin_compatible('numpy', max_pin='x.x') }}
+    - {{ pin_compatible('dnnl', max_pin='x.x') }}
     - cudnn {{ cudnn }}       # ['cudnn' in str(build_str)]
     - python {{ python }}
     - nccl {{ nccl }}         # ['nccl' in str(build_str)]
@@ -68,6 +70,7 @@ requirements:
     - future
     - tqdm
     - onnx >=1.3.0
+    - deprecated 1.2.7
 
 test:
   source_files:

@@ -3185,3 +3185,753 @@ def gemm(A, B, C=None, alpha=1.0, beta=1.0, transA=0, transB=0):
         tensor, the output
     """
     return Gemm(alpha, beta, transA, transB)(A, B, C)[0]
+
+
+class ConstantOfShape(Operation):
+
+    def __init__(self, value=0):
+        """
+        Init a ConstantOfShape, generate a tensor with given value and shape.
+        Args:
+            value: (Optional) The value of the output elements. Should be a one-element value. If not specified, 
+            it defaults to 0 and datatype float32
+        """
+        super(ConstantOfShape, self).__init__()
+        self.value = value
+
+    def forward(self, x):
+        """
+        forward of ConstantOfShape
+        Args:
+            x: CTensor, 1D tensor. The shape of the expected output tensor. All values must be >= 0.
+        Returns:
+            the output CTensor. If attribute 'value' is specified, the value and datatype of the output tensor is taken from 'value'. 
+            If attribute 'value' is not specified, the value in the output defaults to 0, and the datatype defaults to float32.
+        """
+        x_shape = tensor.to_numpy(tensor.from_raw_tensor(x)).astype(
+            np.int64).tolist()
+        assert np.min(x_shape) >= 0, ('shape cannot be negative')
+        x = CTensor(x_shape, x.device())
+        x.SetFloatValue(self.value)
+        return x
+
+    def backward(self, dy):
+        """
+        backward of ConstantOfShape
+        Args:
+            dy: CTensor, gradient tensor.
+        """
+        assert False, ('no gradient for backward function')
+
+
+def constant_of_shape(x, value=0):
+    """
+    Init a ConstantOfShape, generate a tensor with given value and shape.
+    Args:
+        x: CTensor, 1D tensor. The shape of the expected output tensor. All values must be >= 0.
+    Args:
+        value: (Optional) The value of the output elements. Should be a one-element tensor. If not specified, 
+        it defaults to a tensor of value 0 and datatype float32
+    Returns:
+            the output CTensor. If attribute 'value' is specified, the value and datatype of the output tensor is taken from 'value'. 
+            If attribute 'value' is not specified, the value in the output defaults to 0, and the datatype defaults to float32.
+    """
+    return ConstantOfShape(value)(x)[0]
+
+
+class Dropout(Operation):
+
+    def __init__(self, ratio=0.5):
+        """
+        Init a Dropout, which scales the masked input data by the following equation:
+        output = scale * data * mask, scale = 1. / (1. - ratio).
+        Args:
+            ratio: float, he ratio of random dropout, with value in [0, 1).
+        """
+        super(Dropout, self).__init__()
+        self.ratio = ratio
+
+    def forward(self, x):
+        """
+        forward of Dropout
+        Args:
+            x: CTensor, input tensor.
+        Returns:
+            the output CTensor.
+        """
+        if training:
+            self.scale = 1 / 1 - self.ratio
+            self.mask = singa.Tensor(list(x.shape()), x.device())
+            singa.Bernoulli(1 - self.ratio, self.mask)
+            x = singa.MultFloat(singa.__mul__(self.mask, x), self.scale)
+        return x
+
+    def backward(self, dy):
+        """
+        backward of Dropout
+        Args:
+            dy: CTensor, gradient tensor.
+        Returns:
+            the gradient tensor over input tensor.
+        """
+        if training:
+            dy = singa.MultFloat(singa.__mul__(self.mask, dy), self.scale)
+        return dy
+
+
+def dropout(x, ratio=0.5):
+    """
+    Init a Dropout, which scales the masked input data by the following equation:
+    output = scale * data * mask, scale = 1. / (1. - ratio).
+    Args:
+        x: CTensor, input tensor.
+    Args:
+        ratio: float, he ratio of random dropout, with value in [0, 1).
+    Returns:
+        the output CTensor.
+    """
+    return Dropout(ratio)(x)[0]
+
+
+class ReduceSum(Operation):
+
+    def __init__(self, axes=None, keepdims=1):
+        """
+        Init a ReduceSum, computes the sum of the input tensor's element along the provided axes.
+        Args:
+            axes: list of ints, A list of integers, along which to reduce. Accepted range is [-r, r-1] where r = rank(data).
+            The default is None, which reduces over all the dimensions of the input tensor.
+        Args:
+            keepdims: int, Keep the reduced dimension or not, default 1 mean keep reduced dimension.
+        """
+        super(ReduceSum, self).__init__()
+        self.axes = axes
+        self.keepdims = keepdims
+
+    def forward(self, x):
+        """
+        forward of ReduceSum
+        Args:
+            x: CTensor, input tensor.
+        Returns:
+            the output CTensor.
+        """
+        _x = tensor.from_raw_tensor(x)
+        x_shape = list(_x.shape)
+        # handle the special axes
+        if self.axes is None:
+            self.axes = [i for i in range(len(x_shape))]  # axes = None
+        else:
+            self.axes = [i if i >= 0 else len(x_shape) + i for i in self.axes
+                        ]  # axes has negative
+        self.axes.sort(reverse=True)
+        for axis in self.axes:
+            _x = tensor.sum(_x, axis)
+            x_shape[axis] = 1
+        if self.keepdims == 1:
+            _x = tensor.reshape(_x, x_shape)
+        self.cache = (x_shape, x)
+        return _x.data
+
+    def backward(self, dy):
+        """
+        backward of ReduceSum
+        Args:
+            dy: CTensor, gradient tensor.
+        Returns:
+            the gradient tensor over input tensor.
+        """
+        x_shape, x = self.cache
+        dy = singa.Reshape(dy, x_shape)
+        scale = np.prod(x_shape) / np.prod(x.shape())
+        mask = singa.Tensor(list(x.shape()), x.device())
+        mask.SetFloatValue(scale)
+        dy = singa.__mul__(mask, dy)
+        return dy
+
+
+def reduce_sum(x, axes=None, keepdims=1):
+    """
+    Init a ReduceSum, computes the sum of the input tensor's element along the provided axes.
+    Args:
+        x: CTensor, input tensor.
+    Args:
+        axes: list of ints, A list of integers, along which to reduce. Accepted range is [-r, r-1] where r = rank(data).
+        The default is None, which reduces over all the dimensions of the input tensor.
+    Args:
+        keepdims: int, Keep the reduced dimension or not, default 1 mean keep reduced dimension.
+    Returns:
+        the output CTensor.
+    """
+    return ReduceSum(axes, keepdims)(x)[0]
+
+
+class ReduceMean(Operation):
+
+    def __init__(self, axes=None, keepdims=1):
+        """
+        Init a ReduceMean, computes the mean of the input tensor's element along the provided axes.
+        Args:
+            axes: list of ints, A list of integers, along which to reduce. Accepted range is [-r, r-1] where r = rank(data).
+            The default is None, which reduces over all the dimensions of the input tensor.
+        Args:
+            keepdims: int, Keep the reduced dimension or not, default 1 mean keep reduced dimension.
+        """
+        super(ReduceMean, self).__init__()
+        self.axes = axes
+        self.keepdims = keepdims
+
+    def forward(self, x):
+        """
+        forward of ReduceMean
+        Args:
+            x: CTensor, input tensor.
+        Returns:
+            the output CTensor.
+        """
+        _x = tensor.from_raw_tensor(x)
+        x_shape = list(_x.shape)
+        # handle the special axes
+        if self.axes is None:
+            self.axes = [i for i in range(len(x_shape))]  # axes = None
+        else:
+            self.axes = [i if i >= 0 else len(x_shape) + i for i in self.axes
+                        ]  # axes has negative
+        self.axes.sort(reverse=True)
+        for axis in self.axes:
+            _x = tensor.sum(_x, axis)
+            x_shape[axis] = 1
+        if self.keepdims == 1:
+            _x = tensor.reshape(_x, x_shape)
+        self.cache = (x_shape, x)
+        scale = np.prod(x_shape) / np.prod(x.shape())
+        _x = singa.MultFloat(_x.data, scale)
+        return _x
+
+    def backward(self, dy):
+        """
+        backward of ReduceMean
+        Args:
+            dy: CTensor, gradient tensor.
+        Returns:
+            the gradient tensor over input tensor.
+        """
+        x_shape, x = self.cache
+        dy = singa.Reshape(dy, x_shape)
+        mask = singa.Tensor(list(x.shape()), x.device())
+        mask.SetFloatValue(1.0)
+        dy = singa.__mul__(mask, dy)
+        return dy
+
+
+def reduce_mean(x, axes=None, keepdims=1):
+    """
+    Init a ReduceMean, computes the mean of the input tensor's element along the provided axes.
+    Args:
+        x: CTensor, input tensor.
+    Args:
+        axes: list of ints, A list of integers, along which to reduce. Accepted range is [-r, r-1] where r = rank(data).
+        The default is None, which reduces over all the dimensions of the input tensor.
+    Args:
+        keepdims: int, Keep the reduced dimension or not, default 1 mean keep reduced dimension.
+    Returns:
+        the output CTensor.
+    """
+    return ReduceMean(axes, keepdims)(x)[0]
+
+
+class Slice(Operation):
+
+    def __init__(self, starts, ends, axes=None, steps=None):
+        """
+        Init a Slice, Produces a slice of the input tensor along multiple axes. Similar to numpy: 
+        https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html
+        Args:
+            starts: list of ints, starting indices of corresponding axis
+        Args:
+            ends: list of ints, ending indices of corresponding axis
+        Args:
+            axes: list of ints, axes that `starts` and `ends` apply to. 
+            Negative value means counting dimensions from the back. Accepted range is [-r, r-1] where r = rank(data).
+        Args:
+            steps: list of ints, slice step of corresponding axis in `axes`. 
+            Negative value means slicing backward. 'steps' cannot be 0. Defaults to 1.
+        """
+        super(Slice, self).__init__()
+        self.starts = starts
+        self.ends = ends
+        self.axes = axes
+        self.steps = steps
+
+    def forward(self, x):
+        """
+        forward of Slice
+        Args:
+            x: CTensor, input tensor.
+        Returns:
+            the output CTensor.
+        """
+        x_shape = list(x.shape())
+        # handle the special axes
+        if self.axes is None:
+            self.axes = [i for i in range(len(x_shape))]  # axes = None
+        else:
+            self.axes = [i if i >= 0 else len(x_shape) + i for i in self.axes
+                        ]  # axes has negative
+        self.cache = []
+        # handle the special steps
+        if self.steps is None:
+            self.steps = [1] * len(x_shape)  # steps = None
+        for idx, axis in enumerate(self.axes):
+            start, end, step = self.starts[idx], self.ends[idx], self.steps[idx]
+            self.cache.append((axis, x_shape[axis], start, end, step))
+            xs = []
+            for step_idx in range(x_shape[axis])[start:end:step]:
+                xs.append(singa.SliceOn(x, step_idx, step_idx + 1, axis))
+            assert len(xs) > 0, "Cannot support empty tensor"
+            x = singa.VecTensor(xs)
+            x = singa.ConcatOn(x, axis)
+        return x
+
+    def backward(self, dy):
+        """
+        backward of Slice
+        Args:
+            dy: CTensor, gradient tensor.
+        Returns:
+            the gradient tensor over input tensor.
+        """
+        for axis, shape, start, end, step in self.cache[::-1]:
+            data_idxes = tuple(range(shape)[start:end:step])
+            dys = []
+            data_idx = 0
+            for step_idx in range(shape):
+                if step_idx in data_idxes:
+                    tmp_tensor = singa.SliceOn(dy, data_idx, data_idx + 1, axis)
+                    data_idx += 1
+                else:
+                    tmp_shape = list(dy.shape())
+                    tmp_shape[axis] = 1
+                    tmp_tensor = singa.Tensor(tmp_shape, dy.device())
+                    tmp_tensor.SetFloatValue(0.)
+                dys.append(tmp_tensor)
+            dys = singa.VecTensor(dys)
+            dy = singa.ConcatOn(dys, axis)
+        return dy
+
+
+def slice(x, starts, ends, axes=None, steps=None):
+    """
+    Init a Slice, Produces a slice of the input tensor along multiple axes. Similar to numpy: 
+    https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html
+    Args:
+        x: CTensor, input tensor.
+    Args:
+        starts: list of ints, starting indices of corresponding axis
+    Args:
+        ends: list of ints, ending indices of corresponding axis
+    Args:
+        axes: list of ints, axes that `starts` and `ends` apply to. 
+        Negative value means counting dimensions from the back. Accepted range is [-r, r-1] where r = rank(data).
+    Args:
+        steps: list of ints, slice step of corresponding axis in `axes`. 
+        Negative value means slicing backward. 'steps' cannot be 0. Defaults to 1.
+    Returns:
+        the output CTensor.
+    """
+    return Slice(starts, ends, axes, steps)(x)[0]
+
+
+class Ceil(Operation):
+
+    def __init__(self):
+        """
+        Ceil takes one input data (Tensor) and produces one output data (Tensor) where the ceil is, y = ceil(x), is applied to the tensor elementwise.
+        """
+        super(Ceil, self).__init__()
+
+    def forward(self, x):
+        """
+        forward of Ceil
+        Args:
+            x: CTensor, input tensor.
+        Returns:
+            the output CTensor.
+        """
+        return singa.Ceil(x)
+
+    def backward(self, dy):
+        """
+        backward of Ceil
+        Args:
+            dy: CTensor, gradient tensor.
+        Returns:
+            the gradient tensor over input tensor.
+        """
+        dy = singa.Tensor(dy.shape(), dy.device())
+        dy.SetFloatValue(0.)
+        return dy
+
+
+def ceil(x):
+    """
+    Ceil takes one input data (Tensor) and produces one output data (Tensor) where the ceil is, y = ceil(x), is applied to the tensor elementwise.
+    Args:
+        x: CTensor, input tensor.
+    Returns:
+        the output CTensor.
+    """
+    return Ceil()(x)[0]
+
+
+class Split(Operation):
+
+    def __init__(self, axis, parts):
+        """
+        Init a Split, Split a tensor into a list of tensors, along the specified 'axis'. 
+        Args:
+            axis: int, Which axis to split on. A negative value means counting dimensions from the back. 
+            Accepted range is [-rank, rank-1] where r = rank(input).
+        Args:
+            parts: list of ints, length of each output, which can be specified using argument 'parts'. 
+            Otherwise, the tensor is parts to equal sized parts.
+        """
+        super(Split, self).__init__()
+        self.axis = axis
+        self.parts = parts
+
+    def forward(self, x):
+        """
+        forward of Split
+        Args:
+            x: CTensor, input tensor.
+        Returns:
+            the output CTensor.
+        """
+        xs = []
+        _s = 0
+        for _l in self.parts:
+            xs.append(singa.SliceOn(x, _s, _s + _l, self.axis))
+            _s += _l
+        return tuple(xs)
+
+    def backward(self, *dys):
+        """
+        backward of Split
+        Args:
+            dys: list of CTensor, gradient tensor.
+        Returns:
+            the gradient tensor over input tensor.
+        """
+        dys = singa.VecTensor(dys)
+        dy = singa.ConcatOn(dys, self.axis)
+        return dy
+
+
+def split(x, axis, parts):
+    """
+    Init a Split, Split a tensor into a list of tensors, along the specified 'axis'. 
+    Args:
+        x: CTensor, input tensor.
+    Args:
+        axis: int, Which axis to split on. A negative value means counting dimensions from the back. 
+        Accepted range is [-rank, rank-1] where r = rank(input).
+    Args:
+        parts: list of ints, length of each output, which can be specified using argument 'parts'. 
+        Otherwise, the tensor is split to equal sized parts.
+    Returns:
+        the output CTensor.
+    """
+    return Split(axis, parts)(x)
+
+
+class Gather(Operation):
+
+    def __init__(self, axis, indices):
+        """
+        Init a Gather, Given data tensor of rank r >= 1, and indices tensor of rank q, gather entries of 
+        the axis dimension of data (by default outer-most one as axis=0) indexed by indices,
+        and concatenates them in an output tensor of rank q + (r - 1).
+        Args:
+            axis: int, Which axis to slice on. A negative value means counting dimensions from the back. 
+            Accepted range is [-rank, rank-1] where r = rank(input).
+        Args:
+            indices: list of ints, entries of the axis dimension of data.
+        """
+        super(Gather, self).__init__()
+        self.axis = axis
+        self.indices = indices
+
+    def forward(self, x):
+        """
+        forward of Gather
+        Args:
+            x: CTensor, input tensor.
+        Returns:
+            the output CTensor.
+        """
+        self.x_shape = list(x.shape())
+        self.axis = self.axis % len(self.x_shape)  # handle the negative value
+        _shape = self.x_shape[self.axis]
+        xs = []
+        for indice in self.indices:
+            # each indice is a sub-indice
+            if isinstance(indice, tuple) or isinstance(indice, list):
+                sub_xs = []
+                for idx in indice:
+                    idx = idx % _shape
+                    tmp_tensor = singa.SliceOn(x, idx, idx + 1, self.axis)
+                    sub_xs.append(tmp_tensor)
+                sub_xs = singa.VecTensor(sub_xs)
+                tmp_tensor = singa.ConcatOn(sub_xs, self.axis)
+                _slice_shape = list(tmp_tensor.shape())
+                _slice_shape.insert(self.axis, 1)  # add a new axis to concat
+                tmp_tensor = singa.Reshape(tmp_tensor, _slice_shape)
+            else:
+                indice = indice % _shape
+                tmp_tensor = singa.SliceOn(x, indice, indice + 1, self.axis)
+            xs.append(tmp_tensor)
+        xs = singa.VecTensor(xs)
+        return singa.ConcatOn(xs, self.axis)
+
+    def backward(self, dy):
+        """
+        backward of Gather
+        Args:
+            dy: CTensor, gradient tensor.
+        Returns:
+            the gradient tensor over input tensor.
+        """
+        _shape = self.x_shape[self.axis]
+
+        def construct_dx(dy, axis, indices, _shape):
+            dys = []
+            data_idx = 0
+            data_idxes = tuple(indices)
+            for step_idx in range(_shape):
+                if step_idx in data_idxes:
+                    tmp_tensor = singa.SliceOn(dy, data_idx, data_idx + 1, axis)
+                    data_idx += 1
+                else:
+                    tmp_shape = list(dy.shape())
+                    tmp_shape[axis] = 1
+                    tmp_tensor = singa.Tensor(tmp_shape, dy.device())
+                    tmp_tensor.SetFloatValue(0.)
+                dys.append(tmp_tensor)
+            dys = singa.VecTensor(dys)
+            dy = singa.ConcatOn(dys, axis)
+            return dy
+
+        if isinstance(self.indices[0], tuple) or isinstance(
+                self.indices[0], list):
+            dx = singa.Tensor(self.x_shape, dy.device())
+            dx.SetFloatValue(0.)
+            for data_idx in range(len(self.indices)):
+                # get a piece of the dy and remove its new axis added at forward
+                tmp_tensor = singa.SliceOn(dy, data_idx, data_idx + 1,
+                                           self.axis)
+                _slice_shape = list(tmp_tensor.shape())
+                del _slice_shape[self.axis]
+                tmp_tensor = singa.Reshape(tmp_tensor, _slice_shape)
+                # construct dx and sum them together
+                tmp_tensor = construct_dx(tmp_tensor, self.axis,
+                                          self.indices[data_idx],
+                                          self.x_shape[self.axis])
+                dx = singa.__add__(dx, tmp_tensor)
+            return dx
+        else:
+            return construct_dx(dy, self.axis, self.indices, _shape)
+
+
+def gather(x, axis, indices):
+    """
+    Init a Gather, Given data tensor of rank r >= 1, and indices tensor of rank q, gather entries of 
+    the axis dimension of data (by default outer-most one as axis=0) indexed by indices,
+    and concatenates them in an output tensor of rank q + (r - 1).
+    Args:
+        x: CTensor, input tensor.
+    Args:
+        axis: int, Which axis to slice on. A negative value means counting dimensions from the back. 
+        Accepted range is [-rank, rank-1] where r = rank(input).
+    Args:
+        indices: list of ints, entries of the axis dimension of data.
+    Returns:
+        the output CTensor.
+    """
+    return Gather(axis, indices)(x)[0]
+
+
+class Tile(Operation):
+
+    def __init__(self, repeats):
+        """
+        Init a Tile, Constructs a tensor by tiling a given tensor. This is the same as function tile in Numpy:
+        https://docs.scipy.org/doc/numpy/reference/generated/numpy.tile.html
+        Args:
+            repeats: 1D int64 matrix of the same length as input's dimension number,
+            includes numbers of repeated copies along input's dimensions.
+        """
+        super(Tile, self).__init__()
+        self.repeats = [repeats] if isinstance(repeats, int) else repeats
+
+    def forward(self, x):
+        """
+        forward of Tile
+        Args:
+            x: CTensor, input tensor.
+        Returns:
+            the output CTensor.
+        """
+        self.x_shape = list(x.shape())
+        # add new axis from head
+        if len(self.x_shape) < len(self.repeats):
+            append_len = len(self.repeats) - len(self.x_shape)
+            new_shape = [1] * append_len + self.x_shape
+            x = singa.Reshape(x, new_shape)
+        for axis, rp in enumerate(self.repeats):
+            if rp == 1:
+                continue
+            xs = []
+            for idx in range(rp):
+                xs.append(x.Clone())
+            xs = singa.VecTensor(xs)
+            x = singa.ConcatOn(xs, axis)
+        return x
+
+    def backward(self, dy):
+        """
+        backward of Tile
+        Args:
+            dy: CTensor, gradient tensor.
+        Returns:
+            the gradient tensor over input tensor.
+        """
+        for axis, rp in enumerate(self.repeats):
+            if rp == 1:
+                continue
+            _slice_shape = list(dy.shape())
+            ori_len = _slice_shape[axis] // rp
+            _slice_shape[axis] = ori_len
+            _dy = singa.Tensor(_slice_shape, dy.device())
+            _dy.SetFloatValue(0.)
+
+            for idx in range(rp):
+                tmp_tensor = singa.SliceOn(dy, ori_len * idx,
+                                           ori_len * (idx + 1), axis)
+                _dy = singa.__add__(_dy, tmp_tensor)
+            dy = _dy
+        # remove the new axis we added at forward
+        if len(self.x_shape) < len(self.repeats):
+            dy = singa.Reshape(dy, self.x_shape)
+        return dy
+
+
+def tile(x, repeats):
+    """
+    Init a Tile, Constructs a tensor by tiling a given tensor. This is the same as function tile in Numpy:
+    https://docs.scipy.org/doc/numpy/reference/generated/numpy.tile.html
+    Args:
+        x: CTensor, input tensor.
+    Args:
+        repeats: 1D int64 matrix of the same length as input's dimension number,
+        includes numbers of repeated copies along input's dimensions.
+    Returns:
+        the output CTensor.
+    """
+    return Tile(repeats)(x)[0]
+
+
+class NonZero(Operation):
+
+    def __init__(self):
+        """
+        Init a NonZero, Constructs a tensor by tiling a given tensor. This is the same as function tile in Numpy:
+        https://docs.scipy.org/doc/numpy/reference/generated/numpy.tile.html
+        """
+        super(NonZero, self).__init__()
+
+    def forward(self, x):
+        """
+        forward of NonZero
+        Args:
+            x: CTensor, input tensor.
+        Returns:
+            the output CTensor.
+        """
+        y = tensor.to_numpy(tensor.from_raw_tensor(x))
+        y = np.array((np.nonzero(y)))
+        y = tensor.from_numpy(y)
+        y.to_device(x.device())
+        return y.data
+
+    def backward(self, dy):
+        """
+        backward of NonZero
+        Args:
+            dy: CTensor, gradient tensor.
+        Returns:
+            the gradient tensor over input tensor.
+        """
+        assert False, ('no gradient for backward function')
+
+
+def nonzero(x):
+    """
+    Returns the indices of the elements that are non-zero (in row-major order - by dimension). 
+    NonZero behaves similar to numpy.nonzero: https://docs.scipy.org/doc/numpy/reference/generated/numpy.nonzero.html
+    Args:
+        x: CTensor, input tensor.
+    Returns:
+        the output CTensor.
+    """
+    return NonZero()(x)[0]
+
+
+class Cast(Operation):
+
+    def __init__(self, to):
+        """
+        The operator casts the elements of a given input tensor to a data type specified by the 'to' argument 
+        and returns an output tensor of the same size in the converted type.
+        Args:
+            to: data type, 
+        """
+        super(Cast, self).__init__()
+        self.to = to
+
+    def forward(self, x):
+        """
+        forward of Cast
+        Args:
+            x: CTensor, input tensor.
+        Returns:
+            the output CTensor.
+        """
+        if x.data_type() != self.to:
+            x.AsType(self.to)
+        return x
+
+
+    def backward(self, dy):
+        """
+        backward of Cast
+        Args:f
+            dy: CTensor, gradient tensor.
+        Returns:
+            the gradient tensor over input tensor.
+        """
+        assert False, ('no gradient for backward function')
+
+
+def cast(x, to):
+    """
+    The operator casts the elements of a given input tensor to a data type specified by the 'to' argument 
+    and returns an output tensor of the same size in the converted type.
+    Args:x: 
+        CTensor, input tensor.
+    Args:
+        to: data type
+    Returns:
+        the output CTensor.
+    """
+    return Cast(to)(x)[0]

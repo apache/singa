@@ -1,3 +1,0 @@
-rat-excludes
-# Apache Rat cannot recognize the license header in jupyter notebooks
-.*\.ipynb 

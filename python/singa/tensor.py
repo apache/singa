@@ -233,14 +233,23 @@ class Tensor(object):
         self.device = t.device
         self.dtype = t.dtype
 
-    '''
     def as_type(self, dtype):
-        Change the data type.
+        '''Change the data type.
 
         Args:
             dtype:
+        '''
+        if dtype == singa.kInt:
+            pass
+        elif dtype == singa.kFloat32:
+            pass
+        elif dtype == 'int':
+            dtype = singa.kInt
+        elif dtype == 'float':
+            dtype = singa.kFloat32
+        else:
+            raise TypeError("invalid data type %s" % dtype)
         self.data.AsType(dtype)
-    '''
 
     def to_device(self, device):
         '''Move the tensor data onto a given device.
