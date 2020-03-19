@@ -264,7 +264,7 @@ void Ceil<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
 #ifdef USE_DNNL
 template <>
 void SoftMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
-  auto md = dnnl::memory::desc({in.shape()[0], in.shape()[1]},
+  auto md = dnnl::memory::desc({static_cast<long long>(in.shape()[0]), static_cast<long long>(in.shape()[1])},
                                dnnl::memory::data_type::f32,
                                dnnl::memory::format_tag::ab);
   auto in_mem = dnnl::memory(md, ctx->dnnl_engine, in.block()->mutable_data());
@@ -284,7 +284,7 @@ void SoftMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
 template <>
 void SoftMaxBackward<float, lang::Cpp>(const Tensor &in, Tensor *out,
                                        const Tensor &fdout, Context *ctx) {
-  auto md = dnnl::memory::desc({in.shape()[0], in.shape()[1]},
+  auto md = dnnl::memory::desc({static_cast<long long>(in.shape()[0]), static_cast<long long>(in.shape()[1])},
                                dnnl::memory::data_type::f32,
                                dnnl::memory::format_tag::ab);
   auto in_mem = dnnl::memory(md, ctx->dnnl_engine, in.block()->mutable_data());
