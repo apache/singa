@@ -72,7 +72,7 @@ def update_batch_size(onnx_model, batch_size):
 def preprocess(img):
     img = img.resize((256, 256))
     img = img.crop((16, 16, 240, 240))
-    img = np.array(img).astype(np.float32) / 255
+    img = np.array(img).astype(np.float32) / 255.
     img = np.rollaxis(img, 2, 0)
     for channel, mean, std in zip(range(3), [0.485, 0.456, 0.406],
                                   [0.229, 0.224, 0.225]):
