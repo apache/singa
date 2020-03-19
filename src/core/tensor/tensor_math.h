@@ -87,8 +87,8 @@ void Abs(const Tensor &in, Tensor *out, Context *ctx) {
 }
 
 template <typename DTypeSrc, typename DTypeDst, typename Lang>
-void CastAsType(const Tensor *src, Block *dst, int offset, Context *ctx) {
-  LOG(FATAL) << "CastAsType Not Implemented";
+void CastCopy(const Tensor *src, Tensor *dst, Context *ctx) {
+  LOG(FATAL) << "CastCopy Not Implemented";
 }
 
 template <typename DType, typename Lang>

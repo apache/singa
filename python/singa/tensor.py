@@ -249,7 +249,9 @@ class Tensor(object):
             dtype = singa.kFloat32
         else:
             raise TypeError("invalid data type %s" % dtype)
-        self.data.AsType(dtype)
+        t = Tensor(self.shape, self.device, dtype)
+        t.data = self.data.AsType(dtype)
+        return t
 
     def to_device(self, device):
         '''Move the tensor data onto a given device.

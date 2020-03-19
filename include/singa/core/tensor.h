@@ -254,7 +254,7 @@ class Tensor {
   Tensor &ResetLike(const Tensor &t);
 
   /// Reset the data type, it would reallocate block if type changes.
-  Tensor &AsType(const DataType type);
+  Tensor AsType(const DataType type);
 
   /// Reset the device.
   /// If the target device is a diff device, then do deep data copy.

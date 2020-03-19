@@ -340,18 +340,27 @@ class TestTensorMethods(unittest.TestCase):
 
     def test_astype(self):
         for dev in [cpu_dev, gpu_dev]:
+            shape1 = [2, 3]
+            shape2 = [3, 2]
 
-            np1 = np.random.random([5, 6, 7, 8]).astype(np.float32)
-            np1 = np1 * 10 - 5
+            np_flt = np.random.random(shape1).astype(np.float32)
+            np_flt = np_flt * 10 - 5
 
-            np2 = np1.astype(np.int32)
-            np3 = np2.astype(np.float32)
+            np_int = np_flt.astype(np.int32)
+            np_flt2 = np_int.astype(np.float32)
 
-            t1 = tensor.Tensor(device=dev, data=np1)
-            t1.as_type('int')
-            np.testing.assert_array_almost_equal(tensor.to_numpy(t1), np2)
-            t1.as_type('float')
-            np.testing.assert_array_almost_equal(tensor.to_numpy(t1), np3)
+            t2 = tensor.Tensor(device=dev, data=np_flt)
+            t2 = t2.as_type('int')
+            np.testing.assert_array_almost_equal(tensor.to_numpy(t2), np_int)
+
+            t1 = t2.reshape(shape2)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(t1),
+                                                 np_int.reshape(shape2))
+
+            t1 = t1.as_type('float')
+            np.testing.assert_array_almost_equal(tensor.to_numpy(t1),
+                                                 np_flt2.reshape(shape2))
+
 
 
 if __name__ == '__main__':
