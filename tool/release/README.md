@@ -19,13 +19,9 @@
 
 # Auto tagging for release
 
-### Usage: `$ ./tool/release/release.py [-h] [--pre] [-y] <type>`
+### Usage: `$ ./tool/release/release.py [-h] [-y] <type>`
 
-### Options:
-  - `[--pre]`
-    - Pre release increments current version by 1 according to release type,
-      and increments release candidate version by 1.
-      It is available to release type `major` and `minor`.
+### Option:
   - `[-y]`
     - In interactive mode, it is for user to confirm. Could be used in sript.
 
@@ -39,29 +35,11 @@
     - `stable` removes rc version.
 
 
-### Example 1:
-
-releasing patch will update from 2.1.1 to 2.1.2
-
-run `$ ./tool/release/release.py patch`
-
-### Example 2:
-
-releasing minor will update from 2.1.1 to 2.2.0
-
-run `$ ./tool/release/release.py minor`
-
-### Example 3:
-
-releasing major will update from 2.1.1 to 3.0.0
-
-run `$ ./tool/release/release.py major`
-
-### Example 4:
+### Example:
 
   1. Pre-releasing major will update from 2.1.1 to 3.0.0-rc0
 
-    run `$ ./tool/release/release.py --pre major`
+    run `$ ./tool/release/release.py major`
 
   2. The release candidate needs some revise, from 3.0.0-rc0 to 3.0.0-rc1
 

@@ -45,14 +45,6 @@ def main(args):
     # parse args
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--pre',
-        default=False,
-        action='store_true',
-        help=
-        """Pre release increments current version by 1 according to release type,
-        and increments release candidate version by 1.
-        It is available to release type `major` and `minor`.""")
-    parser.add_argument(
         '-y',
         default=False,
         dest='confirmed',
@@ -68,17 +60,10 @@ def main(args):
         if len(tags) == 4:
             exit("Current type \"%s\" is not allowed in pre release(version %s)"
                  % (args.type, last_tag))
-        if args.type in ['patch'] and args.pre:
-            exit("Current type \"%s\" is not allowed to pre release(version %s)"
-                 % (args.type, last_tag))
     if args.type in ['stable', 'rc']:
         if len(tags) == 3:
             exit(
                 "Current type \"%s\" is not allowed in stable release(version %s)"
-                % (args.type, last_tag))
-        if args.pre:
-            exit(
-                "Current type \"%s\" is not allowed to used with '--pre' (version %s)"
                 % (args.type, last_tag))
 
     # new version
@@ -86,18 +71,18 @@ def main(args):
         new_tags[0] += 1
         new_tags[1] = 0
         new_tags[2] = 0
+        new_tags.append(0)
     elif args.type == 'minor':
         new_tags[1] += 1
         new_tags[2] = 0
+        new_tags.append(0)
     elif args.type == 'patch':
         new_tags[2] += 1
+        new_tags.append(0)
     elif args.type == 'stable':
         new_tags.pop(-1)
     elif args.type == 'rc':
         new_tags[3] += 1
-
-    if args.pre:
-        new_tags.append(0)
 
     # ask for confirmation
     print("Please confirm bumping version from %s to %s" %
@@ -132,8 +117,3 @@ if __name__ == "__main__":
     # main(["-y","stable"])
     # main(["stable"])
     # main(["-y","rc"])
-    # main(["-y","--pre","major"])
-    # main(["-y","--pre","minor"])
-    # main(["-y","--pre","patch"])
-    # main(["-y","--pre","rc"])
-    # main(["-y","--pre","stable"])
