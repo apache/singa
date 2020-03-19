@@ -78,6 +78,7 @@ class BlockInfo {
       : id_(id),
         blk_(blk),
         type_(type),
+        graph_ref_(0),
         write_node_(nullptr),
         last_node_(nullptr) {}
 
@@ -87,6 +88,7 @@ class BlockInfo {
   int id_;
   Block *blk_;
   BlockType type_;
+  size_t graph_ref_;
   Node *write_node_;  // last node that writes the block
   Node *last_node_;   // last node that uses the block
 };

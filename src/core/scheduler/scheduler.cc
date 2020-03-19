@@ -18,6 +18,8 @@
 
 #include "singa/core/scheduler.h"
 
+#include <unordered_set>
+
 #include "singa/core/device.h"
 #include "singa/utils/safe_queue.h"
 
@@ -72,7 +74,7 @@ void Graph::Debug() {
 
   for (auto it : blocks_) {
     auto blkInfo = it.second;
-    printf("Edge[%2d]: block[%p] ", blkInfo->id_, blkInfo->blk_);
+    printf("Block[%2d]: addr[%p] graph_ref[%lu] ref_count[%d] ", blkInfo->id_, blkInfo->blk_, blkInfo->graph_ref_, it.first->ref_count());
     switch (blkInfo->type_) {
       case BlockType::kInput:
         printf("type[input] ");
@@ -93,12 +95,12 @@ void Graph::Debug() {
     if (blkInfo->write_node_) {
       id = blkInfo->write_node_->id_;
     }
-    printf(" write_node[%d]", id);
+    printf(" write_node[%2d]", id);
     id = -1;
     if (blkInfo->last_node_) {
       id = blkInfo->last_node_->id_;
     }
-    printf(" write_node[%d]", id);
+    printf(" write_node[%2d]", id);
     printf("\n");
   }
 }
@@ -106,6 +108,8 @@ void Graph::Debug() {
 void Graph::RunGraph() {
   SafeQueue<int> node_queue;
   std::vector<int> node_ref;
+
+  // Debug();
 
   // init node ref
   node_ref.resize(nodes_.size());
@@ -148,7 +152,7 @@ void Graph::RunGraph() {
       BlockInfo *blkInfo = blocks_[blk];
       if (blkInfo->last_node_ == curNode && blkInfo->write_node_ != curNode) {
         BlockType type = blkInfo->type_;
-        if (type == BlockType::kInter) {
+        if (type == BlockType::kInter && blkInfo->graph_ref_ == blk->ref_count()) {
           blk->free_data();
           // printf("free block[%2d]\n", blkInfo->id_);
         }
@@ -178,6 +182,9 @@ void Graph::AddOperation(function<void(Context *)> &&op,
   // create new node
   Node *node = new Node(nodes_.size(), std::move(op));
 
+  // create a set to determine if there is a loop
+  std::unordered_set<Block *> circle;
+
   // create edges for read_blocks
   for (size_t i = 0; i < read_blocks.size(); ++i) {
     Block *blk = read_blocks[i];
@@ -202,6 +209,8 @@ void Graph::AddOperation(function<void(Context *)> &&op,
       }
     }
 
+    circle.insert(blk);
+    blkInfo->graph_ref_ += 1;
     blkInfo->last_node_ = node;
 
     node->AddInEdge(edge);
@@ -222,6 +231,11 @@ void Graph::AddOperation(function<void(Context *)> &&op,
       if (blkInfo->type_ == BlockType::kInput) {
         blkInfo->type_ = BlockType::kParam;
       }
+    }
+
+    if (circle.find(blk) == circle.end()) {
+      circle.insert(blk);
+      blkInfo->graph_ref_ += 1;
     }
 
     blkInfo->write_node_ = node;

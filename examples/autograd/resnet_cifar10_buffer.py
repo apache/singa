@@ -153,8 +153,8 @@ def train_cifar10(sgd, max_epoch, batch_size, DIST=False, data_partition=None, g
         device.set_default_device(dev)
         world_size = 1
 
-    from resnet import resnet18
-    model = resnet18(num_classes=num_classes)
+    from resnet import resnet50
+    model = resnet50(num_classes=num_classes)
 
     tx = tensor.Tensor((batch_size, 3, IMG_SIZE, IMG_SIZE), dev, tensor.float32)
     ty = tensor.Tensor((batch_size,), dev, tensor.int32)
@@ -265,6 +265,6 @@ if __name__ == '__main__':
     sgd = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)
 
     max_epoch = 10
-    batch_size = 16
+    batch_size = 32
 
     train_cifar10(sgd=sgd, max_epoch=max_epoch, batch_size=batch_size)
