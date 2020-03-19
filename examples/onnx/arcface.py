@@ -75,7 +75,7 @@ def preprocess(img):
     w, h = img.size
     img = img.crop((0, (h - w) // 2, w, h - (h - w) // 2))
     img = img.resize((112, 112))
-    img = np.array(img).astype(np.float32) / 255.
+    img = np.array(img).astype(np.float32)
     img = np.rollaxis(img, 2, 0)
     img = np.expand_dims(img, axis=0)
     return img
@@ -121,7 +121,7 @@ if __name__ == "__main__":
     model = Infer(sg_ir)
 
     # verifty the test dataset
-    # inputs, ref_outputs = load_dataset(os.path.join('/tmp', 'resnet100', 'test_data_set_0'))
+    inputs, ref_outputs = load_dataset(os.path.join('/tmp', 'resnet100', 'test_data_set_0'))
     # x_batch = tensor.Tensor(device=dev, data=inputs[0])
     # outputs = model.forward(x_batch)
     # for ref_o, o in zip(ref_outputs, outputs):
