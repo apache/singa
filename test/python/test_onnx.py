@@ -246,7 +246,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
-        y_t = sg_ir.run([x, s, bias, mean, var])
+        y_t = sg_ir.run([x, s, bias]) # mean and var has been stored in graph
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
                                              tensor.to_numpy(y_t[0]),
@@ -310,7 +310,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
-        y_t = sg_ir.run([x, (2, 3)])
+        y_t = sg_ir.run([x]) # shape has been stored in graph
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
                                              tensor.to_numpy(y_t[0]),
@@ -900,7 +900,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
-        y_t = sg_ir.run([x, min, max])
+        y_t = sg_ir.run([x]) # min, max has been stored in model
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
                                              tensor.to_numpy(y_t[0]),
@@ -1181,13 +1181,13 @@ class TestPythonOnnx(unittest.TestCase):
         x = tensor.from_numpy(X)
         x.to_device(cpu_dev)
 
-        y = autograd.constantOfShape(x, 1.)
+        y = autograd.constant_of_shape(x, 1.)
         # frontend
         model = sonnx.to_onnx([x], [y])
         # print('The model is:\n{}'.format(model))
 
         # backend
-        sg_ir = sonnx.prepare(model, device=gpu_dev)
+        sg_ir = sonnx.prepare(model, device=gpu_dev, init_inputs=[X])
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1216,7 +1216,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         x = tensor.from_numpy(X)
         x.to_device(gpu_dev)
-        y = autograd.reduceSum(x, None, 1)
+        y = autograd.reduce_sum(x, None, 1)
 
         # frontend
         model = sonnx.to_onnx([x], [y])
@@ -1233,7 +1233,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         x = tensor.from_numpy(X)
         x.to_device(gpu_dev)
-        y = autograd.reduceMean(x, None, 1)
+        y = autograd.reduce_mean(x, None, 1)
 
         # frontend
         model = sonnx.to_onnx([x], [y])

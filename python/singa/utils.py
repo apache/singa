@@ -18,12 +18,16 @@
 import sys
 import math
 import numpy as np
+import collections
 
 from singa import tensor
 from . import singa_wrap as singa
 
 from singa import tensor
 from . import singa_wrap as singa
+
+deque = collections.deque
+
 
 def update_progress(progress, info):
     """Display progress bar and user info.
@@ -246,12 +250,25 @@ def postorderRecursive(root, root_t):
         deque[int]
     """
 
-    def recursive(root, yid, root_t, res):
+    def recursive(root, yid, root_t, nodes, weights, inputs):
         if root:
             for srcop, yid, y, _ in root.src:
-                recursive(srcop, yid, y, res)
-            res.append((root, yid, root_t))
+                y_o = y.shape if y is not None else None
+                recursive(srcop, yid, y, nodes, weights, inputs)
 
-    res = deque([])
-    recursive(root, None, root_t, res)
-    return res
+            if type(root).__name__ == 'Dummy':
+                if root_t != None:
+                    # constant within a node: weight
+                    weights.append((root, yid, root_t))
+                else:
+                    # constant outside a node: input
+                    inputs.append((root, yid))
+            else:
+                nodes.append((root, yid))
+
+    nodes = deque([])
+    weights = deque([])
+    inputs = deque([])
+
+    recursive(root, None, root_t, nodes, weights, inputs)
+    return nodes, weights, inputs
