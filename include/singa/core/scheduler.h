@@ -103,6 +103,7 @@ class Graph {
   void Reset();
   void Debug();
   void RunGraph();
+  void RunInSerial();
   void AddOperation(function<void(Context *)> &&op, const BlockSet &read_blocks,
                     const BlockSet &write_blocks);
 

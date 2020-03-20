@@ -50,7 +50,9 @@ void Device::RunGraph() {
   bool previous_state = graph_enabled_;
   graph_enabled_ = false;
 
-  graph_->RunGraph();
+  // graph_->RunGraph();
+
+  graph_->RunInSerial();
 
   graph_enabled_ = previous_state;
 }

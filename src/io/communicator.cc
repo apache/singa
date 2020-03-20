@@ -143,14 +143,41 @@ void Communicator::allReduce(int size, void *sendbuff, void *recvbuff,
                           ncclType, ncclSum, comm, s));
 }
 
+void Communicator::generateBlocks(Tensor &t) {
+  device_ = t.device();
+
+  blocks_.clear();
+  blocks_.push_back(t.block());
+}
+
+void Communicator::generateBlocks(std::vector<Tensor> &t) {
+  device_ = t[0].device();
+
+  blocks_.clear();
+  blocks_.reserve(t.size());
+
+  for (size_t i = 0; i < t.size(); ++i) {
+    blocks_.push_back(t[i].block());
+  }
+}
+
 void Communicator::wait() {
-  // synchronizing on all the CUDA streams used by communicator
-  CUDA_CHECK(cudaEventRecord(event, s));
-  CUDA_CHECK(cudaStreamWaitEvent(NULL, event, 0));
-  CUDA_CHECK(cudaEventRecord(event, c1));
-  CUDA_CHECK(cudaStreamWaitEvent(NULL, event, 0));
-  CUDA_CHECK(cudaEventRecord(event, c2));
-  CUDA_CHECK(cudaStreamWaitEvent(NULL, event, 0));
+  if (!device_) {
+    // just return if it has not been synchronized
+    return;
+  }
+
+  device_->Exec(
+      [this](Context *ctx) mutable {
+        // synchronizing on all the CUDA streams used by communicator
+        CUDA_CHECK(cudaEventRecord(event, s));
+        CUDA_CHECK(cudaStreamWaitEvent(NULL, event, 0));
+        CUDA_CHECK(cudaEventRecord(event, c1));
+        CUDA_CHECK(cudaStreamWaitEvent(NULL, event, 0));
+        CUDA_CHECK(cudaEventRecord(event, c2));
+        CUDA_CHECK(cudaStreamWaitEvent(NULL, event, 0));
+      },
+      blocks_, blocks_);
 }
 
 Communicator::~Communicator() {
@@ -178,124 +205,165 @@ Communicator::~Communicator() {
 }
 
 void Communicator::fusedSynch(vector<Tensor> &t) {
-  // record the event of the default cuda stream and follow it
-  CUDA_CHECK(cudaEventRecord(event, NULL));
-  CUDA_CHECK(cudaStreamWaitEvent(c1, event, 0));
+  CHECK_GT(t.size(), 0);
 
-  size_t offset = 0;
+  generateBlocks(t);
 
-  // memory copy to fusedBuff
-  for (size_t i = 0; i < t.size(); i++) {
-    CUDA_CHECK(cudaMemcpyAsync((void *)(fusedSendBuff + offset),
-                               (const void *)t[i].block()->mutable_data(),
-                               t[i].Size() * sizeof(float),
-                               cudaMemcpyDeviceToDevice, c1));
-    offset += t[i].Size();
-  }
+  device_->Exec(
+      [this, t](Context *ctx) mutable {
+        // record the event of the default cuda stream and follow it
+        CUDA_CHECK(cudaEventRecord(event, NULL));
+        CUDA_CHECK(cudaStreamWaitEvent(c1, event, 0));
 
-  // wait for the memcpy to complete
-  CUDA_CHECK(cudaEventRecord(event, c1));
-  CUDA_CHECK(cudaStreamWaitEvent(s, event, 0));
+        size_t offset = 0;
 
-  allReduce((int)offset, (void *)fusedSendBuff, (void *)fusedRecvBuff,
-            ncclFloat);
+        // memory copy to fusedBuff
+        for (size_t i = 0; i < t.size(); i++) {
+          CUDA_CHECK(cudaMemcpyAsync((void *)(fusedSendBuff + offset),
+                                     (const void *)t[i].block()->mutable_data(),
+                                     t[i].Size() * sizeof(float),
+                                     cudaMemcpyDeviceToDevice, c1));
+          offset += t[i].Size();
+        }
 
-  // wait for the allreduce to complete
-  CUDA_CHECK(cudaEventRecord(event, s));
-  CUDA_CHECK(cudaStreamWaitEvent(c1, event, 0));
+        // wait for the memcpy to complete
+        CUDA_CHECK(cudaEventRecord(event, c1));
+        CUDA_CHECK(cudaStreamWaitEvent(s, event, 0));
 
-  // copy data back to tensors after allreduce
-  offset = 0;
-  for (size_t i = 0; i < t.size(); i++) {
-    CUDA_CHECK(cudaMemcpyAsync((void *)t[i].block()->mutable_data(),
-                               (const void *)(fusedRecvBuff + offset),
-                               t[i].Size() * sizeof(float),
-                               cudaMemcpyDeviceToDevice, c1));
-    offset += t[i].Size();
-  }
+        allReduce((int)offset, (void *)fusedSendBuff, (void *)fusedRecvBuff,
+                  ncclFloat);
+
+        // wait for the allreduce to complete
+        CUDA_CHECK(cudaEventRecord(event, s));
+        CUDA_CHECK(cudaStreamWaitEvent(c1, event, 0));
+
+        // copy data back to tensors after allreduce
+        offset = 0;
+        for (size_t i = 0; i < t.size(); i++) {
+          CUDA_CHECK(cudaMemcpyAsync((void *)t[i].block()->mutable_data(),
+                                     (const void *)(fusedRecvBuff + offset),
+                                     t[i].Size() * sizeof(float),
+                                     cudaMemcpyDeviceToDevice, c1));
+          offset += t[i].Size();
+        }
+      },
+      blocks_, blocks_);
 }
 
 void Communicator::synch(Tensor &t) {
-  // record the event of the default cuda stream and follow it
-  CUDA_CHECK(cudaEventRecord(event, NULL));
-  CUDA_CHECK(cudaStreamWaitEvent(s, event, 0));
+  generateBlocks(t);
 
-  void *addr = t.block()->mutable_data();
-  allReduce(t.Size(), addr, addr, ncclFloat);
+  device_->Exec(
+      [this, t](Context *ctx) mutable {
+        // record the event of the default cuda stream and follow it
+        CUDA_CHECK(cudaEventRecord(event, NULL));
+        CUDA_CHECK(cudaStreamWaitEvent(s, event, 0));
+
+        void *addr = t.block()->mutable_data();
+        allReduce(t.Size(), addr, addr, ncclFloat);
+      },
+      blocks_, blocks_);
 }
 
 void Communicator::fusedSynchHalf(vector<Tensor> &t) {
-  // record the event of the default cuda stream and follow it
-  CUDA_CHECK(cudaEventRecord(event, NULL));
-  CUDA_CHECK(cudaStreamWaitEvent(c1, event, 0));
+  CHECK_GT(t.size(), 0);
 
-  size_t offset = 0;
+  generateBlocks(t);
 
-  // memory copy to fusedBuff
-  for (size_t i = 0; i < t.size(); i++) {
-    CUDA_CHECK(cudaMemcpyAsync((void *)(fusedSendBuff + offset),
-                               (const void *)t[i].block()->mutable_data(),
-                               t[i].Size() * sizeof(float),
-                               cudaMemcpyDeviceToDevice, c1));
-    offset += t[i].Size();
-  }
+  device_->Exec(
+      [this, t](Context *ctx) mutable {
+        // record the event of the default cuda stream and follow it
+        CUDA_CHECK(cudaEventRecord(event, NULL));
+        CUDA_CHECK(cudaStreamWaitEvent(c1, event, 0));
 
-  cuda::float2half(offset, fusedSendBuff, fusedSendBuffHalf, c1);
+        size_t offset = 0;
 
-  // wait for the memcpy to complete
-  CUDA_CHECK(cudaEventRecord(event, c1));
-  CUDA_CHECK(cudaStreamWaitEvent(s, event, 0));
+        // memory copy to fusedBuff
+        for (size_t i = 0; i < t.size(); i++) {
+          CUDA_CHECK(cudaMemcpyAsync((void *)(fusedSendBuff + offset),
+                                     (const void *)t[i].block()->mutable_data(),
+                                     t[i].Size() * sizeof(float),
+                                     cudaMemcpyDeviceToDevice, c1));
+          offset += t[i].Size();
+        }
 
-  allReduce((int)offset, (void *)fusedSendBuffHalf, (void *)fusedRecvBuffHalf,
-            ncclHalf);
+        cuda::float2half(offset, fusedSendBuff, fusedSendBuffHalf, c1);
 
-  // wait for the allreduce to complete
-  CUDA_CHECK(cudaEventRecord(event, s));
-  CUDA_CHECK(cudaStreamWaitEvent(c2, event, 0));
+        // wait for the memcpy to complete
+        CUDA_CHECK(cudaEventRecord(event, c1));
+        CUDA_CHECK(cudaStreamWaitEvent(s, event, 0));
 
-  cuda::half2float(offset, fusedRecvBuffHalf, fusedRecvBuff, c2);
+        allReduce((int)offset, (void *)fusedSendBuffHalf,
+                  (void *)fusedRecvBuffHalf, ncclHalf);
 
-  // copy data back to tensors after allreduce
-  offset = 0;
-  for (size_t i = 0; i < t.size(); i++) {
-    CUDA_CHECK(cudaMemcpyAsync((void *)t[i].block()->mutable_data(),
-                               (const void *)(fusedRecvBuff + offset),
-                               t[i].Size() * sizeof(float),
-                               cudaMemcpyDeviceToDevice, c2));
-    offset += t[i].Size();
-  }
+        // wait for the allreduce to complete
+        CUDA_CHECK(cudaEventRecord(event, s));
+        CUDA_CHECK(cudaStreamWaitEvent(c2, event, 0));
+
+        cuda::half2float(offset, fusedRecvBuffHalf, fusedRecvBuff, c2);
+
+        // copy data back to tensors after allreduce
+        offset = 0;
+        for (size_t i = 0; i < t.size(); i++) {
+          CUDA_CHECK(cudaMemcpyAsync((void *)t[i].block()->mutable_data(),
+                                     (const void *)(fusedRecvBuff + offset),
+                                     t[i].Size() * sizeof(float),
+                                     cudaMemcpyDeviceToDevice, c2));
+          offset += t[i].Size();
+        }
+      },
+      blocks_, blocks_);
 }
 
 void Communicator::synchHalf(Tensor &t) {
-  float *addr = static_cast<float *>(t.block()->mutable_data());
+  generateBlocks(t);
 
-  // record the event of the default cuda stream and follow it
-  CUDA_CHECK(cudaEventRecord(event, NULL));
-  CUDA_CHECK(cudaStreamWaitEvent(c1, event, 0));
+  device_->Exec(
+      [this, t](Context *ctx) mutable {
+        float *addr = static_cast<float *>(t.block()->mutable_data());
 
-  cuda::float2half(t.Size(), addr, fusedSendBuffHalf, c1);
+        // record the event of the default cuda stream and follow it
+        CUDA_CHECK(cudaEventRecord(event, NULL));
+        CUDA_CHECK(cudaStreamWaitEvent(c1, event, 0));
 
-  // wait for conversion to half precision complete
-  CUDA_CHECK(cudaEventRecord(event, c1));
-  CUDA_CHECK(cudaStreamWaitEvent(s, event, 0));
+        cuda::float2half(t.Size(), addr, fusedSendBuffHalf, c1);
 
-  allReduce(t.Size(), (void *)fusedSendBuffHalf, (void *)fusedRecvBuffHalf,
-            ncclHalf);
+        // wait for conversion to half precision complete
+        CUDA_CHECK(cudaEventRecord(event, c1));
+        CUDA_CHECK(cudaStreamWaitEvent(s, event, 0));
 
-  // wait for the allreduce to complete
-  CUDA_CHECK(cudaEventRecord(event, s));
-  CUDA_CHECK(cudaStreamWaitEvent(c2, event, 0));
+        allReduce(t.Size(), (void *)fusedSendBuffHalf,
+                  (void *)fusedRecvBuffHalf, ncclHalf);
 
-  cuda::half2float(t.Size(), fusedRecvBuffHalf, addr, c2);
+        // wait for the allreduce to complete
+        CUDA_CHECK(cudaEventRecord(event, s));
+        CUDA_CHECK(cudaStreamWaitEvent(c2, event, 0));
+
+        cuda::half2float(t.Size(), fusedRecvBuffHalf, addr, c2);
+      },
+      blocks_, blocks_);
 }
 
 void Communicator::sparsification(Tensor &t, Tensor &accumulation,
                                   float sparsThreshold, bool topK) {
-  _sparsification(t, &accumulation, sparsThreshold, topK);
+  generateBlocks(t);
+  blocks_.push_back(accumulation.block());
+
+  device_->Exec(
+      [=](Context *ctx) mutable {
+        _sparsification(t, &accumulation, sparsThreshold, topK);
+      },
+      blocks_, blocks_);
 }
 
 void Communicator::sparsification(Tensor &t, float sparsThreshold, bool topK) {
-  _sparsification(t, (Tensor *)NULL, sparsThreshold, topK);
+  generateBlocks(t);
+
+  t.device()->Exec(
+      [=](Context *ctx) mutable {
+        _sparsification(t, (Tensor *)NULL, sparsThreshold, topK);
+      },
+      blocks_, blocks_);
 }
 
 void Communicator::_sparsification(Tensor &t, Tensor *accumulation,
@@ -332,12 +400,29 @@ void Communicator::_sparsification(Tensor &t, Tensor *accumulation,
 
 void Communicator::fusedSparsification(vector<Tensor> &t, Tensor &accumulation,
                                        float sparsThreshold, bool topK) {
-  _fusedSparsification(t, &accumulation, sparsThreshold, topK);
+  CHECK_GT(t.size(), 0);
+
+  generateBlocks(t);
+  blocks_.push_back(accumulation.block());
+
+  device_->Exec(
+      [=](Context *ctx) mutable {
+        _fusedSparsification(t, &accumulation, sparsThreshold, topK);
+      },
+      blocks_, blocks_);
 }
 
 void Communicator::fusedSparsification(vector<Tensor> &t, float sparsThreshold,
                                        bool topK) {
-  _fusedSparsification(t, (Tensor *)NULL, sparsThreshold, topK);
+  CHECK_GT(t.size(), 0);
+
+  generateBlocks(t);
+
+  device_->Exec(
+      [=](Context *ctx) mutable {
+        _fusedSparsification(t, (Tensor *)NULL, sparsThreshold, topK);
+      },
+      blocks_, blocks_);
 }
 
 void Communicator::_fusedSparsification(vector<Tensor> &t, Tensor *accumulation,

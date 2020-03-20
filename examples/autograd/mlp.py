@@ -20,7 +20,7 @@
 from singa import tensor
 from singa.tensor import Tensor
 from singa import autograd
-from singa import optimizer
+from singa import opt
 import numpy as np
 
 if __name__ == "__main__":
@@ -67,15 +67,15 @@ if __name__ == "__main__":
 
     w0 = Tensor(shape=(2, 3), requires_grad=True, stores_grad=True)
     w0.gaussian(0.0, 0.1)
-    b0 = Tensor(shape=(1, 3), requires_grad=True, stores_grad=True)
+    b0 = Tensor(shape=(3,), requires_grad=True, stores_grad=True)
     b0.set_value(0.0)
 
     w1 = Tensor(shape=(3, 2), requires_grad=True, stores_grad=True)
     w1.gaussian(0.0, 0.1)
-    b1 = Tensor(shape=(1, 2), requires_grad=True, stores_grad=True)
+    b1 = Tensor(shape=(2,), requires_grad=True, stores_grad=True)
     b1.set_value(0.0)
 
-    sgd = optimizer.SGD(0.05)
+    sgd = opt.SGD(0.05)
     # training process
     for i in range(1001):
         x = autograd.matmul(inputs, w0)
@@ -84,8 +84,7 @@ if __name__ == "__main__":
         x = autograd.matmul(x, w1)
         x = autograd.add_bias(x, b1)
         loss = autograd.softmax_cross_entropy(x, target)
-        for p, gp in autograd.backward(loss):
-            sgd.apply(0, gp, p, "")
+        sgd.backward_and_update(loss)
 
         if i % 100 == 0:
             print("training loss = ", tensor.to_numpy(loss)[0])

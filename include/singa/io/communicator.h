@@ -29,6 +29,7 @@
 
 #include <cstdint>
 #include <iostream>
+#include <memory>
 
 #include "cuda_fp16.h"
 #include "singa/core/tensor.h"
@@ -95,6 +96,8 @@ class Communicator {
   void wait();
 
  private:
+  void generateBlocks(Tensor &t);
+  void generateBlocks(std::vector<Tensor> &t);
   void allReduce(int size, void *sendbuff, void *recvbuff,
                  ncclDataType_t ncclType);
   void setup();
@@ -105,6 +108,10 @@ class Communicator {
                        bool topK);
   void valSparsAllReduce(size_t num, float *accumulation);
   void topKSparsAllReduce(size_t num, float *accumulation);
+
+  // last group of synchronized memory blocks
+  std::shared_ptr<Device> device_ = nullptr;
+  std::vector<Block *> blocks_;
 
   float *fusedSendBuff;
   float *fusedRecvBuff;

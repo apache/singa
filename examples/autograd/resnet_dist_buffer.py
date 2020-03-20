@@ -32,10 +32,10 @@ if __name__ == "__main__":
     sgd = opt.SGD(lr=0.1, momentum=0.9, weight_decay=1e-5)
     sgd = opt.DistOpt(sgd)
 
+    dev = device.create_cuda_gpu_on(sgd.rank_in_local)
+
     if (sgd.rank_in_global == 0):
         print("Start intialization...........", flush=True)
-
-    dev = device.create_cuda_gpu_on(sgd.rank_in_local)
 
     from resnet import resnet50
     model = resnet50()
@@ -56,32 +56,27 @@ if __name__ == "__main__":
 
     dev.Sync()
     start = time.time()
-    fd = 0
-    softmax = 0
-    update = 0
+
+    # buffer all the operations
+    print("start buffer")
+    dev.EnableGraph(True)
+    x = model(tx)
+    dev.Sync()
+    loss = autograd.softmax_cross_entropy(x, ty)
+    dev.Sync()
+    sgd.backward_and_update(loss)
+    dev.Sync()
+    dev.EnableGraph(False)
+
     with trange(niters) as t:
         for _ in t:
-            dev.Sync()
-            tick = time.time()
-            x = model(tx)
-            dev.Sync()
-            fd += time.time() - tick
-            tick = time.time()
-            loss = autograd.softmax_cross_entropy(x, ty)
-            dev.Sync()
-            softmax += time.time() - tick
-            sgd.backward_and_update(loss)
+            dev.RunGraph()
 
     dev.Sync()
     end = time.time()
     throughput = float(sgd.world_size * niters * batch_size) / (end - start)
     titer = (end - start) / float(niters)
-    tforward = float(fd) / float(niters)
-    tsoftmax = float(softmax) / float(niters)
-    tbackward = titer - tforward - tsoftmax
 
     if (sgd.rank_in_global == 0):
         print("\nThroughput = {} per second".format(throughput), flush=True)
-        print("Total={}, forward={}, softmax={}, backward={}".format(
-            titer, tforward, tsoftmax, tbackward),
-              flush=True)
+        print("Total={}".format(titer), flush=True)

@@ -74,7 +74,8 @@ void Graph::Debug() {
 
   for (auto it : blocks_) {
     auto blkInfo = it.second;
-    printf("Block[%2d]: addr[%p] graph_ref[%lu] ref_count[%d] ", blkInfo->id_, blkInfo->blk_, blkInfo->graph_ref_, it.first->ref_count());
+    printf("Block[%2d]: addr[%p] graph_ref[%lu] ref_count[%d] ", blkInfo->id_,
+           blkInfo->blk_, blkInfo->graph_ref_, it.first->ref_count());
     switch (blkInfo->type_) {
       case BlockType::kInput:
         printf("type[input] ");
@@ -152,7 +153,8 @@ void Graph::RunGraph() {
       BlockInfo *blkInfo = blocks_[blk];
       if (blkInfo->last_node_ == curNode && blkInfo->write_node_ != curNode) {
         BlockType type = blkInfo->type_;
-        if (type == BlockType::kInter && blkInfo->graph_ref_ == blk->ref_count()) {
+        if (type == BlockType::kInter &&
+            blkInfo->graph_ref_ == blk->ref_count()) {
           blk->free_data();
           // printf("free block[%2d]\n", blkInfo->id_);
         }
@@ -170,6 +172,30 @@ void Graph::RunGraph() {
         if (node_ref[nodeId] <= 0) {
           node_queue.Push(nodeId);
           // printf("push node[%2d]\n", nodeId);
+        }
+      }
+    }
+  }
+}
+
+void Graph::RunInSerial() {
+  for (size_t i = 0; i < nodes_.size(); ++i) {
+    Node *curNode = nodes_[i];
+
+    // step 1: execute the operation
+    device_->DoExec(std::move(curNode->op_), 0);
+
+    // step 2: release some blocks' data that won't be used later
+    for (size_t i = 0; i < curNode->in_edges_.size(); ++i) {
+      Edge *edge = curNode->in_edges_[i];
+      Block *blk = edge->blk_;
+      BlockInfo *blkInfo = blocks_[blk];
+      if (blkInfo->last_node_ == curNode && blkInfo->write_node_ != curNode) {
+        BlockType type = blkInfo->type_;
+        if (type == BlockType::kInter &&
+            blkInfo->graph_ref_ == blk->ref_count()) {
+          blk->free_data();
+          // printf("free block[%2d]\n", blkInfo->id_);
         }
       }
     }

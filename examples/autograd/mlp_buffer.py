@@ -20,10 +20,9 @@
 from singa import tensor
 from singa.tensor import Tensor
 from singa import autograd
-from singa import optimizer
+from singa import opt
 from singa import device
 import numpy as np
-
 
 if __name__ == "__main__":
     dev = device.get_default_device()
@@ -71,12 +70,12 @@ if __name__ == "__main__":
 
     w0 = Tensor(shape=(2, 3), device=dev, requires_grad=True, stores_grad=True)
     w0.gaussian(0.0, 0.1)
-    b0 = Tensor(shape=(1, 3), device=dev, requires_grad=True, stores_grad=True)
+    b0 = Tensor(shape=(3,), device=dev, requires_grad=True, stores_grad=True)
     b0.set_value(0.0)
 
     w1 = Tensor(shape=(3, 2), device=dev, requires_grad=True, stores_grad=True)
     w1.gaussian(0.0, 0.1)
-    b1 = Tensor(shape=(1, 2), device=dev, requires_grad=True, stores_grad=True)
+    b1 = Tensor(shape=(2,), device=dev, requires_grad=True, stores_grad=True)
     b1.set_value(0.0)
 
     print("finished init inputs")
@@ -85,7 +84,7 @@ if __name__ == "__main__":
     print("w1:\n", tensor.to_numpy(w1))
     print("b1:\n", tensor.to_numpy(b1))
 
-    sgd = optimizer.SGD(0.05)
+    sgd = opt.SGD(0.05)
 
     # training process
     print("start training")
@@ -100,13 +99,13 @@ if __name__ == "__main__":
     # x = autograd.softmax(x)
     loss = autograd.softmax_cross_entropy(x, target)
     print("start backward")
-    for p, gp in autograd.backward(loss):
-        sgd.apply(0, gp, p, "")
+    sgd.backward_and_update(loss)
     dev.EnableGraph(False)
 
     # exec the buffered ops
     print("start executing buffered functions")
     for i in range(1001):
         dev.RunGraph()
+
         if i % 100 == 0:
             print("training loss = ", tensor.to_numpy(loss)[0])
