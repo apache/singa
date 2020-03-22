@@ -107,10 +107,11 @@ void Graph::Debug() {
 }
 
 void Graph::RunGraph() {
+  int group_no = 0;
+  std::vector<int> ans;
+
   SafeQueue<int> node_queue;
   std::vector<int> node_ref;
-
-  // Debug();
 
   // init node ref
   node_ref.resize(nodes_.size());
@@ -131,9 +132,19 @@ void Graph::RunGraph() {
   for (int i = 0; i < node_ref.size(); ++i) {
     if (node_ref[i] == 0) {
       node_queue.Push(i);
+      // ans.push_back(i);
       // printf("push node[%2d]\n", i);
     }
   }
+
+  /*
+  printf("group[%2d]: ", group_no++);
+  for (size_t i = 0; i < ans.size(); ++i) {
+    printf("%2d ", ans[i]);
+  }
+  printf("\n");
+  ans.clear();
+  */
 
   // run graph
   while (node_queue.Size()) {
@@ -171,10 +182,22 @@ void Graph::RunGraph() {
         node_ref[nodeId] -= 1;
         if (node_ref[nodeId] <= 0) {
           node_queue.Push(nodeId);
+          // ans.push_back(nodeId);
           // printf("push node[%2d]\n", nodeId);
         }
       }
     }
+
+    /*
+    if (!ans.empty()) {
+      printf("group[%2d]: ", group_no++);
+      for (size_t i = 0; i < ans.size(); ++i) {
+        printf("%2d ", ans[i]);
+      }
+      printf("\n");
+      ans.clear();
+    }
+    */
   }
 }
 
@@ -205,6 +228,11 @@ void Graph::RunInSerial() {
 void Graph::AddOperation(function<void(Context *)> &&op,
                          const BlockSet &read_blocks,
                          const BlockSet &write_blocks) {
+  if (read_blocks.size() == 0 && write_blocks.size() == 0) {
+    AddSyncOp(std::move(op));
+    return;
+  }
+
   // create new node
   Node *node = new Node(nodes_.size(), std::move(op));
 
@@ -266,6 +294,38 @@ void Graph::AddOperation(function<void(Context *)> &&op,
 
     blkInfo->write_node_ = node;
     blkInfo->last_node_ = node;
+  }
+
+  write_blocks_ = write_blocks;
+
+  // add node into nodes
+  nodes_.push_back(node);
+}
+
+void Graph::AddSyncOp(function<void(Context *)> &&op) {
+  // create new node
+  Node *node = new Node(nodes_.size(), std::move(op));
+
+  for (size_t i = 0; i < write_blocks_.size(); ++i) {
+    Block *blk = write_blocks_[i];
+    BlockInfo *blkInfo = blocks_[blk];
+
+    if (blkInfo->type_ == BlockType::kEnd) {
+      blkInfo->type_ = BlockType::kInter;
+    }
+
+    Node *write_node = blkInfo->write_node_;
+    Edge *edge = new Edge(edges_.size(), blk, write_node, node);
+    if (write_node) {
+      write_node->AddOutEdge(edge);
+    }
+
+    // fake edges, no need to add the graph ref
+    blkInfo->last_node_ = node;
+    blkInfo->write_node_ = node;
+
+    node->AddInEdge(edge);
+    edges_.push_back(edge);
   }
 
   // add node into nodes

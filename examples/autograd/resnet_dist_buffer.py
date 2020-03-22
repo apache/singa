@@ -58,7 +58,8 @@ if __name__ == "__main__":
     start = time.time()
 
     # buffer all the operations
-    print("start buffer")
+    if (sgd.rank_in_global == 0):
+        print("start buffer", flush=True)
     dev.EnableGraph(True)
     x = model(tx)
     dev.Sync()

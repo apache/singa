@@ -29,7 +29,9 @@ import gzip
 import codecs
 import time
 
+
 class CNN:
+
     def __init__(self):
         self.conv1 = autograd.Conv2d(1, 20, 5, padding=0)
         self.conv2 = autograd.Conv2d(20, 50, 5, padding=0)
@@ -51,11 +53,15 @@ class CNN:
         y = self.linear2(y)
         return y
 
+
 def check_dataset_exist(dirpath):
     if not os.path.exists(dirpath):
-        print('The MNIST dataset does not exist. Please download the mnist dataset using download_mnist.py (e.g. python3 download_mnist.py)')
+        print(
+            'The MNIST dataset does not exist. Please download the mnist dataset using download_mnist.py (e.g. python3 download_mnist.py)'
+        )
         sys.exit(0)
     return dirpath
+
 
 def load_dataset():
     train_x_path = '/tmp/train-images-idx3-ubyte.gz'
@@ -73,17 +79,19 @@ def load_dataset():
         np.float32)
     return train_x, train_y, valid_x, valid_y
 
+
 def read_label_file(path):
     with gzip.open(path, 'rb') as f:
         data = f.read()
         assert get_int(data[:4]) == 2049
         length = get_int(data[4:8])
-        parsed = np.frombuffer(data, dtype=np.uint8, offset=8).reshape(
-            (length))
+        parsed = np.frombuffer(data, dtype=np.uint8, offset=8).reshape((length))
         return parsed
+
 
 def get_int(b):
     return int(codecs.encode(b, 'hex'), 16)
+
 
 def read_image_file(path):
     with gzip.open(path, 'rb') as f:
@@ -95,6 +103,7 @@ def read_image_file(path):
         parsed = np.frombuffer(data, dtype=np.uint8, offset=16).reshape(
             (length, 1, num_rows, num_cols))
         return parsed
+
 
 def to_categorical(y, num_classes):
     y = np.array(y, dtype="int")
@@ -111,13 +120,15 @@ def accuracy(pred, target):
     a = y == t
     return np.array(a, "int").sum()
 
+
 # Function to all reduce NUMPY Accuracy and Loss from Multiple Devices
 def reduce_variable(variable, dist_opt, reducer):
     reducer.copy_from_numpy(variable)
     dist_opt.all_reduce(reducer.data)
     dist_opt.wait()
-    output=tensor.to_numpy(reducer)
+    output = tensor.to_numpy(reducer)
     return output
+
 
 # Function to sychronize SINGA TENSOR initial model parameters
 def sychronize(tensor, dist_opt):
@@ -125,19 +136,31 @@ def sychronize(tensor, dist_opt):
     dist_opt.wait()
     tensor /= dist_opt.world_size
 
+
 # Data augmentation
 def augmentation(x, batch_size):
     xpad = np.pad(x, [[0, 0], [0, 0], [4, 4], [4, 4]], 'symmetric')
     for data_num in range(0, batch_size):
         offset = np.random.randint(8, size=2)
-        x[data_num,:,:,:] = xpad[data_num, :, offset[0]: offset[0] + 28, offset[1]: offset[1] + 28]
+        x[data_num, :, :, :] = xpad[data_num, :, offset[0]:offset[0] + 28,
+                                    offset[1]:offset[1] + 28]
         if_flip = np.random.randint(2)
         if (if_flip):
             x[data_num, :, :, :] = x[data_num, :, :, ::-1]
     return x
 
-def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None,
-                    gpu_num=None, gpu_per_node=None, nccl_id=None, spars=0, topK=False, corr=True):
+
+def train_mnist_cnn(sgd,
+                    max_epoch,
+                    batch_size,
+                    DIST=False,
+                    data_partition=None,
+                    gpu_num=None,
+                    gpu_per_node=None,
+                    nccl_id=None,
+                    spars=0,
+                    topK=False,
+                    corr=True):
     # Prepare training and valadiation data
     train_x, train_y, test_x, test_y = load_dataset()
     IMG_SIZE = 28
@@ -151,11 +174,16 @@ def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None,
 
     if DIST:
         # For Distributed GPU Training
-        sgd = opt.DistOpt(sgd, nccl_id=nccl_id, gpu_num=gpu_num, gpu_per_node=gpu_per_node)
+        sgd = opt.DistOpt(sgd,
+                          nccl_id=nccl_id,
+                          gpu_num=gpu_num,
+                          gpu_per_node=gpu_per_node)
         dev = device.create_cuda_gpu_on(sgd.rank_in_local)
         # Dataset partition for distributed training
-        train_x, train_y = data_partition(train_x, train_y, sgd.rank_in_global, sgd.world_size)
-        test_x, test_y = data_partition(test_x, test_y, sgd.rank_in_global, sgd.world_size)
+        train_x, train_y = data_partition(train_x, train_y, sgd.rank_in_global,
+                                          sgd.world_size)
+        test_x, test_y = data_partition(test_x, test_y, sgd.rank_in_global,
+                                        sgd.world_size)
         world_size = sgd.world_size
     else:
         # For Single GPU
@@ -180,8 +208,9 @@ def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None,
     if DIST:
         #Sychronize the initial parameters
         autograd.training = True
-        x = np.random.randn(batch_size, 1, IMG_SIZE, IMG_SIZE).astype(np.float32)
-        y = np.zeros( shape=(batch_size, num_classes), dtype=np.int32)
+        x = np.random.randn(batch_size, 1, IMG_SIZE,
+                            IMG_SIZE).astype(np.float32)
+        y = np.zeros(shape=(batch_size, num_classes), dtype=np.int32)
         tx.copy_from_numpy(x)
         ty.copy_from_numpy(y)
         out = model.forward(tx)
@@ -211,16 +240,16 @@ def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None,
             print('Starting Epoch %d:' % (epoch))
 
         # Training Phase
-        train_correct = np.zeros(shape=[1],dtype=np.float32)
-        test_correct = np.zeros(shape=[1],dtype=np.float32)
-        train_loss = np.zeros(shape=[1],dtype=np.float32)
+        train_correct = np.zeros(shape=[1], dtype=np.float32)
+        test_correct = np.zeros(shape=[1], dtype=np.float32)
+        train_loss = np.zeros(shape=[1], dtype=np.float32)
 
         # Training every patch
         for b in range(num_train_batch):
             # Generate the patch data in this iteration
-            x = train_x[idx[b * batch_size: (b + 1) * batch_size]]
+            x = train_x[idx[b * batch_size:(b + 1) * batch_size]]
             x = augmentation(x, batch_size)
-            y = train_y[idx[b * batch_size: (b + 1) * batch_size]]
+            y = train_y[idx[b * batch_size:(b + 1) * batch_size]]
 
             # Copy the patch data into input tensors
             tx.copy_from_numpy(x)
@@ -240,13 +269,16 @@ def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None,
 
         # Output the Training Loss and Accuracy
         if ((DIST == False) or (sgd.rank_in_global == 0)):
-            print('Training loss = %f, training accuracy = %f' % (train_loss, train_correct / (num_train_batch*batch_size*world_size)), flush=True)
+            print('Training loss = %f, training accuracy = %f' %
+                  (train_loss, train_correct /
+                   (num_train_batch * batch_size * world_size)),
+                  flush=True)
 
         # Evaluation Phase
         print("Evaluation Phase")
         for b in range(num_test_batch):
-            x = test_x[b * batch_size: (b + 1) * batch_size]
-            y = test_y[b * batch_size: (b + 1) * batch_size]
+            x = test_x[b * batch_size:(b + 1) * batch_size]
+            y = test_y[b * batch_size:(b + 1) * batch_size]
             tx.copy_from_numpy(x)
             ty.copy_from_numpy(y)
             out_test = model.forward(tx)
@@ -258,8 +290,12 @@ def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None,
 
         # Output the Evaluation Accuracy
         if ((DIST == False) or (sgd.rank_in_global == 0)):
-            print('Evaluation accuracy = %f, Elapsed Time = %fs' % (test_correct / (num_test_batch*batch_size*world_size), time.time() - start_time ), flush=True)
+            print('Evaluation accuracy = %f, Elapsed Time = %fs' %
+                  (test_correct / (num_test_batch * batch_size * world_size),
+                   time.time() - start_time),
+                  flush=True)
         #    print('Elapsed Time = %fs' % ( time.time() - start_time ), flush=True)
+
 
 if __name__ == '__main__':
     np.random.seed(0)

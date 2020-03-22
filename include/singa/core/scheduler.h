@@ -108,10 +108,15 @@ class Graph {
                     const BlockSet &write_blocks);
 
  private:
+  void AddSyncOp(function<void(Context *)> &&op);
+
+ private:
   Device *device_;
   std::vector<Node *> nodes_;
   std::vector<Edge *> edges_;
   std::unordered_map<Block *, BlockInfo *> blocks_;
+
+  std::vector<Block *> write_blocks_;
 };
 
 /// Scheduling Tensor operations with dependency detection.

@@ -273,10 +273,15 @@ if __name__ == "__main__":
     # buffer all the operations
     print("start buffer")
     dev.EnableGraph(True)
+    dev.Sync()
     x = model(tx)
+    dev.Sync()
     loss = autograd.softmax_cross_entropy(x, ty)
+    dev.Sync()
     for p, g in autograd.backward(loss):
+        dev.Sync()
         sgd.update(p, g)
+        dev.Sync()
     dev.EnableGraph(False)
 
     dev.Sync()
