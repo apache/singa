@@ -152,29 +152,24 @@ Tensor Resize(const Tensor &in, const Shape &shape) {
     }                                                                          \
   } while (0)
 
-Tensor &Tensor::AsType(const DataType type) {
+// return new tensor
+Tensor Tensor::AsType(const DataType type) {
   if (data_type_ != type) {
-    if (block_ != nullptr && block_->DecRefCount() == 0) {
-      auto offset = Product(shape_);
-      auto new_block_ =
-          device_->NewBlock((int)(Product(shape_) * SizeOf(type)));
-      TYPE_TYPE_LANG_SWITCH(
-          data_type_, LDType, type, RDType, device_->lang(), Lang, {
-            device_->Exec(
-                [this, new_block_, offset, type](Context *ctx) {
-                  CastAsType<LDType, RDType, Lang>(this, new_block_, offset,
-                                                   ctx);
-                },
-                {}, {});
-          });
-      device_->FreeBlock(block_);
-      block_ = new_block_;
-    } else {
-      block_ = device_->NewBlock((int)(Product(shape_) * SizeOf(type)));
-    }
-    data_type_ = type;
+    Tensor ret(shape_, device_, type);
+    auto *retptr = &ret;
+    TYPE_TYPE_LANG_SWITCH(
+        data_type_, LDType, type, RDType, device_->lang(), Lang, {
+          retptr->device()->Exec(
+              [this, retptr](Context *ctx) {
+                CastCopy<LDType, RDType, Lang>(this, retptr, ctx);
+              },
+              {this->block()}, {retptr->block()});
+        });
+    return ret;
+  } else {
+    Tensor t = this->Clone();
+    return t;
   }
-  return *this;
 }
 
 Tensor &Tensor::ToDevice(std::shared_ptr<Device> dst) {

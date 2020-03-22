@@ -107,7 +107,7 @@ namespace singa{
     size_t MemSize() const;
     
     void ResetLike(const Tensor &t);
-    void AsType(DataType type);
+    Tensor AsType(DataType type);
     void ToDevice(std::shared_ptr<singa::Device> dev);
     void ToHost();
     float L2() const;

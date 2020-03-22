@@ -78,7 +78,7 @@ TEST(TensorClass, FloatAsTypeIntCuda) {
   t.CopyDataFromHostPtr(data, 3);
   EXPECT_EQ(singa::kFloat32, t.data_type());
 
-  t.AsType(singa::kInt);
+  t = t.AsType(singa::kInt);
 
   EXPECT_EQ(singa::kInt, t.data_type());
 
@@ -97,7 +97,7 @@ TEST(TensorClass, IntAsTypeFloatCuda) {
   t.CopyDataFromHostPtr(data, 3);
   EXPECT_EQ(singa::kInt, t.data_type());
 
-  t.AsType(singa::kFloat32);
+  t = t.AsType(singa::kFloat32);
 
   EXPECT_EQ(singa::kFloat32, t.data_type());
 
@@ -110,6 +110,26 @@ TEST(TensorClass, IntAsTypeFloatCuda) {
 
 #endif  // USE_CUDA
 
+TEST(TensorClass, FloatAsTypeFloatCPU) {
+  Tensor t(Shape{3});
+  float data[] = {1.0f, 2.0f, 3.0f};
+  t.CopyDataFromHostPtr(data, 3);
+  EXPECT_EQ(singa::kFloat32, t.data_type());
+  const float* dptr = static_cast<const float*>(t.block()->data());
+  EXPECT_FLOAT_EQ(1.0f, dptr[0]);
+  EXPECT_FLOAT_EQ(2.0f, dptr[1]);
+  EXPECT_FLOAT_EQ(3.0f, dptr[2]);
+
+  Tensor t2 = t.AsType(singa::kFloat32);
+
+  EXPECT_EQ(singa::kFloat32, t2.data_type());
+
+  const float* dptr2 = static_cast<const float*>(t2.block()->data());
+  EXPECT_EQ(1.0f, dptr2[0]);
+  EXPECT_EQ(2.0f, dptr2[1]);
+  EXPECT_EQ(3.0f, dptr2[2]);
+}
+
 TEST(TensorClass, FloatAsTypeIntCPU) {
   Tensor t(Shape{3});
   float data[] = {1.0f, 2.0f, 3.0f};
@@ -120,10 +140,10 @@ TEST(TensorClass, FloatAsTypeIntCPU) {
   EXPECT_FLOAT_EQ(2.0f, dptr[1]);
   EXPECT_FLOAT_EQ(3.0f, dptr[2]);
 
-  t.AsType(singa::kInt);
+  Tensor t2 = t.AsType(singa::kInt);
 
-  EXPECT_EQ(singa::kInt, t.data_type());
-  const int* dptr2 = static_cast<const int*>(t.block()->data());
+  EXPECT_EQ(singa::kInt, t2.data_type());
+  const int* dptr2 = static_cast<const int*>(t2.block()->data());
   EXPECT_EQ(1, dptr2[0]);
   EXPECT_EQ(2, dptr2[1]);
   EXPECT_EQ(3, dptr2[2]);
@@ -135,11 +155,11 @@ TEST(TensorClass, IntAsTypeFloatCPU) {
   t.CopyDataFromHostPtr(data, 3);
   EXPECT_EQ(singa::kInt, t.data_type());
 
-  t.AsType(singa::kFloat32);
+  auto t2 = t.AsType(singa::kFloat32);
 
-  EXPECT_EQ(singa::kFloat32, t.data_type());
+  EXPECT_EQ(singa::kFloat32, t2.data_type());
 
-  const float* dptr2 = static_cast<const float*>(t.block()->data());
+  const float* dptr2 = static_cast<const float*>(t2.block()->data());
   EXPECT_EQ(1.0f, dptr2[0]);
   EXPECT_EQ(2.0f, dptr2[1]);
   EXPECT_EQ(3.0f, dptr2[2]);
