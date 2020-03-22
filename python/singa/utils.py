@@ -26,7 +26,7 @@ from . import singa_wrap as singa
 from singa import tensor
 from . import singa_wrap as singa
 
-deque = collections.deque
+OrderedDict = collections.OrderedDict
 
 
 def update_progress(progress, info):
@@ -252,6 +252,9 @@ def postorderRecursive(root, root_t):
 
     def recursive(root, yid, root_t, nodes, weights, inputs):
         if root:
+            # srcop: operator for a input of root
+            # yid: id(output of this operator)
+            # y: output of this operator
             for srcop, yid, y, _ in root.src:
                 y_o = y.shape if y is not None else None
                 recursive(srcop, yid, y, nodes, weights, inputs)
@@ -259,16 +262,16 @@ def postorderRecursive(root, root_t):
             if type(root).__name__ == 'Dummy':
                 if root_t != None:
                     # constant within a node: weight
-                    weights.append((root, yid, root_t))
+                    weights[root.name] = root_t
                 else:
                     # constant outside a node: input
-                    inputs.append((root, yid))
+                    inputs[root.name] = root_t
             else:
-                nodes.append((root, yid))
+                nodes[root.name] = root
 
-    nodes = deque([])
-    weights = deque([])
-    inputs = deque([])
+    nodes = OrderedDict()
+    weights = OrderedDict()
+    inputs = OrderedDict()
 
     recursive(root, None, root_t, nodes, weights, inputs)
     return nodes, weights, inputs

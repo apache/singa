@@ -149,7 +149,6 @@ class Infer:
             # allow the tensors to be updated
             tens.requires_grad = True
             tens.stores_grad= True
-            sg_ir.tensor_map[idx] = tens
 
     def forward(self, x):
         return sg_ir.run([x])[0]
