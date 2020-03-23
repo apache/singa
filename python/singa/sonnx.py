@@ -42,7 +42,7 @@ class SingaFrontend(object):
     """
 
     # This number indicates the target onnx operator set version
-    _target_opset_version = 10
+    _target_opset_version = 11
 
     # beceuase singa's operators are different from onnx.
     # we define a dict for the name projection
@@ -255,11 +255,14 @@ class SingaFrontend(object):
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
-
-        node.attribute.extend([
-            helper.make_attribute('max', op.max),
-            helper.make_attribute('min', op.min),
-        ])
+        if op.min is not None:
+            node.input.append(op.name + ":min")
+        else:
+            node.input.append("")
+        if op.max is not None:
+            node.input.append(op.name + ":max")
+        else:
+            node.input.append("")          
         return node
 
     @classmethod
@@ -613,18 +616,27 @@ class SingaFrontend(object):
                         helper.make_tensor_value_info(node_name,
                                                       TensorProto.FLOAT,
                                                       running_value.shape))
-                    wt = numpy_helper.from_array(running_value)
-                    wt.name = node_name
-                    W.append(wt)
+                    W.append(numpy_helper.from_array(running_value, node_name))
             elif optype == 'Reshape':
                 # reshape add shape
                 node_name = op_name + ":shape"
                 X.append(
                     helper.make_tensor_value_info(node_name, TensorProto.FLOAT,
                                                   [len(op.shape)]))
-                wt = numpy_helper.from_array(np.array(op.shape, dtype=np.int64))
-                wt.name = node_name
-                W.append(wt)
+                W.append(numpy_helper.from_array(np.array(op.shape, dtype=np.int64), node_name))
+            elif optype == 'Clip':
+                # cli add min and max
+                append_inputs = {
+                    "min": op.min,
+                    "max": op.max
+                }
+                for tmp_name, append_input in append_inputs.items():
+                    node_name = op_name + ":" + tmp_name
+                    X.append(
+                        helper.make_tensor_value_info(node_name,
+                                                      TensorProto.FLOAT,
+                                                      []))
+                    W.append(helper.make_tensor(node_name, TensorProto.FLOAT, [], [append_input]))
             graph_def.node.extend(cls.singa_op_to_onnx_node(op, op_t))
 
         graph_def.input.extend(X)
@@ -691,7 +703,7 @@ class OnnxAttributes(dict):
 class SingaBackend(Backend):
 
     # This number indicates the onnx operator set version
-    _known_opset_version = 10
+    _known_opset_version = 11
 
     # beceuase singa's operators are different from onnx.
     # we define a dict for the name projection
@@ -766,6 +778,7 @@ class SingaBackend(Backend):
         'Tile': 'Tile',
         'NonZero': 'NonZero',
         'Cast': 'Cast',
+        'OneHot': 'OneHot',
     }
 
     # this dict indicates the operators that need extra handle
@@ -799,7 +812,32 @@ class SingaBackend(Backend):
         'Gather': '_create_gather',
         'Tile': '_create_tile',
         'Cast': '_create_cast',
+        'OneHot': '_create_onehot',
     }
+
+    @classmethod
+    def _create_onehot(cls, onnx_node, inputs, opset_version):
+        """
+        get the OneHot operator from onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        axis = onnx_node.getattr("axis")
+        indices = tensor.to_numpy(inputs.pop(0)).tolist()
+        depth = tensor.to_numpy(inputs.pop(0)).tolist()
+        value = tensor.to_numpy(inputs.pop(0)).tolist()
+        onnx_node.consumed_inputs.append(onnx_node.inputs[1])
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
+                                                       opset_version)
+        return _, forward(axis, indices, depth, value, device)
 
     @classmethod
     def _create_cast(cls, onnx_node, inputs, opset_version):
@@ -1086,11 +1124,12 @@ class SingaBackend(Backend):
         Returns: 
             forward, the autograd of singa operator
         """
-        max = onnx_node.getattr("max", None)
-        min = onnx_node.getattr("min", None)
+        min_v = tensor.to_numpy(inputs.pop(1)).tolist()[0]
+        max_v = tensor.to_numpy(inputs.pop(1)).tolist()[0]
+        onnx_node.consumed_inputs.extend(onnx_node.inputs[1:])
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
-        return _, forward(min, max)
+        return _, forward(min_v, max_v)
 
     @classmethod
     def _create_hardsigmoid(cls, onnx_node, inputs, opset_version):
