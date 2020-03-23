@@ -162,12 +162,144 @@ class SingaFrontend(object):
         'Or': TensorProto.BOOL,
         'Xor': TensorProto.BOOL,
         'Shape': TensorProto.INT64,
+        'NonZero': TensorProto.INT64,
     }
 
     # some ops(such as batchnorm) has inputs we cannot handle directly,
     # so we record these items firstly so that we can handle then
     # at other place.
     _unhandled_operators = {}
+
+    @classmethod
+    def _create_onehot(cls, op, op_t):
+        """
+        get a onnx node from singa onthot
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+        # axis, indices, depth, values
+        node.attribute.extend([
+            helper.make_attribute('axis', op.axis),
+        ])
+        for attr in ['depth', 'values']:
+            node.input.append(op.name + ":" + attr)
+        return node
+
+    @classmethod
+    def _create_cast(cls, op, op_t):
+        """
+        get a onnx node from singa cast
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+
+        map_dict = {
+            tensor.float32: TensorProto.FLOAT,  # FLOAT to float32
+            tensor.int32: TensorProto.INT32,  # INT32 to int32
+        }
+        node.attribute.extend([
+            helper.make_attribute('to', map_dict[op.to]),
+        ])
+        return node
+
+    @classmethod
+    def _create_tile(cls, op, op_t):
+        """
+        get a onnx node from singa tile
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+
+        node.input.append(op.name + ":repeats")
+        return node
+
+    @classmethod
+    def _create_gather(cls, op, op_t):
+        """
+        get a onnx node from singa gather
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+
+        node.attribute.extend([
+            helper.make_attribute('axis', op.axis),
+        ])
+        node.input.append(op.name + ":indices")
+        return node
+
+    @classmethod
+    def _create_split(cls, op, op_t):
+        """
+        get a onnx node from singa split
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+
+        node.attribute.extend([
+            helper.make_attribute('axis', op.axis),
+            helper.make_attribute('split', op.parts),
+        ])
+        return node
+
+    @classmethod
+    def _create_slice(cls, op, op_t):
+        """
+        get a onnx node from singa slice
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+        for attr in ['starts', 'ends', 'axes', 'steps']:
+            node.input.append(op.name + ":" + attr)
+        return node
+
+
+    @classmethod
+    def _create_squeeze(cls, op, op_t):
+        """
+        get a onnx node from singa squeeze and unsqueeze
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+
+        node.attribute.extend([
+            helper.make_attribute('axes', list(op.axis)),
+        ])
+        return node
 
     @classmethod
     def _create_reduceOp(cls, op, op_t):
@@ -585,7 +717,12 @@ class SingaFrontend(object):
 
         # prepare the output
         y_optype = cls._get_singa_op_type(y.creator)
-        y_dtype = cls._bool_operators[y_optype] if y_optype in cls._bool_operators else TensorProto.FLOAT
+        if y_optype in cls._bool_operators:
+            y_dtype = cls._bool_operators[y_optype]
+        elif y.dtype == tensor.int32:
+            y_dtype = TensorProto.INT32
+        else:
+            y_dtype = TensorProto.FLOAT
         Y = [helper.make_tensor_value_info(y.name, y_dtype, y.shape)]
 
         # prepare the weight
@@ -603,6 +740,7 @@ class SingaFrontend(object):
             optype = cls._get_singa_op_type(op)
             # because the inputs of batchnorm and reshape are differnet with onnx
             # we need to add these inputs into onnx model mannully
+            # todo move these operators into a func
             if optype == '_BatchNorm2d':
                 # for singa, x, scale, bias is input
                 # and mean and var is attribute
@@ -627,7 +765,7 @@ class SingaFrontend(object):
                                                   [len(op.shape)]))
                 W.append(numpy_helper.from_array(np.array(op.shape, dtype=np.int64), node_name))
             elif optype == 'Clip':
-                # cli add min and max
+                # clip add min and max
                 append_inputs = {
                     "min": op.min,
                     "max": op.max
@@ -639,7 +777,61 @@ class SingaFrontend(object):
                                                       TensorProto.FLOAT,
                                                       []))
                     W.append(helper.make_tensor(node_name, TensorProto.FLOAT, [], [append_input]))
+            elif optype == 'Slice':
+                # slice add starts, ends, axes, steps
+                append_inputs = {
+                    "starts": op.starts,
+                    "ends": op.ends,
+                    "axes": op.axes,
+                    "steps": op.steps,
+                }
+                for tmp_name, append_input in append_inputs.items():
+                    node_name = op_name + ":" + tmp_name
+                    X.append(
+                        helper.make_tensor_value_info(node_name,
+                                                      TensorProto.INT64,
+                                                      [len(append_input)]))
+                    W.append(numpy_helper.from_array(np.array(append_input), node_name))
+            elif optype == 'Gather':
+                # slice add starts, ends, axes, steps
+                append_inputs = {
+                    "indices": op.indices,
+                }
+                for tmp_name, append_input in append_inputs.items():
+                    node_name = op_name + ":" + tmp_name
+                    X.append(
+                        helper.make_tensor_value_info(node_name,
+                                                      TensorProto.INT64,
+                                                      [len(append_input)]))
+                    W.append(numpy_helper.from_array(np.array(append_input), node_name))
+            elif optype == 'Tile':
+                # slice add starts, ends, axes, steps
+                append_inputs = {
+                    "repeats": op.repeats,
+                }
+                for tmp_name, append_input in append_inputs.items():
+                    node_name = op_name + ":" + tmp_name
+                    X.append(
+                        helper.make_tensor_value_info(node_name,
+                                                      TensorProto.INT64,
+                                                      [len(append_input)]))
+                    W.append(numpy_helper.from_array(np.array(append_input), node_name))
+            elif optype == 'OneHot':
+                # slice add starts, ends, axes, steps
+                append_inputs = {
+                    "depth": op.depth,
+                    "values": op.values,
+                }
+                for tmp_name, append_input in append_inputs.items():
+                    node_name = op_name + ":" + tmp_name
+                    tmp_tensor = numpy_helper.from_array(np.array(append_input), node_name)
+                    X.append(
+                        helper.make_tensor_value_info(node_name,
+                                                      tmp_tensor.data_type,
+                                                      tmp_tensor.dims))
+                    W.append(tmp_tensor)
             graph_def.node.extend(cls.singa_op_to_onnx_node(op, op_t))
+
 
         graph_def.input.extend(X)
         graph_def.output.extend(Y)
@@ -778,7 +970,7 @@ class SingaBackend(Backend):
         'Split': 'Split',
         'Gather': 'Gather',
         'Tile': 'Tile',
-        'NonZero': 'NonZero',
+        'NonZero': 'nonzero',
         'Cast': 'Cast',
         'OneHot': 'OneHot',
     }
@@ -833,13 +1025,12 @@ class SingaBackend(Backend):
             forward, the autograd of singa operator
         """
         axis = onnx_node.getattr("axis")
-        indices = tensor.to_numpy(inputs.pop(0)).tolist()
-        depth = tensor.to_numpy(inputs.pop(0)).tolist()
-        value = tensor.to_numpy(inputs.pop(0)).tolist()
-        onnx_node.consumed_inputs.append(onnx_node.inputs[1])
+        depth = tensor.to_numpy(inputs.pop(1))
+        value = tensor.to_numpy(inputs.pop(1))
+        onnx_node.consumed_inputs.extend(onnx_node.inputs[1:])
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
-        return _, forward(axis, indices, depth, value, device)
+        return _, forward(axis, depth, value)
 
     @classmethod
     def _create_cast(cls, onnx_node, inputs, opset_version):
@@ -858,15 +1049,15 @@ class SingaBackend(Backend):
         """
         to = onnx_node.getattr("to")
         map_dict = {
-            1: tensor.float32,  # FLOAT to float32
-            2: None,  # UINT8
-            3: tensor.int32,  # INT8 to int32
-            4: None,  # UINT16
-            5: tensor.int32,  # INT16 to int32
-            6: tensor.int32,  # INT32 to int32
-            7: tensor.int32,  # INT64 to int32
-            8: None,  # stirng
-            9: None,  # bool
+            TensorProto.FLOAT: tensor.float32,  # FLOAT to float32
+            TensorProto.UINT8: None,  # UINT8
+            TensorProto.INT8: tensor.int32,  # INT8 to int32
+            TensorProto.UINT16: None,  # UINT16
+            TensorProto.INT16: tensor.int32,  # INT16 to int32
+            TensorProto.INT32: tensor.int32,  # INT32 to int32
+            TensorProto.INT64: tensor.int32,  # INT64 to int32
+            TensorProto.STRING: None,  # stirng
+            TensorProto.BOOL: None,  # bool
         }
         to = map_dict[to]
         assert to != None, "not support cast type: {}".format(to)

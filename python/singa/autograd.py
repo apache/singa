@@ -2267,6 +2267,9 @@ class Unsqueeze(Operation):
     def forward(self, x):
         self.cache = x.shape()
         cur = list(self.cache)
+        # todo, need optimize after we have scalar tensor
+        if len(self.cache) == 1 and self.axis == [0]:
+            return x
         for i in self.axis:
             cur.insert(i, 1)
         return singa.Reshape(x, cur)
@@ -2832,14 +2835,18 @@ class Squeeze(Operation):
         if (self.axis == []):
             newshape = list(filter(lambda i: i != 1, self.cache))
         else:
-            for i in self.axis:
+            for id, i in enumerate(self.axis):
                 assert i < len(self.cache)
+                self.axis[id] = i % len(self.cache)
                 assert self.cache[
                     i] == 1, "the length of axis {} is {}, which should be 1".format(
                         i, self.cache[i])
             for ind, v in enumerate(self.cache):
                 if ind not in self.axis:
                     newshape.append(v)
+        # todo, need optimize after we have scalar tensor
+        if newshape == []:
+            return x
         return singa.Reshape(x, newshape)
 
     def backward(self, dy):
@@ -3923,7 +3930,7 @@ class NonZero(Operation):
             the output CTensor.
         """
         y = tensor.to_numpy(tensor.from_raw_tensor(x))
-        y = np.array((np.nonzero(y)))
+        y = np.array((np.nonzero(y))).astype(np.int32)
         y = tensor.from_numpy(y)
         y.to_device(x.device())
         return y.data
@@ -3972,7 +3979,7 @@ class Cast(Operation):
             the output CTensor.
         """
         if x.data_type() != self.to:
-            x.AsType(self.to)
+            x = x.AsType(self.to)
         return x
 
 
@@ -3999,3 +4006,83 @@ def cast(x, to):
         the output CTensor.
     """
     return Cast(to)(x)[0]
+
+
+class OneHot(Operation):
+
+    def __init__(self, axis, depth, values):
+        """
+        Produces a one-hot tensor based on inputs. 
+        Args:
+            axis: Axis along which one-hot representation in added. Default: axis=-1. 
+            axis=-1 means that the additional dimension will be inserted as the innermost/last dimension in the output tensor.
+        Args:
+            values: Rank 1 tensor containing exactly two elements, in the format [off_value, on_value], 
+            where 'on_value' is the value used for filling locations specified in 'indices' input tensor, 
+            and 'off_value' is the value used for filling locations other than those specified in 'indices' input tensor.
+        """
+        super(OneHot, self).__init__()
+        self.axis = axis
+        self.depth = depth
+        self.values = values
+
+    def forward(self, indices):
+        """
+        forward of OneHot
+        ! borrow from onnx
+        Args:
+            indices: Scalar specifying the number of classes in one-hot tensor. 
+            This is also the size of the one-hot dimension (specified by 'axis' attribute) added on in the output tensor. 
+            The values in the 'indices' input tensor are expected to be in the range [-depth, depth-1]. 
+            In case 'depth' is of non-integer type, it will be casted to int64 before use.
+        Returns:
+            the output CTensor.
+        """
+        values = tensor.to_numpy(tensor.from_raw_tensor(indices))
+        rank = len(values.shape)
+        print(self.depth)
+        depth_range = np.arange(self.depth)
+        if self.axis < 0:
+            self.axis += (rank + 1)
+        ls = values.shape[0:self.axis]
+        rs = values.shape[self.axis:rank]
+        targets = np.reshape(depth_range, (1,) * len(ls) + depth_range.shape + (1,) * len(rs))
+        values = np.reshape(np.mod(values, self.depth), ls + (1,) + rs)
+        np_tensor = np.asarray(targets == values, dtype=np.float32)
+        np_tensor = np_tensor * (self.values[1] - self.values[0]) + self.values[0]
+        tmp_tensor = tensor.from_numpy(np_tensor)
+        tmp_tensor.to_device(indices.device())
+        return tmp_tensor.data
+
+
+    def backward(self, dy):
+        """
+        backward of OneHot
+        Args:f
+            dy: CTensor, gradient tensor.
+        Returns:
+            the gradient tensor over input tensor.
+        """
+        assert False, ('no gradient for backward function')
+
+
+def onehot(axis, indices, depth, values):
+    """
+    Produces a one-hot tensor based on inputs. 
+    Args:
+        axis: Axis along which one-hot representation in added. Default: axis=-1. 
+        axis=-1 means that the additional dimension will be inserted as the innermost/last dimension in the output tensor.
+    Args:
+        indices: Scalar specifying the number of classes in one-hot tensor. 
+        This is also the size of the one-hot dimension (specified by 'axis' attribute) added on in the output tensor. 
+        The values in the 'indices' input tensor are expected to be in the range [-depth, depth-1]. 
+        In case 'depth' is of non-integer type, it will be casted to int64 before use.
+    Args:
+        values: Rank 1 tensor containing exactly two elements, in the format [off_value, on_value], 
+        where 'on_value' is the value used for filling locations specified in 'indices' input tensor, 
+        and 'off_value' is the value used for filling locations other than those specified in 'indices' input tensor.
+    Returns:
+        the output CTensor.
+    """
+    return OneHot(axis, depth, values)(indices)[0]
+
