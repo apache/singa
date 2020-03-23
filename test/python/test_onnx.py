@@ -1392,7 +1392,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # frontend
         model = sonnx.to_onnx([x], [y])
-        print('The model is:\n{}'.format(model))
+        # print('The model is:\n{}'.format(model))
 
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)

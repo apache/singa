@@ -168,7 +168,15 @@ class SingaFrontend(object):
     # some ops(such as batchnorm) has inputs we cannot handle directly,
     # so we record these items firstly so that we can handle then
     # at other place.
-    _unhandled_operators = {}
+    _unhandled_operators = {
+        "_BatchNorm2d": "_special_handle_batchnorm",
+        "Reshape": "_special_handle_reshape",
+        "Clip": "_special_handle_clip",
+        "Slice": "_special_handle_slice",
+        "Gather": "_special_handle_gather",
+        "Tile": "_special_handle_tile",
+        "OneHot": "_special_handle_onehot",
+    }
 
     @classmethod
     def _create_onehot(cls, op, op_t):
@@ -281,7 +289,6 @@ class SingaFrontend(object):
         for attr in ['starts', 'ends', 'axes', 'steps']:
             node.input.append(op.name + ":" + attr)
         return node
-
 
     @classmethod
     def _create_squeeze(cls, op, op_t):
@@ -396,7 +403,7 @@ class SingaFrontend(object):
         if op.max is not None:
             node.input.append(op.name + ":max")
         else:
-            node.input.append("")          
+            node.input.append("")
         return node
 
     @classmethod
@@ -646,13 +653,187 @@ class SingaFrontend(object):
         return type(op).__name__
 
     @classmethod
+    def _special_handle_batchnorm(cls, op, X, W):
+        """
+        hanlde the special operators
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            onnx tensor list
+        """
+        # for singa, x, scale, bias is input
+        # and mean and var is attribute
+        # so we add the mean and var to W
+        tensor_list = []
+        append_inputs = {"mean": op.running_mean, "var": op.running_var}
+        for tmp_name, append_input in append_inputs.items():
+            node_name = op.name + ":" + tmp_name
+            append_input = tensor.to_numpy(tensor.from_raw_tensor(append_input))
+            tensor_list.append(numpy_helper.from_array(append_input, node_name))
+        return tensor_list
+
+    @classmethod
+    def _special_handle_reshape(cls, op, X, W):
+        """
+        hanlde the special operators
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            onnx tensor list
+        """
+        node_name = op.name + ":shape"
+        return [
+            numpy_helper.from_array(np.array(op.shape, dtype=np.int64),
+                                    node_name)
+        ]
+
+    @classmethod
+    def _special_handle_clip(cls, op, X, W):
+        """
+        hanlde the special operators
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            onnx tensor list
+        """
+        tensor_list = []
+        # clip add min and max
+        append_inputs = {"min": op.min, "max": op.max}
+        for tmp_name, append_input in append_inputs.items():
+            node_name = op.name + ":" + tmp_name
+            tensor_list.append(
+                helper.make_tensor(node_name, TensorProto.FLOAT, [],
+                                   [append_input]))
+        return tensor_list
+
+    @classmethod
+    def _special_handle_slice(cls, op, X, W):
+        """
+        hanlde the special operators
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            onnx tensor list
+        """
+        tensor_list = []
+        # slice add starts, ends, axes, steps
+        append_inputs = {
+            "starts": op.starts,
+            "ends": op.ends,
+            "axes": op.axes,
+            "steps": op.steps,
+        }
+        for tmp_name, append_input in append_inputs.items():
+            node_name = op.name + ":" + tmp_name
+            tensor_list.append(
+                numpy_helper.from_array(np.array(append_input), node_name))
+        return tensor_list
+
+    @classmethod
+    def _special_handle_gather(cls, op, X, W):
+        """
+        hanlde the special operators
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            onnx tensor list
+        """
+        tensor_list = []
+        append_inputs = {
+            "indices": op.indices,
+        }
+        for tmp_name, append_input in append_inputs.items():
+            node_name = op.name + ":" + tmp_name
+            tensor_list.append(
+                numpy_helper.from_array(np.array(append_input), node_name))
+        return tensor_list
+
+    @classmethod
+    def _special_handle_tile(cls, op, X, W):
+        """
+        hanlde the special operators
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            onnx tensor list
+        """
+        tensor_list = []
+        append_inputs = {
+            "repeats": op.repeats,
+        }
+        for tmp_name, append_input in append_inputs.items():
+            node_name = op.name + ":" + tmp_name
+            tensor_list.append(
+                numpy_helper.from_array(np.array(append_input), node_name))
+        return tensor_list
+
+    @classmethod
+    def _special_handle_onehot(cls, op, X, W):
+        """
+        hanlde the special operators
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            onnx tensor list
+        """
+        tensor_list = []
+        append_inputs = {
+            "depth": op.depth,
+            "values": op.values,
+        }
+        for tmp_name, append_input in append_inputs.items():
+            node_name = op.name + ":" + tmp_name
+            tensor_list.append(
+                numpy_helper.from_array(np.array(append_input), node_name))
+        return tensor_list
+
+    @classmethod
+    def handle_special_ops(cls, op, X, W):
+        """
+        hanlde the special operators, 
+        because the inputs of batchnorm and reshape are differnet with onnx
+        we need to add these inputs into onnx model mannully
+        Args:
+            op: a given operator
+        Args:
+            X: onnx input list
+        Args:
+            X: onnx weight list
+        Returns: the onnx node
+        """
+        optype = cls._get_singa_op_type(op)
+        translator = getattr(cls, cls._unhandled_operators[optype])
+        tensor_list = translator(op, X, W)
+        for tensor in tensor_list:
+            X.append(
+                helper.make_tensor_value_info(tensor.name,
+                                              tensor.data_type,
+                                              tensor.dims))
+            W.append(tensor)
+        # return X, W
+
+    @classmethod
     def _common_singa_tensor_to_onnx_node(cls, op, op_t):
         """
         get a onnx node from a singa operator, prepare its type, inputs and outputs
         Args:
             op: a given operator
         Args:
-            op: the tensor of the operator
+            op_t: the tensor of the operator
         Returns: the onnx node
         """
         node_def = NodeProto()
@@ -701,7 +882,9 @@ class SingaFrontend(object):
         Returns: 
             the onnx model
         """
-        assert len(y) == 1, "Not support multiple output now."  # assume there is only one output
+        assert len(
+            y
+        ) == 1, "Not support multiple output now."  # assume there is only one output
         y = y[0]
 
         graph_def = GraphProto()
@@ -738,100 +921,9 @@ class SingaFrontend(object):
         # iterate the node graph
         for op_name, op in topol.items():
             optype = cls._get_singa_op_type(op)
-            # because the inputs of batchnorm and reshape are differnet with onnx
-            # we need to add these inputs into onnx model mannully
-            # todo move these operators into a func
-            if optype == '_BatchNorm2d':
-                # for singa, x, scale, bias is input
-                # and mean and var is attribute
-                # so we add the mean and var to W
-                running_values = {
-                    "mean": op.running_mean,
-                    "var": op.running_var
-                }
-                for tmp_name, running_value in running_values.items():
-                    node_name = op_name + ":" + tmp_name
-                    running_value = tensor.to_numpy(tensor.from_raw_tensor(running_value))
-                    X.append(
-                        helper.make_tensor_value_info(node_name,
-                                                      TensorProto.FLOAT,
-                                                      running_value.shape))
-                    W.append(numpy_helper.from_array(running_value, node_name))
-            elif optype == 'Reshape':
-                # reshape add shape
-                node_name = op_name + ":shape"
-                X.append(
-                    helper.make_tensor_value_info(node_name, TensorProto.FLOAT,
-                                                  [len(op.shape)]))
-                W.append(numpy_helper.from_array(np.array(op.shape, dtype=np.int64), node_name))
-            elif optype == 'Clip':
-                # clip add min and max
-                append_inputs = {
-                    "min": op.min,
-                    "max": op.max
-                }
-                for tmp_name, append_input in append_inputs.items():
-                    node_name = op_name + ":" + tmp_name
-                    X.append(
-                        helper.make_tensor_value_info(node_name,
-                                                      TensorProto.FLOAT,
-                                                      []))
-                    W.append(helper.make_tensor(node_name, TensorProto.FLOAT, [], [append_input]))
-            elif optype == 'Slice':
-                # slice add starts, ends, axes, steps
-                append_inputs = {
-                    "starts": op.starts,
-                    "ends": op.ends,
-                    "axes": op.axes,
-                    "steps": op.steps,
-                }
-                for tmp_name, append_input in append_inputs.items():
-                    node_name = op_name + ":" + tmp_name
-                    X.append(
-                        helper.make_tensor_value_info(node_name,
-                                                      TensorProto.INT64,
-                                                      [len(append_input)]))
-                    W.append(numpy_helper.from_array(np.array(append_input), node_name))
-            elif optype == 'Gather':
-                # slice add starts, ends, axes, steps
-                append_inputs = {
-                    "indices": op.indices,
-                }
-                for tmp_name, append_input in append_inputs.items():
-                    node_name = op_name + ":" + tmp_name
-                    X.append(
-                        helper.make_tensor_value_info(node_name,
-                                                      TensorProto.INT64,
-                                                      [len(append_input)]))
-                    W.append(numpy_helper.from_array(np.array(append_input), node_name))
-            elif optype == 'Tile':
-                # slice add starts, ends, axes, steps
-                append_inputs = {
-                    "repeats": op.repeats,
-                }
-                for tmp_name, append_input in append_inputs.items():
-                    node_name = op_name + ":" + tmp_name
-                    X.append(
-                        helper.make_tensor_value_info(node_name,
-                                                      TensorProto.INT64,
-                                                      [len(append_input)]))
-                    W.append(numpy_helper.from_array(np.array(append_input), node_name))
-            elif optype == 'OneHot':
-                # slice add starts, ends, axes, steps
-                append_inputs = {
-                    "depth": op.depth,
-                    "values": op.values,
-                }
-                for tmp_name, append_input in append_inputs.items():
-                    node_name = op_name + ":" + tmp_name
-                    tmp_tensor = numpy_helper.from_array(np.array(append_input), node_name)
-                    X.append(
-                        helper.make_tensor_value_info(node_name,
-                                                      tmp_tensor.data_type,
-                                                      tmp_tensor.dims))
-                    W.append(tmp_tensor)
+            if optype in cls._unhandled_operators:
+                cls.handle_special_ops(op, X, W)
             graph_def.node.extend(cls.singa_op_to_onnx_node(op, op_t))
-
 
         graph_def.input.extend(X)
         graph_def.output.extend(Y)
@@ -860,6 +952,7 @@ class SingaFrontend(object):
         model = optimizer.optimize(model)
         checker.check_model(model)
         return model
+
 
 class OnnxNode(object):
     """
@@ -1024,8 +1117,8 @@ class SingaBackend(Backend):
         Returns: 
             forward, the autograd of singa operator
         """
-        axis = onnx_node.getattr("axis")
-        depth = tensor.to_numpy(inputs.pop(1))
+        axis = onnx_node.getattr("axis", -1)
+        depth = tensor.to_numpy(inputs.pop(1)).astype(np.int32)
         value = tensor.to_numpy(inputs.pop(1))
         onnx_node.consumed_inputs.extend(onnx_node.inputs[1:])
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
@@ -1080,7 +1173,7 @@ class SingaBackend(Backend):
         Returns: 
             forward, the autograd of singa operator
         """
-        repeats = tensor.to_numpy(inputs.pop(1)).tolist()
+        repeats = tensor.to_numpy(inputs.pop(1)).astype(np.int32).tolist()
         onnx_node.consumed_inputs.append(onnx_node.inputs[1])
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
@@ -1101,8 +1194,8 @@ class SingaBackend(Backend):
         Returns: 
             forward, the autograd of singa operator
         """
-        axis = onnx_node.getattr("axis")
-        indices = tensor.to_numpy(inputs.pop(1)).tolist()
+        axis = onnx_node.getattr("axis", 0)
+        indices = tensor.to_numpy(inputs.pop(1)).astype(np.int32).tolist()
         onnx_node.consumed_inputs.append(onnx_node.inputs[1])
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
@@ -1123,7 +1216,7 @@ class SingaBackend(Backend):
         Returns: 
             forward, the autograd of singa operator
         """
-        axis = onnx_node.getattr("axis")
+        axis = onnx_node.getattr("axis", 0)
         split = onnx_node.getattr("split")
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
@@ -1144,16 +1237,15 @@ class SingaBackend(Backend):
         Returns: 
             forward, the autograd of singa operator
         """
-        starts = tensor.to_numpy(inputs.pop(1)).tolist()
-        ends = tensor.to_numpy(inputs.pop(1)).tolist()
+        starts = tensor.to_numpy(inputs.pop(1)).astype(np.int32).tolist()
+        ends = tensor.to_numpy(inputs.pop(1)).astype(np.int32).tolist()
         if len(inputs) >= 2 and onnx_node.inputs[3] != '':
-            axes = tensor.to_numpy(inputs.pop(1)).tolist()
+            axes = tensor.to_numpy(inputs.pop(1)).astype(np.int32).tolist()
         else:
             axes = None
-        steps = tensor.to_numpy(
-            inputs.pop(1)).tolist() if len(inputs) >= 2 else None
-        onnx_node.consumed_inputs.extend(
-            [x for x in onnx_node.inputs[1:] if x != ''])
+        steps = tensor.to_numpy(inputs.pop(1)).astype(
+            np.int32).tolist() if len(inputs) >= 2 else None
+        onnx_node.consumed_inputs.extend(onnx_node.inputs[1:])
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
         return _, forward(starts, ends, axes, steps)
@@ -1744,8 +1836,13 @@ class SingaBackend(Backend):
         handle, forward = cls._onnx_node_to_singa_op(onnx_node, tmp_inputs,
                                                      opset_version)
         # only give the inputs still need
-        tmp_inputs = [inputs[x] for x in onnx_node.inputs if x not in onnx_node.consumed_inputs]
-        return cls._run_node(onnx_node, tmp_inputs, handle, forward, opset_version)
+        tmp_inputs = [
+            inputs[x]
+            for x in onnx_node.inputs
+            if x not in onnx_node.consumed_inputs
+        ]
+        return cls._run_node(onnx_node, tmp_inputs, handle, forward,
+                             opset_version)
 
     @classmethod
     def _run_node(cls,
