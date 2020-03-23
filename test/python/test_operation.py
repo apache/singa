@@ -3960,7 +3960,9 @@ class TestPythonOperation(unittest.TestCase):
             x.to_device(dev)
 
             result = autograd.cast(x, t3)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(result),
+            result_np = tensor.to_numpy(result)
+            assert result_np.dtype == y.dtype, "type %s != %s." % (result_np.dtype, y.dtype)
+            np.testing.assert_array_almost_equal(result_np,
                                                     y,
                                                     decimal=5)
 
@@ -3970,5 +3972,43 @@ class TestPythonOperation(unittest.TestCase):
     def test_cast_gpu(self):
         self.cast_test(gpu_dev)
 
+    def onehot_test(self, dev):
+        def one_hot(indices, depth, axis=-1, dtype=np.float32):  # type: ignore
+            ''' Compute one hot from indices at a specific axis '''
+            values = np.asarray(indices)
+            rank = len(values.shape)
+            depth_range = np.arange(depth)
+            if axis < 0:
+                axis += (rank + 1)
+            ls = values.shape[0:axis]
+            rs = values.shape[axis:rank]
+            targets = np.reshape(depth_range, (1,) * len(ls) + depth_range.shape + (1,) * len(rs))
+            values = np.reshape(np.mod(values, depth), ls + (1,) + rs)
+            return np.asarray(targets == values, dtype=dtype)
+
+        axisValue = 1
+        on_value = 3
+        off_value = 1
+        output_type = np.float32
+        indices = np.array([[1, 9], [2, 4]], dtype=np.float32)
+        depth = np.array([10], dtype=np.float32)
+        values = np.array([off_value, on_value], dtype=output_type)
+        y = one_hot(indices, depth, axis=axisValue, dtype=output_type)
+        y = y * (on_value - off_value) + off_value
+
+        x = tensor.from_numpy(indices)
+        x.to_device(dev)
+
+        result = autograd.onehot(axisValue, x, depth, values)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result),
+                                                y,
+                                                decimal=5)
+
+    def test_onehot_cpu(self):
+        self.onehot_test(cpu_dev)
+
+    def test_onehot_gpu(self):
+        self.onehot_test(gpu_dev)
+    
 if __name__ == '__main__':
     unittest.main()
