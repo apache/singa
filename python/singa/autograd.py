@@ -3555,6 +3555,8 @@ class Slice(Operation):
             self.steps = [1] * len(x_shape)  # steps = None
         for idx, axis in enumerate(self.axes):
             start, end, step = self.starts[idx], self.ends[idx], self.steps[idx]
+            if end > x_shape[axis]: 
+                end = x_shape[axis]
             self.cache.append((axis, x_shape[axis], start, end, step))
             xs = []
             for step_idx in range(x_shape[axis])[start:end:step]:
@@ -4040,7 +4042,6 @@ class OneHot(Operation):
         """
         values = tensor.to_numpy(tensor.from_raw_tensor(indices))
         rank = len(values.shape)
-        print(self.depth)
         depth_range = np.arange(self.depth)
         if self.axis < 0:
             self.axis += (rank + 1)
