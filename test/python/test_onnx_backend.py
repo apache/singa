@@ -37,10 +37,9 @@ import itertools
 
 autograd.training = True
 
-_default_opset_version = 10
+_default_opset_version = 11
 
-
-def expect(node, inputs, outputs, name, opset_version=_default_opset_version):
+def expect(node, inputs, outputs, name, opset_version=_default_opset_version, decimal=5):
     onnx_node = sonnx.OnnxNode(node)
     input_tensors = {}
     input_labels = [x for x in onnx_node.inputs if x != ""]
@@ -56,7 +55,7 @@ def expect(node, inputs, outputs, name, opset_version=_default_opset_version):
     for out1, out2 in zip(outputs, outputs_dict.values()):
         np.testing.assert_array_almost_equal(out1,
                                              tensor.to_numpy(out2),
-                                             decimal=5)
+                                             decimal=decimal)
 
 
 class TestPythonOnnxBackend(unittest.TestCase):
@@ -883,7 +882,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
 
         x = np.random.randn(3, 4, 5).astype(np.float32)
         y = np.tan(x)
-        expect(node, inputs=[x], outputs=[y], name='test_tan')
+        expect(node, inputs=[x], outputs=[y], name='test_tan', decimal=3)
 
     def test_Tanh(self):  # type: () -> None
         node = onnx.helper.make_node(
@@ -1848,13 +1847,13 @@ class TestPythonOnnxBackend(unittest.TestCase):
         x = np.array([1, 2, 3]).astype(np.float32)
         y = np.array([4, 5, 6]).astype(np.float32)  # todo, not exactly same
         z = np.power(x, y)  # expected output [1., 32., 729.]
-        expect(node, inputs=[x, y], outputs=[z], name='test_pow_example')
+        expect(node, inputs=[x, y], outputs=[z], name='test_pow_example', decimal=3)
 
         x = np.arange(24).reshape(2, 3, 4).astype(
             np.float32)  # todo, cannot too big here
         y = np.random.randn(2, 3, 4).astype(np.float32)
         z = np.power(x, y)
-        expect(node, inputs=[x, y], outputs=[z], name='test_pow')
+        expect(node, inputs=[x, y], outputs=[z], name='test_pow', decimal=3)
 
     def test_pow_broadcast(self):  # type: () -> None
         node = onnx.helper.make_node(
@@ -1866,7 +1865,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         x = np.array([1, 2, 3]).astype(np.float32)
         y = np.array(2).astype(np.float32)
         z = np.power(x, y)  # expected output [1., 4., 9.]
-        expect(node, inputs=[x, y], outputs=[z], name='test_pow_bcast_scalar')
+        expect(node, inputs=[x, y], outputs=[z], name='test_pow_bcast_scalar', decimal=3)
 
         node = onnx.helper.make_node(
             'Pow',
@@ -1877,7 +1876,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         y = np.array([1, 2, 3]).astype(np.float32)
         # expected output [[1, 4, 27], [4, 25, 216]]
         z = np.power(x, y).astype(np.float32)
-        expect(node, inputs=[x, y], outputs=[z], name='test_pow_bcast_array')
+        expect(node, inputs=[x, y], outputs=[z], name='test_pow_bcast_array', decimal=3)
 
     def test_clip(self):
         node = onnx.helper.make_node(

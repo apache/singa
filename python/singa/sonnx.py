@@ -119,6 +119,7 @@ class SingaFrontend(object):
         'Tile': 'Tile',
         'NonZero': 'NonZero',
         'Cast': 'Cast',
+        'OneHot': 'OneHot',
     }
 
     # this dict indicates the operators that need extra handle
@@ -148,6 +149,7 @@ class SingaFrontend(object):
         'Gather': '_create_gather',
         'Tile': '_create_tile',
         'Cast': '_create_cast',
+        'OneHot': '_create_onehot',
     }
 
     # operators with bool output
@@ -1124,8 +1126,14 @@ class SingaBackend(Backend):
         Returns: 
             forward, the autograd of singa operator
         """
-        min_v = tensor.to_numpy(inputs.pop(1)).tolist()[0]
-        max_v = tensor.to_numpy(inputs.pop(1)).tolist()[0]
+        if len(inputs) >= 2 and onnx_node.inputs[1] != '':
+            min_v = tensor.to_numpy(inputs.pop(1)).tolist()[0]
+        else:
+            min_v = None
+        if len(inputs) >= 2 and onnx_node.inputs[2] != '':
+            max_v = tensor.to_numpy(inputs.pop(1)).tolist()[0]
+        else:
+            max_v = None
         onnx_node.consumed_inputs.extend(onnx_node.inputs[1:])
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
@@ -1227,9 +1235,8 @@ class SingaBackend(Backend):
         Returns: 
             the autograd of singa operator
         """
-        shape = tensor.to_numpy(inputs[1]).tolist()
+        shape = tensor.to_numpy(inputs.pop(1)).astype(np.int32).tolist()
         onnx_node.consumed_inputs.append(onnx_node.inputs[1])
-        del inputs[1]
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
         return _, forward(shape)
@@ -1542,10 +1549,12 @@ class SingaBackend(Backend):
             inputs), "{}: expected {} but got {}".format(
                 onnx_node.op_type, len(valid_inputs), len(inputs))
 
-        inputs = [inputs[x] for x in valid_inputs]
-        handle, forward = cls._onnx_node_to_singa_op(onnx_node, inputs,
+        tmp_inputs = [inputs[x] for x in onnx_node.inputs if x != ""]
+        handle, forward = cls._onnx_node_to_singa_op(onnx_node, tmp_inputs,
                                                      opset_version)
-        return cls._run_node(onnx_node, inputs, handle, forward, opset_version)
+        # only give the inputs still need
+        tmp_inputs = [inputs[x] for x in onnx_node.inputs if x not in onnx_node.consumed_inputs]
+        return cls._run_node(onnx_node, tmp_inputs, handle, forward, opset_version)
 
     @classmethod
     def _run_node(cls,
