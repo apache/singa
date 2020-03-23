@@ -143,19 +143,19 @@ def postprcess(out):
                 classes = softmax(classes)
                 detectedClass = classes.argmax()
                 if 0.5 < classes[detectedClass] * confidence:
-                    print(classes[detectedClass] * confidence)
-                    print(label[detectedClass])
                     color = clut[detectedClass]
                     x = x - w / 2
                     y = y - h / 2
-                    print(x, y, x + w, y)
                     draw.line((x, y, x + w, y), fill=color)
                     draw.line((x, y, x, y + h), fill=color)
                     draw.line((x + w, y, x + w, y + h), fill=color)
                     draw.line((x, y + h, x + w, y + h), fill=color)
-                    draw.text((x, y),
-                              label[detectedClass],
-                              fill=color)
+                    draw.text((x, y), label[detectedClass], fill=color)
+                    print("bounding box: (%.2f, %.2f, %.2f, %.2f)" %
+                          (x, y, x + w, y + h))
+                    print('class=%s ; probability=%f' %
+                          (label[detectedClass],
+                           classes[detectedClass] * confidence))
     img.save("result.png")
 
 

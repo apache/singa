@@ -713,9 +713,9 @@ class SingaBackend(Backend):
         'Sigmoid': 'sigmoid',
         'Add': 'add',
         'MatMul': 'Matmul',
-        'Conv': 'conv2d',
-        'MaxPool': 'pooling_2d',
-        'AveragePool': 'pooling_2d',
+        'Conv': '_Conv2d',
+        'MaxPool': '_Pooling2d',
+        'AveragePool': '_Pooling2d',
         'BatchNormalization': 'batchnorm_2d',
         'Concat': 'Concat',
         'Flatten': 'Flatten',
@@ -1292,7 +1292,7 @@ class SingaBackend(Backend):
 
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
-        return handle, forward
+        return _, forward(handle, odd_padding)
 
     @classmethod
     def _create_max_avg_pool(cls, onnx_node, inputs, opset_version):
@@ -1340,7 +1340,7 @@ class SingaBackend(Backend):
 
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
-        return handle, forward
+        return _, forward(handle, odd_padding)
 
     @classmethod
     def _create_batchnorm(cls, onnx_node, inputs, opset_version):
