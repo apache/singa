@@ -1217,10 +1217,11 @@ class SingaBackend(Backend):
             forward, the autograd of singa operator
         """
         axis = onnx_node.getattr("axis", 0)
-        split = onnx_node.getattr("split")
+        split = onnx_node.getattr("split", None)
+        num_output = len(onnx_node.outputs)
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
-        return _, forward(axis, split)
+        return _, forward(axis, split, num_output)
 
     @classmethod
     def _create_slice(cls, onnx_node, inputs, opset_version):

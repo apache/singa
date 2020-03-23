@@ -3659,7 +3659,7 @@ def ceil(x):
 
 class Split(Operation):
 
-    def __init__(self, axis, parts):
+    def __init__(self, axis, parts, num_output=None):
         """
         Init a Split, Split a tensor into a list of tensors, along the specified 'axis'. 
         Args:
@@ -3668,10 +3668,15 @@ class Split(Operation):
         Args:
             parts: list of ints, length of each output, which can be specified using argument 'parts'. 
             Otherwise, the tensor is parts to equal sized parts.
+        Args:
+            num_output: once parts is none, the tensor is split to equal sized parts for each output.
         """
         super(Split, self).__init__()
         self.axis = axis
         self.parts = parts
+        self.num_output = num_output
+        if self.parts is None:
+            assert self.num_output is not None, "For (parts, num_output), it at least requires one."
 
     def forward(self, x):
         """
@@ -3681,6 +3686,10 @@ class Split(Operation):
         Returns:
             the output CTensor.
         """
+        x_shape = list(x.shape())
+        self.axis  = self.axis % len(x_shape)
+        if self.parts is None:
+            self.parts = [x_shape[self.axis]//self.num_output] * self.num_output
         xs = []
         _s = 0
         for _l in self.parts:
@@ -3701,7 +3710,7 @@ class Split(Operation):
         return dy
 
 
-def split(x, axis, parts):
+def split(x, axis, parts, num_output=None):
     """
     Init a Split, Split a tensor into a list of tensors, along the specified 'axis'. 
     Args:
@@ -3712,10 +3721,12 @@ def split(x, axis, parts):
     Args:
         parts: list of ints, length of each output, which can be specified using argument 'parts'. 
         Otherwise, the tensor is split to equal sized parts.
+    Args:
+        num_output: once parts is none, the tensor is split to equal sized parts for each output.
     Returns:
         the output CTensor.
     """
-    return Split(axis, parts)(x)
+    return Split(axis, parts, num_output)(x)
 
 
 class Gather(Operation):
