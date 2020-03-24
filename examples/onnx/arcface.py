@@ -18,7 +18,6 @@ from singa import autograd
 from singa import sonnx
 import onnx
 from onnx import version_converter, helper, numpy_helper
-import onnx.utils
 
 
 def load_model():

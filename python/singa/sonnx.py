@@ -820,8 +820,7 @@ class SingaFrontend(object):
         tensor_list = translator(op, X, W)
         for tensor in tensor_list:
             X.append(
-                helper.make_tensor_value_info(tensor.name,
-                                              tensor.data_type,
+                helper.make_tensor_value_info(tensor.name, tensor.data_type,
                                               tensor.dims))
             W.append(tensor)
         # return X, W
@@ -1793,7 +1792,7 @@ class SingaBackend(Backend):
         return None, autograd_op
 
     @classmethod
-    def _onnx_node_to_singa_op(cls, onnx_node, inputs, opset_version):
+    def _onnx_node_to_singa_op(cls, onnx_node, inputs, opset_version=_known_opset_version):
         """
         get a singa operator(handle and autograd) from a onnx node
         Args:
@@ -1865,8 +1864,6 @@ class SingaBackend(Backend):
         Returns: 
             list, the output of the
         """
-        # since reshape acutally only needs one input tensor
-        # but onnx regard its shape as another tensor, we need to ommit it
         outputs = forward(*inputs) if handle is None else forward(
             handle, *inputs)
         if not isinstance(outputs, collections.Iterable):
@@ -1898,6 +1895,7 @@ class SingaBackend(Backend):
         for t in graph.initializer:
             all_inputs[t.name] = t
         initializers = {t.name for t in graph.initializer}
+        inp_idx = 0
         for name, x in all_inputs.items():
             if name in initializers:
                 np_tensor = numpy_helper.to_array(x)
@@ -1910,7 +1908,8 @@ class SingaBackend(Backend):
                 x_shape = tuple(
                     dim.dim_value for dim in x.type.tensor_type.shape.dim)
                 if init_inputs is not None:
-                    np_tensor = init_inputs.pop(0)
+                    np_tensor = init_inputs[inp_idx]
+                    inp_idx += 1
                 else:
                     np_tensor = np.random.randn(*x_shape).astype(np.float32)
             tmp_tensor = tensor.from_numpy(np_tensor)
@@ -1954,17 +1953,10 @@ class SingaBackend(Backend):
                 for x in node.inputs
                 if x not in node.consumed_inputs
             ]
-            # print(node.attrs)
-            # print(node.name)
-            # print(node.inputs)
-            # if node.name == 'bert/encoder/strided_slice__16':
-            #     for inp in inputs:
-            #         print(inp)
+
             handle, forward = cls._onnx_node_to_singa_op(
                 node, inputs, opset_version)
             outputs = cls._run_node(node, inputs, handle, forward)
-            # print(outputs)
-            # print('='*30)
             for key, val in outputs.items():
                 tensor_map[key] = val
             singa_ops.extend([singa_op(node.name, node, handle, forward)])
@@ -1983,6 +1975,9 @@ class SingaBackend(Backend):
         """
         super(SingaBackend, cls).prepare(model, device, **kwargs)
         init_inputs = kwargs.get("init_inputs", None)
+        # whether initializers are moved into inputs, due to https://github.com/onnx/onnx/issues/2417
+        cls.keep_initializers_as_inputs = kwargs.get(
+            'keep_initializers_as_inputs', True)
         # optimize and infer the shape of the model
         try:
             model = onnx.utils.polish_model(model)
@@ -2009,12 +2004,17 @@ class SingaBackend(Backend):
                 opset_version = 1
         weights, singa_ops = cls._onnx_model_to_singa_net(
             model, init_inputs, device, opset_version)
-        return SingaRep(model, weights, singa_ops)
+        return SingaRep(model, weights, singa_ops,
+                        cls.keep_initializers_as_inputs)
 
 
 class SingaRep(BackendRep):
 
-    def __init__(self, model, weights, singa_ops):
+    def __init__(self,
+                 model,
+                 weights,
+                 singa_ops,
+                 keep_initializers_as_inputs=True):
         """
         SingaRep provides the intermediate representation of Singa,
         the user can run the forward of the singa model by run func,
@@ -2030,6 +2030,7 @@ class SingaRep(BackendRep):
         super(SingaRep, self).__init__()
         self.model = model
         self.tensor_map = weights
+        self.keep_initializers_as_inputs = keep_initializers_as_inputs
         # this each item of singa_ops is: ('name', 'op', 'handle', 'forward')
         # the name is a string, op is OnnxNode,
         # handle is Singa handle to store the tensor into singa operator
@@ -2051,35 +2052,36 @@ class SingaRep(BackendRep):
         # get a specific op by its name
         op_name = kwargs.get('op_name', None)
         # record the tensor we added from input
-        mark_inputs = []
+        tmp_tensor_map = {name:val for name, val in self.tensor_map.items()}
 
         # the dict will be returned
         ret_outputs = collections.OrderedDict()
         graph = self.model.graph
-        if len(graph.input) - len(graph.initializer) != len(inputs):
-            raise RuntimeError(
-                "The length of graph input is different from the tensor input: %d, %d"
-                % (len(graph.input) - len(graph.initializer), len(inputs)))
+        if self.keep_initializers_as_inputs:
+            require_input_len = len(graph.input) - len(graph.initializer)
+            actual_input_len = len(inputs)
+        else:
+            require_input_len = len(graph.input)
+            actual_input_len = len(inputs)
+        assert require_input_len == actual_input_len, "The length of graph input is different from the tensor input: %d, %d" % (
+            require_input_len, actual_input_len)
         # run the handle by the order of the list(the list is Topological Sorting)
         for inp in graph.input:
-            if inp.name not in self.tensor_map:
-                self.tensor_map[inp.name] = inputs.pop(0)
-                mark_inputs.append(inp.name)
+            if inp.name not in tmp_tensor_map:
+                tmp_tensor_map[inp.name] = inputs.pop(0)
 
         for _, op, handle, forward in self.singa_ops[:last_layers]:
+            if len(op.consumed_inputs) != 0:
+                handle, forward = get_op(op, [tmp_tensor_map[x] for x in op.inputs])
             inputs = [
-                self.tensor_map[x]
+                tmp_tensor_map[x]
                 for x in op.inputs
                 if x not in op.consumed_inputs
             ]
             outputs = _run_node(op, inputs, handle, forward)
             for key, val in outputs.items():
-                self.tensor_map[key] = val
+                tmp_tensor_map[key] = val
                 ret_outputs[key] = val
-
-        # del the inputs we add
-        for name in mark_inputs:
-            del self.tensor_map[name]
 
         if op_name is not None:
             if op_name in outputs:
@@ -2094,12 +2096,13 @@ class SingaRep(BackendRep):
         if all_outputs:
             return ret_outputs
         else:
-            return list(outputs.values())
+            return [ret_outputs[outp.name] for outp in graph.output]
 
 
 run_node = SingaBackend.run_node
 _run_node = SingaBackend._run_node
 prepare = SingaBackend.prepare
+get_op = SingaBackend._onnx_node_to_singa_op
 to_onnx = SingaFrontend.singa_to_onnx_model
 save = onnx.save
 load = onnx.load

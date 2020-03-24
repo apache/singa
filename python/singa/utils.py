@@ -23,9 +23,6 @@ import collections
 from singa import tensor
 from . import singa_wrap as singa
 
-from singa import tensor
-from . import singa_wrap as singa
-
 OrderedDict = collections.OrderedDict
 
 
