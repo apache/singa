@@ -7,6 +7,7 @@ import codecs
 import tarfile
 import warnings
 import glob
+import json
 
 from singa import device
 from singa import tensor
@@ -107,6 +108,11 @@ def preprocessing():
     tokenizer = tokenization.FullTokenizer(vocab_file=vocab_file,
                                            do_lower_case=True)
     predict_file = os.path.join(os.path.dirname(__file__), 'inputs.json')
+    # print content
+    with open(predict_file) as json_file:
+        test_data = json.load(json_file)
+        print(json.dumps(test_data, indent=2))
+
     eval_examples = read_squad_examples(input_file=predict_file)
 
     # Use convert_examples_to_features method from run_onnx_squad to get parameters from the input
@@ -125,7 +131,6 @@ def postprocessing(eval_examples, extra_data, all_results):
                       output_nbest_file)
 
     # print results
-    import json
     with open(output_prediction_file) as json_file:
         test_data = json.load(json_file)
         print(json.dumps(test_data, indent=2))
@@ -170,7 +175,6 @@ if __name__ == "__main__":
             tmp_tensor.to_device(dev)
             x_batch.append(tmp_tensor)
         outputs = model.forward(x_batch)
-        esting.assert_almost_equal(tmp_dict[name], tensor.to_numpy(tsr), 4)
         result = []
         for outp in outputs:
             result.append(tensor.to_numpy(outp))
