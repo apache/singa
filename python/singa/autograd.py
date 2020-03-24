@@ -2235,11 +2235,20 @@ class Mul(Operation):
         super(Mul, self).__init__()
 
     def forward(self, a, b):
-        res = singa.__mul__(a, b)
+        _a, _b = a, b
+        dtype0 = _a.data_type()
+        dtype1 = _b.data_type()
+        if dtype0 == singa.kInt or dtype1 == singa.kInt:
+            _a = a.AsType(singa.kFloat32)
+            _b = b.AsType(singa.kFloat32)
+            res = singa.__mul__(_a, _b)
+            res = res.AsType(singa.kInt)
+        else:
+            res = singa.__mul__(_a, _b)
         if training:
-            self.input = (a, b)
-            self.shape0 = list(a.shape())
-            self.shape1 = list(b.shape())
+            self.input = (_a, _b)
+            self.shape0 = list(_a.shape())
+            self.shape1 = list(_b.shape())
             self.shape3 = list(res.shape())
         return res
 
@@ -3555,7 +3564,7 @@ class Slice(Operation):
             self.steps = [1] * len(x_shape)  # steps = None
         for idx, axis in enumerate(self.axes):
             start, end, step = self.starts[idx], self.ends[idx], self.steps[idx]
-            if end > x_shape[axis]: 
+            if end > x_shape[axis]:
                 end = x_shape[axis]
             self.cache.append((axis, x_shape[axis], start, end, step))
             xs = []
@@ -4097,4 +4106,3 @@ def onehot(axis, indices, depth, values):
         the output CTensor.
     """
     return OneHot(axis, depth, values)(indices)[0]
-
