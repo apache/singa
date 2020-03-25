@@ -3592,6 +3592,59 @@ class TestPythonOperation(unittest.TestCase):
     def test_gemm_gpu(self):
         self.gemm_test(gpu_dev)
 
+    def globalaveragepool_channel_first(self, dev):
+        X = np.array([[[
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9],
+        ]]]).astype(np.float32)
+        XT = np.array([[[[5]]]]).astype(np.float32)
+        DY = np.ones((1, 1, 1, 1), dtype=np.float32)
+
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+        dy = tensor.from_numpy(DY)
+        dy.to_device(dev)
+
+        result = autograd.globalaveragepool(x)
+        dx = result.creator.backward(dy.data)
+
+        DX = np.ones(X.shape, dtype=np.float32)
+        DX = np.multiply(DX, DY) / np.prod(X.shape[2:])
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+
+    def globalaveragepool_channel_last(self, dev):
+        X = np.array([[
+            [[1], [2], [3]],
+            [[4], [5], [6]],
+            [[7], [8], [9]],
+        ]]).astype(np.float32)
+        XT = np.array([[[[5]]]]).astype(np.float32)
+        DY = np.ones((1, 1, 1, 1), dtype=np.float32)
+
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+        dy = tensor.from_numpy(DY)
+        dy.to_device(dev)
+
+        result = autograd.globalaveragepool(x, 'channel_last')
+        dx = result.creator.backward(dy.data)
+
+        DX = np.ones(X.shape, dtype=np.float32)
+        DX = np.multiply(DX, DY) / np.prod(X.shape[1:-1])
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+
+    def test_globalaveragepool_cpu(self):
+        self.globalaveragepool_channel_first(cpu_dev)
+        self.globalaveragepool_channel_last(cpu_dev)
+
+    def test_globalaveragepool_gpu(self):
+        self.globalaveragepool_channel_first(gpu_dev)
+        self.globalaveragepool_channel_last(gpu_dev)
     def constantOfShape_test(self, dev):
         # float_ones
         X = np.array([4, 3, 2]).astype(np.int64)

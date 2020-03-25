@@ -495,7 +495,7 @@ class Clip(Operation):
         return singa.__mul__(dy, self.mask)
 
 
-def clip(x, min, max):
+def clip(x, min=None, max=None):
     return Clip(min, max)(x)[0]
 
 
@@ -3187,6 +3187,78 @@ def gemm(A, B, C=None, alpha=1.0, beta=1.0, transA=0, transB=0):
     return Gemm(alpha, beta, transA, transB)(A, B, C)[0]
 
 
+class GlobalAveragePool(Operation):
+
+    def __init__(self, data_format='channels_first'):
+        """
+        init a GlobalAveragePool operator
+        Args:data_format: 
+            A string, we support two formats: channels_last and channels_first, default is channels_first.
+            channels_first means the format of input is (N x C x H x W)
+            channels_last means the format of input is (N x H x W x C)
+        """
+        super(GlobalAveragePool, self).__init__()
+        self.data_format = data_format
+
+    def forward(self, x):
+        """
+        forward propogation of GlobalAveragePool
+        Args:x: 
+            the input tensor
+        Returns: 
+            tensor, the output
+        """
+        if training:
+            self.mask = singa.Tensor(x.shape(), x.device())
+
+        shape = list(x.shape())
+
+        # (N x C x H x W) for channels_first
+        if self.data_format == 'channels_first':
+            axes = tuple(i for i in range(2, len(shape)))
+            self.shape_divisor = 1 / np.prod(shape[2:])
+        else:  # (N x H x W x C) for channels_last
+            axes = tuple(i for i in range(1, len(shape) - 1))
+            self.shape_divisor = 1 / np.prod(shape[1:-1])
+
+        # output shape
+        # (N x C x 1 x 1) for channels_first
+        # (N x 1 x 1 x C) for channels_last
+        for i in axes:
+            shape[i] = 1
+
+        x = tensor.from_raw_tensor(x)
+        x = tensor.sum(x, axis=axes)
+        x = tensor.reshape(x, shape)
+        return singa.MultFloat(x.data, self.shape_divisor)
+
+    def backward(self, dy):
+        """
+        backward propogation of GlobalAveragePool
+        Args:dy: 
+            the gradient tensor from upper operations
+        Returns: 
+            tensor, the gradient over input
+        """
+        self.mask.SetFloatValue(self.shape_divisor)
+        return singa.__mul__(self.mask, dy)
+
+
+def globalaveragepool(x, data_format='channels_first'):
+    """
+    GlobalAveragePool operator
+    Args:x
+        the input tensor
+    Args:data_format: 
+        A string, we support two formats: channels_last and channels_first, default is channels_first.
+        channels_first means the format of input is (N x C x H x W)
+        channels_last means the format of input is (N x H x W x C)
+    Returns: 
+        tensor, the output
+    """
+    return GlobalAveragePool(data_format)(x)[0]
+
+
 class ConstantOfShape(Operation):
 
     def __init__(self, value=0):
@@ -3910,7 +3982,6 @@ class Cast(Operation):
         if x.data_type() != self.to:
             x.AsType(self.to)
         return x
-
 
     def backward(self, dy):
         """
