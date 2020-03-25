@@ -105,14 +105,71 @@ Tensor Resize(const Tensor &in, const Shape &shape) {
   return out;
 }
 
-Tensor &Tensor::AsType(const DataType type) {
+#define TYPE_TYPE_LANG_SWITCH(ldtype, LDType, rdtype, RDType, ltype, Lang,     \
+                              ...)                                             \
+  do {                                                                         \
+    const int _SwitchShift = 3;                                                \
+    int _SwitchHash =                                                          \
+        ((ldtype) << _SwitchShift * 2) + ((rdtype) << _SwitchShift) + (ltype); \
+    switch (_SwitchHash) {                                                     \
+      case (((kFloat32) << _SwitchShift * 2) + (kInt << _SwitchShift) +        \
+            kCuda): {                                                          \
+        typedef float LDType;                                                  \
+        typedef int RDType;                                                    \
+        typedef lang::Cuda Lang;                                               \
+        { __VA_ARGS__ }                                                        \
+        break;                                                                 \
+      }                                                                        \
+      case (((kInt) << _SwitchShift * 2) + (kFloat32 << _SwitchShift) +        \
+            kCuda): {                                                          \
+        typedef int LDType;                                                    \
+        typedef float RDType;                                                  \
+        typedef lang::Cuda Lang;                                               \
+        { __VA_ARGS__ }                                                        \
+        break;                                                                 \
+      }                                                                        \
+      case (((kFloat32) << _SwitchShift * 2) + (kInt << _SwitchShift) +        \
+            kCpp): {                                                           \
+        typedef float LDType;                                                  \
+        typedef int RDType;                                                    \
+        typedef lang::Cpp Lang;                                                \
+        { __VA_ARGS__ }                                                        \
+        break;                                                                 \
+      }                                                                        \
+      case (((kInt) << _SwitchShift * 2) + (kFloat32 << _SwitchShift) +        \
+            kCpp): {                                                           \
+        typedef int LDType;                                                    \
+        typedef float RDType;                                                  \
+        typedef lang::Cpp Lang;                                                \
+        { __VA_ARGS__ }                                                        \
+        break;                                                                 \
+      }                                                                        \
+      default:                                                                 \
+        LOG(FATAL) << "Unknown combination of left data type "                 \
+                   << DataType_Name(ldtype) << " and right data type "         \
+                   << DataType_Name(rdtype) << " and language "                \
+                   << LangType_Name(ltype);                                    \
+    }                                                                          \
+  } while (0)
+
+// return new tensor
+Tensor Tensor::AsType(const DataType type) {
   if (data_type_ != type) {
-    if (block_ != nullptr && block_->DecRefCount() == 0)
-      device_->FreeBlock(block_);
-    block_ = device_->NewBlock((int)(Product(shape_) * SizeOf(type)));
-    data_type_ = type;
+    Tensor ret(shape_, device_, type);
+    auto *retptr = &ret;
+    TYPE_TYPE_LANG_SWITCH(
+        data_type_, LDType, type, RDType, device_->lang(), Lang, {
+          retptr->device()->Exec(
+              [this, retptr](Context *ctx) {
+                CastCopy<LDType, RDType, Lang>(this, retptr, ctx);
+              },
+              {this->block()}, {retptr->block()});
+        });
+    return ret;
+  } else {
+    Tensor t = this->Clone();
+    return t;
   }
-  return *this;
 }
 
 Tensor &Tensor::ToDevice(std::shared_ptr<Device> dst) {

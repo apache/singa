@@ -170,6 +170,22 @@ void Abs<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
 }
 
 template <>
+void CastCopy<float, int, lang::Cuda>(const Tensor* src, Tensor* dst,
+                                      Context* ctx) {
+  const float* srcPtr = static_cast<const float*>(src->block()->data());
+  int* dstPtr = static_cast<int*>(dst->block()->mutable_data());
+  cuda::cast_float_2_int(dst->Size(), srcPtr, dstPtr, ctx->stream);
+}
+
+template <>
+void CastCopy<int, float, lang::Cuda>(const Tensor* src, Tensor* dst,
+                                      Context* ctx) {
+  const int* srcPtr = static_cast<const int*>(src->block()->data());
+  float* dstPtr = static_cast<float*>(dst->block()->mutable_data());
+  cuda::cast_int_2_float(dst->Size(), srcPtr, dstPtr, ctx->stream);
+}
+
+template <>
 void Set<float, lang::Cuda>(const float x, Tensor* out, Context* ctx) {
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
 

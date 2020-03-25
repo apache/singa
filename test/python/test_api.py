@@ -72,6 +72,35 @@ def _cTensor_to_pyTensor(cTensor):
     return new_t
 
 
+def _ctensor_eq_ndarray(t1, np1):
+    d = t1.device()
+    t1.ToHost()
+    if t1.data_type() == singa_api.kInt:
+        np.testing.assert_array_almost_equal(t1.GetIntValue(t1.Size()),
+                                             np1.flatten())
+    elif t1.data_type() == singa_api.kFloat32:
+        np.testing.assert_array_almost_equal(t1.GetFloatValue(t1.Size()),
+                                             np1.flatten())
+
+    if np1.dtype == np.float32:
+        np.testing.assert_equal(t1.data_type(), singa_api.kFloat32)
+    elif np1.dtype == np.int32:
+        np.testing.assert_equal(t1.data_type(), singa_api.kInt)
+
+    np.testing.assert_array_almost_equal(t1.shape(), np1.shape)
+    t1.ToDevice(d)
+
+
+def print_t(t1):
+    d = t1.device()
+    t1.ToHost()
+    if t1.data_type() == singa_api.kInt:
+        print(t1.GetIntValue(t1.Size()))
+    elif t1.data_type() == singa_api.kFloat32:
+        print(t1.GetFloatValue(t1.Size()))
+    t1.ToDevice(d)
+
+
 class TestAPI(unittest.TestCase):
 
     def test_batchnorm_training_gpu(self):
@@ -604,6 +633,55 @@ class TestAPI(unittest.TestCase):
 
             np.testing.assert_array_almost_equal(
                 tensor.to_numpy(_cTensor_to_pyTensor(t2_ct)), np2)
+
+    def test_as_type(self):
+        np1 = np.random.random([3]).astype(np.float32)
+        np1 = np1 * 10 - 5
+        np2 = np1.astype(np.int32)
+        np3 = np2.astype(np.float32)
+
+        for dev in [cpu_dev, gpu_dev]:
+            t1 = tensor.Tensor(device=dev, data=np1)
+
+            t1_ct = t1.data
+
+            self.assertEqual(t1_ct.data_type(), singa_api.kFloat32)
+
+            t1_ct = t1_ct.AsType(singa_api.kInt)
+
+            self.assertEqual(t1_ct.data_type(), singa_api.kInt)
+
+            np.testing.assert_array_almost_equal(
+                tensor.to_numpy(_cTensor_to_pyTensor(t1_ct)), np2)
+
+            t1_ct = t1_ct.AsType(singa_api.kFloat32)
+
+            self.assertEqual(t1_ct.data_type(), singa_api.kFloat32)
+
+            np.testing.assert_array_almost_equal(
+                tensor.to_numpy(_cTensor_to_pyTensor(t1_ct)), np3)
+
+    def test_as_type2(self):
+        for dev in [cpu_dev, gpu_dev]:
+            shape1 = [1, 2, 3, 4]
+            shape2 = [4, 3, 2, 1]
+            np_int = np.random.randint(0, 10, shape1).astype(np.int32)
+            np_flt = np_int.astype(np.float32)
+
+            t1 = singa_api.Tensor(shape1, dev, singa_api.kInt)
+            t1.CopyIntDataFromHostPtr(np_int.flatten())
+            _ctensor_eq_ndarray(t1, np_int)
+
+            t1 = singa_api.Reshape(t1, shape2)
+            t2 = t1.AsType(singa_api.kFloat32)
+            _ctensor_eq_ndarray(t2, np_flt.reshape(shape2))
+
+            t3 = t2.AsType(singa_api.kInt)
+            _ctensor_eq_ndarray(t3, np_int.reshape(shape2))
+
+            t1 = singa_api.Reshape(t1, shape1)
+            t4 = t1.AsType(singa_api.kFloat32)
+            _ctensor_eq_ndarray(t4, np_flt.reshape(shape1))
 
 
 if __name__ == '__main__':

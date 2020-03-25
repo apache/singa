@@ -15,25 +15,5 @@
 # limitations under the License.
 #
 
-# to compile swig api files which depdend on numpy.i
-# export CPLUS_INCLUDE_PATH=`python -c "from __future__ import print_function; import numpy; print(numpy.get_include())"`:$CPLUS_INCLUDE_PATH
-
-# to let cmake use the dependent libs installed by conda, including python
-export CMAKE_PREFIX_PATH=$PREFIX:$CMAKE_PREFIX_PATH
-export CMAKE_INCLUDE_PATH=$PREFIX/include:$CMAKE_INCLUDE_PATH
-export CMAKE_LIBRARY_PATH=$PREFIX/lib:$CMAKE_LIBRARY_PATH
-
-
-# if [ -z ${CUDA+x} ]; then
-if [ -z "$CUDA" ]; then
-	USE_CUDA=OFF
-else
-	USE_CUDA=ON
-fi
-
-mkdir build
-cd build
-cmake -DCMAKE_INSTALL_PREFIX=$PREFIX -DUSE_CUDA=$USE_CUDA \
-	-DUSE_PYTHON3=ON -DUSE_DNNL=ON -DCMAKE_OSX_SYSROOT=${CONDA_BUILD_SYSROOT} ..
-make
-make install
+cd java
+mvn apache-rat:check -Pcheck-licence -Drat.basedir=..
