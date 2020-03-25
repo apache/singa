@@ -22,7 +22,7 @@
 
 #ifdef USE_DIST
 
-#include "./math_kernel.h"
+#include "../core/tensor/math_kernel.h"
 #include "singa/io/communicator.h"
 
 namespace singa {

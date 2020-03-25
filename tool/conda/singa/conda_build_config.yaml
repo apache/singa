@@ -32,7 +32,13 @@ dnnl:
 python:
     - 3.6
     - 3.7
+nccl:
+    - 2.4.8.1
+mpich:
+    - 3.3.2
 build_str:
-    - "cudnn7.3.1_cuda10.0"   # [environ.get("CUDA")=="10.0"]
-    - "cudnn7.3.1_cuda9.0"    # [environ.get("CUDA")=="9.0"]
+    - "cudnn7.3.1_cuda10.0"   # [environ.get("CUDA")=="10.0"] && [environ.get("DIST")=="OFF"]
+    - "cudnn7.3.1_cuda9.0"    # [environ.get("CUDA")=="9.0"] && [environ.get("DIST")=="OFF"]
     - "cpu"              # [environ.get("CUDA", "")== ""]
+    - "cudnn7.3.1_cuda10.0_nccl2.4.8.1_mpich3.3.2"     # [environ.get("CUDA")=="10.0"] && [environ.get("DIST")=="ON"]
+    - "cudnn7.3.1_cuda9.0_nccl2.4.8.1_mpich3.3.2"     # [environ.get("CUDA")=="9.0"] && [environ.get("DIST")=="ON"]
