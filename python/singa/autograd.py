@@ -638,11 +638,7 @@ class Reshape(Operation):
 
     def __init__(self, shape):
         super(Reshape, self).__init__()
-        if isinstance(shape, tensor.Tensor):
-            self.shape = np.asarray(tensor.to_numpy(shape).astype(
-                np.int32)).tolist()
-        else:
-            self.shape = list(shape)
+        self.shape = list(shape)
 
     def forward(self, x):
         self._shape = x.shape()
@@ -656,7 +652,6 @@ class Reshape(Operation):
         # handle the shape with -1
         hidden_shape = int(np.prod(self._shape) // np.abs(np.prod(shape)))
         self.cache = [s if s != -1 else hidden_shape for s in shape]
-
         return singa.Reshape(x, self.cache)
 
     def backward(self, dy):
@@ -1431,7 +1426,6 @@ class Conv2d(Layer):
         self.pad_mode = pad_mode
 
     def __call__(self, x):
-
         assert x.shape[1] == self.in_channels, "in_channels mismatched"
 
         # if same pad mode, re-compute the padding
@@ -1689,10 +1683,8 @@ class _Pooling2d(Operation):
             y = singa.GpuPoolingForward(self.handle, x)
         else:
             y = singa.CpuPoolingForward(self.handle, x)
-
         if training:
             self.cache = (x, y)
-
         return y
 
     def backward(self, dy):
@@ -2243,11 +2235,21 @@ class Mul(Operation):
         super(Mul, self).__init__()
 
     def forward(self, a, b):
-        res = singa.__mul__(a, b)
+        # todo we cannot support mul op for int tensors
+        _a, _b = a, b
+        dtype0 = _a.data_type()
+        dtype1 = _b.data_type()
+        if dtype0 == singa.kInt or dtype1 == singa.kInt:
+            _a = a.AsType(singa.kFloat32)
+            _b = b.AsType(singa.kFloat32)
+            res = singa.__mul__(_a, _b)
+            res = res.AsType(singa.kInt)
+        else:
+            res = singa.__mul__(_a, _b)
         if training:
-            self.input = (a, b)
-            self.shape0 = list(a.shape())
-            self.shape1 = list(b.shape())
+            self.input = (_a, _b)
+            self.shape0 = list(_a.shape())
+            self.shape1 = list(_b.shape())
             self.shape3 = list(res.shape())
         return res
 
@@ -2275,6 +2277,9 @@ class Unsqueeze(Operation):
     def forward(self, x):
         self.cache = x.shape()
         cur = list(self.cache)
+        # todo, need optimize after we have scalar tensor
+        if len(self.cache) == 1 and self.axis == [0]:
+            return x
         for i in self.axis:
             cur.insert(i, 1)
         return singa.Reshape(x, cur)
@@ -2542,7 +2547,7 @@ def exp(a):
 class LeakyRelu(Operation):
 
     def __init__(self, a):
-        super().__init__(self)
+        super(LeakyRelu, self).__init__()
         self.a = a
 
     def forward(self, x):
@@ -2840,14 +2845,18 @@ class Squeeze(Operation):
         if (self.axis == []):
             newshape = list(filter(lambda i: i != 1, self.cache))
         else:
-            for i in self.axis:
+            for id, i in enumerate(self.axis):
                 assert i < len(self.cache)
+                self.axis[id] = i % len(self.cache)
                 assert self.cache[
                     i] == 1, "the length of axis {} is {}, which should be 1".format(
                         i, self.cache[i])
             for ind, v in enumerate(self.cache):
                 if ind not in self.axis:
                     newshape.append(v)
+        # todo, need optimize after we have scalar tensor
+        if newshape == []:
+            return x
         return singa.Reshape(x, newshape)
 
     def backward(self, dy):
@@ -3556,6 +3565,8 @@ class Slice(Operation):
             self.steps = [1] * len(x_shape)  # steps = None
         for idx, axis in enumerate(self.axes):
             start, end, step = self.starts[idx], self.ends[idx], self.steps[idx]
+            if end > x_shape[axis]:
+                end = x_shape[axis]
             self.cache.append((axis, x_shape[axis], start, end, step))
             xs = []
             for step_idx in range(x_shape[axis])[start:end:step]:
@@ -3658,7 +3669,7 @@ def ceil(x):
 
 class Split(Operation):
 
-    def __init__(self, axis, parts):
+    def __init__(self, axis, parts, num_output=None):
         """
         Init a Split, Split a tensor into a list of tensors, along the specified 'axis'. 
         Args:
@@ -3667,10 +3678,15 @@ class Split(Operation):
         Args:
             parts: list of ints, length of each output, which can be specified using argument 'parts'. 
             Otherwise, the tensor is parts to equal sized parts.
+        Args:
+            num_output: once parts is none, the tensor is split to equal sized parts for each output.
         """
         super(Split, self).__init__()
         self.axis = axis
         self.parts = parts
+        self.num_output = num_output
+        if self.parts is None:
+            assert self.num_output is not None, "For (parts, num_output), it at least requires one."
 
     def forward(self, x):
         """
@@ -3680,6 +3696,10 @@ class Split(Operation):
         Returns:
             the output CTensor.
         """
+        x_shape = list(x.shape())
+        self.axis  = self.axis % len(x_shape)
+        if self.parts is None:
+            self.parts = [x_shape[self.axis]//self.num_output] * self.num_output
         xs = []
         _s = 0
         for _l in self.parts:
@@ -3700,7 +3720,7 @@ class Split(Operation):
         return dy
 
 
-def split(x, axis, parts):
+def split(x, axis, parts, num_output=None):
     """
     Init a Split, Split a tensor into a list of tensors, along the specified 'axis'. 
     Args:
@@ -3711,10 +3731,12 @@ def split(x, axis, parts):
     Args:
         parts: list of ints, length of each output, which can be specified using argument 'parts'. 
         Otherwise, the tensor is split to equal sized parts.
+    Args:
+        num_output: once parts is none, the tensor is split to equal sized parts for each output.
     Returns:
         the output CTensor.
     """
-    return Split(axis, parts)(x)
+    return Split(axis, parts, num_output)(x)
 
 
 class Gather(Operation):
@@ -3931,7 +3953,7 @@ class NonZero(Operation):
             the output CTensor.
         """
         y = tensor.to_numpy(tensor.from_raw_tensor(x))
-        y = np.array((np.nonzero(y)))
+        y = np.array((np.nonzero(y))).astype(np.int32)
         y = tensor.from_numpy(y)
         y.to_device(x.device())
         return y.data
@@ -3980,8 +4002,9 @@ class Cast(Operation):
             the output CTensor.
         """
         if x.data_type() != self.to:
-            x.AsType(self.to)
+            x = x.AsType(self.to)
         return x
+
 
     def backward(self, dy):
         """
@@ -4006,3 +4029,81 @@ def cast(x, to):
         the output CTensor.
     """
     return Cast(to)(x)[0]
+
+
+class OneHot(Operation):
+
+    def __init__(self, axis, depth, values):
+        """
+        Produces a one-hot tensor based on inputs. 
+        Args:
+            axis: Axis along which one-hot representation in added. Default: axis=-1. 
+            axis=-1 means that the additional dimension will be inserted as the innermost/last dimension in the output tensor.
+        Args:
+            values: Rank 1 tensor containing exactly two elements, in the format [off_value, on_value], 
+            where 'on_value' is the value used for filling locations specified in 'indices' input tensor, 
+            and 'off_value' is the value used for filling locations other than those specified in 'indices' input tensor.
+        """
+        super(OneHot, self).__init__()
+        self.axis = axis
+        self.depth = depth
+        self.values = values
+
+    def forward(self, indices):
+        """
+        forward of OneHot
+        ! borrow from onnx
+        Args:
+            indices: Scalar specifying the number of classes in one-hot tensor. 
+            This is also the size of the one-hot dimension (specified by 'axis' attribute) added on in the output tensor. 
+            The values in the 'indices' input tensor are expected to be in the range [-depth, depth-1]. 
+            In case 'depth' is of non-integer type, it will be casted to int64 before use.
+        Returns:
+            the output CTensor.
+        """
+        values = tensor.to_numpy(tensor.from_raw_tensor(indices))
+        rank = len(values.shape)
+        depth_range = np.arange(self.depth)
+        if self.axis < 0:
+            self.axis += (rank + 1)
+        ls = values.shape[0:self.axis]
+        rs = values.shape[self.axis:rank]
+        targets = np.reshape(depth_range, (1,) * len(ls) + depth_range.shape + (1,) * len(rs))
+        values = np.reshape(np.mod(values, self.depth), ls + (1,) + rs)
+        np_tensor = np.asarray(targets == values, dtype=np.float32)
+        np_tensor = np_tensor * (self.values[1] - self.values[0]) + self.values[0]
+        tmp_tensor = tensor.from_numpy(np_tensor)
+        tmp_tensor.to_device(indices.device())
+        return tmp_tensor.data
+
+
+    def backward(self, dy):
+        """
+        backward of OneHot
+        Args:f
+            dy: CTensor, gradient tensor.
+        Returns:
+            the gradient tensor over input tensor.
+        """
+        assert False, ('no gradient for backward function')
+
+
+def onehot(axis, indices, depth, values):
+    """
+    Produces a one-hot tensor based on inputs. 
+    Args:
+        axis: Axis along which one-hot representation in added. Default: axis=-1. 
+        axis=-1 means that the additional dimension will be inserted as the innermost/last dimension in the output tensor.
+    Args:
+        indices: Scalar specifying the number of classes in one-hot tensor. 
+        This is also the size of the one-hot dimension (specified by 'axis' attribute) added on in the output tensor. 
+        The values in the 'indices' input tensor are expected to be in the range [-depth, depth-1]. 
+        In case 'depth' is of non-integer type, it will be casted to int64 before use.
+    Args:
+        values: Rank 1 tensor containing exactly two elements, in the format [off_value, on_value], 
+        where 'on_value' is the value used for filling locations specified in 'indices' input tensor, 
+        and 'off_value' is the value used for filling locations other than those specified in 'indices' input tensor.
+    Returns:
+        the output CTensor.
+    """
+    return OneHot(axis, depth, values)(indices)[0]

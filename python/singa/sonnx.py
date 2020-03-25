@@ -30,111 +30,11 @@ import warnings
 from . import singa_wrap as singa
 from . import autograd
 from . import tensor
+from singa import utils
 
 import collections
-deque = collections.deque
-
-
-def postorderRecursive(root, root_t):
-    """
-    return a list by the topological ordering (postorder of Depth-first search)
-    Args:
-        root: singa operator
-    Args:
-        root_t: tensor
-    Returns: 
-        deque[int]
-    """
-
-    def recursive(root, yid, root_t, res):
-        if root:
-            for srcop, yid, y, _ in root.src:
-                recursive(srcop, yid, y, res)
-            res.append((root, yid, root_t))
-
-    res = deque([])
-    recursive(root, None, root_t, res)
-    return res
-
-
-def force_unicode(s):
-    """
-    return string of a bytes
-    ! borrow from onnx
-    Args:
-        s: string or bytes
-    Returns: 
-        string
-    """
-    try:
-        return s.decode('utf-8')
-    except AttributeError:
-        return s
-
-
-def get_pad_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
-                  strides_spatial, output_spatial_shape):
-    """
-    return padding shape of conv2d or pooling,
-    ! borrow from onnx
-    Args:
-        auto_pad: string
-    Args:
-        input_spatial_shape: list[int]
-    Args:
-        kernel_spatial_shape: list[int]
-    Args:
-        strides_spatial: list[int]
-    Args:
-        output_spatial_shape: list[int]
-    Returns: 
-        list[int]
-    """
-    pad_shape = [0] * len(input_spatial_shape)
-    if auto_pad in ('SAME_UPPER', 'SAME_LOWER'):
-        for i in range(len(input_spatial_shape)):
-            pad_shape[i] = (output_spatial_shape[i] - 1) * strides_spatial[i] + \
-                kernel_spatial_shape[i] - input_spatial_shape[i]
-            if (pad_shape[i] % 2) == 0:
-                pad_shape[i] = pad_shape[i] // 2
-    elif auto_pad == 'VALID':
-        pass
-    if pad_shape[0] != pad_shape[1]:
-        # once the padding is odd, it means we must add extra padding at one end of the input
-        raise ValueError("Not implemented two directional padding")
-    return pad_shape
-
-
-def get_output_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
-                     strides_spatial):
-    """
-    return output shape of conv2d or pooling,
-    ! borrow from onnx
-    Args:
-        auto_pad: string
-    Args:
-        input_spatial_shape: list[int]
-    Args:
-        kernel_spatial_shape: list[int]
-    Args:
-        strides_spatial: list[int]
-    Returns: 
-        list[int]
-    """
-    out_shape = [0] * len(input_spatial_shape)
-    if auto_pad in ('SAME_UPPER', 'SAME_LOWER'):
-        for i in range(len(input_spatial_shape)):
-            out_shape[i] = int(
-                np.ceil(
-                    float(input_spatial_shape[i]) / float(strides_spatial[i])))
-    elif auto_pad == 'VALID':
-        for i in range(len(input_spatial_shape)):
-            out_shape[i] = int(
-                np.ceil(
-                    float(input_spatial_shape[i] -
-                          (kernel_spatial_shape[i] - 1)) /
-                    float(strides_spatial[i])))
-    return out_shape
+OrderedDict = collections.OrderedDict
+namedtuple = collections.namedtuple
 
 
 class SingaFrontend(object):
@@ -151,7 +51,6 @@ class SingaFrontend(object):
     _rename_operators = {
         '_Conv2d': 'Conv',
         'ReLU': 'Relu',
-        'Dummy': 'Constant',
         'MaxPool2d': 'MaxPool',
         'AvgPool2d': 'AveragePool',
         'SoftMax': 'Softmax',
@@ -179,7 +78,7 @@ class SingaFrontend(object):
         'atanh': 'Atanh',
         'SeLU': 'Selu',
         'Elu': 'Elu',
-        'Equal': 'Equal',
+        'Equal': 'equal',
         'Less': 'Less',
         'Sign': 'Sign',
         'Div': 'Div',
@@ -206,7 +105,22 @@ class SingaFrontend(object):
         'Not': 'Not',
         'Negative': 'Neg',
         'Reciprocal': 'Reciprocal',
-        'GlobalAveragePool' : 'GlobalAveragePool'
+        'ConstantOfShape': 'ConstantOfShape',
+        'Dropout': 'Dropout',
+        'ReduceSum': 'ReduceSum',
+        'ReduceMean': 'ReduceMean',
+        'LeakyRelu': 'LeakyRelu',
+        'GlobalAveragePool': 'GlobalAveragePool',
+        'Squeeze': 'Squeeze',
+        'Unsqueeze': 'Unsqueeze',
+        'Slice': 'Slice',
+        'Ceil': 'Ceil',
+        'Split': 'Split',
+        'Gather': 'Gather',
+        'Tile': 'Tile',
+        'NonZero': 'NonZero',
+        'Cast': 'Cast',
+        'OneHot': 'OneHot',
     }
 
     # this dict indicates the operators that need extra handle
@@ -214,7 +128,6 @@ class SingaFrontend(object):
     _special_operators = {
         '_Conv2d': '_create_conv_pool',
         '_Pooling2d': '_create_conv_pool',
-        'Dummy': '_create_dummy',
         '_BatchNorm2d': '_create_batchnorm',
         'Concat': '_create_concat',
         'Flatten': '_create_flatten',
@@ -226,6 +139,18 @@ class SingaFrontend(object):
         'HardSigmoid': '_create_hardsigmoid',
         'Clip': '_create_clip',
         'Transpose': '_create_transpose',
+        'ConstantOfShape': '_create_constantOfShape',
+        'Dropout': '_create_dropout',
+        'ReduceSum': '_create_reduceOp',
+        'ReduceMean': '_create_reduceOp',
+        'Squeeze': '_create_squeeze',
+        'Unsqueeze': '_create_squeeze',
+        'Slice': '_create_slice',
+        'Split': '_create_split',
+        'Gather': '_create_gather',
+        'Tile': '_create_tile',
+        'Cast': '_create_cast',
+        'OneHot': '_create_onehot',
     }
 
     # operators with bool output
@@ -238,12 +163,209 @@ class SingaFrontend(object):
         'Or': TensorProto.BOOL,
         'Xor': TensorProto.BOOL,
         'Shape': TensorProto.INT64,
+        'NonZero': TensorProto.INT64,
     }
 
     # some ops(such as batchnorm) has inputs we cannot handle directly,
     # so we record these items firstly so that we can handle then
     # at other place.
-    _unhandled_operators = {}
+    _unhandled_operators = {
+        "_BatchNorm2d": "_special_handle_batchnorm",
+        "Reshape": "_special_handle_reshape",
+        "Clip": "_special_handle_clip",
+        "Slice": "_special_handle_slice",
+        "Gather": "_special_handle_gather",
+        "Tile": "_special_handle_tile",
+        "OneHot": "_special_handle_onehot",
+    }
+
+    @classmethod
+    def _create_onehot(cls, op, op_t):
+        """
+        get a onnx node from singa onthot
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+        # axis, indices, depth, values
+        node.attribute.extend([
+            helper.make_attribute('axis', op.axis),
+        ])
+        for attr in ['depth', 'values']:
+            node.input.append(op.name + ":" + attr)
+        return node
+
+    @classmethod
+    def _create_cast(cls, op, op_t):
+        """
+        get a onnx node from singa cast
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+
+        map_dict = {
+            tensor.float32: TensorProto.FLOAT,  # FLOAT to float32
+            tensor.int32: TensorProto.INT32,  # INT32 to int32
+        }
+        node.attribute.extend([
+            helper.make_attribute('to', map_dict[op.to]),
+        ])
+        return node
+
+    @classmethod
+    def _create_tile(cls, op, op_t):
+        """
+        get a onnx node from singa tile
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+
+        node.input.append(op.name + ":repeats")
+        return node
+
+    @classmethod
+    def _create_gather(cls, op, op_t):
+        """
+        get a onnx node from singa gather
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+
+        node.attribute.extend([
+            helper.make_attribute('axis', op.axis),
+        ])
+        node.input.append(op.name + ":indices")
+        return node
+
+    @classmethod
+    def _create_split(cls, op, op_t):
+        """
+        get a onnx node from singa split
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+
+        node.attribute.extend([
+            helper.make_attribute('axis', op.axis),
+            helper.make_attribute('split', op.parts),
+        ])
+        return node
+
+    @classmethod
+    def _create_slice(cls, op, op_t):
+        """
+        get a onnx node from singa slice
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+        for attr in ['starts', 'ends', 'axes', 'steps']:
+            node.input.append(op.name + ":" + attr)
+        return node
+
+    @classmethod
+    def _create_squeeze(cls, op, op_t):
+        """
+        get a onnx node from singa squeeze and unsqueeze
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+
+        node.attribute.extend([
+            helper.make_attribute('axes', list(op.axis)),
+        ])
+        return node
+
+    @classmethod
+    def _create_reduceOp(cls, op, op_t):
+        """
+        get a onnx node from singa ReduceSum, ReduceMean, ReduceMax, ReduceMin, etc.
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+
+        node.attribute.extend([
+            helper.make_attribute('axes', list(op.axes)),
+            helper.make_attribute('keepdims', op.keepdims),
+        ])
+        return node
+
+    @classmethod
+    def _create_dropout(cls, op, op_t):
+        """
+        get a onnx node from singa Dropout operator
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+
+        node.attribute.extend([
+            helper.make_attribute('ratio', op.ratio),
+        ])
+        return node
+
+    @classmethod
+    def _create_constantOfShape(cls, op, op_t):
+        """
+        get a onnx node from singa ConstantOfShape operator
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+        tensor_type = onnx.TensorProto.FLOAT if isinstance(
+            op.value, float) else onnx.TensorProto.INT32
+        tensor_value = onnx.helper.make_tensor("value", tensor_type, [1],
+                                               [op.value])
+        node.attribute.extend([
+            helper.make_attribute('value', tensor_value),
+        ])
+        return node
 
     @classmethod
     def _create_transpose(cls, op, op_t):
@@ -274,35 +396,16 @@ class SingaFrontend(object):
         Returns: 
             the onnx node
         """
-
-        nodes = []
-        clip_node = cls._common_singa_tensor_to_onnx_node(op, op_t)
-
-        # firstly we add the max and min
-        for tmp_name in ['min', 'max']:
-            node_name = op.name + ":" + tmp_name
-            # moidfy the input of clip
-            clip_node.input.append(node_name)
-
-            # node = NodeProto()
-            # node.name = node_name
-            # node.op_type = cls._rename_operators.get("Dummy", "Dummy")
-            # node.output.extend([node_name])
-
-            # node.attribute.extend([helper.make_attribute(
-            #     'value', helper.make_tensor(
-            #         name=node_name,
-            #         data_type=TensorProto.FLOAT,
-            #         dims=[1],
-            #         vals=[getattr(op,tmp_name)],
-            #     )
-            # )])
-            # nodes.append(node)
-
-        # then we add the clip op itself
-        nodes.append(clip_node)
-
-        return nodes
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+        if op.min is not None:
+            node.input.append(op.name + ":min")
+        else:
+            node.input.append("")
+        if op.max is not None:
+            node.input.append(op.name + ":max")
+        else:
+            node.input.append("")
+        return node
 
     @classmethod
     def _create_hardsigmoid(cls, op, op_t):
@@ -497,11 +600,12 @@ class SingaFrontend(object):
 
         k = [op.handle.kernel_h, op.handle.kernel_w]
         s = [op.handle.stride_h, op.handle.stride_w]
+        oddp = op.odd_padding
         p = [
-            op.handle.pad_h,
-            op.handle.pad_w,
-            op.handle.pad_w,
-            op.handle.pad_h,
+            op.handle.pad_h + oddp[0],
+            op.handle.pad_w + oddp[1],
+            op.handle.pad_w + oddp[2],
+            op.handle.pad_h + oddp[3],
         ]
 
         node.attribute.extend([
@@ -513,6 +617,7 @@ class SingaFrontend(object):
             node.op_type = cls._rename_operators.get('_Conv2d')
             node.attribute.extend([
                 helper.make_attribute('group', op.handle.group),
+                helper.make_attribute('auto_pad', 'NOTSET'),
             ])
 
         elif op.handle.is_max_pooling:
@@ -522,29 +627,204 @@ class SingaFrontend(object):
         return node
 
     @classmethod
-    def _create_dummy(cls, op, op_t):
+    def _get_singa_op_inputs_outputs(cls, op):
         """
-        get a onnx node from singa dummy (constant)
+        get inputs and outputs from a given operator
+        Args:
+            op: a given operator
+        Returns: 
+            inputs and outputs of the op
+        """
+        outputs = [op.output_name(idx) for _, idx in op.y_id2idx.items()]
+        inputs = [
+            srcop.output_name(srcop.y_id2idx[yid])
+            for (srcop, yid, _, _) in op.src
+        ]
+        return inputs, outputs
+
+    @classmethod
+    def _get_singa_op_type(cls, op):
+        """
+        get the operator type from a given operator
+        Args:
+            op: a given operator
+        Returns: 
+            operator type
+        """
+        return type(op).__name__
+
+    @classmethod
+    def _special_handle_batchnorm(cls, op, X, W):
+        """
+        hanlde the special operators
         Args:
             op: a given operator
         Args:
             op_t: the tensor of the operator
         Returns: 
-            the onnx node
+            onnx tensor list
         """
-        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
-        node.attribute.extend([
-            helper.make_attribute(
-                'value',
-                helper.make_tensor(
-                    name=op.name,
-                    data_type=TensorProto.FLOAT,
-                    dims=op_t.shape,
-                    vals=tensor.to_numpy(op_t).flatten().astype(float),
-                ))
-        ])
-        del node.input[:]
-        return node
+        # for singa, x, scale, bias is input
+        # and mean and var is attribute
+        # so we add the mean and var to W
+        tensor_list = []
+        append_inputs = {"mean": op.running_mean, "var": op.running_var}
+        for tmp_name, append_input in append_inputs.items():
+            node_name = op.name + ":" + tmp_name
+            append_input = tensor.to_numpy(tensor.from_raw_tensor(append_input))
+            tensor_list.append(numpy_helper.from_array(append_input, node_name))
+        return tensor_list
+
+    @classmethod
+    def _special_handle_reshape(cls, op, X, W):
+        """
+        hanlde the special operators
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            onnx tensor list
+        """
+        node_name = op.name + ":shape"
+        return [
+            numpy_helper.from_array(np.array(op.shape, dtype=np.int64),
+                                    node_name)
+        ]
+
+    @classmethod
+    def _special_handle_clip(cls, op, X, W):
+        """
+        hanlde the special operators
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            onnx tensor list
+        """
+        tensor_list = []
+        # clip add min and max
+        append_inputs = {"min": op.min, "max": op.max}
+        for tmp_name, append_input in append_inputs.items():
+            node_name = op.name + ":" + tmp_name
+            tensor_list.append(
+                helper.make_tensor(node_name, TensorProto.FLOAT, [],
+                                   [append_input]))
+        return tensor_list
+
+    @classmethod
+    def _special_handle_slice(cls, op, X, W):
+        """
+        hanlde the special operators
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            onnx tensor list
+        """
+        tensor_list = []
+        # slice add starts, ends, axes, steps
+        append_inputs = {
+            "starts": op.starts,
+            "ends": op.ends,
+            "axes": op.axes,
+            "steps": op.steps,
+        }
+        for tmp_name, append_input in append_inputs.items():
+            node_name = op.name + ":" + tmp_name
+            tensor_list.append(
+                numpy_helper.from_array(np.array(append_input), node_name))
+        return tensor_list
+
+    @classmethod
+    def _special_handle_gather(cls, op, X, W):
+        """
+        hanlde the special operators
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            onnx tensor list
+        """
+        tensor_list = []
+        append_inputs = {
+            "indices": op.indices,
+        }
+        for tmp_name, append_input in append_inputs.items():
+            node_name = op.name + ":" + tmp_name
+            tensor_list.append(
+                numpy_helper.from_array(np.array(append_input), node_name))
+        return tensor_list
+
+    @classmethod
+    def _special_handle_tile(cls, op, X, W):
+        """
+        hanlde the special operators
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            onnx tensor list
+        """
+        tensor_list = []
+        append_inputs = {
+            "repeats": op.repeats,
+        }
+        for tmp_name, append_input in append_inputs.items():
+            node_name = op.name + ":" + tmp_name
+            tensor_list.append(
+                numpy_helper.from_array(np.array(append_input), node_name))
+        return tensor_list
+
+    @classmethod
+    def _special_handle_onehot(cls, op, X, W):
+        """
+        hanlde the special operators
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            onnx tensor list
+        """
+        tensor_list = []
+        append_inputs = {
+            "depth": op.depth,
+            "values": op.values,
+        }
+        for tmp_name, append_input in append_inputs.items():
+            node_name = op.name + ":" + tmp_name
+            tensor_list.append(
+                numpy_helper.from_array(np.array(append_input), node_name))
+        return tensor_list
+
+    @classmethod
+    def handle_special_ops(cls, op, X, W):
+        """
+        hanlde the special operators, 
+        because the inputs of batchnorm and reshape are differnet with onnx
+        we need to add these inputs into onnx model mannully
+        Args:
+            op: a given operator
+        Args:
+            X: onnx input list
+        Args:
+            X: onnx weight list
+        Returns: the onnx node
+        """
+        optype = cls._get_singa_op_type(op)
+        translator = getattr(cls, cls._unhandled_operators[optype])
+        tensor_list = translator(op, X, W)
+        for tensor in tensor_list:
+            X.append(
+                helper.make_tensor_value_info(tensor.name, tensor.data_type,
+                                              tensor.dims))
+            W.append(tensor)
+        # return X, W
 
     @classmethod
     def _common_singa_tensor_to_onnx_node(cls, op, op_t):
@@ -553,7 +833,7 @@ class SingaFrontend(object):
         Args:
             op: a given operator
         Args:
-            op: the tensor of the operator
+            op_t: the tensor of the operator
         Returns: the onnx node
         """
         node_def = NodeProto()
@@ -602,76 +882,52 @@ class SingaFrontend(object):
         Returns: 
             the onnx model
         """
-        assert len(y) == 1  # assume there is only one output
+        assert len(
+            y
+        ) == 1, "Not support multiple output now."  # assume there is only one output
         y = y[0]
 
         graph_def = GraphProto()
         graph_def.name = model_name
-        topol = postorderRecursive(y.creator, y)
-        # since tensor's name might change
-        # we record its id
-        input_tensors = {id(x): x for x in inputs}
-        # print(input_tensors)
+        topol, ws, ins = utils.post_order_recursive(y.creator, y)
+
+        # prepare the input
         X = []
-        optype = cls._get_singa_op_type(y.creator)
-        y_dtype = TensorProto.FLOAT
-        if optype in cls._bool_operators:
-            y_dtype = cls._bool_operators[optype]
+        for op_name, op_t in ins.items():
+            op_t = inputs.pop(0)
+            dtype = TensorProto.INT32 if op_t.dtype == tensor.int32 else TensorProto.FLOAT
+            X.append(helper.make_tensor_value_info(op_name, dtype, op_t.shape))
+
+        # prepare the output
+        y_optype = cls._get_singa_op_type(y.creator)
+        if y_optype in cls._bool_operators:
+            y_dtype = cls._bool_operators[y_optype]
+        elif y.dtype == tensor.int32:
+            y_dtype = TensorProto.INT32
+        else:
+            y_dtype = TensorProto.FLOAT
         Y = [helper.make_tensor_value_info(y.name, y_dtype, y.shape)]
-        for op, yid, op_t in topol:
+
+        # prepare the weight
+        W = []
+        for op_name, op_t in ws.items():
+            dtype = TensorProto.INT32 if op_t.dtype == tensor.int32 else TensorProto.FLOAT
+            wt = tensor.to_numpy(op_t)
+            wt = numpy_helper.from_array(wt)
+            wt.name = op_name
+            W.append(wt)
+            X.append(helper.make_tensor_value_info(op_name, dtype, op_t.shape))
+
+        # iterate the node graph
+        for op_name, op in topol.items():
             optype = cls._get_singa_op_type(op)
-            # print(op.name, cls._get_singa_op_type(op), op_t, optype, yid)
-            if yid in input_tensors and optype == 'Dummy':
-                # find the input by its id
-                op_t = input_tensors[yid]
-                dtype = TensorProto.FLOAT
-                if op_t.dtype == tensor.int32:
-                    dtype = TensorProto.INT32
-                X.append(
-                    helper.make_tensor_value_info(op.name, dtype, op_t.shape))
-            # because the inputs of batchnorm and reshape are differnet with onnx
-            # we need to add these inputs into onnx model mannully
-            elif yid in input_tensors and optype == '_BatchNorm2d':
-                # batchnorm add scale, bias, mean, var as inputs
-                running_values = {
-                    "mean": op.running_mean,
-                    "var": op.running_var
-                }
-                for tmp_name, running_value in running_values.items():
-                    node_name = op.name + ":" + tmp_name
-                    tmp_device = running_value.device()
-                    running_value.ToHost()
-                    np_running_value = running_value.GetFloatValue(
-                        int(running_value.Size()))
-                    running_value.ToDevice(tmp_device)
-                    X.append(
-                        helper.make_tensor_value_info(node_name,
-                                                      TensorProto.FLOAT,
-                                                      np_running_value.shape))
-                graph_def.node.extend(cls.singa_op_to_onnx_node(op, op_t))
-            elif yid in input_tensors and optype == 'Reshape':
-                # reshape add shape
-                node_name = op.name + ":shape"
-                X.append(
-                    helper.make_tensor_value_info(node_name, TensorProto.FLOAT,
-                                                  [len(op.shape)]))
-                graph_def.node.extend(cls.singa_op_to_onnx_node(op, op_t))
-            elif yid in input_tensors and optype == 'Clip':
-                # Clip add min and max
-                node_name = op.name + ":min"
-                X.append(
-                    helper.make_tensor_value_info(node_name, TensorProto.FLOAT,
-                                                  [1]))
-                node_name = op.name + ":max"
-                X.append(
-                    helper.make_tensor_value_info(node_name, TensorProto.FLOAT,
-                                                  [1]))
-                graph_def.node.extend(cls.singa_op_to_onnx_node(op, op_t))
-            else:
-                graph_def.node.extend(cls.singa_op_to_onnx_node(op, op_t))
+            if optype in cls._unhandled_operators:
+                cls.handle_special_ops(op, X, W)
+            graph_def.node.extend(cls.singa_op_to_onnx_node(op, op_t))
 
         graph_def.input.extend(X)
         graph_def.output.extend(Y)
+        graph_def.initializer.extend(W)
         return graph_def
 
     @classmethod
@@ -692,53 +948,23 @@ class SingaFrontend(object):
                                                           model_name="sonnx"),
                                   producer_name='sonnx',
                                   opset_imports=[opset_id])
-        # print('The model is:\n{}'.format(model))
         model = optimizer.optimize(model)
         checker.check_model(model)
         return model
-
-    @classmethod
-    def _get_singa_op_inputs_outputs(cls, op):
-        """
-        get inputs and outputs from a given operator
-        Args:
-            op: a given operator
-        Returns: 
-            inputs and outputs of the op
-        """
-        outputs = [op.output_name(idx) for yid, idx in op.y_id2idx.items()]
-        inputs = [
-            srcop.output_name(srcop.y_id2idx[yid])
-            for (srcop, yid, _, _) in op.src
-        ]
-        return inputs, outputs
-
-    @classmethod
-    def _get_singa_op_type(cls, op):
-        """
-        get the operator type from a given operator
-        Args:
-            op: a given operator
-        Returns: 
-            operator type
-        """
-        return type(op).__name__
 
 
 class OnnxNode(object):
     """
     Reimplementation of NodeProto from ONNX, but in a form
     more convenient to work with from Python.
-    We may temporarily edit these nodes to get them into Caffe2 form,
-    before actually translating into the Caffe2 protobuf, since this
-    is easier than decomposing everything, and putting it back together
-    when we're ready.
     """
 
     def __init__(self, node):
         self.name = str(node.name)
         self.op_type = str(node.op_type)
         self.attrs = OnnxAttributes.from_onnx(node.attribute)
+        # there may some inputs which we regard as attribute, so we mark them there
+        self.consumed_inputs = list()
         self.inputs = list(node.input)
         self.outputs = list(node.output)
 
@@ -748,7 +974,7 @@ class OnnxNode(object):
 
 class OnnxAttributes(dict):
     """
-    This is a more convenient way to work with ONNX/Caffe2 attributes
+    This is a more convenient way to work with ONNX attributes
     that is not the protobuf representation.
     """
 
@@ -772,15 +998,15 @@ class SingaBackend(Backend):
         'Softmax': 'SoftMax',
         'Sigmoid': 'sigmoid',
         'Add': 'add',
-        'MatMul': 'Matmul',
-        'Conv': 'conv2d',
-        'MaxPool': 'pooling_2d',
-        'AveragePool': 'pooling_2d',
+        'MatMul': 'matmul',
+        'Conv': '_Conv2d',
+        'MaxPool': '_Pooling2d',
+        'AveragePool': '_Pooling2d',
         'BatchNormalization': 'batchnorm_2d',
         'Concat': 'Concat',
         'Flatten': 'Flatten',
         'Gemm': 'Gemm',
-        'Reshape': 'reshape',
+        'Reshape': 'Reshape',
         'Sum': 'sum',
         'Cos': 'cos',
         'Cosh': 'cosh',
@@ -810,7 +1036,7 @@ class SingaBackend(Backend):
         'Softsign': 'softsign',
         'Mean': 'mean',
         'Pow': 'pow',
-        'Clip': 'clip',
+        'Clip': 'Clip',
         'PRelu': 'prelu',
         'Mul': 'mul',
         'Transpose': 'Transpose',
@@ -823,7 +1049,22 @@ class SingaBackend(Backend):
         'Not': '_not',
         'Neg': 'negative',
         'Reciprocal': 'reciprocal',
-        'GlobalAveragePool' : 'globalaveragepool'
+        'ConstantOfShape': 'ConstantOfShape',
+        'Dropout': 'Dropout',
+        'ReduceSum': 'ReduceSum',
+        'ReduceMean': 'ReduceMean',
+        'LeakyRelu': 'LeakyRelu',
+        'GlobalAveragePool': 'GlobalAveragePool',
+        'Squeeze': 'Squeeze',
+        'Unsqueeze': 'Unsqueeze',
+        'Slice': 'Slice',
+        'Ceil': 'Ceil',
+        'Split': 'Split',
+        'Gather': 'Gather',
+        'Tile': 'Tile',
+        'NonZero': 'nonzero',
+        'Cast': 'Cast',
+        'OneHot': 'OneHot',
     }
 
     # this dict indicates the operators that need extra handle
@@ -834,7 +1075,6 @@ class SingaBackend(Backend):
         'AveragePool': '_create_max_avg_pool',
         'BatchNormalization': '_create_batchnorm',
         'Concat': '_create_concat',
-        'MatMul': '_create_matmul',
         'Flatten': '_create_flatten',
         'Gemm': '_create_gemm',
         'Reshape': '_create_reshape',
@@ -844,7 +1084,329 @@ class SingaBackend(Backend):
         'HardSigmoid': '_create_hardsigmoid',
         'Clip': '_create_clip',
         'Transpose': '_create_transpose',
+        'ConstantOfShape': '_create_constantOfShape',
+        'Dropout': '_create_dropout',
+        'ReduceSum': '_create_reduceOp',
+        'ReduceMean': '_create_reduceOp',
+        'LeakyRelu': '_create_leakyrelu',
+        'GlobalAveragePool': '_create_globalaveragepool',
+        'Squeeze': '_create_squeeze',
+        'Unsqueeze': '_create_squeeze',
+        'Slice': '_create_slice',
+        'Split': '_create_split',
+        'Gather': '_create_gather',
+        'Tile': '_create_tile',
+        'Cast': '_create_cast',
+        'OneHot': '_create_onehot',
+        'Constant': "_create_constant"
     }
+
+    @classmethod
+    def _create_constant(cls, onnx_node, inputs, opset_version):
+        """
+        parse onnx constatn node to weights
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        tmp_tensor = onnx_node.getattr('value')
+        np_dtype = onnx.mapping.TENSOR_TYPE_TO_NP_TYPE[tmp_tensor.data_type]
+        np_tensor = np.frombuffer(tmp_tensor.raw_data, dtype=np_dtype)
+        if np_tensor.dtype == "int64":
+            np_tensor = np_tensor.astype(np.int32)
+        # todo, we cannot support scalar tensor
+        if np.ndim(np_tensor) == 0:
+            np_tensor = np.array(np_tensor, ndmin=1)
+        return None, np_tensor
+
+    @classmethod
+    def _create_onehot(cls, onnx_node, inputs, opset_version):
+        """
+        get the OneHot operator from onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        axis = onnx_node.getattr("axis", -1)
+        # we move several inputs to singa's attribuates
+        # and mark them so we don't use them when we run this operator
+        depth = tensor.to_numpy(inputs.pop(1)).astype(np.int32)
+        value = tensor.to_numpy(inputs.pop(1))
+        onnx_node.consumed_inputs.extend(onnx_node.inputs[1:])
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
+                                                       opset_version)
+        return _, forward(axis, depth, value)
+
+    @classmethod
+    def _create_cast(cls, onnx_node, inputs, opset_version):
+        """
+        get the Cast operator from onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        to = onnx_node.getattr("to")
+        # singa only supports float32 and int32
+        map_dict = {
+            TensorProto.FLOAT: tensor.float32,  # FLOAT to float32
+            TensorProto.UINT8: None,  # UINT8
+            TensorProto.INT8: tensor.int32,  # INT8 to int32
+            TensorProto.UINT16: None,  # UINT16
+            TensorProto.INT16: tensor.int32,  # INT16 to int32
+            TensorProto.INT32: tensor.int32,  # INT32 to int32
+            TensorProto.INT64: tensor.int32,  # INT64 to int32
+            TensorProto.STRING: None,  # stirng
+            TensorProto.BOOL: None,  # bool
+        }
+        to = map_dict[to]
+        assert to != None, "not support cast type: {}".format(to)
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
+                                                       opset_version)
+        return _, forward(to)
+
+    @classmethod
+    def _create_tile(cls, onnx_node, inputs, opset_version):
+        """
+        get the Tile operator from onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        # we move several inputs to singa's attribuates
+        # and mark them so we don't use them when we run this operator
+        repeats = tensor.to_numpy(inputs.pop(1)).astype(np.int32).tolist()
+        onnx_node.consumed_inputs.append(onnx_node.inputs[1])
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
+                                                       opset_version)
+        return _, forward(repeats)
+
+    @classmethod
+    def _create_gather(cls, onnx_node, inputs, opset_version):
+        """
+        get the Gather operator from onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        axis = onnx_node.getattr("axis", 0)
+        # we move several inputs to singa's attribuates
+        # and mark them so we don't use them when we run this operator
+        indices = tensor.to_numpy(inputs.pop(1)).astype(np.int32).tolist()
+        onnx_node.consumed_inputs.append(onnx_node.inputs[1])
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
+                                                       opset_version)
+        return _, forward(axis, indices)
+
+    @classmethod
+    def _create_split(cls, onnx_node, inputs, opset_version):
+        """
+        get the Split operator from onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        axis = onnx_node.getattr("axis", 0)
+        split = onnx_node.getattr("split", None)
+        num_output = len(onnx_node.outputs)
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
+                                                       opset_version)
+        return _, forward(axis, split, num_output)
+
+    @classmethod
+    def _create_slice(cls, onnx_node, inputs, opset_version):
+        """
+        get the Slice operator from onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        # we move several inputs to singa's attribuates
+        # and mark them so we don't use them when we run this operator
+        starts = tensor.to_numpy(inputs.pop(1)).astype(np.int32).tolist()
+        ends = tensor.to_numpy(inputs.pop(1)).astype(np.int32).tolist()
+        # sometime onnx may ignore these two inputs, axes and step
+        if len(inputs) >= 2 and onnx_node.inputs[3] != '':
+            axes = tensor.to_numpy(inputs.pop(1)).astype(np.int32).tolist()
+        else:
+            axes = None
+        steps = tensor.to_numpy(inputs.pop(1)).astype(
+            np.int32).tolist() if len(inputs) >= 2 else None
+        onnx_node.consumed_inputs.extend(onnx_node.inputs[1:])
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
+                                                       opset_version)
+        return _, forward(starts, ends, axes, steps)
+
+    @classmethod
+    def _create_squeeze(cls, onnx_node, inputs, opset_version):
+        """
+        get the Squeeze and Unsqueeze operator from onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        axes = onnx_node.getattr("axes")
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
+                                                       opset_version)
+        return _, forward(axes)
+
+    @classmethod
+    def _create_globalaveragepool(cls, onnx_node, inputs, opset_version):
+        """
+        get the GlobalAveragePool operator from onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        data_format = onnx_node.getattr("data_format", 'channels_first')
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
+                                                       opset_version)
+        return _, forward(data_format)
+
+    @classmethod
+    def _create_leakyrelu(cls, onnx_node, inputs, opset_version):
+        """
+        get the LeakyRelu operator from onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        alpha = onnx_node.getattr("alpha", 0.01)
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
+                                                       opset_version)
+        return _, forward(alpha)
+
+    @classmethod
+    def _create_reduceOp(cls, onnx_node, inputs, opset_version):
+        """
+        get the ReduceSum, ReduceMean, ReduceMax, ReduceMin, etc, operator from onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        axes = onnx_node.getattr("axes", None)
+        keepdims = onnx_node.getattr("keepdims", 1)
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
+                                                       opset_version)
+        return _, forward(axes, keepdims)
+
+    @classmethod
+    def _create_dropout(cls, onnx_node, inputs, opset_version):
+        """
+        get the Dropout operator from onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        ratio = onnx_node.getattr("ratio", 0)
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
+                                                       opset_version)
+        return _, forward(ratio)
+
+    @classmethod
+    def _create_constantOfShape(cls, onnx_node, inputs, opset_version):
+        """
+        get the ConstantOfShape operator from onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        value = onnx_node.getattr("value", 0)
+        if isinstance(value, onnx.TensorProto):
+            value = numpy_helper.to_array(value)[0].item()
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
+                                                       opset_version)
+        return _, forward(value)
 
     @classmethod
     def _create_transpose(cls, onnx_node, inputs, opset_version):
@@ -882,9 +1444,19 @@ class SingaBackend(Backend):
         Returns: 
             forward, the autograd of singa operator
         """
+        # sometime onnx may ignore these two inputs, min or max or both
+        if len(inputs) >= 2 and onnx_node.inputs[1] != '':
+            min_v = tensor.to_numpy(inputs.pop(1)).tolist()[0]
+        else:
+            min_v = None
+        if len(inputs) >= 2 and onnx_node.inputs[2] != '':
+            max_v = tensor.to_numpy(inputs.pop(1)).tolist()[0]
+        else:
+            max_v = None
+        onnx_node.consumed_inputs.extend(onnx_node.inputs[1:])
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
-        return _, forward
+        return _, forward(min_v, max_v)
 
     @classmethod
     def _create_hardsigmoid(cls, onnx_node, inputs, opset_version):
@@ -906,25 +1478,6 @@ class SingaBackend(Backend):
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
         return _, forward(alpha, beta)
-
-    @classmethod
-    def _create_equal(cls, onnx_node, inputs, opset_version):
-        """
-        get the equal operator from onnx node
-        Args:
-            onnx_node: a given onnx node
-        Args:
-            inputs: the input tensor
-        Args:
-            opset_version: the opset version
-        Returns: 
-            handle, the handle of singa operator
-        Returns: 
-            forward, the autograd of singa operator
-        """
-        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
-                                                       opset_version)
-        return _, forward()
 
     @classmethod
     def _create_elu(cls, onnx_node, inputs, opset_version):
@@ -982,9 +1535,11 @@ class SingaBackend(Backend):
         Returns: 
             the autograd of singa operator
         """
+        shape = tensor.to_numpy(inputs.pop(1)).astype(np.int32).tolist()
+        onnx_node.consumed_inputs.append(onnx_node.inputs[1])
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
-        return _, forward
+        return _, forward(shape)
 
     @classmethod
     def _create_conv(cls, onnx_node, inputs, opset_version):
@@ -1002,24 +1557,27 @@ class SingaBackend(Backend):
             forward, the autograd of singa operator
         """
         kernel = tuple(onnx_node.attrs["kernel_shape"])
-        # todo: we only support the padding with tuple
+        padding = tuple(
+            onnx_node.attrs["pads"]) if "pads" in onnx_node.attrs else (0, 0)
         stride = tuple(onnx_node.getattr('strides', (1, 1)))
-        padding = tuple(onnx_node.attrs["pads"][0:2]) if "pads" in onnx_node.attrs else (0, 0)
+        # default the odd_padding is 0, once there are same pad mode, we modify it
+        # for odd_padding, please refer the autegrade.py
+        odd_padding = (0, 0, 0, 0)
         if "auto_pad" in onnx_node.attrs:
-            auto_pad = force_unicode(onnx_node.attrs['auto_pad'])
-            out_shape = get_output_shape(auto_pad, inputs[0].shape[2:], kernel, stride)
-            padding = get_pad_shape(auto_pad, inputs[0].shape[2:], kernel, stride, out_shape)
-        dilation = onnx_node.getattr('dilations', 1)
-        group = onnx_node.getattr('group', 1)
+            auto_pad = utils.force_unicode(onnx_node.attrs['auto_pad'])
+            if auto_pad in ('SAME_UPPER', 'SAME_LOWER'):
+                padding, odd_padding = utils.get_padding_shape(
+                    auto_pad, inputs[0].shape[2:], kernel, stride)
 
         # not support dilation
-
+        dilation = onnx_node.getattr('dilations', 1)
         if dilation != 1 and list(dilation) != [1, 1]:
             raise ValueError("Not implemented yet for dilation")
+        group = onnx_node.getattr('group', 1)
 
-        # only support 2d
-        if len(kernel) != 2:
-            raise ValueError("Not implemented yet for 2d")
+        # only support 1d or 2d
+        if len(kernel) > 2:
+            raise ValueError("Only implemented for 1d or 2d")
 
         bias = len(inputs) == 3
         x = inputs[0]
@@ -1043,7 +1601,7 @@ class SingaBackend(Backend):
 
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
-        return handle, forward
+        return _, forward(handle, odd_padding)
 
     @classmethod
     def _create_max_avg_pool(cls, onnx_node, inputs, opset_version):
@@ -1061,17 +1619,17 @@ class SingaBackend(Backend):
             forward, the autograd of singa operator
         """
         kernel = tuple(onnx_node.attrs["kernel_shape"])
-        # todo: we only support the padding with tuple
         padding = tuple(
-            onnx_node.attrs["pads"][0:2]) if "pads" in onnx_node.attrs else (0,
-                                                                             0)
+            onnx_node.attrs["pads"]) if "pads" in onnx_node.attrs else (0, 0)
         stride = tuple(onnx_node.getattr('strides', (1, 1)))
+        # default the odd_padding is 0, once there are same pad mode, we modify it
+        # for odd_padding, please refer the autegrade.py
+        odd_padding = (0, 0, 0, 0)
         if "auto_pad" in onnx_node.attrs:
-            auto_pad = force_unicode(onnx_node.attrs['auto_pad'])
-            out_shape = get_output_shape(auto_pad, inputs[0].shape[2:], kernel,
-                                         stride)
-            padding = get_pad_shape(auto_pad, inputs[0].shape[2:], kernel,
-                                    stride, out_shape)
+            auto_pad = utils.force_unicode(onnx_node.attrs['auto_pad'])
+            if auto_pad in ('SAME_UPPER', 'SAME_LOWER'):
+                padding, odd_padding = utils.get_padding_shape(
+                    auto_pad, inputs[0].shape[2:], kernel, stride)
 
         # not support count_include_pad and auto_pad
         if "count_include_pad" in onnx_node.attrs or "ceil_mode" in onnx_node.attrs:
@@ -1093,7 +1651,7 @@ class SingaBackend(Backend):
 
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
-        return handle, forward
+        return _, forward(handle, odd_padding)
 
     @classmethod
     def _create_batchnorm(cls, onnx_node, inputs, opset_version):
@@ -1156,12 +1714,8 @@ class SingaBackend(Backend):
         """
         factor = onnx_node.getattr('axis', 1)
         if factor < 0:
-            factor = len(inputs[0].shape
-                        ) + factor  # in order to support the negative axis
-        # alpha = onnx_node.attrs["alpha"]
-        # beta = onnx_node.attrs["beta"]
-        # transA = False if onnx_node.attrs["transA"] == 0 else True
-        # transB = False if onnx_node.attrs["transB"] == 0 else True
+            # in order to support the negative axis
+            factor = len(inputs[0].shape) + factor
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
         return None, forward(axis=factor)
@@ -1210,31 +1764,12 @@ class SingaBackend(Backend):
         """
         factor = onnx_node.getattr('axis', 1)
         if factor < 0:
-            factor = len(inputs[0].shape
-                        ) + factor  # in order to support the negative axis
+            # in order to support the negative axis
+            factor = len(inputs[0].shape) + factor
 
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
         return None, forward(start_axis=factor)
-
-    @classmethod
-    def _create_matmul(cls, onnx_node, inputs, opset_version):
-        """
-        get the matmul operator from onnx node
-        Args:
-            onnx_node: a given onnx node
-        Args:
-            inputs: the input tensor
-        Args:
-            opset_version: the opset version
-        Returns: 
-            the handle of singa operator
-        Returns: 
-            the autograd of singa operator
-        """
-        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
-                                                       opset_version)
-        return None, forward()
 
     @classmethod
     def _common_onnx_node_to_singa_op(cls, onnx_node, inputs, opset_version):
@@ -1253,12 +1788,16 @@ class SingaBackend(Backend):
             a list of SingaOps('name', 'op', 'handle', 'forward')
         """
         onnx_op_type = onnx_node.op_type
-        autograd_op = getattr(
-            autograd, cls._rename_operators.get(onnx_op_type, onnx_op_type))
+        assert onnx_op_type in cls._rename_operators, "not support operator: {}".format(
+            onnx_op_type)
+        autograd_op = getattr(autograd, cls._rename_operators[onnx_op_type])
         return None, autograd_op
 
     @classmethod
-    def _onnx_node_to_singa_op(cls, onnx_node, inputs, opset_version):
+    def _onnx_node_to_singa_op(cls,
+                               onnx_node,
+                               inputs,
+                               opset_version=_known_opset_version):
         """
         get a singa operator(handle and autograd) from a onnx node
         Args:
@@ -1298,10 +1837,19 @@ class SingaBackend(Backend):
             inputs), "{}: expected {} but got {}".format(
                 onnx_node.op_type, len(valid_inputs), len(inputs))
 
-        inputs = [inputs[x] for x in valid_inputs]
-        handle, forward = cls._onnx_node_to_singa_op(onnx_node, inputs,
+        tmp_inputs = [inputs[x] for x in onnx_node.inputs if x != ""]
+        handle, forward = cls._onnx_node_to_singa_op(onnx_node, tmp_inputs,
                                                      opset_version)
-        return cls._run_node(onnx_node, inputs, handle, forward, opset_version)
+        # only give the inputs it needs
+        # consumed_inputs are the inputs marked as attributes
+        # so we remove it here
+        tmp_inputs = [
+            inputs[x]
+            for x in onnx_node.inputs
+            if x not in onnx_node.consumed_inputs
+        ]
+        return cls._run_node(onnx_node, tmp_inputs, handle, forward,
+                             opset_version)
 
     @classmethod
     def _run_node(cls,
@@ -1323,42 +1871,78 @@ class SingaBackend(Backend):
         Returns: 
             list, the output of the
         """
-        # since reshape acutally only needs one input tensor
-        # but onnx regard its shape as another tensor, we need to ommit it
         outputs = forward(*inputs) if handle is None else forward(
             handle, *inputs)
         if not isinstance(outputs, collections.Iterable):
             outputs = [outputs]
-        outputs_dict = collections.OrderedDict()
+        outputs_dict = OrderedDict()
         for (key, val) in zip(onnx_node.outputs, outputs):
             outputs_dict[key] = val
         return outputs_dict
 
     @classmethod
-    def _onnx_node_to_singa_tensor(cls, node_infos, tensor_map, device):
+    def _init_graph_parameter(cls, graph, init_inputs, device):
         """
         init the singa tensor from onnx infos
         Args:
-            node_infos: a given onnx model
+            graph: a given onnx graph
         Args:
-            tensor_map: the tensor map
+            init_inputs: a list of inputs, which used to init the operators
         Args:
             device: the used device
+        Returns:
+            a dict of tensors
         """
-        for x in node_infos:
-            x_shape = tuple(
-                dim.dim_value for dim in x.type.tensor_type.shape.dim)
-            tmp_tensor = tensor.from_numpy(
-                np.random.randn(*x_shape).astype(np.float32))
+        tensor_map = {}
+        # due to https://github.com/onnx/onnx/issues/2417
+        # sometimes, input contains all initializer's info
+        # sometimes, may not
+        all_inputs = OrderedDict()
+        for t in graph.input:
+            all_inputs[t.name] = t
+        # so we refresh the input by the initializer
+        for t in graph.initializer:
+            all_inputs[t.name] = t
+        initializers = {t.name for t in graph.initializer}
+        inp_idx = 0
+        for name, x in all_inputs.items():
+            if name in initializers:
+                # if it has initializer, we use its value as the input
+                np_tensor = numpy_helper.to_array(x)
+                if np_tensor.dtype == "int64":
+                    np_tensor = np_tensor.astype(np.int32)
+                # todo, we cannot support scalar tensor
+                if np.ndim(np_tensor) == 0:
+                    np_tensor = np.array(np_tensor, ndmin=1)
+            else:
+                # if not, means it's a input rather than a inner weight
+                # so if the user gives values, we use these values
+                # if not, we just use the shape of input gived by onnx to init a random value
+                # HOWEVER, the random value may not be correct for some inputs, such as gather which needs indices
+                # so if have operators, the user must give inputs
+                x_shape = tuple(
+                    dim.dim_value for dim in x.type.tensor_type.shape.dim)
+                if init_inputs is not None:
+                    np_tensor = init_inputs[inp_idx]
+                    inp_idx += 1
+                else:
+                    np_tensor = np.random.randn(*x_shape).astype(np.float32)
+            tmp_tensor = tensor.from_numpy(np_tensor)
             tmp_tensor.to_device(device)
+            # todo, for backward
+            tmp_tensor.stores_grad = (name in initializers)
             tensor_map[x.name] = tmp_tensor
+        return tensor_map
 
     @classmethod
-    def _onnx_model_to_singa_net(cls, onnx_model, device, opset_version):
+    def _onnx_model_to_singa_net(cls, model, init_inputs, device,
+                                 opset_version):
         """
         get all intermediate tensors and operators from onnx model
         Args:
-            onnx_model: a given onnx model
+            model: a given onnx model
+        Args:
+            init_inputs: a list of inputs, which used to init the operators
         Args:
             device: the used device
         Args:
@@ -1368,40 +1952,37 @@ class SingaBackend(Backend):
         Returns:
             a list of SingaOps('name', 'op', 'handle', 'forward')
         """
-        #  runs model checker, optimizer, shape inference engine
-        optimized_model = onnx.utils.polish_model(onnx_model)
-        # print('The model is:\n{}'.format(optimized_model))
-        # this tensor_nap contains all tensors, including outputs of each op
-        tensor_map = {}
-        # this weights only contains the tensors which have stored the gradients
-        weights = {}
+        # init all tensor input and weight as a tensor map
+        tensor_map = cls._init_graph_parameter(model.graph, init_inputs, device)
+        # only weights tensor
+        weights = {x.name: tensor_map[x.name] for x in model.graph.initializer}
+        # the parsed operators queue
         singa_ops = []
-        singa_op = collections.namedtuple('SingaOps',
-                                          ['name', 'op', 'handle', 'forward'])
-        # init the input, output, and intermidate nodes as singa tensors
-        cls._onnx_node_to_singa_tensor(optimized_model.graph.input, tensor_map,
-                                       device)
-        cls._onnx_node_to_singa_tensor(optimized_model.graph.output, tensor_map,
-                                       device)
-        cls._onnx_node_to_singa_tensor(optimized_model.graph.value_info,
-                                       tensor_map, device)
-        # convert constant nodes to tensor, other nodes to handler
-        for node in optimized_model.graph.node:
+        singa_op = namedtuple('SingaOps', ['name', 'op', 'handle', 'forward'])
+        for node in model.graph.node:
             node = OnnxNode(node)
-            if node.op_type == "Constant":
-                requires_grad, stores_grad = False, False
-                tmp_tensor = tensor.Tensor(
-                    device=device,
-                    data=numpy_helper.to_array(node.attrs['value']),
-                    requires_grad=requires_grad,
-                    stores_grad=stores_grad,
-                )
-                tensor_map[node.name] = tmp_tensor
-                weights[node.name] = tmp_tensor
+            # only give the inputs it needs
+            # consumed_inputs are the inputs marked as attributes
+            # so we remove it here
+            inputs = [
+                tensor_map[x]
+                for x in node.inputs
+                if x not in node.consumed_inputs
+            ]
+            handle, forward = cls._onnx_node_to_singa_op(
+                node, inputs, opset_version)
+            # if it is Constant, we hanlde it as a weight
+            # otherwise, we run it and add its output into map for being used by later operators
+            if node.op_type == 'Constant':
+                tmp_tensor = tensor.from_numpy(forward)
+                tmp_tensor.to_device(device)
+                tmp_name = node.outputs.pop(0)
+                weights[tmp_name] = tmp_tensor
+                tensor_map[tmp_name] = tmp_tensor
             else:
-                inputs = [tensor_map[x].clone() for x in node.inputs]
-                handle, forward = cls._onnx_node_to_singa_op(
-                    node, inputs, opset_version)
+                outputs = cls._run_node(node, inputs, handle, forward)
+                for key, val in outputs.items():
+                    tensor_map[key] = val
                 singa_ops.extend([singa_op(node.name, node, handle, forward)])
         return weights, singa_ops
 
@@ -1410,17 +1991,28 @@ class SingaBackend(Backend):
         """
         get the batch norm operator from onnx node
         Args:
-            onnx_node: a given onnx node
-        Args:
-            tensor_map: the input tensor
+            model: a given onnx node
         Args:
             device: the used device
-        Args:
-            opset_version: the opset version
         Returns: 
             a list of output values
         """
         super(SingaBackend, cls).prepare(model, device, **kwargs)
+        # when parsing graph, we use the shape of input gived by onnx to init a random value
+        # HOWEVER, the random value may not be correct for some inputs, such as gather which needs indices
+        # so if have operators, the user must give inputs
+        init_inputs = kwargs.get("init_inputs", None)
+        # whether initializers are moved into inputs, due to https://github.com/onnx/onnx/issues/2417
+        # sometimes, input contains all initializer's info, sometimes, may not
+        cls.keep_initializers_as_inputs = kwargs.get(
+            'keep_initializers_as_inputs', True)
+        # optimize and infer the shape of the model
+        try:
+            model = onnx.utils.polish_model(model)
+        except IndexError as err:
+            # due to https://github.com/onnx/onnx/issues/2417
+            model = onnx.shape_inference.infer_shapes(model)
+
         # check the opset version and ir version
         opset_version = None
         for imp in model.opset_import:
@@ -1439,14 +2031,19 @@ class SingaBackend(Backend):
                 )
             else:
                 opset_version = 1
-        tensor_map, singa_ops = cls._onnx_model_to_singa_net(
-            model, device, opset_version)
-        return SingaRep(model, tensor_map, singa_ops)
+        weights, singa_ops = cls._onnx_model_to_singa_net(
+            model, init_inputs, device, opset_version)
+        return SingaRep(model, weights, singa_ops,
+                        cls.keep_initializers_as_inputs)
 
 
 class SingaRep(BackendRep):
 
-    def __init__(self, model, tensor_map, singa_ops):
+    def __init__(self,
+                 model,
+                 weights,
+                 singa_ops,
+                 keep_initializers_as_inputs=True):
         """
         SingaRep provides the intermediate representation of Singa,
         the user can run the forward of the singa model by run func,
@@ -1455,13 +2052,14 @@ class SingaRep(BackendRep):
         Args:
             model: a given operator
         Args:
-            tensor_map: the tensor of the operator
+            weights: the tensor of weights
         Args:
             singa_ops: the tensor of the operator
         """
         super(SingaRep, self).__init__()
         self.model = model
-        self.tensor_map = tensor_map
+        self.tensor_map = weights
+        self.keep_initializers_as_inputs = keep_initializers_as_inputs
         # this each item of singa_ops is: ('name', 'op', 'handle', 'forward')
         # the name is a string, op is OnnxNode,
         # handle is Singa handle to store the tensor into singa operator
@@ -1476,27 +2074,49 @@ class SingaRep(BackendRep):
         Returns: 
             the onnx node
         """
+        graph = self.model.graph
         # last_layers means we run this model until the last #N layers
         last_layers = kwargs.get('last_layers', len(self.singa_ops))
+        if last_layers != len(self.singa_ops):
+            final_outputs = self.singa_ops[last_layers-1].op.outputs
+        else:
+            final_outputs =  [outp.name for outp in graph.output]
         # whether return all outputs
         all_outputs = kwargs.get('all_outputs', False)
         # get a specific op by its name
         op_name = kwargs.get('op_name', None)
+        # record the tensor we added from input
+        tmp_tensor_map = {name: val for name, val in self.tensor_map.items()}
 
         # the dict will be returned
-        ret_outputs = collections.OrderedDict()
-        if len(self.model.graph.input) != len(inputs):
-            raise RuntimeError(
-                "The length of graph input is different from the tensor input: %d, %d"
-                % (len(self.model.graph.input), len(inputs)))
+        ret_outputs = OrderedDict()
+        if self.keep_initializers_as_inputs:
+            require_input_len = len(graph.input) - len(graph.initializer)
+            actual_input_len = len(inputs)
+        else:
+            require_input_len = len(graph.input)
+            actual_input_len = len(inputs)
+        assert require_input_len == actual_input_len, "The length of graph input is different from the tensor input: %d, %d" % (
+            require_input_len, actual_input_len)
         # run the handle by the order of the list(the list is Topological Sorting)
-        for x, val in zip(self.model.graph.input, inputs):
-            self.tensor_map[x.name] = val
+        for inp in graph.input:
+            if inp.name not in tmp_tensor_map:
+                tmp_tensor_map[inp.name] = inputs.pop(0)
+
         for _, op, handle, forward in self.singa_ops[:last_layers]:
-            inputs = [self.tensor_map[x] for x in op.inputs]
+            if len(op.consumed_inputs) != 0:
+                # because if op has consumed_inputs, it means it moved some inputs into attributes
+                # so when running, we should update these attributes
+                handle, forward = get_op(op,
+                                         [tmp_tensor_map[x] for x in op.inputs])
+            inputs = [
+                tmp_tensor_map[x]
+                for x in op.inputs
+                if x not in op.consumed_inputs
+            ]
             outputs = _run_node(op, inputs, handle, forward)
             for key, val in outputs.items():
-                self.tensor_map[key] = val
+                tmp_tensor_map[key] = val
                 ret_outputs[key] = val
 
         if op_name is not None:
@@ -1512,12 +2132,13 @@ class SingaRep(BackendRep):
         if all_outputs:
             return ret_outputs
         else:
-            return list(outputs.values())
+            return [ret_outputs[outp] for outp in final_outputs]
 
 
 run_node = SingaBackend.run_node
 _run_node = SingaBackend._run_node
 prepare = SingaBackend.prepare
+get_op = SingaBackend._onnx_node_to_singa_op
 to_onnx = SingaFrontend.singa_to_onnx_model
 save = onnx.save
 load = onnx.load

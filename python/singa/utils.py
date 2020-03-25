@@ -18,9 +18,12 @@
 import sys
 import math
 import numpy as np
+import collections
 
 from singa import tensor
 from . import singa_wrap as singa
+
+OrderedDict = collections.OrderedDict
 
 
 def update_progress(progress, info):
@@ -231,3 +234,40 @@ def force_unicode(s):
         return s.decode('utf-8')
     except AttributeError:
         return s
+
+
+def post_order_recursive(root, root_t):
+    """
+    return a list by the topological ordering (postorder of Depth-first search)
+    Args:
+        root: singa operator
+    Args:
+        root_t: tensor
+    Returns: 
+        deque[int]
+    """
+
+    def recursive(root, yid, root_t, nodes, weights, inputs):
+        if root:
+            # srcop: operator for a input of root
+            # yid: id(output of this operator)
+            # y: output of this operator
+            for srcop, yid, y, _ in root.src:
+                recursive(srcop, yid, y, nodes, weights, inputs)
+
+            if type(root).__name__ == 'Dummy':
+                if root_t != None:
+                    # constant within a node: weight
+                    weights[root.name] = root_t
+                else:
+                    # constant outside a node: input
+                    inputs[root.name] = root_t
+            else:
+                nodes[root.name] = root
+
+    nodes = OrderedDict()
+    weights = OrderedDict()
+    inputs = OrderedDict()
+
+    recursive(root, None, root_t, nodes, weights, inputs)
+    return nodes, weights, inputs

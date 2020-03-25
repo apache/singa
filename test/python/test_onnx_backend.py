@@ -37,29 +37,31 @@ import itertools
 
 autograd.training = True
 
-_default_opset_version = 10
+_default_opset_version = 11
 
 
-def expect(node, inputs, outputs, name, opset_version=_default_opset_version):
+def expect(node,
+           inputs,
+           outputs,
+           name,
+           opset_version=_default_opset_version,
+           decimal=5):
     onnx_node = sonnx.OnnxNode(node)
     input_tensors = {}
     input_labels = [x for x in onnx_node.inputs if x != ""]
     # prepare input tensors
     for key, val in zip(input_labels, inputs):
-        if node.op_type=="Clip" and key in ("min", "max"):
-            input_tensors[key] = val.item()
-        else:
-            # very important! must be float
-            if not isinstance(val, np.ndarray) or len(val.shape) == 0:
-                val = np.array([val])
-            x = tensor.from_numpy(val.astype(np.float32))
-            x.to_device(gpu_dev)
-            input_tensors[key] = x
+        # very important! must be float
+        if not isinstance(val, np.ndarray) or len(val.shape) == 0:
+            val = np.array([val])
+        x = tensor.from_numpy(val.astype(np.float32))
+        x.to_device(gpu_dev)
+        input_tensors[key] = x
     outputs_dict = sonnx.run_node(onnx_node, input_tensors, opset_version)
     for out1, out2 in zip(outputs, outputs_dict.values()):
         np.testing.assert_array_almost_equal(out1,
                                              tensor.to_numpy(out2),
-                                             decimal=5)
+                                             decimal=decimal)
 
 
 class TestPythonOnnxBackend(unittest.TestCase):
@@ -886,7 +888,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
 
         x = np.random.randn(3, 4, 5).astype(np.float32)
         y = np.tan(x)
-        expect(node, inputs=[x], outputs=[y], name='test_tan')
+        expect(node, inputs=[x], outputs=[y], name='test_tan', decimal=3)
 
     def test_Tanh(self):  # type: () -> None
         node = onnx.helper.make_node(
@@ -1851,13 +1853,17 @@ class TestPythonOnnxBackend(unittest.TestCase):
         x = np.array([1, 2, 3]).astype(np.float32)
         y = np.array([4, 5, 6]).astype(np.float32)  # todo, not exactly same
         z = np.power(x, y)  # expected output [1., 32., 729.]
-        expect(node, inputs=[x, y], outputs=[z], name='test_pow_example')
+        expect(node,
+               inputs=[x, y],
+               outputs=[z],
+               name='test_pow_example',
+               decimal=3)
 
         x = np.arange(24).reshape(2, 3, 4).astype(
             np.float32)  # todo, cannot too big here
         y = np.random.randn(2, 3, 4).astype(np.float32)
         z = np.power(x, y)
-        expect(node, inputs=[x, y], outputs=[z], name='test_pow')
+        expect(node, inputs=[x, y], outputs=[z], name='test_pow', decimal=3)
 
     def test_pow_broadcast(self):  # type: () -> None
         node = onnx.helper.make_node(
@@ -1869,7 +1875,11 @@ class TestPythonOnnxBackend(unittest.TestCase):
         x = np.array([1, 2, 3]).astype(np.float32)
         y = np.array(2).astype(np.float32)
         z = np.power(x, y)  # expected output [1., 4., 9.]
-        expect(node, inputs=[x, y], outputs=[z], name='test_pow_bcast_scalar')
+        expect(node,
+               inputs=[x, y],
+               outputs=[z],
+               name='test_pow_bcast_scalar',
+               decimal=3)
 
         node = onnx.helper.make_node(
             'Pow',
@@ -1880,7 +1890,11 @@ class TestPythonOnnxBackend(unittest.TestCase):
         y = np.array([1, 2, 3]).astype(np.float32)
         # expected output [[1, 4, 27], [4, 25, 216]]
         z = np.power(x, y).astype(np.float32)
-        expect(node, inputs=[x, y], outputs=[z], name='test_pow_bcast_array')
+        expect(node,
+               inputs=[x, y],
+               outputs=[z],
+               name='test_pow_bcast_array',
+               decimal=3)
 
     def test_clip(self):
         node = onnx.helper.make_node(
@@ -2031,160 +2045,974 @@ class TestPythonOnnxBackend(unittest.TestCase):
         y = np.random.randn(5).astype(np.float32)
         z = x * y
         expect(node, inputs=[x, y], outputs=[z], name='test_mul_bcast')
-        
+
     def test_gemm_default_zero_bias(self):
-        node = onnx.helper.make_node(
-            'Gemm',
-            inputs=['a', 'b', 'c'],
-            outputs=['y']
-        )
+        node = onnx.helper.make_node('Gemm',
+                                     inputs=['a', 'b', 'c'],
+                                     outputs=['y'])
         a = np.random.ranf([3, 5]).astype(np.float32)
         b = np.random.ranf([5, 4]).astype(np.float32)
         c = np.zeros([1, 4]).astype(np.float32)
         y = gemm_reference_implementation(a, b, c)
-        expect(node, inputs=[a, b, c], outputs=[y],
-                name='test_gemm_default_zero_bias')
+        expect(node,
+               inputs=[a, b, c],
+               outputs=[y],
+               name='test_gemm_default_zero_bias')
 
     def test_gemm_default_no_bias(self):
-        node = onnx.helper.make_node(
-            'Gemm',
-            inputs=['a', 'b'],
-            outputs=['y']
-        )
+        node = onnx.helper.make_node('Gemm', inputs=['a', 'b'], outputs=['y'])
         a = np.random.ranf([2, 10]).astype(np.float32)
         b = np.random.ranf([10, 3]).astype(np.float32)
         y = gemm_reference_implementation(a, b)
-        expect(node, inputs=[a, b], outputs=[y],
-                name='test_gemm_default_no_bias')
+        expect(node,
+               inputs=[a, b],
+               outputs=[y],
+               name='test_gemm_default_no_bias')
 
     def test_gemm_default_scalar_bias(self):
-        node = onnx.helper.make_node(
-            'Gemm',
-            inputs=['a', 'b', 'c'],
-            outputs=['y']
-        )
+        node = onnx.helper.make_node('Gemm',
+                                     inputs=['a', 'b', 'c'],
+                                     outputs=['y'])
         a = np.random.ranf([2, 3]).astype(np.float32)
         b = np.random.ranf([3, 4]).astype(np.float32)
         c = np.array(3.14).astype(np.float32)
         y = gemm_reference_implementation(a, b, c)
-        expect(node, inputs=[a, b, c], outputs=[y],
-                name='test_gemm_default_scalar_bias')
+        expect(node,
+               inputs=[a, b, c],
+               outputs=[y],
+               name='test_gemm_default_scalar_bias')
 
     def test_gemm_default_single_elem_vector_bias(self):
-        node = onnx.helper.make_node(
-            'Gemm',
-            inputs=['a', 'b', 'c'],
-            outputs=['y']
-        )
+        node = onnx.helper.make_node('Gemm',
+                                     inputs=['a', 'b', 'c'],
+                                     outputs=['y'])
         a = np.random.ranf([3, 7]).astype(np.float32)
         b = np.random.ranf([7, 3]).astype(np.float32)
         c = np.random.ranf([1]).astype(np.float32)
         y = gemm_reference_implementation(a, b, c)
-        expect(node, inputs=[a, b, c], outputs=[y],
-                name='test_gemm_default_single_elem_vector_bias')
+        expect(node,
+               inputs=[a, b, c],
+               outputs=[y],
+               name='test_gemm_default_single_elem_vector_bias')
 
     def test_gemm_default_vector_bias(self):
-        node = onnx.helper.make_node(
-            'Gemm',
-            inputs=['a', 'b', 'c'],
-            outputs=['y']
-        )
+        node = onnx.helper.make_node('Gemm',
+                                     inputs=['a', 'b', 'c'],
+                                     outputs=['y'])
         a = np.random.ranf([2, 7]).astype(np.float32)
         b = np.random.ranf([7, 4]).astype(np.float32)
         c = np.random.ranf([1, 4]).astype(np.float32)
         y = gemm_reference_implementation(a, b, c)
-        expect(node, inputs=[a, b, c], outputs=[y],
-                name='test_gemm_default_vector_bias')
+        expect(node,
+               inputs=[a, b, c],
+               outputs=[y],
+               name='test_gemm_default_vector_bias')
 
     def test_gemm_default_matrix_bias(self):
-        node = onnx.helper.make_node(
-            'Gemm',
-            inputs=['a', 'b', 'c'],
-            outputs=['y']
-        )
+        node = onnx.helper.make_node('Gemm',
+                                     inputs=['a', 'b', 'c'],
+                                     outputs=['y'])
         a = np.random.ranf([3, 6]).astype(np.float32)
         b = np.random.ranf([6, 4]).astype(np.float32)
         c = np.random.ranf([3, 4]).astype(np.float32)
         y = gemm_reference_implementation(a, b, c)
-        expect(node, inputs=[a, b, c], outputs=[y],
-                name='test_gemm_default_matrix_bias')
+        expect(node,
+               inputs=[a, b, c],
+               outputs=[y],
+               name='test_gemm_default_matrix_bias')
 
     def test_gemm_transposeA(self):
-        node = onnx.helper.make_node(
-            'Gemm',
-            inputs=['a', 'b', 'c'],
-            outputs=['y'],
-            transA=1
-        )
+        node = onnx.helper.make_node('Gemm',
+                                     inputs=['a', 'b', 'c'],
+                                     outputs=['y'],
+                                     transA=1)
         a = np.random.ranf([6, 3]).astype(np.float32)
         b = np.random.ranf([6, 4]).astype(np.float32)
         c = np.zeros([1, 4]).astype(np.float32)
         y = gemm_reference_implementation(a, b, c, transA=1)
-        expect(node, inputs=[a, b, c], outputs=[y],
-                name='test_gemm_transposeA')
+        expect(node, inputs=[a, b, c], outputs=[y], name='test_gemm_transposeA')
 
     def test_gemm_transposeB(self):
-        node = onnx.helper.make_node(
-            'Gemm',
-            inputs=['a', 'b', 'c'],
-            outputs=['y'],
-            transB=1
-        )
+        node = onnx.helper.make_node('Gemm',
+                                     inputs=['a', 'b', 'c'],
+                                     outputs=['y'],
+                                     transB=1)
         a = np.random.ranf([3, 6]).astype(np.float32)
         b = np.random.ranf([4, 6]).astype(np.float32)
         c = np.zeros([1, 4]).astype(np.float32)
         y = gemm_reference_implementation(a, b, c, transB=1)
-        expect(node, inputs=[a, b, c], outputs=[y],
-                name='test_gemm_transposeB')
+        expect(node, inputs=[a, b, c], outputs=[y], name='test_gemm_transposeB')
 
     def test_gemm_alpha(self):
-        node = onnx.helper.make_node(
-            'Gemm',
-            inputs=['a', 'b', 'c'],
-            outputs=['y'],
-            alpha=0.5
-        )
+        node = onnx.helper.make_node('Gemm',
+                                     inputs=['a', 'b', 'c'],
+                                     outputs=['y'],
+                                     alpha=0.5)
         a = np.random.ranf([3, 5]).astype(np.float32)
         b = np.random.ranf([5, 4]).astype(np.float32)
         c = np.zeros([1, 4]).astype(np.float32)
         y = gemm_reference_implementation(a, b, c, alpha=0.5)
-        expect(node, inputs=[a, b, c], outputs=[y],
-                name='test_gemm_alpha')
+        expect(node, inputs=[a, b, c], outputs=[y], name='test_gemm_alpha')
 
     def test_gemm_beta(self):
-        node = onnx.helper.make_node(
-            'Gemm',
-            inputs=['a', 'b', 'c'],
-            outputs=['y'],
-            beta=0.5
-        )
+        node = onnx.helper.make_node('Gemm',
+                                     inputs=['a', 'b', 'c'],
+                                     outputs=['y'],
+                                     beta=0.5)
         a = np.random.ranf([2, 7]).astype(np.float32)
         b = np.random.ranf([7, 4]).astype(np.float32)
         c = np.random.ranf([1, 4]).astype(np.float32)
         y = gemm_reference_implementation(a, b, c, beta=0.5)
-        expect(node, inputs=[a, b, c], outputs=[y],
-                name='test_gemm_beta')
+        expect(node, inputs=[a, b, c], outputs=[y], name='test_gemm_beta')
 
     def test_gemm_all_attributes(self):
-        node = onnx.helper.make_node(
-            'Gemm',
-            inputs=['a', 'b', 'c'],
-            outputs=['y'],
-            alpha=0.25,
-            beta=0.35,
-            transA=1,
-            transB=1
-        )
+        node = onnx.helper.make_node('Gemm',
+                                     inputs=['a', 'b', 'c'],
+                                     outputs=['y'],
+                                     alpha=0.25,
+                                     beta=0.35,
+                                     transA=1,
+                                     transB=1)
         a = np.random.ranf([4, 3]).astype(np.float32)
         b = np.random.ranf([5, 4]).astype(np.float32)
         c = np.random.ranf([1, 5]).astype(np.float32)
-        y = gemm_reference_implementation(a, b, c, transA=1, transB=1, alpha=0.25, beta=0.35)
-        expect(node, inputs=[a, b, c], outputs=[y],
-                name='test_gemm_all_attributes')
+        y = gemm_reference_implementation(a,
+                                          b,
+                                          c,
+                                          transA=1,
+                                          transB=1,
+                                          alpha=0.25,
+                                          beta=0.35)
+        expect(node,
+               inputs=[a, b, c],
+               outputs=[y],
+               name='test_gemm_all_attributes')
+
+    def test_constantOfShape_float_ones(self):
+            x = np.array([4, 3, 2]).astype(np.int64)
+            tensor_value = onnx.helper.make_tensor("value", onnx.TensorProto.FLOAT,
+                                                [1], [1])
+            node = onnx.helper.make_node(
+                'ConstantOfShape',
+                inputs=['x'],
+                outputs=['y'],
+                value=tensor_value,
+            )
+
+            y = np.ones(x, dtype=np.float32)
+            expect(node,
+                inputs=[x],
+                outputs=[y],
+                name='test_constantofshape_float_ones')
+
+    def test_constantOfShape_int32_zeros(self):
+        x = np.array([10, 6]).astype(np.int64)
+        tensor_value = onnx.helper.make_tensor("value", onnx.TensorProto.INT32,
+                                               [1], [0])
+        node = onnx.helper.make_node(
+            'ConstantOfShape',
+            inputs=['x'],
+            outputs=['y'],
+            value=tensor_value,
+        )
+        y = np.zeros(x, dtype=np.int32)
+        expect(node,
+               inputs=[x],
+               outputs=[y],
+               name='test_constantofshape_int_zeros')
+
+    # cannot support yet
+    # def test_int32_shape_zero(self):
+    #     x = np.array([0, ]).astype(np.int64)
+    #     tensor_value = onnx.helper.make_tensor("value", onnx.TensorProto.INT32,
+    #                                            [1], [0])
+    #     node = onnx.helper.make_node(
+    #         'ConstantOfShape',
+    #         inputs=['x'],
+    #         outputs=['y'],
+    #         value=tensor_value,
+    #     )
+    #     y = np.zeros(x, dtype=np.int32)
+    #     expect(node, inputs=[x], outputs=[y],
+    #            name='test_constantofshape_int_shape_zero')
+
+    def test_reduce_sum_do_not_keepdims(self):
+        shape = [3, 2, 2]
+        axes = [1]
+        keepdims = 0
+
+        node = onnx.helper.make_node('ReduceSum',
+                                     inputs=['data'],
+                                     outputs=['reduced'],
+                                     axes=axes,
+                                     keepdims=keepdims)
+
+        data = np.array(
+            [[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]],
+            dtype=np.float32)
+        reduced = np.sum(data, axis=tuple(axes), keepdims=keepdims == 1)
+        #print(reduced)
+        #[[4., 6.]
+        # [12., 14.]
+        # [20., 22.]]
+
+        expect(node,
+               inputs=[data],
+               outputs=[reduced],
+               name='test_reduce_sum_do_not_keepdims_example')
+
+        np.random.seed(0)
+        data = np.random.uniform(-10, 10, shape).astype(np.float32)
+        reduced = np.sum(data, axis=tuple(axes), keepdims=keepdims == 1)
+
+        expect(node,
+               inputs=[data],
+               outputs=[reduced],
+               name='test_reduce_sum_do_not_keepdims_random')
+
+    def test_reduce_sum_keepdims(self):
+        shape = [3, 2, 2]
+        axes = [1]
+        keepdims = 1
+
+        node = onnx.helper.make_node('ReduceSum',
+                                     inputs=['data'],
+                                     outputs=['reduced'],
+                                     axes=axes,
+                                     keepdims=keepdims)
+
+        data = np.array(
+            [[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]],
+            dtype=np.float32)
+        reduced = np.sum(data, axis=tuple(axes), keepdims=keepdims == 1)
+        #print(reduced)
+        #[[[4., 6.]]
+        # [[12., 14.]]
+        # [[20., 22.]]]
+
+        expect(node,
+               inputs=[data],
+               outputs=[reduced],
+               name='test_reduce_sum_keepdims_example')
+
+        np.random.seed(0)
+        data = np.random.uniform(-10, 10, shape).astype(np.float32)
+        reduced = np.sum(data, axis=tuple(axes), keepdims=keepdims == 1)
+
+        expect(node,
+               inputs=[data],
+               outputs=[reduced],
+               name='test_reduce_sum_keepdims_random')
+
+    def test_reduce_sum_default_axes_keepdims(self):
+        shape = [3, 2, 2]
+        axes = None
+        keepdims = 1
+
+        node = onnx.helper.make_node('ReduceSum',
+                                     inputs=['data'],
+                                     outputs=['reduced'],
+                                     keepdims=keepdims)
+
+        data = np.array(
+            [[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]],
+            dtype=np.float32)
+        reduced = np.sum(data, axis=axes, keepdims=keepdims == 1)
+        #print(reduced)
+        #[[[78.]]]
+
+        expect(node,
+               inputs=[data],
+               outputs=[reduced],
+               name='test_reduce_sum_default_axes_keepdims_example')
+
+        np.random.seed(0)
+        data = np.random.uniform(-10, 10, shape).astype(np.float32)
+        reduced = np.sum(data, axis=axes, keepdims=keepdims == 1)
+
+        expect(node,
+               inputs=[data],
+               outputs=[reduced],
+               name='test_reduce_sum_default_axes_keepdims_random')
+
+    def test_reduce_sum_negative_axes_keepdims(self):
+        shape = [3, 2, 2]
+        axes = [-2]
+        keepdims = 1
+
+        node = onnx.helper.make_node('ReduceSum',
+                                     inputs=['data'],
+                                     outputs=['reduced'],
+                                     axes=axes,
+                                     keepdims=keepdims)
+
+        data = np.array(
+            [[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]],
+            dtype=np.float32)
+        reduced = np.sum(data, axis=tuple(axes), keepdims=keepdims == 1)
+        # print(reduced)
+        #[[[4., 6.]]
+        # [[12., 14.]]
+        # [[20., 22.]]]
+
+        expect(node,
+               inputs=[data],
+               outputs=[reduced],
+               name='test_reduce_sum_negative_axes_keepdims_example')
+
+        np.random.seed(0)
+        data = np.random.uniform(-10, 10, shape).astype(np.float32)
+        reduced = np.sum(data, axis=tuple(axes), keepdims=keepdims == 1)
+
+        expect(node,
+               inputs=[data],
+               outputs=[reduced],
+               name='test_reduce_sum_negative_axes_keepdims_random')
+
+    def test_reduce_mean_do_not_keepdims(self):
+        shape = [3, 2, 2]
+        axes = [1]
+        keepdims = 0
+
+        node = onnx.helper.make_node('ReduceMean',
+                                     inputs=['data'],
+                                     outputs=['reduced'],
+                                     axes=axes,
+                                     keepdims=keepdims)
+
+        data = np.array(
+            [[[5, 1], [20, 2]], [[30, 1], [40, 2]], [[55, 1], [60, 2]]],
+            dtype=np.float32)
+        reduced = np.mean(data, axis=tuple(axes), keepdims=keepdims == 1)
+        #print(reduced)
+        #[[12.5, 1.5]
+        # [35., 1.5]
+        # [57.5, 1.5]]
+
+        expect(node,
+               inputs=[data],
+               outputs=[reduced],
+               name='test_reduce_mean_do_not_keepdims_example')
+
+        np.random.seed(0)
+        data = np.random.uniform(-10, 10, shape).astype(np.float32)
+        reduced = np.mean(data, axis=tuple(axes), keepdims=keepdims == 1)
+
+        expect(node,
+               inputs=[data],
+               outputs=[reduced],
+               name='test_reduce_mean_do_not_keepdims_random')
+
+    def test_reduce_mean_keepdims(self):
+        shape = [3, 2, 2]
+        axes = [1]
+        keepdims = 1
+
+        node = onnx.helper.make_node('ReduceMean',
+                                     inputs=['data'],
+                                     outputs=['reduced'],
+                                     axes=axes,
+                                     keepdims=keepdims)
+
+        data = np.array(
+            [[[5, 1], [20, 2]], [[30, 1], [40, 2]], [[55, 1], [60, 2]]],
+            dtype=np.float32)
+        reduced = np.mean(data, axis=tuple(axes), keepdims=keepdims == 1)
+        #print(reduced)
+        #[[[12.5, 1.5]]
+        # [[35., 1.5]]
+        # [[57.5, 1.5]]]
+
+        expect(node,
+               inputs=[data],
+               outputs=[reduced],
+               name='test_reduce_mean_keepdims_example')
+
+        np.random.seed(0)
+        data = np.random.uniform(-10, 10, shape).astype(np.float32)
+        reduced = np.mean(data, axis=tuple(axes), keepdims=keepdims == 1)
+
+        expect(node,
+               inputs=[data],
+               outputs=[reduced],
+               name='test_reduce_mean_keepdims_random')
+
+    def test_reduce_mean_default_axes_keepdims(self):
+        shape = [3, 2, 2]
+        axes = None
+        keepdims = 1
+
+        node = onnx.helper.make_node('ReduceMean',
+                                     inputs=['data'],
+                                     outputs=['reduced'],
+                                     keepdims=keepdims)
+
+        data = np.array(
+            [[[5, 1], [20, 2]], [[30, 1], [40, 2]], [[55, 1], [60, 2]]],
+            dtype=np.float32)
+        reduced = np.mean(data, axis=axes, keepdims=keepdims == 1)
+        #print(reduced)
+        #[[[18.25]]]
+
+        expect(node,
+               inputs=[data],
+               outputs=[reduced],
+               name='test_reduce_mean_default_axes_keepdims_example')
+
+        np.random.seed(0)
+        data = np.random.uniform(-10, 10, shape).astype(np.float32)
+        reduced = np.mean(data, axis=axes, keepdims=keepdims == 1)
+
+        expect(node,
+               inputs=[data],
+               outputs=[reduced],
+               name='test_reduce_mean_default_axes_keepdims_random')
+
+    def test_reduce_mean_negative_axes_keepdims(self):
+        shape = [3, 2, 2]
+        axes = [-2]
+        keepdims = 1
+
+        node = onnx.helper.make_node('ReduceMean',
+                                     inputs=['data'],
+                                     outputs=['reduced'],
+                                     axes=axes,
+                                     keepdims=keepdims)
+
+        data = np.array(
+            [[[5, 1], [20, 2]], [[30, 1], [40, 2]], [[55, 1], [60, 2]]],
+            dtype=np.float32)
+        reduced = np.mean(data, axis=tuple(axes), keepdims=keepdims == 1)
+        # print(reduced)
+        # [[[12.5, 1.5]]
+        # [[35., 1.5]]
+        # [[57.5, 1.5]]]
+
+        expect(node,
+               inputs=[data],
+               outputs=[reduced],
+               name='test_reduce_mean_negative_axes_keepdims_example')
+
+        np.random.seed(0)
+        data = np.random.uniform(-10, 10, shape).astype(np.float32)
+        reduced = np.mean(data, axis=tuple(axes), keepdims=keepdims == 1)
+
+        expect(node,
+               inputs=[data],
+               outputs=[reduced],
+               name='test_reduce_mean_negative_axes_keepdims_random')
+
+    def test_squeeze(self):
+        node = onnx.helper.make_node(
+            'Squeeze',
+            inputs=['x'],
+            outputs=['y'],
+            axes=[0],
+        )
+        x = np.random.randn(1, 3, 4, 5).astype(np.float32)
+        y = np.squeeze(x, axis=0)
+
+        expect(node, inputs=[x], outputs=[y], name='test_squeeze')
+
+    def test_squeeze_negative_axes(self):
+        node = onnx.helper.make_node(
+            'Squeeze',
+            inputs=['x'],
+            outputs=['y'],
+            axes=[-2],
+        )
+        x = np.random.randn(1, 3, 1, 5).astype(np.float32)
+        y = np.squeeze(x, axis=-2)
+        expect(node, inputs=[x], outputs=[y], name='test_squeeze_negative_axes')
+
+    def test_unsqueeze_one_axis(self):
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+
+        for i in range(x.ndim):
+            node = onnx.helper.make_node(
+                'Unsqueeze',
+                inputs=['x'],
+                outputs=['y'],
+                axes=[i],
+            )
+            y = np.expand_dims(x, axis=i)
+
+            expect(node,
+                   inputs=[x],
+                   outputs=[y],
+                   name='test_unsqueeze_axis_' + str(i))
+
+    def test_unsqueeze_two_axes(self):
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+
+        node = onnx.helper.make_node(
+            'Unsqueeze',
+            inputs=['x'],
+            outputs=['y'],
+            axes=[1, 4],
+        )
+        y = np.expand_dims(x, axis=1)
+        y = np.expand_dims(y, axis=4)
+
+        expect(node, inputs=[x], outputs=[y], name='test_unsqueeze_two_axes')
+
+    def test_unsqueeze_three_axes(self):
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+
+        node = onnx.helper.make_node(
+            'Unsqueeze',
+            inputs=['x'],
+            outputs=['y'],
+            axes=[2, 4, 5],
+        )
+        y = np.expand_dims(x, axis=2)
+        y = np.expand_dims(y, axis=4)
+        y = np.expand_dims(y, axis=5)
+
+        expect(node, inputs=[x], outputs=[y], name='test_unsqueeze_three_axes')
+
+    def test_unsqueeze_unsorted_axes(self):
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+
+        node = onnx.helper.make_node(
+            'Unsqueeze',
+            inputs=['x'],
+            outputs=['y'],
+            axes=[5, 4, 2],
+        )
+        y = np.expand_dims(x, axis=2)
+        y = np.expand_dims(y, axis=4)
+        y = np.expand_dims(y, axis=5)
+
+        expect(node,
+               inputs=[x],
+               outputs=[y],
+               name='test_unsqueeze_unsorted_axes')
+
+    def test_unsqueeze_negative_axes(self):
+        node = onnx.helper.make_node(
+            'Unsqueeze',
+            inputs=['x'],
+            outputs=['y'],
+            axes=[-2],
+        )
+        x = np.random.randn(1, 3, 1, 5).astype(np.float32)
+        y = np.expand_dims(x, axis=-2)
+        expect(node,
+               inputs=[x],
+               outputs=[y],
+               name='test_unsqueeze_negative_axes')
+
+    def test_slice(self):
+        node = onnx.helper.make_node(
+            'Slice',
+            inputs=['x', 'starts', 'ends', 'axes', 'steps'],
+            outputs=['y'],
+        )
+
+        x = np.random.randn(20, 10, 5).astype(np.float32)
+        y = x[0:3, 0:10]
+        starts = np.array([0, 0], dtype=np.int64)
+        ends = np.array([3, 10], dtype=np.int64)
+        axes = np.array([0, 1], dtype=np.int64)
+        steps = np.array([1, 1], dtype=np.int64)
+
+        expect(node, inputs=[x, starts, ends, axes, steps], outputs=[y],
+               name='test_slice')
+
+    def test_slice_neg(self):
+        node = onnx.helper.make_node(
+            'Slice',
+            inputs=['x', 'starts', 'ends', 'axes', 'steps'],
+            outputs=['y'],
+        )
+
+        x = np.random.randn(20, 10, 5).astype(np.float32)
+        starts = np.array([0], dtype=np.int64)
+        ends = np.array([-1], dtype=np.int64)
+        axes = np.array([1], dtype=np.int64)
+        steps = np.array([1], dtype=np.int64)
+        y = x[:, 0:-1]
+
+        expect(node, inputs=[x, starts, ends, axes, steps], outputs=[y],
+               name='test_slice_neg')
+
+    # not support empty tensor
+    # def test_slice_start_out_of_bounds(self):
+    #     node = onnx.helper.make_node(
+    #         'Slice',
+    #         inputs=['x', 'starts', 'ends', 'axes', 'steps'],
+    #         outputs=['y'],
+    #     )
+
+    #     x = np.random.randn(20, 10, 5).astype(np.float32)
+    #     starts = np.array([1000], dtype=np.int64)
+    #     ends = np.array([1000], dtype=np.int64)
+    #     axes = np.array([1], dtype=np.int64)
+    #     steps = np.array([1], dtype=np.int64)
+    #     y = x[:, 1000:1000]
+
+    #     expect(node, inputs=[x, starts, ends, axes, steps], outputs=[y],
+    #            name='test_slice_start_out_of_bounds')
+
+    def test_slice_end_out_of_bounds(self):
+        node = onnx.helper.make_node(
+            'Slice',
+            inputs=['x', 'starts', 'ends', 'axes', 'steps'],
+            outputs=['y'],
+        )
+
+        x = np.random.randn(20, 10, 5).astype(np.float32)
+        starts = np.array([1], dtype=np.int64)
+        ends = np.array([1000], dtype=np.int64)
+        axes = np.array([1], dtype=np.int64)
+        steps = np.array([1], dtype=np.int64)
+        y = x[:, 1:1000]
+
+        expect(node, inputs=[x, starts, ends, axes, steps], outputs=[y],
+               name='test_slice_end_out_of_bounds')
+
+    def test_slice_default_axes(self):
+        node = onnx.helper.make_node(
+            'Slice',
+            inputs=['x', 'starts', 'ends'],
+            outputs=['y'],
+        )
+
+        x = np.random.randn(20, 10, 5).astype(np.float32)
+        starts = np.array([0, 0, 3], dtype=np.int64)
+        ends = np.array([20, 10, 4], dtype=np.int64)
+        y = x[:, :, 3:4]
+
+        expect(node, inputs=[x, starts, ends], outputs=[y],
+               name='test_slice_default_axes')
+
+    def test_slice_default_steps(self):
+        node = onnx.helper.make_node(
+            'Slice',
+            inputs=['x', 'starts', 'ends', 'axes'],
+            outputs=['y'],
+        )
+
+        x = np.random.randn(20, 10, 5).astype(np.float32)
+        starts = np.array([0, 0, 3], dtype=np.int64)
+        ends = np.array([20, 10, 4], dtype=np.int64)
+        axes = np.array([0, 1, 2], dtype=np.int64)
+        y = x[:, :, 3:4]
+
+        expect(node, inputs=[x, starts, ends, axes], outputs=[y],
+               name='test_slice_default_steps')
+
+    def test_slice_neg_steps(self):
+        node = onnx.helper.make_node(
+            'Slice',
+            inputs=['x', 'starts', 'ends', 'axes', 'steps'],
+            outputs=['y'],
+        )
+
+        x = np.random.randn(20, 10, 5).astype(np.float32)
+        starts = np.array([20, 10, 4], dtype=np.int64)
+        ends = np.array([0, 0, 1], dtype=np.int64)
+        axes = np.array([0, 1, 2], dtype=np.int64)
+        steps = np.array([-1, -3, -2])
+        y = x[20:0:-1, 10:0:-3, 4:1:-2]
+
+        expect(node, inputs=[x, starts, ends, axes, steps], outputs=[y],
+               name='test_slice_neg_steps')
+
+    def test_slice_negative_axes(self):
+        node = onnx.helper.make_node(
+            'Slice',
+            inputs=['x', 'starts', 'ends', 'axes'],
+            outputs=['y'],
+        )
+
+        x = np.random.randn(20, 10, 5).astype(np.float32)
+        starts = np.array([0, 0, 3], dtype=np.int64)
+        ends = np.array([20, 10, 4], dtype=np.int64)
+        axes = np.array([0, -2, -1], dtype=np.int64)
+        y = x[:, :, 3:4]
+
+        expect(node, inputs=[x, starts, ends, axes], outputs=[y],
+               name='test_slice_negative_axes')
+
+    def test_split_1d(self):
+        input = np.array([1., 2., 3., 4., 5., 6.]).astype(np.float32)
+
+        node = onnx.helper.make_node(
+            'Split',
+            inputs=['input'],
+            outputs=['output_1', 'output_2', 'output_3'],
+            axis=0
+        )
+
+        expected_outputs = [np.array([1., 2.]).astype(np.float32), np.array([3., 4.]).astype(np.float32), np.array([5., 6.]).astype(np.float32)]
+        expect(node, inputs=[input], outputs=[y for y in expected_outputs], name='test_split_equal_parts_1d')
+
+        node = onnx.helper.make_node(
+            'Split',
+            inputs=['input'],
+            outputs=['output_1', 'output_2'],
+            axis=0,
+            split=[2, 4]
+        )
+
+        expected_outputs = [np.array([1., 2.]).astype(np.float32), np.array([3., 4., 5., 6.]).astype(np.float32)]
+        expect(node, inputs=[input], outputs=[y for y in expected_outputs], name='test_split_variable_parts_1d')
+
+    def test_split_2d(self):
+        input = np.array([[1., 2., 3., 4., 5., 6.],
+                          [7., 8., 9., 10., 11., 12.]]).astype(np.float32)
+
+        node = onnx.helper.make_node(
+            'Split',
+            inputs=['input'],
+            outputs=['output_1', 'output_2'],
+            axis=1
+        )
+
+        expected_outputs = [np.array([[1., 2., 3.], [7., 8., 9.]]).astype(np.float32),
+                            np.array([[4., 5., 6.], [10., 11., 12.]]).astype(np.float32)]
+
+        expect(node, inputs=[input], outputs=[y for y in expected_outputs], name='test_split_equal_parts_2d')
+
+        node = onnx.helper.make_node(
+            'Split',
+            inputs=['input'],
+            outputs=['output_1', 'output_2'],
+            axis=1,
+            split=[2, 4]
+        )
+
+        expected_outputs = [np.array([[1., 2.], [7., 8.]]).astype(np.float32),
+                            np.array([[3., 4., 5., 6.], [9., 10., 11., 12.]]).astype(np.float32)]
+
+        expect(node, inputs=[input], outputs=[y for y in expected_outputs], name='test_split_variable_parts_2d')
+
+    def test_split_default_values(self):
+        input = np.array([1., 2., 3., 4., 5., 6.]).astype(np.float32)
+
+        # If axis is not specified, split is applied on default axis 0
+        node = onnx.helper.make_node(
+            'Split',
+            inputs=['input'],
+            outputs=['output_1', 'output_2', 'output_3']
+        )
+
+        expected_outputs = [np.array([1., 2.]).astype(np.float32), np.array([3., 4.]).astype(np.float32), np.array([5., 6.]).astype(np.float32)]
+        expect(node, inputs=[input], outputs=[y for y in expected_outputs], name='test_split_equal_parts_default_axis')
+
+        node = onnx.helper.make_node(
+            'Split',
+            inputs=['input'],
+            outputs=['output_1', 'output_2'],
+            split=[2, 4]
+        )
+
+        expected_outputs = [np.array([1., 2.]).astype(np.float32), np.array([3., 4., 5., 6.]).astype(np.float32)]
+        expect(node, inputs=[input], outputs=[y for y in expected_outputs], name='test_split_variable_parts_default_axis')
+
+    # not support empty tensor
+    # def test_split_zero_size_splits(self):
+    #     input = np.array([]).astype(np.float32)
+
+    #     # Split emtpy tensor to tensors of size zero
+    #     node = onnx.helper.make_node(
+    #         'Split',
+    #         inputs=['input'],
+    #         outputs=['output_1', 'output_2', 'output_3'],
+    #         split=[0, 0, 0]
+    #     )
+
+    #     expected_outputs = [np.array([]).astype(np.float32), np.array([]).astype(np.float32), np.array([]).astype(np.float32)]
+    #     expect(node, inputs=[input], outputs=[y for y in expected_outputs], name='test_split_zero_size_splits')
+
+    def test_gather_0(self):
+        node = onnx.helper.make_node(
+            'Gather',
+            inputs=['data', 'indices'],
+            outputs=['y'],
+            axis=0,
+        )
+        data = np.random.randn(5, 4, 3, 2).astype(np.float32)
+        indices = np.array([0, 1, 3])
+        y = np.take(data, indices, axis=0)
+
+        expect(node, inputs=[data, indices.astype(np.int64)], outputs=[y],
+               name='test_gather_0')
+
+    def test_gather_1(self):
+        node = onnx.helper.make_node(
+            'Gather',
+            inputs=['data', 'indices'],
+            outputs=['y'],
+            axis=1,
+        )
+        data = np.random.randn(5, 4, 3, 2).astype(np.float32)
+        indices = np.array([0, 1, 3])
+        y = np.take(data, indices, axis=1)
+
+        expect(node, inputs=[data, indices.astype(np.int64)], outputs=[y],
+               name='test_gather_1')
+
+    def test_gather_negative_indices(self):
+        node = onnx.helper.make_node(
+            'Gather',
+            inputs=['data', 'indices'],
+            outputs=['y'],
+            axis=0,
+        )
+        data = np.arange(10).astype(np.float32)
+        indices = np.array([0, -9, -10])
+        y = np.take(data, indices, axis=0)
+
+        expect(node, inputs=[data, indices.astype(np.int64)], outputs=[y],
+               name='test_gather_negative_indices')
+
+    def test_tile(self):
+        node = onnx.helper.make_node(
+            'Tile',
+            inputs=['x', 'y'],
+            outputs=['z']
+        )
+
+        x = np.random.rand(2, 3, 4, 5).astype(np.float32)
+
+        repeats = np.random.randint(low=1, high=10, size=(np.ndim(x),)).astype(np.int64)
+
+        z = np.tile(x, repeats)
+
+        expect(node,
+               inputs=[x, repeats],
+               outputs=[z],
+               name='test_tile')
+
+    def test_tile_precomputed(self):
+        node = onnx.helper.make_node(
+            'Tile',
+            inputs=['x', 'y'],
+            outputs=['z']
+        )
+
+        x = np.array([
+            [0, 1],
+            [2, 3]
+        ], dtype=np.float32)
+
+        repeats = np.array([2, 2], dtype=np.int64)
+
+        z = np.array([
+            [0, 1, 0, 1],
+            [2, 3, 2, 3],
+            [0, 1, 0, 1],
+            [2, 3, 2, 3]
+        ], dtype=np.float32)
+
+        expect(node,
+               inputs=[x, repeats],
+               outputs=[z],
+               name='test_tile_precomputed')
+
+    def test_onehot_without_axis(self):
+        on_value = 5
+        off_value = 2
+        output_type = np.int32
+        node = onnx.helper.make_node('OneHot',
+                                     inputs=['indices', 'depth', 'values'],
+                                     outputs=['y'])
+        indices = np.array([0, 7, 8], dtype=np.int64)
+        depth = np.float32(12)
+        values = np.array([off_value, on_value], dtype=output_type)
+        y = one_hot(indices, depth, dtype=output_type)
+        y = y * (on_value - off_value) + off_value
+        expect(node,
+               inputs=[indices, depth, values],
+               outputs=[y],
+               name='test_onehot_without_axis')
+
+    def test_onehot_with_axis(self):
+        axisValue = 1
+        on_value = 3
+        off_value = 1
+        output_type = np.float32
+        node = onnx.helper.make_node('OneHot',
+                                     inputs=['indices', 'depth', 'values'],
+                                     outputs=['y'],
+                                     axis=axisValue)
+        indices = np.array([[1, 9], [2, 4]], dtype=np.float32)
+        depth = np.array([10], dtype=np.float32)
+        values = np.array([off_value, on_value], dtype=output_type)
+        y = one_hot(indices, depth, axis=axisValue, dtype=output_type)
+        y = y * (on_value - off_value) + off_value
+        expect(node,
+               inputs=[indices, depth, values],
+               outputs=[y],
+               name='test_onehot_with_axis')
+
+    def test_onehot_with_negative_indices(self):
+        axisValue = 1
+        on_value = 3
+        off_value = 1
+        output_type = np.float32
+        node = onnx.helper.make_node('OneHot',
+                                     inputs=['indices', 'depth', 'values'],
+                                     outputs=['y'],
+                                     axis=axisValue)
+        indices = np.array([0, -7, -8], dtype=np.int64)
+
+        depth = np.array([10], dtype=np.float32)
+        values = np.array([off_value, on_value], dtype=output_type)
+        y = one_hot(indices, depth, axis=axisValue, dtype=output_type)
+        y = y * (on_value - off_value) + off_value
+        expect(node,
+               inputs=[indices, depth, values],
+               outputs=[y],
+               name='test_onehot_negative_indices')
+
+    def test_onehot_with_negative_axis(self):
+        axisValue = -2
+        on_value = 3
+        off_value = 1
+        output_type = np.float32
+        node = onnx.helper.make_node('OneHot',
+                                     inputs=['indices', 'depth', 'values'],
+                                     outputs=['y'],
+                                     axis=axisValue)
+        indices = np.array([[1, 9], [2, 4]], dtype=np.float32)
+        depth = np.array([10], dtype=np.float32)
+        values = np.array([off_value, on_value], dtype=output_type)
+        y = one_hot(indices, depth, axis=axisValue, dtype=output_type)
+        y = y * (on_value - off_value) + off_value
+        expect(node,
+               inputs=[indices, depth, values],
+               outputs=[y],
+               name='test_onehot_with_negative_axis')
 
 
-def gemm_reference_implementation(A, B, C=None, alpha=1., beta=1., transA=0,
-                                transB=0):  # type: (np.ndarray, np.ndarray, Optional[np.ndarray], float, float, int, int) -> np.ndarray
+def one_hot(indices, depth, axis=-1, dtype=np.float32):  # type: ignore
+    ''' Compute one hot from indices at a specific axis '''
+    values = np.asarray(indices)
+    rank = len(values.shape)
+    depth_range = np.arange(depth)
+    if axis < 0:
+        axis += (rank + 1)
+    ls = values.shape[0:axis]
+    rs = values.shape[axis:rank]
+    targets = np.reshape(depth_range,
+                         (1,) * len(ls) + depth_range.shape + (1,) * len(rs))
+    values = np.reshape(np.mod(values, depth), ls + (1,) + rs)
+    return np.asarray(targets == values, dtype=dtype)
+
+
+def gemm_reference_implementation(
+    A,
+    B,
+    C=None,
+    alpha=1.,
+    beta=1.,
+    transA=0,
+    transB=0
+):  # type: (np.ndarray, np.ndarray, Optional[np.ndarray], float, float, int, int) -> np.ndarray
     A = A if transA == 0 else A.T
     B = B if transB == 0 else B.T
     C = C if C is not None else np.array(0)
@@ -2280,19 +3108,6 @@ def pool(
             y[shape] = f(window_vals[np.where(~np.isnan(window_vals))])
     return y.astype(np.float32)
 
-    def test_globalaveragepool(self):
-        node = onnx.helper.make_node(
-            'GlobalAveragePool',
-            inputs=['x'],
-            outputs=['y'],
-        )
-        x = np.array([[[
-            [1, 2, 3],
-            [4, 5, 6],
-            [7, 8, 9],
-        ]]]).astype(np.float32)
-        y = np.array([[[[5]]]]).astype(np.float32)
-        expect(node, inputs=[x], outputs=[y], name='test_globalaveragepool_precomputed')
 
 if __name__ == '__main__':
     unittest.main()
