@@ -11,7 +11,7 @@ from singa import tensor
 from singa import autograd
 from singa import sonnx
 import onnx
-from onnx import version_converter, numpy_helper
+from onnx import numpy_helper
 
 
 def load_model():

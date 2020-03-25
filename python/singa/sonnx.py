@@ -24,7 +24,7 @@ import onnx.utils
 import onnx
 from onnx.backend.base import Backend, BackendRep
 from onnx import (checker, helper, numpy_helper, GraphProto, NodeProto,
-                  TensorProto, OperatorSetIdProto, optimizer, mapping)
+                  TensorProto, OperatorSetIdProto, optimizer)
 import warnings
 
 from . import singa_wrap as singa

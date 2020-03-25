@@ -2,7 +2,6 @@ import os
 import urllib.request
 import numpy as np
 import tarfile
-import warnings
 import glob
 from PIL import Image
 
