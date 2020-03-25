@@ -24,7 +24,7 @@ import onnx.utils
 import onnx
 from onnx.backend.base import Backend, BackendRep
 from onnx import (checker, helper, numpy_helper, GraphProto, NodeProto,
-                  TensorProto, OperatorSetIdProto, optimizer)
+                  TensorProto, OperatorSetIdProto, optimizer, mapping)
 import warnings
 
 from . import singa_wrap as singa
@@ -1099,7 +1099,33 @@ class SingaBackend(Backend):
         'Tile': '_create_tile',
         'Cast': '_create_cast',
         'OneHot': '_create_onehot',
+        'Constant': "_create_constant"
     }
+
+    @classmethod
+    def _create_constant(cls, onnx_node, inputs, opset_version):
+        """
+        parse onnx constatn node to weights
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        tmp_tensor = onnx_node.getattr('value')
+        np_dtype = onnx.mapping.TENSOR_TYPE_TO_NP_TYPE[tmp_tensor.data_type]
+        np_tensor=np.frombuffer(tmp_tensor.raw_data, dtype=np_dtype)
+        if np_tensor.dtype == "int64":
+            np_tensor = np_tensor.astype(np.int32)
+        # todo, we cannot support scalar tensor
+        if np.ndim(np_tensor) == 0:
+            np_tensor = np.array(np_tensor, ndmin=1)
+        return None, np_tensor
 
     @classmethod
     def _create_onehot(cls, onnx_node, inputs, opset_version):
@@ -1918,6 +1944,7 @@ class SingaBackend(Backend):
             # since, they don't use initializer
             tmp_tensor.stores_grad = (name in initializers)
             tensor_map[x.name] = tmp_tensor
+        # constants = {t.name:t in graph.node if graph.node}
         return tensor_map
 
     @classmethod
@@ -1953,9 +1980,16 @@ class SingaBackend(Backend):
                 for x in node.inputs
                 if x not in node.consumed_inputs
             ]
-
             handle, forward = cls._onnx_node_to_singa_op(
                 node, inputs, opset_version)
+            # we hanlde the constant as a weight
+            if node.op_type == 'Constant':
+                tmp_tensor = tensor.from_numpy(forward)
+                tmp_tensor.to_device(device)
+                tmp_name = node.outputs.pop(0)
+                weights[tmp_name] = tmp_tensor
+                tensor_map[tmp_name] = tmp_tensor
+                continue
             outputs = cls._run_node(node, inputs, handle, forward)
             for key, val in outputs.items():
                 tensor_map[key] = val
@@ -2072,6 +2106,8 @@ class SingaRep(BackendRep):
 
         for _, op, handle, forward in self.singa_ops[:last_layers]:
             if len(op.consumed_inputs) != 0:
+                # because if op has consumed_inputs, it means it moved some inputs into attributes
+                # now if still has these inputs, we should update its attributes
                 handle, forward = get_op(op, [tmp_tensor_map[x] for x in op.inputs])
             inputs = [
                 tmp_tensor_map[x]
