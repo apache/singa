@@ -253,7 +253,6 @@ def postorderRecursive(root, root_t):
             # yid: id(output of this operator)
             # y: output of this operator
             for srcop, yid, y, _ in root.src:
-                y_o = y.shape if y is not None else None
                 recursive(srcop, yid, y, nodes, weights, inputs)
 
             if type(root).__name__ == 'Dummy':

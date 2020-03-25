@@ -1,23 +1,17 @@
 import os
 import urllib.request
-import gzip
-import zipfile
 import numpy as np
-import codecs
 import tarfile
-import warnings
 import glob
 from PIL import Image
-import pandas as pd
 from sklearn import preprocessing
 
 from singa import device
 from singa import tensor
-from singa import opt
 from singa import autograd
 from singa import sonnx
 import onnx
-from onnx import version_converter, helper, numpy_helper
+from onnx import version_converter, numpy_helper
 
 
 def load_model():
@@ -114,10 +108,6 @@ if __name__ == "__main__":
     # set batch size
     onnx_model = update_batch_size(onnx_model, 1)
     sg_ir = sonnx.prepare(onnx_model, device=dev)
-
-    # inference
-    autograd.training = False
-    model = Infer(sg_ir)
 
     # verifty the test dataset
     inputs, ref_outputs = load_dataset(os.path.join('/tmp', 'resnet100', 'test_data_set_0'))

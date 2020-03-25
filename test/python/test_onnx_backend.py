@@ -2188,6 +2188,23 @@ class TestPythonOnnxBackend(unittest.TestCase):
                outputs=[y],
                name='test_gemm_all_attributes')
 
+    def test_constantOfShape_float_ones(self):
+            x = np.array([4, 3, 2]).astype(np.int64)
+            tensor_value = onnx.helper.make_tensor("value", onnx.TensorProto.FLOAT,
+                                                [1], [1])
+            node = onnx.helper.make_node(
+                'ConstantOfShape',
+                inputs=['x'],
+                outputs=['y'],
+                value=tensor_value,
+            )
+
+            y = np.ones(x, dtype=np.float32)
+            expect(node,
+                inputs=[x],
+                outputs=[y],
+                name='test_constantofshape_float_ones')
+
     def test_constantOfShape_int32_zeros(self):
         x = np.array([10, 6]).astype(np.int64)
         tensor_value = onnx.helper.make_tensor("value", onnx.TensorProto.INT32,
@@ -3003,23 +3020,6 @@ def gemm_reference_implementation(
     Y = alpha * np.dot(A, B) + beta * C
 
     return Y
-
-    def test_float_ones(self):
-        x = np.array([4, 3, 2]).astype(np.int64)
-        tensor_value = onnx.helper.make_tensor("value", onnx.TensorProto.FLOAT,
-                                               [1], [1])
-        node = onnx.helper.make_node(
-            'ConstantOfShape',
-            inputs=['x'],
-            outputs=['y'],
-            value=tensor_value,
-        )
-
-        y = np.ones(x, dtype=np.float32)
-        expect(node,
-               inputs=[x],
-               outputs=[y],
-               name='test_constantofshape_float_ones')
 
 
 # return padding shape of conv2d or pooling

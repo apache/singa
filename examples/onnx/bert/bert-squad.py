@@ -1,22 +1,17 @@
 import os
 import urllib.request
-import gzip
 import zipfile
 import numpy as np
-import codecs
 import tarfile
-import warnings
 import glob
 import json
 
 from singa import device
 from singa import tensor
-from singa import opt
 from singa import autograd
 from singa import sonnx
 import onnx
-from onnx import version_converter, helper, numpy_helper, shape_inference
-from onnx.checker import check_model
+from onnx import numpy_helper, shape_inference
 import onnx.utils
 import tokenization
 from run_onnx_squad import read_squad_examples, convert_examples_to_features, RawResult, write_predictions

@@ -26,14 +26,9 @@ python onnx_squad.py --model $SQUAD_MODEL/squad.onnx \
                      --output /tmp/
 """
 
-import argparse
 import collections
 import json
-import logging
 import math
-import os
-import sys
-from timeit import default_timer as timer
 
 import numpy as np
 import six
@@ -145,8 +140,6 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length,
                 tok_to_orig_index.append(i)
                 all_doc_tokens.append(sub_token)
 
-        tok_start_position = None
-        tok_end_position = None
         # The -3 accounts for [CLS], [SEP] and [SEP]
         max_tokens_for_doc = max_seq_length - len(query_tokens) - 3
 

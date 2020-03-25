@@ -1,20 +1,16 @@
 import os
 import urllib.request
-import gzip
 import numpy as np
-import codecs
 import tarfile
-import warnings
 import glob
 from PIL import Image
 
 from singa import device
 from singa import tensor
-from singa import opt
 from singa import autograd
 from singa import sonnx
 import onnx
-from onnx import version_converter, helper, numpy_helper
+from onnx import numpy_helper
 import onnx.utils
 
 

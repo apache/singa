@@ -2015,7 +2015,7 @@ class SingaBackend(Backend):
         # optimize and infer the shape of the model
         try:
             model = onnx.utils.polish_model(model)
-        except:
+        except IndexError as err:
             model = onnx.shape_inference.infer_shapes(model)
 
         # check the opset version and ir version
