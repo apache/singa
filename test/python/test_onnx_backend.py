@@ -46,12 +46,15 @@ def expect(node, inputs, outputs, name, opset_version=_default_opset_version):
     input_labels = [x for x in onnx_node.inputs if x != ""]
     # prepare input tensors
     for key, val in zip(input_labels, inputs):
-        # very important! must be float
-        if not isinstance(val, np.ndarray) or len(val.shape) == 0:
-            val = np.array([val])
-        x = tensor.from_numpy(val.astype(np.float32))
-        x.to_device(gpu_dev)
-        input_tensors[key] = x
+        if node.op_type=="Clip" and key in ("min", "max"):
+            input_tensors[key] = val.item()
+        else:
+            # very important! must be float
+            if not isinstance(val, np.ndarray) or len(val.shape) == 0:
+                val = np.array([val])
+            x = tensor.from_numpy(val.astype(np.float32))
+            x.to_device(gpu_dev)
+            input_tensors[key] = x
     outputs_dict = sonnx.run_node(onnx_node, input_tensors, opset_version)
     for out1, out2 in zip(outputs, outputs_dict.values()):
         np.testing.assert_array_almost_equal(out1,
@@ -2277,6 +2280,19 @@ def pool(
             y[shape] = f(window_vals[np.where(~np.isnan(window_vals))])
     return y.astype(np.float32)
 
+    def test_globalaveragepool(self):
+        node = onnx.helper.make_node(
+            'GlobalAveragePool',
+            inputs=['x'],
+            outputs=['y'],
+        )
+        x = np.array([[[
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9],
+        ]]]).astype(np.float32)
+        y = np.array([[[[5]]]]).astype(np.float32)
+        expect(node, inputs=[x], outputs=[y], name='test_globalaveragepool_precomputed')
 
 if __name__ == '__main__':
     unittest.main()
