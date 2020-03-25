@@ -16,23 +16,33 @@
     specific language governing permissions and limitations
     under the License.
 -->
-# Package Singa using conda-build
+# Package SINGA using conda-build
 
 [conda-build](https://conda.io/docs/user-guide/tasks/build-packages/index.html) is a packaging tool like apt-get, which is associated with [anaconda cloud](https://anaconda.org/) for package management for both python and cpp libraries.
 
 
 ## Environment variables
 
-We export the CUDA version if Singa is compiled with CUDA enabled. The cuDNN version is fixed by Singa and cuDNN is installed from [anaconda cloud](https://anaconda.org/anaconda/cudnn).
+We export the CUDA version if SINGA is compiled with CUDA enabled. The cuDNN version is fixed by SINGA and cuDNN is installed from [anaconda cloud](https://anaconda.org/anaconda/cudnn).
 
-    # for singa with gpu, e.g. cuda9.0-cudnn7.3.1
+    # for SINGA with GPU, e.g. cuda9.0-cudnn7.3.1
     export CUDA=9.0
 
-For CPU-only version, we do not export CUDA.
+Then, we export a flag DIST to indicate if SINGA is compiled with distributed training enabled.
+
+    # to enable distributed training: DIST=ON, otherwise: DIST=OFF
+    export DIST=OFF
+
+We need to export both CUDA and DIST for GPU version. For CPU-only version, we do not export CUDA and DIST.
 
 ## Instruction
 
-After exporting the environment variables, execute the following command to compile Singa and package it
+After exporting the environment variables, we need to add the necessary conda channels
+
+    conda config --add channels conda-forge
+    conda config --add channels nusdbsystem
+
+Then, we can execute the following commands to compile SINGA and package it
 
     conda-build .  --python 3.6
 
