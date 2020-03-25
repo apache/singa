@@ -29,6 +29,9 @@ suffix=$TRAVIS_JOB_NUMBER  #`TZ=Asia/Singapore date +%Y-%m-%d-%H-%M-%S`
 export CONDA_BLD_PATH=~/conda-bld-$suffix
 mkdir $CONDA_BLD_PATH
 
+# get all tags
+git fetch --unshallow
+
 conda build tool/conda/singa --python 3.6
 conda build tool/conda/singa --python 3.7
 # conda install --use-local singa
@@ -43,5 +46,10 @@ else
   # turn off debug to hide the token in travis log
   set +x
   # upload the package onto anaconda cloud
+
+
+  NEW_VERSION=`git describe --abbrev=0 --tags`
+  echo "[travis]Updating to new version $NEW_VERSION"
+
   anaconda -t $ANACONDA_UPLOAD_TOKEN upload -u $USER -l main $CONDA_BLD_PATH/$OS/singa-*.tar.bz2 --force
 fi

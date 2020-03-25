@@ -4004,7 +4004,6 @@ class Cast(Operation):
             x = x.AsType(self.to)
         return x
 
-
     def backward(self, dy):
         """
         backward of Cast
