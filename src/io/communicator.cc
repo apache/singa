@@ -228,10 +228,10 @@ void Communicator::fusedSynch(vector<Tensor> &t, bool send) {
 
           // memory copy to fusedBuff
           for (size_t i = 0; i < t.size(); i++) {
-            CUDA_CHECK(cudaMemcpyAsync((void *)(fusedSendBuff + sendBuffOffset),
-                                       (const void *)t[i].block()->mutable_data(),
-                                       t[i].Size() * sizeof(float),
-                                       cudaMemcpyDeviceToDevice, c1));
+            CUDA_CHECK(cudaMemcpyAsync(
+                (void *)(fusedSendBuff + sendBuffOffset),
+                (const void *)t[i].block()->mutable_data(),
+                t[i].Size() * sizeof(float), cudaMemcpyDeviceToDevice, c1));
             sendBuffOffset += t[i].Size();
           }
         },
@@ -244,8 +244,8 @@ void Communicator::fusedSynch(vector<Tensor> &t, bool send) {
           CUDA_CHECK(cudaEventRecord(event, c1));
           CUDA_CHECK(cudaStreamWaitEvent(s, event, 0));
 
-          allReduce((int)sendBuffOffset, (void *)fusedSendBuff, (void *)fusedRecvBuff,
-                    ncclFloat);
+          allReduce((int)sendBuffOffset, (void *)fusedSendBuff,
+                    (void *)fusedRecvBuff, ncclFloat);
 
           sendBuffOffset = 0;
 
@@ -283,7 +283,7 @@ void Communicator::synch(Tensor &t) {
       {t.block()}, {t.block()});
 }
 
-  void Communicator::fusedSynchHalf(vector<Tensor> &t, bool send) {
+void Communicator::fusedSynchHalf(vector<Tensor> &t, bool send) {
   CHECK_GT(t.size(), 0);
 
   generateBlocks(t);
@@ -301,10 +301,10 @@ void Communicator::synch(Tensor &t) {
           size_t offset = 0;
           // memory copy to fusedBuff
           for (size_t i = 0; i < t.size(); i++) {
-            CUDA_CHECK(cudaMemcpyAsync((void *)(fusedSendBuff + sendBuffOffset),
-                                       (const void *)t[i].block()->mutable_data(),
-                                       t[i].Size() * sizeof(float),
-                                       cudaMemcpyDeviceToDevice, c1));
+            CUDA_CHECK(cudaMemcpyAsync(
+                (void *)(fusedSendBuff + sendBuffOffset),
+                (const void *)t[i].block()->mutable_data(),
+                t[i].Size() * sizeof(float), cudaMemcpyDeviceToDevice, c1));
             sendBuffOffset += t[i].Size();
             offset += t[i].Size();
           }
@@ -314,7 +314,8 @@ void Communicator::synch(Tensor &t) {
     // send the tensors in the buffer
     device_->Exec(
         [this, t](Context *ctx) mutable {
-          cuda::float2half(sendBuffOffset, fusedSendBuff, fusedSendBuffHalf, c1);
+          cuda::float2half(sendBuffOffset, fusedSendBuff, fusedSendBuffHalf,
+                           c1);
 
           // wait for the memcpy to complete
           CUDA_CHECK(cudaEventRecord(event, c1));
@@ -327,7 +328,8 @@ void Communicator::synch(Tensor &t) {
           CUDA_CHECK(cudaEventRecord(event, s));
           CUDA_CHECK(cudaStreamWaitEvent(c2, event, 0));
 
-          cuda::half2float(sendBuffOffset, fusedRecvBuffHalf, fusedRecvBuff, c2);
+          cuda::half2float(sendBuffOffset, fusedRecvBuffHalf, fusedRecvBuff,
+                           c2);
 
           sendBuffOffset = 0;
 

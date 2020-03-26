@@ -106,7 +106,9 @@ void Graph::Debug() {
   }
 }
 
-void Graph::RunGraph() {
+void Graph::RunGraph(bool restart) {
+  if (restart) cur_node_ = 0;
+
   int group_no = 0;
   std::vector<int> ans;
 
@@ -121,7 +123,8 @@ void Graph::RunGraph() {
 
   // find all input edges and decrease ref count of nodes
   for (int i = 0; i < edges_.size(); ++i) {
-    if (!edges_[i]->src_node_) {
+    Node *src_node = edges_[i]->src_node_;
+    if (!src_node || src_node->id_ < cur_node_) {
       Node *node = edges_[i]->dst_node_;
       int nodeId = node->id_;
       node_ref[nodeId] -= 1;
@@ -129,7 +132,7 @@ void Graph::RunGraph() {
   }
 
   // activate nodes
-  for (int i = 0; i < node_ref.size(); ++i) {
+  for (int i = cur_node_; i < node_ref.size(); ++i) {
     if (node_ref[i] == 0) {
       node_queue.Push(i);
       // ans.push_back(i);
@@ -158,16 +161,18 @@ void Graph::RunGraph() {
     device_->DoExec(std::move(curNode->op_), 0);
 
     // step 3: release some blocks' data that won't be used later
-    for (size_t i = 0; i < curNode->in_edges_.size(); ++i) {
-      Edge *edge = curNode->in_edges_[i];
-      Block *blk = edge->blk_;
-      BlockInfo *blkInfo = blocks_[blk];
-      if (blkInfo->last_node_ == curNode && blkInfo->write_node_ != curNode) {
-        BlockType type = blkInfo->type_;
-        if (type == BlockType::kInter &&
-            blkInfo->graph_ref_ == blk->ref_count()) {
-          blk->free_data();
-          // printf("free block[%2d]\n", blkInfo->id_);
+    if (restart) {
+      for (size_t i = 0; i < curNode->in_edges_.size(); ++i) {
+        Edge *edge = curNode->in_edges_[i];
+        Block *blk = edge->blk_;
+        BlockInfo *blkInfo = blocks_[blk];
+        if (blkInfo->last_node_ == curNode && blkInfo->write_node_ != curNode) {
+          BlockType type = blkInfo->type_;
+          if (type == BlockType::kInter &&
+              blkInfo->graph_ref_ == blk->ref_count()) {
+            blk->free_data();
+            // printf("free block[%2d]\n", blkInfo->id_);
+          }
         }
       }
     }
@@ -199,16 +204,21 @@ void Graph::RunGraph() {
     }
     */
   }
+
+  cur_node_ = nodes_.size();
 }
 
-void Graph::RunInSerial() {
-  for (size_t i = 0; i < nodes_.size(); ++i) {
+void Graph::RunInSerial(bool restart) {
+  if (restart) cur_node_ = 0;
+
+  for (size_t i = cur_node_; i < nodes_.size(); ++i) {
     Node *curNode = nodes_[i];
 
     // step 1: execute the operation
     device_->DoExec(std::move(curNode->op_), 0);
 
     // step 2: release some blocks' data that won't be used later
+    if (!restart) continue;
     for (size_t i = 0; i < curNode->in_edges_.size(); ++i) {
       Edge *edge = curNode->in_edges_[i];
       Block *blk = edge->blk_;
@@ -223,6 +233,8 @@ void Graph::RunInSerial() {
       }
     }
   }
+
+  cur_node_ = nodes_.size();
 }
 
 void Graph::AddOperation(function<void(Context *)> &&op,

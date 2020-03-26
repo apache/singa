@@ -123,7 +123,7 @@ if __name__ == "__main__":
     batch_size = 400
     niters = 100000
     throughput = float(sgd.world_size * niters * batch_size) / (end - start)
-    titer = (end- start) / float(niters)
+    titer = (end - start) / float(niters)
 
     if sgd.rank_in_global == 0:
         print("\nThroughput = {} per second".format(throughput), flush=True)

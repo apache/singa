@@ -33,6 +33,7 @@ import os
 import sys
 import time
 
+
 def load_dataset(filepath):
     with open(filepath, 'rb') as fd:
         try:
@@ -62,44 +63,54 @@ def load_train_data(dir_path='cifar-10-batches-py', num_batches=5):
 
 def load_test_data(dir_path='cifar-10-batches-py'):
     images, labels = load_dataset(check_dataset_exist(dir_path + "/test_batch"))
-    return np.array(images,  dtype=np.float32), np.array(labels, dtype=np.int32)
+    return np.array(images, dtype=np.float32), np.array(labels, dtype=np.int32)
+
 
 def check_dataset_exist(dirpath):
     if not os.path.exists(dirpath):
-        print('Please download the cifar10 dataset using download_data.py (e.g. python ~/singa/examples/cifar10/download_data.py py)')
+        print(
+            'Please download the cifar10 dataset using download_data.py (e.g. python ~/singa/examples/cifar10/download_data.py py)'
+        )
         sys.exit(0)
     return dirpath
 
+
 def normalize_for_resnet(train_x, test_x):
-    mean=[0.4914, 0.4822, 0.4465]
-    std=[0.2023, 0.1994, 0.2010]
+    mean = [0.4914, 0.4822, 0.4465]
+    std = [0.2023, 0.1994, 0.2010]
     train_x /= 255
     test_x /= 255
-    for ch in range(0,2):
+    for ch in range(0, 2):
         train_x[:, ch, :, :] -= mean[ch]
         train_x[:, ch, :, :] /= std[ch]
         test_x[:, ch, :, :] -= mean[ch]
         test_x[:, ch, :, :] /= std[ch]
     return train_x, test_x
 
-def resize_dataset(x,IMG_SIZE):
+
+def resize_dataset(x, IMG_SIZE):
     num_data = x.shape[0]
     dim = x.shape[1]
-    X = np.zeros(shape=(num_data,dim,IMG_SIZE,IMG_SIZE), dtype=np.float32)
-    for n in range(0,num_data):
-        for d in range(0,dim):
-            X[n, d, :, :] = np.array(Image.fromarray(x[n , d, : ,:]).resize((IMG_SIZE,IMG_SIZE), Image.BILINEAR), dtype=np.float32)
+    X = np.zeros(shape=(num_data, dim, IMG_SIZE, IMG_SIZE), dtype=np.float32)
+    for n in range(0, num_data):
+        for d in range(0, dim):
+            X[n, d, :, :] = np.array(Image.fromarray(x[n, d, :, :]).resize(
+                (IMG_SIZE, IMG_SIZE), Image.BILINEAR),
+                                     dtype=np.float32)
     return X
+
 
 def augmentation(x, batch_size):
     xpad = np.pad(x, [[0, 0], [0, 0], [4, 4], [4, 4]], 'symmetric')
     for data_num in range(0, batch_size):
         offset = np.random.randint(8, size=2)
-        x[data_num,:,:,:] = xpad[data_num, :, offset[0]: offset[0] + 32, offset[1]: offset[1] + 32]
+        x[data_num, :, :, :] = xpad[data_num, :, offset[0]:offset[0] + 32,
+                                    offset[1]:offset[1] + 32]
         if_flip = np.random.randint(2)
         if (if_flip):
             x[data_num, :, :, :] = x[data_num, :, :, ::-1]
     return x
+
 
 def accuracy(pred, target):
     y = np.argmax(pred, axis=1)
@@ -107,22 +118,25 @@ def accuracy(pred, target):
     a = y == t
     return np.array(a, "int").sum()
 
+
 def to_categorical(y, num_classes):
     y = np.array(y, dtype="int")
     n = y.shape[0]
     categorical = np.zeros((n, num_classes))
-    for i in range(0,n):
-      categorical[i, y[i]] = 1
-      categorical = categorical.astype(np.float32)
+    for i in range(0, n):
+        categorical[i, y[i]] = 1
+        categorical = categorical.astype(np.float32)
     return categorical
+
 
 # Function to all reduce NUMPY Accuracy and Loss from Multiple Devices
 def reduce_variable(variable, dist_opt, reducer):
     reducer.copy_from_numpy(variable)
     dist_opt.all_reduce(reducer.data)
     dist_opt.wait()
-    output=tensor.to_numpy(reducer)
+    output = tensor.to_numpy(reducer)
     return output
+
 
 # Function to sychronize SINGA TENSOR initial model parameters
 def sychronize(tensor, dist_opt):
@@ -130,21 +144,35 @@ def sychronize(tensor, dist_opt):
     dist_opt.wait()
     tensor /= dist_opt.world_size
 
-def train_cifar10(sgd, max_epoch, batch_size, DIST=False, data_partition=None, gpu_num=None, gpu_per_node=None, nccl_id=None, partial_update=False):
+
+def train_cifar10(sgd,
+                  max_epoch,
+                  batch_size,
+                  DIST=False,
+                  data_partition=None,
+                  gpu_num=None,
+                  gpu_per_node=None,
+                  nccl_id=None,
+                  partial_update=False):
 
     train_x, train_y = load_train_data()
     test_x, test_y = load_test_data()
     train_x, test_x = normalize_for_resnet(train_x, test_x)
     IMG_SIZE = 224
-    num_classes=10
+    num_classes = 10
 
     if DIST:
         # For Distributed GPU Training
-        sgd = opt.DistOpt(sgd, nccl_id=nccl_id, gpu_num=gpu_num, gpu_per_node=gpu_per_node)
+        sgd = opt.DistOpt(sgd,
+                          nccl_id=nccl_id,
+                          gpu_num=gpu_num,
+                          gpu_per_node=gpu_per_node)
         dev = device.create_cuda_gpu_on(sgd.rank_in_local)
         # Dataset partition for distributed training
-        train_x, train_y = data_partition(train_x, train_y, sgd.rank_in_global, sgd.world_size)
-        test_x, test_y = data_partition(test_x, test_y, sgd.rank_in_global, sgd.world_size)
+        train_x, train_y = data_partition(train_x, train_y, sgd.rank_in_global,
+                                          sgd.world_size)
+        test_x, test_y = data_partition(test_x, test_y, sgd.rank_in_global,
+                                        sgd.world_size)
         world_size = sgd.world_size
     else:
         # For Single GPU
@@ -166,8 +194,9 @@ def train_cifar10(sgd, max_epoch, batch_size, DIST=False, data_partition=None, g
     if DIST:
         #Sychronize the initial parameters
         autograd.training = True
-        x = np.random.randn(batch_size, 3, IMG_SIZE, IMG_SIZE).astype(np.float32)
-        y = np.zeros( shape=(batch_size,), dtype=np.int32)
+        x = np.random.randn(batch_size, 3, IMG_SIZE,
+                            IMG_SIZE).astype(np.float32)
+        y = np.zeros(shape=(batch_size,), dtype=np.int32)
         tx.copy_from_numpy(x)
         ty.copy_from_numpy(y)
         out = model(tx)
@@ -202,17 +231,17 @@ def train_cifar10(sgd, max_epoch, batch_size, DIST=False, data_partition=None, g
             print('Starting Epoch %d:' % (epoch))
 
         #Training Phase
-        train_correct = np.zeros(shape=[1],dtype=np.float32)
-        test_correct = np.zeros(shape=[1],dtype=np.float32)
-        train_loss = np.zeros(shape=[1],dtype=np.float32)
+        train_correct = np.zeros(shape=[1], dtype=np.float32)
+        test_correct = np.zeros(shape=[1], dtype=np.float32)
+        train_loss = np.zeros(shape=[1], dtype=np.float32)
 
         # Training Phase
         for b in range(num_train_batch):
             # Generate the patach data in this iteration
-            x = train_x[idx[b * batch_size: (b + 1) * batch_size]]
+            x = train_x[idx[b * batch_size:(b + 1) * batch_size]]
             x = augmentation(x, batch_size)
-            x = resize_dataset(x,IMG_SIZE)
-            y = train_y[idx[b * batch_size: (b + 1) * batch_size]]
+            x = resize_dataset(x, IMG_SIZE)
+            y = train_y[idx[b * batch_size:(b + 1) * batch_size]]
 
             # Copy the patch data into input tensors
             tx.copy_from_numpy(x)
@@ -222,7 +251,9 @@ def train_cifar10(sgd, max_epoch, batch_size, DIST=False, data_partition=None, g
             # print("execute the buffered ops")
             # print("training patch ", b)
             dev.RunGraph()
-            train_correct += accuracy(tensor.to_numpy(out), to_categorical(y, num_classes)).astype(np.float32)
+            train_correct += accuracy(tensor.to_numpy(out),
+                                      to_categorical(y, num_classes)).astype(
+                                          np.float32)
             train_loss += tensor.to_numpy(loss)[0]
 
             # input()
@@ -235,7 +266,10 @@ def train_cifar10(sgd, max_epoch, batch_size, DIST=False, data_partition=None, g
 
         # Output the Training Loss and Accuracy
         if ((DIST == False) or (sgd.rank_in_global == 0)):
-            print('Training loss = %f, training accuracy = %f' % (train_loss, train_correct / (num_train_batch*batch_size*world_size)), flush=True)
+            print('Training loss = %f, training accuracy = %f' %
+                  (train_loss, train_correct /
+                   (num_train_batch * batch_size * world_size)),
+                  flush=True)
 
         if partial_update:
             # sychronize parameters before evaluation phase
@@ -244,13 +278,14 @@ def train_cifar10(sgd, max_epoch, batch_size, DIST=False, data_partition=None, g
 
         #Evaulation Phase
         for b in range(num_test_batch):
-            x = test_x[b * batch_size: (b + 1) * batch_size]
-            x = resize_dataset(x,IMG_SIZE)
-            y = test_y[b * batch_size: (b + 1) * batch_size]
+            x = test_x[b * batch_size:(b + 1) * batch_size]
+            x = resize_dataset(x, IMG_SIZE)
+            y = test_y[b * batch_size:(b + 1) * batch_size]
             tx.copy_from_numpy(x)
             ty.copy_from_numpy(y)
             out_test = model(tx)
-            test_correct += accuracy(tensor.to_numpy(out_test), to_categorical(y, num_classes))
+            test_correct += accuracy(tensor.to_numpy(out_test),
+                                     to_categorical(y, num_classes))
 
         if DIST:
             # Reduce the Evaulation Accuracy from Multiple Devices
@@ -258,7 +293,11 @@ def train_cifar10(sgd, max_epoch, batch_size, DIST=False, data_partition=None, g
 
         # Output the Evaluation Accuracy
         if ((DIST == False) or (sgd.rank_in_global == 0)):
-            print('Evaluation accuracy = %f, Elapsed Time = %fs' % (test_correct / (num_test_batch*batch_size*world_size), time.time() - start_time ), flush=True)
+            print('Evaluation accuracy = %f, Elapsed Time = %fs' %
+                  (test_correct / (num_test_batch * batch_size * world_size),
+                   time.time() - start_time),
+                  flush=True)
+
 
 if __name__ == '__main__':
 

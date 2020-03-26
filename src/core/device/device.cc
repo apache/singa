@@ -46,15 +46,15 @@ void Device::Exec(function<void(Context*)>&& fn,
   }
 }
 
-void Device::RunGraph() {
+void Device::RunGraph(bool restart) {
   bool previous_state = graph_enabled_;
   graph_enabled_ = false;
 
   // graph_->Debug();
 
-  graph_->RunGraph();
+  // graph_->RunGraph(restart);
 
-  // graph_->RunInSerial();
+  graph_->RunInSerial(restart);
 
   graph_enabled_ = previous_state;
 }

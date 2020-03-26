@@ -251,7 +251,7 @@ class DistOpt(object):
         """
         self.communicator.synch(tensor)
 
-    def fused_all_reduce(self, tensor, send = True):
+    def fused_all_reduce(self, tensor, send=True):
         """Performs all reduce of the tensors after fusing them in a buffer.
 
         Args:
@@ -270,7 +270,7 @@ class DistOpt(object):
         """
         self.communicator.synchHalf(tensor)
 
-    def fused_all_reduce_half(self, tensor, send = True):
+    def fused_all_reduce_half(self, tensor, send=True):
         """Performs all reduce of the tensors after fusing and converting them to FP16.
 
         Args:
@@ -348,7 +348,7 @@ class DistOpt(object):
             else:
                 # smaller than threshold -> accumulate
                 glist.append(g.data)
-                self.fused_all_reduce([g.data], send = False)
+                self.fused_all_reduce([g.data], send=False)
                 acc += g.size()
                 if (acc > threshold):
                     self.fused_all_reduce(glist)
@@ -399,7 +399,7 @@ class DistOpt(object):
             else:
                 # smaller than threshold -> accumulate
                 glist.append(g.data)
-                self.fused_all_reduce_half([g.data], send = False)
+                self.fused_all_reduce_half([g.data], send=False)
                 acc += g.size()
                 if (acc > threshold):
                     self.fused_all_reduce_half(glist)

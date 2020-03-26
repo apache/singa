@@ -89,7 +89,7 @@ class Device {
   void Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
             const vector<Block*> write_blocks, bool use_rand_generator = false);
 
-  void RunGraph();
+  void RunGraph(bool restart = true);
 
   // Wait for one event.
   // void WaitFor();

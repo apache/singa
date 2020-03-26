@@ -98,12 +98,12 @@ class Graph {
   typedef std::vector<Block *> BlockSet;
 
   ~Graph();
-  Graph(Device *device) : device_(device) {}
+  Graph(Device *device) : device_(device), cur_node_(0) {}
 
   void Reset();
   void Debug();
-  void RunGraph();
-  void RunInSerial();
+  void RunGraph(bool restart = true);
+  void RunInSerial(bool restart = true);
   void AddOperation(function<void(Context *)> &&op, const BlockSet &read_blocks,
                     const BlockSet &write_blocks);
 
@@ -116,6 +116,7 @@ class Graph {
   std::vector<Edge *> edges_;
   std::unordered_map<Block *, BlockInfo *> blocks_;
 
+  int cur_node_;
   std::vector<Block *> write_blocks_;
 };
 
