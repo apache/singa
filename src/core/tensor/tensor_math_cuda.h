@@ -932,6 +932,53 @@ void GEMM<float, lang::Cuda>(const float alpha, const Tensor& A,
                            BPtr, ldb, APtr, lda, &beta, CPtr, ldc));
 }
 
+/* pseudocode for GEMM Strided Batched:
+ * for (int p = 0; p < batchCount; ++p) {
+ *   for (int m = 0; m < M; ++m) {
+ *     for (int n = 0; n < N; ++n) {
+ *       T c_mnp = 0;
+ *       for (int k = 0; k < K, ++k)
+ *         c_mnp += A[m + k*ldA + p*strideA] * B[k + n*ldB + p*strideB];
+ *       C[m + n*ldC + p*strideC] =
+ *         (*alpha)*c_mnp + (*beta)*C[m + n*ldC + p*strideC];
+ *     }
+ *   }
+ * }
+ */
+template <>
+void GEMMBatched<float, lang::Cuda>(const float alpha, const Tensor& A,
+                                    const Tensor& B, const float beta,
+                                    Tensor* C, Context* ctx) {
+  auto handle = ctx->cublas_handle;
+
+  auto transA = A.transpose();
+  auto transa = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
+  auto transB = B.transpose();
+  auto transb = transB ? CUBLAS_OP_T : CUBLAS_OP_N;
+
+  const size_t ncolB = B.shape().end()[-1];
+  const size_t nrowA = A.shape().end()[-2];
+  const size_t ncolA = A.shape().end()[-1];
+
+  size_t batchCount = A.shape()[0];
+  if (A.nDim() == 4u) batchCount *= A.shape()[1];
+
+  const size_t strideA = A.shape().end()[-1] * A.shape().end()[-2];
+  const size_t strideB = B.shape().end()[-1] * B.shape().end()[-2];
+  const size_t strideC = C->shape().end()[-1] * C->shape().end()[-2];
+
+  int lda = transA ? nrowA : ncolA;
+  int ldb = transB ? ncolA : ncolB;
+  int ldc = ncolB;
+
+  const float* APtr = static_cast<const float*>(A.block()->data());
+  const float* BPtr = static_cast<const float*>(B.block()->data());
+  float* CPtr = static_cast<float*>(C->block()->mutable_data());
+  CUBLAS_CHECK(cublasSgemmStridedBatched(
+      handle, transa, transb, ncolB, nrowA, ncolA, &alpha, BPtr, ldb, strideB,
+      APtr, lda, strideA, &beta, CPtr, ldc, strideC, batchCount));
+}
+
 template <>
 void SoftMax<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
   cudnnSoftmaxAlgorithm_t algorithm = CUDNN_SOFTMAX_ACCURATE;
