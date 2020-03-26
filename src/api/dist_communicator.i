@@ -35,7 +35,7 @@ namespace singa{
 class NcclIdHolder {
 public:
   ncclUniqueId id;
-  NcclIdHolder(); 
+  NcclIdHolder();
 };
 
 class Communicator {
@@ -46,9 +46,9 @@ public:
   Communicator(int limit);
   Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder, int limit);
   void synch(Tensor &t);
-  void fusedSynch(std::vector<Tensor> &t);
+  void fusedSynch(std::vector<Tensor> &t, bool send = true);
   void synchHalf(Tensor &t);
-  void fusedSynchHalf(std::vector<Tensor> &t);
+  void fusedSynchHalf(std::vector<Tensor> &t, bool send = true);
   void sparsification(Tensor &t, Tensor &accumulation, float sparsThreshold, bool topK);
   void sparsification(Tensor &t, float sparsThreshold, bool topK);
   void fusedSparsification(std::vector<Tensor> &, Tensor &accumulation, float sparsThreshold, bool topK);

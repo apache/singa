@@ -84,9 +84,9 @@ class Communicator {
                int size);
   ~Communicator();
   void synch(Tensor &t);
-  void fusedSynch(vector<Tensor> &t);
+  void fusedSynch(vector<Tensor> &t, bool send = true);
   void synchHalf(Tensor &t);
-  void fusedSynchHalf(vector<Tensor> &t);
+  void fusedSynchHalf(vector<Tensor> &t, bool send = true);
   void fusedSparsification(vector<Tensor> &t, Tensor &accumulation,
                            float sparsThreshold, bool topK);
   void fusedSparsification(vector<Tensor> &t, float sparsThreshold, bool topK);
@@ -102,6 +102,7 @@ class Communicator {
                  ncclDataType_t ncclType);
   void setup();
   void sparsInit();
+  void halfInit();
   void _fusedSparsification(vector<Tensor> &t, Tensor *accumulation,
                             float sparsThreshold, bool topK);
   void _sparsification(Tensor &t, Tensor *accumulation, float sparsThreshold,
@@ -112,11 +113,6 @@ class Communicator {
   // last group of synchronized memory blocks
   std::shared_ptr<Device> device_ = nullptr;
   std::vector<Block *> blocks_;
-
-  float *fusedSendBuff;
-  float *fusedRecvBuff;
-  __half *fusedSendBuffHalf;
-  __half *fusedRecvBuffHalf;
 
   ncclUniqueId id;
   // cuda stream s is for nccl all reduce
@@ -129,6 +125,16 @@ class Communicator {
 
   bool UseMPI;
   size_t maxSize;
+
+  // normal synch
+  size_t sendBuffOffset = 0;
+  float *fusedSendBuff;
+  float *fusedRecvBuff;
+
+  // half synch
+  bool halfInitialized;
+  __half *fusedSendBuffHalf;
+  __half *fusedRecvBuffHalf;
 
   // sparsification
   cusparseHandle_t cusparse_handle;

@@ -251,14 +251,16 @@ class DistOpt(object):
         """
         self.communicator.synch(tensor)
 
-    def fused_all_reduce(self, tensor):
+    def fused_all_reduce(self, tensor, send = True):
         """Performs all reduce of the tensors after fusing them in a buffer.
 
         Args:
                 tensor(List of Tensors): a list of tensors to be all-reduced
+                send(bool): When send is False, the tensor won't be send to the
+                target device immediately, it will be copied to the buffer first
         """
         tensor = singa.VecTensor(tensor)
-        self.communicator.fusedSynch(tensor)
+        self.communicator.fusedSynch(tensor, send)
 
     def all_reduce_half(self, tensor):
         """Performs all reduce of a tensor after converting to FP16.
@@ -268,14 +270,16 @@ class DistOpt(object):
         """
         self.communicator.synchHalf(tensor)
 
-    def fused_all_reduce_half(self, tensor):
+    def fused_all_reduce_half(self, tensor, send = True):
         """Performs all reduce of the tensors after fusing and converting them to FP16.
 
         Args:
                 tensor(List of Tensors): a list of tensors to be all-reduced
+                send(bool): When send is False, the tensor won't be send to the
+                target device immediately, it will be copied to the buffer first
         """
         tensor = singa.VecTensor(tensor)
-        self.communicator.fusedSynchHalf(tensor)
+        self.communicator.fusedSynchHalf(tensor, send)
 
     def sparsification(self, tensor, accumulation, spars, topK):
         """Performs all reduce of a tensor after sparsification.
@@ -344,6 +348,7 @@ class DistOpt(object):
             else:
                 # smaller than threshold -> accumulate
                 glist.append(g.data)
+                self.fused_all_reduce([g.data], send = False)
                 acc += g.size()
                 if (acc > threshold):
                     self.fused_all_reduce(glist)
@@ -394,6 +399,7 @@ class DistOpt(object):
             else:
                 # smaller than threshold -> accumulate
                 glist.append(g.data)
+                self.fused_all_reduce_half([g.data], send = False)
                 acc += g.size()
                 if (acc > threshold):
                     self.fused_all_reduce_half(glist)
