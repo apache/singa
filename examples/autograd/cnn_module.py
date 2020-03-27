@@ -28,7 +28,6 @@ import os
 import sys
 import gzip
 import codecs
-import time
 
 
 class CNN(module.Module):

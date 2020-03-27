@@ -18,6 +18,8 @@
 
 #include "singa/core/scheduler.h"
 
+#include <functional>
+#include <thread>
 #include <unordered_set>
 
 #include "singa/core/device.h"
@@ -34,6 +36,8 @@ void Edge::SetBlock(Block *blk) { blk_ = blk; }
 void Edge::SetSrcNode(Node *src_node) { src_node_ = src_node; }
 
 void Edge::SetDstNode(Node *dst_node) { dst_node_ = dst_node; }
+
+Graph::Graph(Device *device) : device_(device) {}
 
 Graph::~Graph() { Reset(); }
 
@@ -74,7 +78,7 @@ void Graph::Debug() {
 
   for (auto it : blocks_) {
     auto blkInfo = it.second;
-    printf("Block[%2d]: addr[%p] graph_ref[%lu] ref_count[%d] ", blkInfo->id_,
+    printf("Block[%2d]: addr[%p] graph_ref[%d] ref_count[%d] ", blkInfo->id_,
            blkInfo->blk_, blkInfo->graph_ref_, it.first->ref_count());
     switch (blkInfo->type_) {
       case BlockType::kInput:
@@ -106,140 +110,74 @@ void Graph::Debug() {
   }
 }
 
-void Graph::RunGraph(bool restart) {
-  if (restart) cur_node_ = 0;
+void Graph::RunGraph() {
+  if (dirty) Analysis();
 
-  int group_no = 0;
-  std::vector<int> ans;
-
-  SafeQueue<int> node_queue;
-  std::vector<int> node_ref;
-
-  // init node ref
-  node_ref.resize(nodes_.size());
-  for (int i = 0; i < nodes_.size(); ++i) {
-    node_ref[i] = nodes_[i]->in_edges_.size();
-  }
-
-  // find all input edges and decrease ref count of nodes
-  for (int i = 0; i < edges_.size(); ++i) {
-    Node *src_node = edges_[i]->src_node_;
-    if (!src_node || src_node->id_ < cur_node_) {
-      Node *node = edges_[i]->dst_node_;
-      int nodeId = node->id_;
-      node_ref[nodeId] -= 1;
-    }
-  }
+  SafeQueue<Node *> node_queue;
 
   // activate nodes
-  for (int i = cur_node_; i < node_ref.size(); ++i) {
-    if (node_ref[i] == 0) {
-      node_queue.Push(i);
-      // ans.push_back(i);
-      // printf("push node[%2d]\n", i);
-    }
+  for (auto it : begin_nodes_) {
+    node_queue.Push(it);
   }
-
-  /*
-  printf("group[%2d]: ", group_no++);
-  for (size_t i = 0; i < ans.size(); ++i) {
-    printf("%2d ", ans[i]);
-  }
-  printf("\n");
-  ans.clear();
-  */
 
   // run graph
   while (node_queue.Size()) {
     // step 1: pop the first element, get the node corresponding to the index
-    int curIndex = -1;
-    node_queue.Pop(curIndex);
-    Node *curNode = nodes_[curIndex];
-    // printf("pop node[%2d]\n", curIndex);
+    Node *curNode = nullptr;
+    node_queue.Pop(curNode);
+    int curIndex = curNode->id_;
 
     // step 2: execute the operation
     device_->DoExec(std::move(curNode->op_), 0);
 
     // step 3: release some blocks' data that won't be used later
-    if (restart) {
-      for (size_t i = 0; i < curNode->in_edges_.size(); ++i) {
-        Edge *edge = curNode->in_edges_[i];
-        Block *blk = edge->blk_;
-        BlockInfo *blkInfo = blocks_[blk];
-        if (blkInfo->last_node_ == curNode && blkInfo->write_node_ != curNode) {
-          BlockType type = blkInfo->type_;
-          if (type == BlockType::kInter &&
-              blkInfo->graph_ref_ == blk->ref_count()) {
-            blk->free_data();
-            // printf("free block[%2d]\n", blkInfo->id_);
-          }
-        }
-      }
-    }
-
-    // step 4: decrease ref count of nodes and activate nodes
-    for (size_t i = 0; i < curNode->out_edges_.size(); ++i) {
-      Edge *edge = curNode->out_edges_[i];
-      Node *nextNode = edge->dst_node_;
-
-      if (nextNode) {
-        int nodeId = nextNode->id_;
-        node_ref[nodeId] -= 1;
-        if (node_ref[nodeId] <= 0) {
-          node_queue.Push(nodeId);
-          // ans.push_back(nodeId);
-          // printf("push node[%2d]\n", nodeId);
-        }
-      }
+    for (auto it : free_blocks_[curIndex]) {
+      it->free_data();
     }
 
     /*
-    if (!ans.empty()) {
-      printf("group[%2d]: ", group_no++);
-      for (size_t i = 0; i < ans.size(); ++i) {
-        printf("%2d ", ans[i]);
-      }
-      printf("\n");
-      ans.clear();
+    if (free_blocks_[curIndex].size()) {
+      CBData *cb_data = new CBData(this, curNode);
+      cudaStreamAddCallback(device_->ctx_.stream, Graph::Callback, (void
+    *)(cb_data), 0);
     }
     */
-  }
 
-  cur_node_ = nodes_.size();
+    // step 4: activate the following nodes
+    for (auto it : next_nodes_[curIndex]) {
+      node_queue.Push(it);
+    }
+  }
 }
 
-void Graph::RunInSerial(bool restart) {
-  if (restart) cur_node_ = 0;
+void Graph::RunInSerial() {
+  if (dirty) Analysis();
 
-  for (size_t i = cur_node_; i < nodes_.size(); ++i) {
+  for (size_t i = 0; i < nodes_.size(); ++i) {
     Node *curNode = nodes_[i];
 
     // step 1: execute the operation
     device_->DoExec(std::move(curNode->op_), 0);
 
     // step 2: release some blocks' data that won't be used later
-    if (!restart) continue;
-    for (size_t i = 0; i < curNode->in_edges_.size(); ++i) {
-      Edge *edge = curNode->in_edges_[i];
-      Block *blk = edge->blk_;
-      BlockInfo *blkInfo = blocks_[blk];
-      if (blkInfo->last_node_ == curNode && blkInfo->write_node_ != curNode) {
-        BlockType type = blkInfo->type_;
-        if (type == BlockType::kInter &&
-            blkInfo->graph_ref_ == blk->ref_count()) {
-          blk->free_data();
-          // printf("free block[%2d]\n", blkInfo->id_);
-        }
-      }
+    for (auto it : free_blocks_[i]) {
+      it->free_data();
     }
-  }
 
-  cur_node_ = nodes_.size();
+    /*
+    // Wait for calculation to complete and then recyle the data
+    CBData *cb_data = new CBData(this, curNode);
+    CHECK(cudaStreamAddCallback(device_->ctx_.stream, Graph::Callback, (void
+    *)(cb_data), 0));
+    */
+  }
 }
 
 void Graph::AddOperation(function<void(Context *)> &&op,
                          const BlockSet &read_blocks,
                          const BlockSet &write_blocks) {
+  dirty = true;
+
   if (read_blocks.size() == 0 && write_blocks.size() == 0) {
     AddSyncOp(std::move(op));
     return;
@@ -314,6 +252,93 @@ void Graph::AddOperation(function<void(Context *)> &&op,
   nodes_.push_back(node);
 }
 
+void Graph::Analysis() {
+  begin_nodes_.clear();
+  next_nodes_.resize(nodes_.size());
+  free_blocks_.resize(nodes_.size());
+
+  // init node ref
+  std::vector<int> node_ref_;
+  node_ref_.resize(nodes_.size());
+  for (size_t i = 0; i < nodes_.size(); ++i) {
+    node_ref_[i] = nodes_[i]->in_edges_.size();
+  }
+
+  // find all input edges and decrease ref count of nodes
+  for (size_t i = 0; i < edges_.size(); ++i) {
+    Node *src_node = edges_[i]->src_node_;
+    if (!src_node) {
+      Node *node = edges_[i]->dst_node_;
+      int nodeId = node->id_;
+      node_ref_[nodeId] -= 1;
+    }
+  }
+
+  // activate nodes
+  SafeQueue<Node *> node_queue;
+  for (size_t i = 0; i < node_ref_.size(); ++i) {
+    if (node_ref_[i] == 0) {
+      begin_nodes_.push_back(nodes_[i]);
+      node_queue.Push(nodes_[i]);
+    }
+  }
+
+  // run graph
+  while (node_queue.Size()) {
+    // step 1: pop the first element, get the node corresponding to the index
+    Node *curNode = nullptr;
+    node_queue.Pop(curNode);
+    int curIndex = curNode->id_;
+
+    // step 2: release some blocks' data that won't be used later
+    free_blocks_[curIndex].clear();
+    for (size_t i = 0; i < curNode->in_edges_.size(); ++i) {
+      Edge *edge = curNode->in_edges_[i];
+      Block *blk = edge->blk_;
+      BlockInfo *blkInfo = blocks_[blk];
+      if (blkInfo->last_node_ == curNode && blkInfo->write_node_ != curNode) {
+        BlockType type = blkInfo->type_;
+        if (type == BlockType::kInter &&
+            blkInfo->graph_ref_ == blk->ref_count()) {
+          free_blocks_[curIndex].push_back(blk);
+        }
+      }
+    }
+
+    // step 3: decrease ref count of nodes and activate nodes
+    next_nodes_[curIndex].clear();
+    for (size_t i = 0; i < curNode->out_edges_.size(); ++i) {
+      Edge *edge = curNode->out_edges_[i];
+      Node *nextNode = edge->dst_node_;
+
+      if (nextNode) {
+        int nodeId = nextNode->id_;
+        node_ref_[nodeId] -= 1;
+        if (node_ref_[nodeId] <= 0) {
+          node_queue.Push(nextNode);
+          next_nodes_[curIndex].push_back(nextNode);
+        }
+      }
+    }
+  }
+
+  dirty = false;
+}
+
+void Graph::FreeLoop() {
+  int id = 0;
+  for (;;) {
+    free_queue_.Pop(id);
+    if (id == -1) {
+      break;
+    } else {
+      for (auto it : free_blocks_[id]) {
+        it->free_data();
+      }
+    }
+  }
+}
+
 void Graph::AddSyncOp(function<void(Context *)> &&op) {
   // create new node
   Node *node = new Node(nodes_.size(), std::move(op));
@@ -342,6 +367,14 @@ void Graph::AddSyncOp(function<void(Context *)> &&op) {
 
   // add node into nodes
   nodes_.push_back(node);
+}
+
+void CUDART_CB Graph::Callback(cudaStream_t stream, cudaError_t status,
+                               void *data) {
+  CBData *cb_data = (CBData *)data;
+  Graph *graph = cb_data->graph_;
+  graph->free_queue_.Push(cb_data->node_->id_);
+  delete cb_data;
 }
 
 }  // namespace singa

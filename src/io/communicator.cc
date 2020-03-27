@@ -159,11 +159,15 @@ void Communicator::generateBlocks(Tensor &t) {
 void Communicator::generateBlocks(std::vector<Tensor> &t) {
   device_ = t[0].device();
 
+  prev_blocks_ = blocks_;
+
   blocks_.clear();
   blocks_.reserve(t.size());
+  prev_blocks_.reserve(prev_blocks_.size() + t.size());
 
   for (size_t i = 0; i < t.size(); ++i) {
     blocks_.push_back(t[i].block());
+    prev_blocks_.push_back(t[i].block());
   }
 }
 
@@ -235,7 +239,7 @@ void Communicator::fusedSynch(vector<Tensor> &t, bool send) {
             sendBuffOffset += t[i].Size();
           }
         },
-        blocks_, blocks_);
+        prev_blocks_, blocks_);
   } else {
     // send the tensors in the buffer
     device_->Exec(
@@ -309,7 +313,7 @@ void Communicator::fusedSynchHalf(vector<Tensor> &t, bool send) {
             offset += t[i].Size();
           }
         },
-        blocks_, blocks_);
+        prev_blocks_, blocks_);
   } else {
     // send the tensors in the buffer
     device_->Exec(

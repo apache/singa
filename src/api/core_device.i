@@ -49,9 +49,9 @@ class Device {
   std::shared_ptr<Device> host();
   int id() const;
   virtual void Sync();
+  void RunGraph();
   bool graph_enabled() const;
   void EnableGraph(bool enable);
-  void RunGraph(bool restart = true);
   static void EnableLazyAlloc(bool enbale);
 };
 

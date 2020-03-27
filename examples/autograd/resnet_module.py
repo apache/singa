@@ -270,7 +270,8 @@ if __name__ == "__main__":
 
     sgd = opt.SGD(lr=0.1, momentum=0.9, weight_decay=1e-5)
     sgd = opt.DistOpt(sgd)
-    dev = device.create_cuda_gpu_on(sgd.rank_in_local)
+    dev = device.create_cuda_gpu_on(sgd.rank_in_global)
+    # dev = device.create_cuda_gpu_on(0)
 
     tx = tensor.Tensor((batch_size, 3, IMG_SIZE, IMG_SIZE), dev)
     ty = tensor.Tensor((batch_size,), dev, tensor.int32)
@@ -282,6 +283,7 @@ if __name__ == "__main__":
     model = resnet50()
     model.on_device(dev)
     model.set_optimizer(sgd)
+    model.graph(True)
 
     dev.Sync()
     start = time.time()
@@ -290,11 +292,6 @@ if __name__ == "__main__":
             out = model(tx)
             loss = model.loss(out, ty)
             model.optim(loss)
-
-            train_loss = tensor.to_numpy(loss)[0]
-
-            if _ % 10 == 0:
-                print('Training loss = %f' % (train_loss))
 
     dev.Sync()
     end = time.time()

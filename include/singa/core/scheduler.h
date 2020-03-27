@@ -18,11 +18,15 @@
 #ifndef SINGA_CORE_SCHEDULER_H_
 #define SINGA_CORE_SCHEDULER_H_
 
+#include <mutex>
+#include <vector>
+#include <thread>
 #include <functional>
 #include <unordered_map>
-#include <vector>
+#include <condition_variable>
 
 #include "singa/core/common.h"
+#include "singa/utils/safe_queue.h"
 
 using std::function;
 using std::unordered_map;
@@ -88,27 +92,39 @@ class BlockInfo {
   int id_;
   Block *blk_;
   BlockType type_;
-  size_t graph_ref_;
+  int graph_ref_;
   Node *write_node_;  // last node that writes the block
   Node *last_node_;   // last node that uses the block
 };
 
 class Graph {
  public:
+  struct CBData {
+    Graph *graph_;
+    Node *node_;
+
+    CBData(Graph *graph, Node *node) : graph_(graph), node_(node) {}
+  };
+
   typedef std::vector<Block *> BlockSet;
 
   ~Graph();
-  Graph(Device *device) : device_(device), cur_node_(0) {}
+  Graph(Device *device);
 
   void Reset();
   void Debug();
-  void RunGraph(bool restart = true);
-  void RunInSerial(bool restart = true);
+  void RunGraph();
+  void RunInSerial();
   void AddOperation(function<void(Context *)> &&op, const BlockSet &read_blocks,
                     const BlockSet &write_blocks);
 
  private:
+  void Analysis();
+  void FreeLoop();
   void AddSyncOp(function<void(Context *)> &&op);
+
+  static void CUDART_CB Callback(cudaStream_t stream, cudaError_t status,
+                                 void *data);
 
  private:
   Device *device_;
@@ -116,8 +132,14 @@ class Graph {
   std::vector<Edge *> edges_;
   std::unordered_map<Block *, BlockInfo *> blocks_;
 
-  int cur_node_;
   std::vector<Block *> write_blocks_;
+
+  bool dirty = false;
+  std::vector<Node *> begin_nodes_;
+  std::vector<std::vector<Node *> > next_nodes_;
+  std::vector<std::vector<Block *> > free_blocks_;
+
+  SafeQueue<int> free_queue_;
 };
 
 /// Scheduling Tensor operations with dependency detection.

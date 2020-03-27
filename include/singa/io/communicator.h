@@ -113,6 +113,7 @@ class Communicator {
   // last group of synchronized memory blocks
   std::shared_ptr<Device> device_ = nullptr;
   std::vector<Block *> blocks_;
+  std::vector<Block *> prev_blocks_;
 
   ncclUniqueId id;
   // cuda stream s is for nccl all reduce
