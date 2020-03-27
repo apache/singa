@@ -32,18 +32,23 @@ class Graph(type):
 
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            if self.graph:
-                if not self.initialized:
+            if self.graph_mode:
+                if func.called == False:
+                    func.called = True
                     self._device.EnableGraph(True)
+                    self._device.Sync()
                     ret = func(self, *args, **kwargs)
                     self._device.EnableGraph(False)
-                    self._device.RunGraph(False)
+                    self._device.RunGraph()
                     self.results[func.__name__] = ret
+                    self.initialized = True
                     return ret
 
                 return self.results[func.__name__]
             else:
                 return func(self, *args, **kwargs)
+
+        func.called = False
 
         return wrapper
 
@@ -94,9 +99,8 @@ class Module(object, metaclass=Graph):
         """
         Initializes internal Module state
         """
-        self.graph = True
-        self.first = True
         self.training = True
+        self.graph_mode = True
         self.initialized = False
         self._device = get_default_device()
 
@@ -139,7 +143,7 @@ class Module(object, metaclass=Graph):
         """ Turn on the computational graph.
 
         """
-        self.graph = mode
+        self.graph_mode = mode
 
     def on_device(self, device):
         """ Set the target device.
@@ -155,12 +159,7 @@ class Module(object, metaclass=Graph):
         return self.__class__.__name__
 
     def __call__(self, *input, **kwargs):
-        if self.graph:
-            if self.first:
-                self.first = False
-            else:
-                self.initialized = True
-
+        if self.graph_mode:
             if self.initialized == True:
                 self._device.RunGraph()
 
