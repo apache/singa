@@ -296,6 +296,6 @@ if __name__ == "__main__":
     dev.Sync()
     end = time.time()
     titer = (end - start) / float(niters)
-    throughput = float(niters * batch_size) / (end - start)
+    throughput = float(niters * batch_size * sgd.world_size) / (end - start)
     print("Throughput = {} per second".format(throughput))
     print("Total={}".format(titer))

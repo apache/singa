@@ -123,8 +123,8 @@ class Graph {
   void FreeLoop();
   void AddSyncOp(function<void(Context *)> &&op);
 
-  static void CUDART_CB Callback(cudaStream_t stream, cudaError_t status,
-                                 void *data);
+  // static void CUDART_CB Callback(cudaStream_t stream, cudaError_t status,
+  //                                void *data);
 
  private:
   Device *device_;

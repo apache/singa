@@ -369,6 +369,7 @@ void Graph::AddSyncOp(function<void(Context *)> &&op) {
   nodes_.push_back(node);
 }
 
+/*
 void CUDART_CB Graph::Callback(cudaStream_t stream, cudaError_t status,
                                void *data) {
   CBData *cb_data = (CBData *)data;
@@ -376,5 +377,6 @@ void CUDART_CB Graph::Callback(cudaStream_t stream, cudaError_t status,
   graph->free_queue_.Push(cb_data->node_->id_);
   delete cb_data;
 }
+*/
 
 }  // namespace singa

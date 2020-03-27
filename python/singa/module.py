@@ -36,8 +36,8 @@ class Graph(type):
                 if func.called == False:
                     func.called = True
                     self._device.EnableGraph(True)
-                    self._device.Sync()
                     ret = func(self, *args, **kwargs)
+                    self._device.Sync()
                     self._device.EnableGraph(False)
                     self._device.RunGraph()
                     self.results[func.__name__] = ret
