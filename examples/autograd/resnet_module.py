@@ -263,9 +263,9 @@ def resnet152(pretrained=False, **kwargs):
 def train_resnet(sgd,
                  niters,
                  batch_size,
+                 DIST=True,
                  graph=True,
-                 sequential=False,
-                 DIST=True):
+                 sequential=False):
     device_id = 0
     world_size = 1
     rank_in_global = 0
@@ -275,7 +275,7 @@ def train_resnet(sgd,
         sgd = opt.DistOpt(sgd)
         world_size = sgd.world_size
         device_id = sgd.rank_in_local
-        rank_in_gloal = sgd.rank_in_global
+        rank_in_global = sgd.rank_in_global
 
     dev = device.create_cuda_gpu_on(device_id)
 
@@ -307,14 +307,14 @@ def train_resnet(sgd,
     titer = (end - start) / float(niters)
     throughput = float(niters * batch_size * world_size) / (end - start)
     if rank_in_global == 0:
-        print("Throughput = {} per second".format(throughput))
-        print("Total={}".format(titer))
+        print("Throughput = {} per second".format(throughput), flush=True)
+        print("Total={}".format(titer), flush=True)
 
 
 if __name__ == "__main__":
 
     DIST = True
-    graph = False
+    graph = True
     sequential = False
     niters = 100
     batch_size = 32
@@ -324,6 +324,6 @@ if __name__ == "__main__":
     train_resnet(sgd=sgd,
                  niters=niters,
                  batch_size=batch_size,
+                 DIST=DIST,
                  graph=graph,
-                 sequential=sequential,
-                 DIST=DIST)
+                 sequential=sequential)

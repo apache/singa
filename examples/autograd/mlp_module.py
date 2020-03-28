@@ -81,8 +81,6 @@ def to_categorical(y, num_classes):
 def generate_data(num=400):
     # generate the boundary
     f = lambda x: (5 * x + 1)
-    bd_x = np.linspace(-1.0, 1, int(num / 2))
-    bd_y = f(bd_x)
 
     # generate the training data
     x = np.random.uniform(-1, 1, num)
@@ -98,11 +96,11 @@ def generate_data(num=400):
 
 
 def train_mlp(sgd,
-              batch_size,
               niters,
+              batch_size,
+              DIST=False,
               graph=True,
-              sequential=False,
-              DIST=False):
+              sequential=False):
     device_id = 0
     world_size = 1
     rank_in_global = 0
@@ -146,8 +144,8 @@ def train_mlp(sgd,
 
 if __name__ == "__main__":
 
-    DIST = True
-    graph = False
+    DIST = False
+    graph = True
     sequential = False
     niters = 10000
     batch_size = 64
@@ -157,6 +155,6 @@ if __name__ == "__main__":
     train_mlp(sgd=sgd,
               niters=niters,
               batch_size=batch_size,
+              DIST=DIST,
               graph=graph,
-              sequential=sequential,
-              DIST=DIST)
+              sequential=sequential)

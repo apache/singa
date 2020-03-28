@@ -63,7 +63,7 @@ class CNN(module.Module):
     def loss(self, x, ty):
         return autograd.softmax_cross_entropy(x, ty)
 
-    def optim(self, loss, DIST, threshold=50000):
+    def optim(self, loss, DIST, threshold):
         if DIST:
             self.optimizer.backward_and_update(loss, threshold)
         else:
@@ -80,9 +80,9 @@ def data_partition(dataset_x, dataset_y, rank_in_global, world_size):
 def train_mnist_cnn(sgd,
                     max_epoch,
                     batch_size,
+                    DIST=False,
                     graph=True,
-                    sequential=False,
-                    DIST=False):
+                    sequential=False):
     device_id = 0
     world_size = 1
     rank_in_global = 0
@@ -152,7 +152,7 @@ def train_mnist_cnn(sgd,
             # Train the model
             out = model(tx)
             loss = model.loss(out, ty)
-            model.optim(loss, DIST, threshold=50000)
+            model.optim(loss, DIST, 50000)
 
             train_correct += accuracy(tensor.to_numpy(out), y)
             train_loss += tensor.to_numpy(loss)[0]
@@ -200,13 +200,12 @@ if __name__ == '__main__':
     sequential = False
     max_epoch = 10
     batch_size = 64
-    data_partition = data_partition
 
     sgd = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)
 
     train_mnist_cnn(sgd=sgd,
-                    graph=graph,
-                    sequential=sequential,
                     max_epoch=max_epoch,
                     batch_size=batch_size,
-                    DIST=DIST)
+                    DIST=DIST,
+                    graph=graph,
+                    sequential=sequential)
