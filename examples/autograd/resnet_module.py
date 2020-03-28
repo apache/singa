@@ -260,18 +260,24 @@ def resnet152(pretrained=False, **kwargs):
     return model
 
 
-if __name__ == "__main__":
-    print("Start intialization............")
-    niters = 100
-    batch_size = 32
+def train_resnet(sgd,
+                 niters,
+                 batch_size,
+                 graph=True,
+                 sequential=False,
+                 DIST=True):
+    device_id = 0
+    world_size = 1
+    rank_in_global = 0
     IMG_SIZE = 224
 
-    autograd.training = True
+    if DIST:
+        sgd = opt.DistOpt(sgd)
+        world_size = sgd.world_size
+        device_id = sgd.rank_in_local
+        rank_in_gloal = sgd.rank_in_global
 
-    sgd = opt.SGD(lr=0.1, momentum=0.9, weight_decay=1e-5)
-    sgd = opt.DistOpt(sgd)
-    dev = device.create_cuda_gpu_on(sgd.rank_in_global)
-    # dev = device.create_cuda_gpu_on(0)
+    dev = device.create_cuda_gpu_on(device_id)
 
     tx = tensor.Tensor((batch_size, 3, IMG_SIZE, IMG_SIZE), dev)
     ty = tensor.Tensor((batch_size,), dev, tensor.int32)
@@ -280,11 +286,14 @@ if __name__ == "__main__":
     tx.copy_from_numpy(x)
     ty.copy_from_numpy(y)
 
+    # construct the model
     model = resnet50()
+    model.train()
     model.on_device(dev)
     model.set_optimizer(sgd)
-    model.graph(True)
+    model.graph(graph, sequential)
 
+    # train model
     dev.Sync()
     start = time.time()
     with trange(niters) as t:
@@ -296,6 +305,25 @@ if __name__ == "__main__":
     dev.Sync()
     end = time.time()
     titer = (end - start) / float(niters)
-    throughput = float(niters * batch_size * sgd.world_size) / (end - start)
-    print("Throughput = {} per second".format(throughput))
-    print("Total={}".format(titer))
+    throughput = float(niters * batch_size * world_size) / (end - start)
+    if rank_in_global == 0:
+        print("Throughput = {} per second".format(throughput))
+        print("Total={}".format(titer))
+
+
+if __name__ == "__main__":
+
+    DIST = True
+    graph = False
+    sequential = False
+    niters = 100
+    batch_size = 32
+
+    sgd = opt.SGD(lr=0.1, momentum=0.9, weight_decay=1e-5)
+
+    train_resnet(sgd=sgd,
+                 niters=niters,
+                 batch_size=batch_size,
+                 graph=graph,
+                 sequential=sequential,
+                 DIST=DIST)

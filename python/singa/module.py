@@ -22,6 +22,7 @@ to use Computational Graph in their model.
 
 from functools import wraps
 
+from singa import autograd
 from . import singa_wrap as singa
 from .device import get_default_device
 
@@ -32,14 +33,14 @@ class Graph(type):
 
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            if self.graph_mode:
+            if self.graph_mode and self.training:
                 if func.called == False:
                     func.called = True
                     self._device.EnableGraph(True)
                     ret = func(self, *args, **kwargs)
                     self._device.Sync()
                     self._device.EnableGraph(False)
-                    self._device.RunGraph()
+                    self._device.RunGraph(self.sequential)
                     self.results[func.__name__] = ret
                     self.initialized = True
                     return ret
@@ -92,7 +93,6 @@ class Module(object, metaclass=Graph):
             def optim(self, loss):
                 self.sgd.backward_and_update(loss)
 
-
     """
 
     def __init__(self):
@@ -101,6 +101,7 @@ class Module(object, metaclass=Graph):
         """
         self.training = True
         self.graph_mode = True
+        self.sequential = False
         self.initialized = False
         self._device = get_default_device()
 
@@ -133,20 +134,22 @@ class Module(object, metaclass=Graph):
         """Set the module in evaluation mode.
         """
         self.training = mode
+        autograd.training = True
 
     def eval(self):
-        """Set the module in evaluation mode.
+        """Sets the module in evaluation mode.
         """
         self.train(mode=False)
+        autograd.training = False
 
-    def graph(self, mode=True):
-        """ Turn on the computational graph.
-
+    def graph(self, mode=True, sequential=False):
+        """ Turn on the computational graph. Specify execution mode.
         """
         self.graph_mode = mode
+        self.sequential = sequential
 
     def on_device(self, device):
-        """ Set the target device.
+        """Sets the target device.
 
         The following training will be performed on that device.
 
@@ -159,8 +162,8 @@ class Module(object, metaclass=Graph):
         return self.__class__.__name__
 
     def __call__(self, *input, **kwargs):
-        if self.graph_mode:
+        if self.graph_mode and self.training:
             if self.initialized == True:
-                self._device.RunGraph()
+                self._device.RunGraph(self.sequential)
 
         return self.forward(*input, **kwargs)
