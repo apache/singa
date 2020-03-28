@@ -1446,11 +1446,29 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
     TYPE_LANG_SWITCH(A.data_type(), DType, A.device()->lang(), Lang, {
       auto a = TypeCast<SType, DType>(alpha);
       auto b = TypeCast<SType, DType>(beta);
+
+      Tensor A_tmp;
+      Tensor B_tmp;
+
+      if (A.transpose()) {
+        A_tmp = Tensor(A.shape(), A.device(), A.data_type());
+        singa::Transform(A, &A_tmp);
+      } else {
+        A_tmp = A;
+      }
+
+      if (B.transpose()) {
+        B_tmp = Tensor(B.shape(), B.device(), B.data_type());
+        singa::Transform(B, &B_tmp);
+      } else {
+        B_tmp = B;
+      }
+
       C->device()->Exec(
-          [a, A, b, B, C](Context *ctx) {
-            GEMMBatched<DType, Lang>(a, A, B, b, C, ctx);
+          [a, A_tmp, b, B_tmp, C](Context *ctx) {
+            GEMMBatched<DType, Lang>(a, A_tmp, B_tmp, b, C, ctx);
           },
-          {A.block(), B.block()}, {C->block()});
+          {A_tmp.block(), B_tmp.block()}, {C->block()});
     });
   } else {
     LOG(FATAL) << "Un-supported tensor dimentions " << A.nDim() << "d matmul "
