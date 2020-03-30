@@ -1464,6 +1464,10 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
         B_tmp = B;
       }
 
+      // batch GEMM should have same batch size
+      CHECK_EQ(A_tmp.shape(0), B_tmp.shape(0));
+      if (B.nDim() == 4u) CHECK_EQ(A_tmp.shape(1), B_tmp.shape(1));
+
       C->device()->Exec(
           [a, A_tmp, b, B_tmp, C](Context *ctx) {
             GEMMBatched<DType, Lang>(a, A_tmp, B_tmp, b, C, ctx);

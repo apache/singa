@@ -1141,9 +1141,18 @@ def mult(A, B, C=None, alpha=1.0, beta=0.0):
     This function returns C = alpha * A * B + beta * C
 
     Args:
-        A (Tensor): 2d Tensor
-        B (Tensor): If B is a 1d Tensor, GEMV would be invoked for matrix-vector
-            multiplication; otherwise GEMM would be invoked.
+        case 1 - matrix * vector:
+            A (Tensor): 2d Tensor
+            B (Tensor): 1d Tensor, GEMV would be invoked
+        case 2 - matrix * matrix:
+            A (Tensor): 2d Tensor
+            B (Tensor): 2d Tensor, GEMM would be invoked
+        case 3 - batched matrix * batched matrix:
+            A (Tensor): 3/4d Tensor
+            B (Tensor): 3/4d Tensor, batched GEMM would be invoked
+            Where first/first and second dimension(s) of A, B should be exactly the same
+            e.g. C{2,3,4,6} = A{2,3,4,5} * B{2,3,5,6}
+
         C (Tensor, optional): for storing the result; If None, a new Tensor
             would be created.
         alpha (float)
