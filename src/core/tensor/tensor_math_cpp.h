@@ -264,7 +264,8 @@ void Ceil<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
 #ifdef USE_DNNL
 template <>
 void SoftMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
-  auto md = dnnl::memory::desc({static_cast<long long>(in.shape()[0]), static_cast<long long>(in.shape()[1])},
+  auto md = dnnl::memory::desc({static_cast<long long>(in.shape()[0]),
+                                static_cast<long long>(in.shape()[1])},
                                dnnl::memory::data_type::f32,
                                dnnl::memory::format_tag::ab);
   auto in_mem = dnnl::memory(md, ctx->dnnl_engine, in.block()->mutable_data());
@@ -284,7 +285,8 @@ void SoftMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
 template <>
 void SoftMaxBackward<float, lang::Cpp>(const Tensor &in, Tensor *out,
                                        const Tensor &fdout, Context *ctx) {
-  auto md = dnnl::memory::desc({static_cast<long long>(in.shape()[0]), static_cast<long long>(in.shape()[1])},
+  auto md = dnnl::memory::desc({static_cast<long long>(in.shape()[0]),
+                                static_cast<long long>(in.shape()[1])},
                                dnnl::memory::data_type::f32,
                                dnnl::memory::format_tag::ab);
   auto in_mem = dnnl::memory(md, ctx->dnnl_engine, in.block()->mutable_data());
@@ -756,6 +758,53 @@ void GEMM<float, lang::Cpp>(const float alpha, const Tensor &A, const Tensor &B,
   float *CPtr = static_cast<float *>(C->block()->mutable_data());
   cblas_sgemm(CblasRowMajor, transa, transb, nrowA, ncolB, ncolA, alpha, APtr,
               lda, BPtr, ldb, beta, CPtr, ldc);
+}
+
+/*
+ * implement matmul for 3d 4d tensor
+ *   simulate cblas_sgemm_batch();
+ *   which is only available in intel cblas
+ */
+template <>
+void GEMMBatched<float, lang::Cpp>(const float alpha, const Tensor &A,
+                                   const Tensor &B, const float beta, Tensor *C,
+                                   Context *ctx) {
+  const float *APtr = static_cast<const float *>(A.block()->data());
+  const float *BPtr = static_cast<const float *>(B.block()->data());
+  float *CPtr = static_cast<float *>(C->block()->mutable_data());
+
+  auto transA = A.transpose();
+  auto transa = transA ? CblasTrans : CblasNoTrans;
+  auto transB = B.transpose();
+  auto transb = transB ? CblasTrans : CblasNoTrans;
+
+  const size_t ncolB = B.shape().end()[-1];
+  const size_t nrowA = A.shape().end()[-2];
+  const size_t ncolA = A.shape().end()[-1];
+
+  auto lda = transA ? nrowA : ncolA;
+  auto ldb = transB ? ncolA : ncolB;
+  auto ldc = ncolB;
+  const int group_count = 1;
+
+  size_t group_size = A.shape()[0];                // 3d
+  if (A.nDim() == 4u) group_size *= A.shape()[1];  // 4d
+
+  auto matrix_stride_A = A.shape().end()[-1] * A.shape().end()[-2];
+  auto matrix_stride_B = B.shape().end()[-1] * B.shape().end()[-2];
+  auto matrix_stride_C = C->shape().end()[-1] * C->shape().end()[-2];
+  auto offset_A = 0;
+  auto offset_B = 0;
+  auto offset_C = 0;
+
+  for (int i = 0; i < group_size; i++) {
+    cblas_sgemm(CblasRowMajor, transa, transb, nrowA, ncolB, ncolA, alpha,
+                APtr + offset_A, lda, BPtr + offset_B, ldb, beta,
+                CPtr + offset_C, ldc);
+    offset_A += matrix_stride_A;
+    offset_B += matrix_stride_B;
+    offset_C += matrix_stride_C;
+  }
 }
 
 #else

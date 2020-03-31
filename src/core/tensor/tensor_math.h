@@ -409,6 +409,12 @@ void GEMM(const DType alpha, const Tensor &A, const Tensor &B, const DType beta,
 }
 
 template <typename DType, typename Lang>
+void GEMMBatched(const DType alpha, const Tensor &A, const Tensor &B,
+                 const DType beta, Tensor *C, Context *ctx) {
+  LOG(FATAL) << "GEMM Batched Not Implemented";
+}
+
+template <typename DType, typename Lang>
 void SoftMax(const Tensor &in, Tensor *out, Context *ctx) {
   LOG(FATAL) << "Not Implemented";
 }

@@ -1398,6 +1398,13 @@ Tensor Mult(const Tensor &A, const Tensor &B) {
   Shape s;
   s.push_back(A.shape(0));
   if (B.nDim() == 2) s.push_back(B.shape(1));
+  if (A.nDim() > 2) {
+    // for n>2 dim
+    // A {..., m1, m2} x B {..., m2, m3} = C {..., m1, m3}
+    s = A.shape();
+    s.pop_back();
+    s.push_back(B.shape(B.nDim() - 1));
+  }
   Tensor out(s, A.device(), A.data_type());
   Mult(A, B, &out);
   return out;
@@ -1410,8 +1417,8 @@ void Mult(const Tensor &A, const Tensor &B, Tensor *out) {
 template <typename SType>
 void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
           Tensor *C) {
-  CHECK_EQ(A.shape().size(), 2u);
   if (B.nDim() == 1u) {
+    CHECK_EQ(A.shape().size(), 2u);
     TYPE_LANG_SWITCH(A.data_type(), DType, A.device()->lang(), Lang, {
       auto a = TypeCast<SType, DType>(alpha);
       auto b = TypeCast<SType, DType>(beta);
@@ -1421,7 +1428,8 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
           },
           {A.block(), B.block()}, {C->block()});
     });
-  } else {
+  } else if (B.nDim() == 2u) {
+    CHECK_EQ(A.shape().size(), 2u);
     CHECK(!C->transpose());
     TYPE_LANG_SWITCH(A.data_type(), DType, A.device()->lang(), Lang, {
       auto a = TypeCast<SType, DType>(alpha);
@@ -1432,6 +1440,43 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
           },
           {A.block(), B.block()}, {C->block()});
     });
+  } else if (B.nDim() == 3u || B.nDim() == 4u) {
+    CHECK_EQ(A.shape().size(), B.shape().size());
+    CHECK(!C->transpose());
+    TYPE_LANG_SWITCH(A.data_type(), DType, A.device()->lang(), Lang, {
+      auto a = TypeCast<SType, DType>(alpha);
+      auto b = TypeCast<SType, DType>(beta);
+
+      Tensor A_tmp;
+      Tensor B_tmp;
+
+      if (A.transpose()) {
+        A_tmp = Tensor(A.shape(), A.device(), A.data_type());
+        singa::Transform(A, &A_tmp);
+      } else {
+        A_tmp = A;
+      }
+
+      if (B.transpose()) {
+        B_tmp = Tensor(B.shape(), B.device(), B.data_type());
+        singa::Transform(B, &B_tmp);
+      } else {
+        B_tmp = B;
+      }
+
+      // batch GEMM should have same batch size
+      CHECK_EQ(A_tmp.shape(0), B_tmp.shape(0));
+      if (B.nDim() == 4u) CHECK_EQ(A_tmp.shape(1), B_tmp.shape(1));
+
+      C->device()->Exec(
+          [a, A_tmp, b, B_tmp, C](Context *ctx) {
+            GEMMBatched<DType, Lang>(a, A_tmp, B_tmp, b, C, ctx);
+          },
+          {A_tmp.block(), B_tmp.block()}, {C->block()});
+    });
+  } else {
+    LOG(FATAL) << "Un-supported tensor dimentions " << A.nDim() << "d matmul "
+               << B.nDim() << "d\n";
   }
 }
 

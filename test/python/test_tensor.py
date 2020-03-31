@@ -22,6 +22,7 @@ import unittest
 import numpy as np
 
 from singa import tensor
+from singa import autograd
 from singa.proto import core_pb2
 
 from cuda_helper import gpu_dev, cpu_dev
@@ -361,6 +362,74 @@ class TestTensorMethods(unittest.TestCase):
             np.testing.assert_array_almost_equal(tensor.to_numpy(t1),
                                                  np_flt2.reshape(shape2))
 
+    def test_3d_matmul(self):
+        for dev in [cpu_dev, gpu_dev]:
+            np_x1 = np.random.randn(2, 3, 4).astype(np.float32)
+            np_x2 = np.random.randn(2, 4, 3).astype(np.float32)
+            x1 = tensor.from_numpy(np_x1)
+            x1.to_device(dev)
+            x2 = tensor.from_numpy(np_x2)
+            x2.to_device(dev)
+            y = autograd.matmul(x1, x2)
+            np_y = np.matmul(np_x1, np_x2)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(y), np_y)
+
+            np_x1 = np.random.randn(2, 3, 4).astype(np.float32)
+            np_x2 = np.random.randn(2, 4, 5).astype(np.float32)
+            x1 = tensor.from_numpy(np_x1)
+            x1.to_device(dev)
+            x2 = tensor.from_numpy(np_x2)
+            x2.to_device(dev)
+            y = autograd.matmul(x1, x2)
+            np_y = np.matmul(np_x1, np_x2)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(y), np_y)
+
+    def test_4d_matmul(self):
+        for dev in [cpu_dev, gpu_dev]:
+            np_x1 = np.random.randn(2, 12, 256, 64).astype(np.float32)
+            np_x2 = np.random.randn(2, 12, 64, 256).astype(np.float32)
+            x1 = tensor.from_numpy(np_x1)
+            x1.to_device(dev)
+            x2 = tensor.from_numpy(np_x2)
+            x2.to_device(dev)
+            y = autograd.matmul(x1, x2)
+            np_y = np.matmul(np_x1, np_x2)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(y), np_y)
+
+            np_x1 = np.random.randn(2, 12, 256, 64).astype(np.float32)
+            np_x2 = np.random.randn(2, 12, 64, 1024).astype(np.float32)
+            x1 = tensor.from_numpy(np_x1)
+            x1.to_device(dev)
+            x2 = tensor.from_numpy(np_x2)
+            x2.to_device(dev)
+            y = autograd.matmul(x1, x2)
+            np_y = np.matmul(np_x1, np_x2)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(y), np_y)
+
+    def test_matmul_transpose(self):
+        for dev in [cpu_dev, gpu_dev]:
+
+            X = np.random.random((1, 256, 12, 64)).astype(np.float32)
+            x = tensor.from_numpy(X)
+            x.to_device(dev)
+
+            W = np.random.random((1, 256, 12, 64)).astype(np.float32)
+            w = tensor.from_numpy(W)
+            w.to_device(dev)
+
+            X = np.transpose(X, (0, 2, 1, 3))
+            W = np.transpose(W, (0, 2, 1, 3))
+            W = np.transpose(W, (0, 1, 3, 2))
+            Y = np.matmul(X, W)
+
+            x = autograd.transpose(x, (0, 2, 1, 3))
+            w = autograd.transpose(w, (0, 2, 1, 3))
+            w = autograd.transpose(w, (0, 1, 3, 2))
+            y = autograd.matmul(x, w)
+
+            np.testing.assert_array_almost_equal(tensor.to_numpy(x), X)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(w), W)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(y), Y)
 
 
 if __name__ == '__main__':
