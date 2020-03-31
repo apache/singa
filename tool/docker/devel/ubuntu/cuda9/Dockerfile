@@ -49,13 +49,14 @@ RUN apt-get update \
     && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/* \
     && pip3 install -U --no-cache \
-    && pip3 install tqdm \
+    tqdm \
     wheel \
     numpy \
     setuptools \
     protobuf \
     Deprecated \
-    future
+    future \
+    onnx==1.6.0
 
 # install swig > 3.0.10
 RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.10.tar.gz -P /tmp/ \
