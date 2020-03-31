@@ -84,7 +84,7 @@ Tensor CpuBatchNormForwardInference(const BatchNormHandle& bnh, const Tensor& x,
   Tensor w = get_bn_weight_from(bnScale, bnBias);
 
   y.device()->Exec(
-      [&y, &x, &running_mean, &running_var, &w, &bnh](Context* ctx) {
+      [y, w, &x, &running_mean, &running_var, &bnh](Context* ctx) mutable {
         auto eng = ctx->dnnl_engine;
         using namespace dnnl;
 
@@ -138,8 +138,8 @@ const std::vector<Tensor> CpuBatchNormForwardTraining(
   Tensor w = get_bn_weight_from(bnScale, bnBias);
 
   y.device()->Exec(
-      [&x, &y, &mean, &var, &w, &running_mean, &running_var,
-       &bnh](Context* ctx) {
+      [y, mean, var, w, &x, &running_mean, &running_var,
+       &bnh](Context* ctx) mutable {
         auto eng = ctx->dnnl_engine;
         using namespace dnnl;
 
@@ -202,7 +202,7 @@ const std::vector<Tensor> CpuBatchNormBackwardx(
   dw.ResetLike(w);
 
   dx.device()->Exec(
-      [&dw, &x, &dx, &y, &dy, &w, &mean, &var, &bnh](Context* ctx) {
+      [w, dw, dx, dy, &x, &y, &mean, &var, &bnh](Context* ctx) mutable {
         auto eng = ctx->dnnl_engine;
         using namespace dnnl;
 
@@ -307,7 +307,7 @@ const std::vector<Tensor> GpuBatchNormForwardTraining(
   output.ResetLike(x);
 
   output.device()->Exec(
-      [&, x, mean, var, input, output](Context* ctx) mutable {
+      [&, mean, var, input, output](Context* ctx) mutable {
         const float alpha = 1.0f, beta = 0.0f;
         double epsilon = CUDNN_BN_MIN_EPSILON;
         CUDNN_CHECK(cudnnBatchNormalizationForwardTraining(
@@ -346,7 +346,7 @@ Tensor GpuBatchNormForwardInference(const CudnnBatchNormHandle& cbnh,
   Tensor output;
   output.ResetLike(x);
   output.device()->Exec(
-      [&, x, input, output](Context* ctx) mutable {
+      [&, input, output](Context* ctx) mutable {
         const float alpha = 1.0f, beta = 0.0f;
         double epsilon = CUDNN_BN_MIN_EPSILON;
         CUDNN_CHECK(cudnnBatchNormalizationForwardInference(
@@ -382,7 +382,7 @@ const std::vector<Tensor> GpuBatchNormBackward(
   dbnBias.ResetLike(bnScale);
 
   dx.device()->Exec(
-      [&, x, dy, dx, dbnScale, dbnBias](Context* ctx) mutable {
+      [&, dy, dx, dbnScale, dbnBias](Context* ctx) mutable {
         const float alpha = 1.0f, beta = .0f;
         double epsilon = CUDNN_BN_MIN_EPSILON;
         CUDNN_CHECK(cudnnBatchNormalizationBackward(

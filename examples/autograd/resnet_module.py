@@ -308,6 +308,7 @@ def train_resnet(sgd,
     throughput = float(niters * batch_size * world_size) / (end - start)
     if rank_in_global == 0:
         print("Throughput = {} per second".format(throughput), flush=True)
+        print("TotalTime={}".format(end-start), flush=True)
         print("Total={}".format(titer), flush=True)
 
 

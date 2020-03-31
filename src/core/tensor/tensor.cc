@@ -162,15 +162,15 @@ Tensor Resize(const Tensor &in, const Shape &shape) {
 // return new tensor
 Tensor Tensor::AsType(const DataType type) {
   if (data_type_ != type) {
+    Tensor &thisRef = *this;
     Tensor ret(shape_, device_, type);
-    auto *retptr = &ret;
     TYPE_TYPE_LANG_SWITCH(
         data_type_, LDType, type, RDType, device_->lang(), Lang, {
-          retptr->device()->Exec(
-              [this, retptr](Context *ctx) {
-                CastCopy<LDType, RDType, Lang>(this, retptr, ctx);
+          ret.device()->Exec(
+              [thisRef, ret](Context *ctx) mutable {
+                CastCopy<LDType, RDType, Lang>(&thisRef, &ret, ctx);
               },
-              {this->block()}, {retptr->block()});
+              {this->block()}, {ret.block()});
         });
     return ret;
   } else {
@@ -1054,6 +1054,7 @@ float Sum<float>(const Tensor &in) {
   one.SetValue(1.0f);
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     one.device()->Exec(
+        // cannot use this sum function in computational graph
         [in, one, &s](Context *ctx) mutable {
           DType ret = DType(0);
           Dot<DType, Lang>(in, one, &ret, ctx);

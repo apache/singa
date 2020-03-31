@@ -113,7 +113,7 @@ Tensor CpuConvForward(const Tensor &x, Tensor &W, Tensor &b,
   Tensor output(shape, dev, dtype);
 
   output.device()->Exec(
-      [&output, &x, &W, &b, &ch](Context *ctx) {
+      [output, &x, &W, &b, &ch](Context *ctx) mutable {
         using namespace dnnl;
         using tag = memory::format_tag;
         auto eng = ctx->dnnl_engine;
@@ -241,7 +241,7 @@ Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x,
   dx.ResetLike(x);
 
   dy.device()->Exec(
-      [&x, &dx, &dy, &W, &ch](Context *ctx) {
+      [dx, dy, &x, &W, &ch](Context *ctx) mutable {
         using namespace dnnl;
         auto eng = ctx->dnnl_engine;
         auto s = ctx->dnnl_stream;
@@ -325,7 +325,7 @@ Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
   dW.ResetLike(W);
 
   dy.device()->Exec(
-      [&x, &dy, &dW, &ch](Context *ctx) {
+      [dy, dW, &x, &ch](Context *ctx) mutable {
         using namespace dnnl;
         auto eng = ctx->dnnl_engine;
         auto s = ctx->dnnl_stream;
@@ -372,7 +372,7 @@ Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
                       {DNNL_ARG_DIFF_BIAS, conv_diff_bias_memory}});
         ctx->dnnl_stream.wait();
       },
-      {x.block(), dy.block(), W.block()}, {dW.block()});
+      {x.block(), dy.block(), W.block()}, {dW.block(), ch.db->block()});
 
   return dW;
 #else   // native cpp
@@ -623,7 +623,7 @@ Tensor GpuConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x,
   dx.ResetLike(x);
 
   dy.device()->Exec(
-      [dx, dy, &W, &cch](Context *ctx) {
+      [dx, dy, &W, &cch](Context *ctx) mutable {
         Block *wblock = W.block(), *dyblock = dy.block(), *dxblock = dx.block();
         float alpha = 1.f, beta = 0.f;
         cudnnConvolutionBackwardData(
@@ -671,7 +671,7 @@ Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b,
   db.ResetLike(b);
 
   dy.device()->Exec(
-      [db, dy, &cch](Context *ctx) {
+      [db, dy, &cch](Context *ctx) mutable {
         Block *dyblock = dy.block(), *dbblock = db.block();
         float alpha = 1.f, beta = 0.f;
         cudnnConvolutionBackwardBias(ctx->cudnn_handle, &alpha, cch.y_desc,
