@@ -1465,7 +1465,6 @@ void Mult(const Tensor &A, const Tensor &B, Tensor *out) {
 template <typename SType>
 void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
           Tensor *C) {
-  CHECK_EQ(A.shape().size(), 2u);
   vector<Block *> read_blocks = {A.block(), B.block()};
   if (beta) read_blocks.push_back(C->block());
   if (B.nDim() == 1u) {
@@ -1521,11 +1520,12 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
       CHECK_EQ(A_tmp.shape(0), B_tmp.shape(0));
       if (B.nDim() == 4u) CHECK_EQ(A_tmp.shape(1), B_tmp.shape(1));
 
+      Tensor &CRef = *C;
       C->device()->Exec(
-          [a, A_tmp, b, B_tmp, C](Context *ctx) {
-            GEMMBatched<DType, Lang>(a, A_tmp, B_tmp, b, C, ctx);
+          [a, A_tmp, b, B_tmp, CRef](Context *ctx) mutable {
+            GEMMBatched<DType, Lang>(a, A_tmp, B_tmp, b, &CRef, ctx);
           },
-          {A_tmp.block(), B_tmp.block()}, {C->block()});
+          read_blocks, {C->block()});
     });
   } else {
     LOG(FATAL) << "Un-supported tensor dimentions " << A.nDim() << "d matmul "
