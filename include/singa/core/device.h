@@ -20,10 +20,12 @@
 #define SINGA_CORE_DEVICE_H_
 
 #include <functional>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <type_traits>
+#include <unordered_set>
 #include <vector>
 
 #include "singa/core/common.h"
@@ -31,6 +33,7 @@
 #include "singa/core/scheduler.h"
 #include "singa/proto/core.pb.h"
 #include "singa/singa_config.h"
+#include "singa/utils/safe_queue.h"
 
 #ifdef USE_CUDA
 #include "singa/utils/cuda_utils.h"
@@ -53,12 +56,16 @@ namespace singa {
 class Device {
  public:
   // Device() = default;
-  virtual ~Device() {}
+  virtual ~Device();
   /// Constructor with device ID, num of executors (e.g., cuda streams),
   /// max mem size to use (in MB)
   Device(int id, int num_executors);
 
   virtual void SetRandSeed(unsigned seed) = 0;
+
+  void EnableGraph(bool enable) { graph_enabled_ = enable; }
+
+  static void EnableLazyAlloc(bool enbale) { lazy_alloc_ = enbale; }
 
   /// Called by Tensor.
   Block* NewBlock(int size);
@@ -82,23 +89,24 @@ class Device {
   void Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
             const vector<Block*> write_blocks, bool use_rand_generator = false);
 
+  void RunGraph(bool serial = false);
+
   // Wait for one event.
   // void WaitFor();
 
   /// wait for all operations submitted to this device.
   virtual void Sync();
 
+  int id() const { return id_; }
+
   /// Return the programming language for this device.
   LangType lang() const { return lang_; }
 
-  virtual std::shared_ptr<Device> host() const { return host_; }
-
   Context* context(int k) { return &ctx_; }
 
-  int id() const { return id_; }
+  bool graph_enabled() const { return graph_enabled_; }
 
- private:
-  Device(){};
+  virtual std::shared_ptr<Device> host() const { return host_; }
 
  protected:
   /// Execute one operation on one executor.
@@ -113,20 +121,31 @@ class Device {
   /// Free device memory.
   virtual void Free(void* ptr) = 0;
 
+ private:
+  Device(){};
+
  protected:
+  friend class Block;
+  friend class Graph;
+
   int id_ = 0;
   int num_executors_ = 0;
   unsigned seed_ = 0;
-  // Scheduler* scheduler_ = nullptr;
-  // VirtualMemory* vm_ = nullptr;
+  bool graph_enabled_ = false;
+  /// The computational graph
+  Graph* graph_ = nullptr;
   /// Programming language type, could be kCpp, kCuda, kOpencl
   LangType lang_;
-  // SafeQueue<Operation> op_queue_;
-  // SafeQueue<Operation> op_log_;
   /// The host device
   std::shared_ptr<Device> host_;
   // TODO(wangwei) define multiple contexts, one per executor
   Context ctx_;
+  // Scheduler* scheduler_ = nullptr;
+  // VirtualMemory* vm_ = nullptr;
+  // SafeQueue<Operation> op_queue_;
+  // SafeQueue<Operation> op_log_;
+
+  static bool lazy_alloc_;
 };
 
 /// a singleton CppDevice as the host for all devices.

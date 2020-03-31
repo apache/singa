@@ -19,27 +19,62 @@
 #include "singa/core/device.h"
 
 namespace singa {
+
+bool Device::lazy_alloc_ = true;
+
 Device::Device(int id, int num_executors)
     : id_(id), num_executors_(num_executors) {
   // TODO(wangwei) create scheduler and vm.
   host_ = defaultDevice;
+  graph_ = new Graph(this);
+}
+
+Device::~Device() {
+  if (graph_) {
+    delete graph_;
+  }
 }
 
 void Device::Exec(function<void(Context*)>&& fn,
                   const vector<Block*> read_blocks,
                   const vector<Block*> write_blocks, bool use_rand_generator) {
-  // TODO(wangwei) execute operations scheduled by the scheduler.
-  DoExec(std::move(fn), 0);
+  if (graph_enabled_ == true) {
+    graph_->AddOperation(std::move(fn), read_blocks, write_blocks);
+  } else {
+    // printf("immediately ops\n");
+    DoExec(std::move(fn), 0);
+  }
 }
 
-// TODO(wangwei) get Block from the memory manager
+void Device::RunGraph(bool serial) {
+  bool previous_state = graph_enabled_;
+  graph_enabled_ = false;
+
+  // graph_->Debug();
+
+  if (serial) {
+    // sequential execution
+    graph_->RunInSerial();
+  } else {
+    // execute according to dependencies
+    graph_->RunGraph();
+  }
+
+  graph_enabled_ = previous_state;
+}
+
+// Todo(Wangwei) Get Block From The Memory manager
 Block* Device::NewBlock(int size) {
   CHECK_GE(size, 0)
       << "size is negative, could be caused by the type cast "
       << "from size_t to int. In that case, the size is too large.";
   if (size > 0) {
-    void* ptr = Malloc(size);
-    return new Block(ptr, size);
+    void* ptr = nullptr;
+    if (!lazy_alloc_) {
+      ptr = Malloc(size);
+    }
+
+    return new Block(ptr, size, this);
   } else {
     return nullptr;
   }

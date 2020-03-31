@@ -20,11 +20,13 @@
 # the code is modified from
 # https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
 
-from singa import autograd
-from singa import tensor
-from singa import device
 from singa import opt
+from singa import device
+from singa import tensor
+from singa import module
+from singa import autograd
 
+import time
 import numpy as np
 from tqdm import trange
 
@@ -126,7 +128,7 @@ __all__ = [
 ]
 
 
-class ResNet(autograd.Layer):
+class ResNet(module.Module):
 
     def __init__(self, block, layers, num_classes=1000):
         self.inplanes = 64
@@ -176,7 +178,7 @@ class ResNet(autograd.Layer):
 
         return forward
 
-    def __call__(self, x):
+    def forward(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
         x = autograd.relu(x)
@@ -192,6 +194,15 @@ class ResNet(autograd.Layer):
         x = self.fc(x)
 
         return x
+
+    def loss(self, out, ty):
+        return autograd.softmax_cross_entropy(out, ty)
+
+    def optim(self, loss):
+        self.optimizer.backward_and_update(loss)
+
+    def set_optimizer(self, optimizer):
+        self.optimizer = optimizer
 
 
 def resnet18(pretrained=False, **kwargs):
@@ -249,58 +260,71 @@ def resnet152(pretrained=False, **kwargs):
     return model
 
 
-if __name__ == "__main__":
-    model = resnet50()
-    print("Start intialization............")
-    dev = device.create_cuda_gpu_on(0)
-    niters = 100
-    batch_size = 32
+def train_resnet(sgd,
+                 niters,
+                 batch_size,
+                 DIST=True,
+                 graph=True,
+                 sequential=False):
+    device_id = 0
+    world_size = 1
+    rank_in_global = 0
     IMG_SIZE = 224
-    sgd = opt.SGD(lr=0.1, momentum=0.9, weight_decay=1e-5)
+
+    if DIST:
+        sgd = opt.DistOpt(sgd)
+        world_size = sgd.world_size
+        device_id = sgd.rank_in_local
+        rank_in_global = sgd.rank_in_global
+
+    dev = device.create_cuda_gpu_on(device_id)
 
     tx = tensor.Tensor((batch_size, 3, IMG_SIZE, IMG_SIZE), dev)
     ty = tensor.Tensor((batch_size,), dev, tensor.int32)
-    autograd.training = True
     x = np.random.randn(batch_size, 3, IMG_SIZE, IMG_SIZE).astype(np.float32)
     y = np.random.randint(0, 1000, batch_size, dtype=np.int32)
     tx.copy_from_numpy(x)
     ty.copy_from_numpy(y)
 
-    import time
+    # construct the model
+    model = resnet50()
+    model.train()
+    model.on_device(dev)
+    model.set_optimizer(sgd)
+    model.graph(graph, sequential)
 
+    # train model
     dev.Sync()
     start = time.time()
-    fd = 0
-    softmax = 0
-    update = 0
     with trange(niters) as t:
         for _ in t:
-            dev.Sync()
-            tick = time.time()
-            x = model(tx)
-            dev.Sync()
-            fd += time.time() - tick
-            tick = time.time()
-            loss = autograd.softmax_cross_entropy(x, ty)
-            dev.Sync()
-            softmax += time.time() - tick
-            for p, g in autograd.backward(loss):
-                dev.Sync(
-                )  # this "for" loops for a large number of times, so can slow down
-                tick = time.time()
-                sgd.update(p, g)
-                dev.Sync(
-                )  # this "for" loops for a large number of times, so can slow down
-                update += time.time() - tick
+            out = model(tx)
+            loss = model.loss(out, ty)
+            model.optim(loss)
 
     dev.Sync()
     end = time.time()
-    throughput = float(niters * batch_size) / (end - start)
-    print("Throughput = {} per second".format(throughput))
     titer = (end - start) / float(niters)
-    tforward = float(fd) / float(niters)
-    tsoftmax = float(softmax) / float(niters)
-    tbackward = titer - tforward - tsoftmax
-    tsgd = float(update) / float(niters)
-    print("Total={}, forward={}, softmax={}, backward={}, sgd={}".format(
-        titer, tforward, tsoftmax, tbackward, tsgd))
+    throughput = float(niters * batch_size * world_size) / (end - start)
+    if rank_in_global == 0:
+        print("Throughput = {} per second".format(throughput), flush=True)
+        print("TotalTime={}".format(end-start), flush=True)
+        print("Total={}".format(titer), flush=True)
+
+
+if __name__ == "__main__":
+
+    DIST = True
+    graph = True
+    sequential = False
+    niters = 100
+    batch_size = 32
+
+    sgd = opt.SGD(lr=0.1, momentum=0.9, weight_decay=1e-5)
+
+    train_resnet(sgd=sgd,
+                 niters=niters,
+                 batch_size=batch_size,
+                 DIST=DIST,
+                 graph=graph,
+                 sequential=sequential)

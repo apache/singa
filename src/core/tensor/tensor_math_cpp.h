@@ -1003,9 +1003,9 @@ void RowMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
 // =========Matrix operations ================================================
 /*
 template <>
-void SoftMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
-  CHECK_LE(in.nDim(), 2u)
-      << "Axis is required for SoftMax on multi dimemsional tensor";
+void SoftMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context* ctx) {
+  CHECK_LE(in.nDim(), 2u) << "Axis is required for SoftMax on multi dimemsional
+tensor";
   out->CopyData(in);
   size_t nrow = 1, ncol = in.Size(), size = ncol;
   if (in.nDim() == 2u) {

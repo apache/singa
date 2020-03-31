@@ -59,24 +59,21 @@ typedef struct _Opencl {
 } Opencl;
 }  // namespace lang
 
+class Device;
 /// Block represent a chunk of memory (on device or host).
 class Block {
  public:
-  Block(void* ptr, size_t size, size_t offset = 0)
-      : data_(ptr), size_(size), offset_(offset) {
+  Block(void* ptr, size_t size, Device* device = nullptr, size_t offset = 0)
+      : data_(ptr), size_(size), offset_(offset), device_(device) {
     ref_count_ = 1;  // std::make_shared<std::atomic<int>>(1);
   }
   // Disabled as it is not used currently.
   // Block(void* ptr, size_t size, size_t offset, std::shared_ptr<atomic<int>>
   //  ref) : data_(ptr), size_(size), offset_(offset), ref_count_(ref) {}
-  void* mutable_data() {
-    initialized_ = true;
-    return static_cast<char*>(data_) + offset_;
-  }
-  const void* data() const {
-    CHECK(initialized_) << "Must initialize data before reading it";
-    return static_cast<char*>(data_) + offset_;
-  }
+  void* mutable_data();
+  const void* data() const;
+  void free_data();
+
   size_t size() const { return size_; }
   size_t offset() const { return offset_; }
   int IncRefCount() {
@@ -93,6 +90,7 @@ class Block {
   size_t size_ = 0;
   size_t offset_ = 0;
   bool initialized_ = false;
+  Device* device_ = nullptr;
   // Disabled as it is not used currently.
   // std::shared_ptr<std::atomic<int>> ref_count_ = nullptr;
   std::atomic<int> ref_count_;

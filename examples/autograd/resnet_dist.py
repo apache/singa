@@ -32,13 +32,14 @@ if __name__ == "__main__":
     sgd = opt.SGD(lr=0.1, momentum=0.9, weight_decay=1e-5)
     sgd = opt.DistOpt(sgd)
 
-    from resnet import resnet50
-    model = resnet50()
-
     if (sgd.rank_in_global == 0):
         print("Start intialization...........", flush=True)
 
     dev = device.create_cuda_gpu_on(sgd.rank_in_local)
+
+    from resnet import resnet50
+    model = resnet50()
+
     niters = 100
     batch_size = 32
     IMG_SIZE = 224

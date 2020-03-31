@@ -3,6 +3,11 @@
 *.pyc
 __pycache__
 *.swp
+*~
+.\#*
+\#*\#
+
+
 
 *.o
 *.bin
@@ -18,7 +23,8 @@ build/
 thirdparty/*
 !thirdparty/install.sh
 test/samples/
-.idea
+.idea/
+.vscode/
 
 # Sphinx and Doxygen Doc-Site
 doc/_build/*

@@ -29,6 +29,7 @@
 
 #include <cstdint>
 #include <iostream>
+#include <memory>
 
 #include "cuda_fp16.h"
 #include "singa/core/tensor.h"
@@ -83,9 +84,9 @@ class Communicator {
                int size);
   ~Communicator();
   void synch(Tensor &t);
-  void fusedSynch(vector<Tensor> &t);
+  void fusedSynch(vector<Tensor> &t, bool send = true);
   void synchHalf(Tensor &t);
-  void fusedSynchHalf(vector<Tensor> &t);
+  void fusedSynchHalf(vector<Tensor> &t, bool send = true);
   void fusedSparsification(vector<Tensor> &t, Tensor &accumulation,
                            float sparsThreshold, bool topK);
   void fusedSparsification(vector<Tensor> &t, float sparsThreshold, bool topK);
@@ -95,10 +96,13 @@ class Communicator {
   void wait();
 
  private:
+  void generateBlocks(Tensor &t);
+  void generateBlocks(std::vector<Tensor> &t);
   void allReduce(int size, void *sendbuff, void *recvbuff,
                  ncclDataType_t ncclType);
   void setup();
   void sparsInit();
+  void halfInit();
   void _fusedSparsification(vector<Tensor> &t, Tensor *accumulation,
                             float sparsThreshold, bool topK);
   void _sparsification(Tensor &t, Tensor *accumulation, float sparsThreshold,
@@ -106,10 +110,10 @@ class Communicator {
   void valSparsAllReduce(size_t num, float *accumulation);
   void topKSparsAllReduce(size_t num, float *accumulation);
 
-  float *fusedSendBuff;
-  float *fusedRecvBuff;
-  __half *fusedSendBuffHalf;
-  __half *fusedRecvBuffHalf;
+  // last group of synchronized memory blocks
+  std::shared_ptr<Device> device_ = nullptr;
+  std::vector<Block *> blocks_;
+  std::vector<Block *> prev_blocks_;
 
   ncclUniqueId id;
   // cuda stream s is for nccl all reduce
@@ -122,6 +126,16 @@ class Communicator {
 
   bool UseMPI;
   size_t maxSize;
+
+  // normal synch
+  size_t sendBuffOffset = 0;
+  float *fusedSendBuff;
+  float *fusedRecvBuff;
+
+  // half synch
+  bool halfInitialized;
+  __half *fusedSendBuffHalf;
+  __half *fusedRecvBuffHalf;
 
   // sparsification
   cusparseHandle_t cusparse_handle;

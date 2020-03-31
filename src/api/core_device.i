@@ -49,6 +49,10 @@ class Device {
   std::shared_ptr<Device> host();
   int id() const;
   virtual void Sync();
+  void RunGraph(bool serial = false);
+  bool graph_enabled() const;
+  void EnableGraph(bool enable);
+  static void EnableLazyAlloc(bool enbale);
 };
 
 class Platform {
@@ -81,4 +85,3 @@ class Platform {
 };
 
 }
-

@@ -99,7 +99,7 @@ Tensor CpuPoolingForward(const PoolingHandle &ph, const Tensor &x) {
            x.device(), x.data_type());
 
   y.device()->Exec(
-      [&y, &x, &ph](Context *ctx) {
+      [y, &x, &ph](Context *ctx) mutable {
         auto eng = ctx->dnnl_engine;
         using namespace dnnl;
 
@@ -126,7 +126,7 @@ Tensor CpuPoolingBackward(const PoolingHandle &ph, const Tensor &grad,
   in_grad.ResetLike(x);
 
   in_grad.device()->Exec(
-      [&in_grad, &grad, &ph](Context *ctx) {
+      [in_grad, grad, &ph](Context *ctx) mutable {
         auto eng = ctx->dnnl_engine;
         using namespace dnnl;
 
@@ -188,18 +188,19 @@ Tensor GpuPoolingForward(const CudnnPoolingHandle &cph, const Tensor &x) {
   CHECK_EQ(x.device()->lang(), kCuda);
   CHECK_EQ(x.nDim(), 4u);
 
-  Tensor output =
-      Tensor({cph.batchsize, cph.channels, cph.pooled_height, cph.pooled_width},
-             x.device(), x.data_type());
+  Tensor output = Tensor(
+      Shape({cph.batchsize, cph.channels, cph.pooled_height, cph.pooled_width}),
+      x.device(), x.data_type());
 
   output.device()->Exec(
-      [&](Context *ctx) {
+      [output, &x, &cph](Context *ctx) mutable {
         float alpha = 1.0f, beta = 0.0f;
         cudnnPoolingForward(ctx->cudnn_handle, cph.pool_desc, &alpha,
                             cph.x_desc, x.block()->data(), &beta, cph.y_desc,
                             output.block()->mutable_data());
       },
       {x.block()}, {output.block()});
+
   return output;
 }
 
@@ -212,7 +213,7 @@ Tensor GpuPoolingBackward(const CudnnPoolingHandle &cph, const Tensor &dy,
   dx.ResetLike(x);
 
   dx.device()->Exec(
-      [&](Context *ctx) {
+      [dx, dy, &x, &y, &cph](Context *ctx) mutable {
         float alpha = 1.0f, beta = 0.0f;
         cudnnPoolingBackward(ctx->cudnn_handle, cph.pool_desc, &alpha,
                              cph.y_desc, y.block()->data(), cph.y_desc,
@@ -220,6 +221,7 @@ Tensor GpuPoolingBackward(const CudnnPoolingHandle &cph, const Tensor &dy,
                              &beta, cph.x_desc, dx.block()->mutable_data());
       },
       {dy.block(), y.block(), x.block()}, {dx.block()});
+
   return dx;
 };
 #endif  // USE_CUDNN

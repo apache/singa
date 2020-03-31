@@ -18,7 +18,6 @@
 
 #ifndef SINGA_CORE_TENSOR_H_
 #define SINGA_CORE_TENSOR_H_
-
 #include <memory>
 #include <tuple>
 #include <vector>
@@ -193,6 +192,8 @@ class Tensor {
   /// return an exactly the same Tensor with data been deep copied to the given
   /// device. If 'device' is nullptr, then clone it one the current device.
   Tensor Clone(std::shared_ptr<Device> device = nullptr) const;
+
+  void Clone(Tensor *&other, std::shared_ptr<Device> device = nullptr) const;
 
   // --------------------------------------------------------------------------
   // ---Following methods change the tensor and return itself
