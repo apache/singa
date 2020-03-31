@@ -19,6 +19,7 @@
 FROM nvidia/cuda:10.0-devel-ubuntu18.04
 
 ENV CUDNN_VERSION 7.4.2.24
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libcudnn7=$CUDNN_VERSION-1+cuda10.0 \
     libcudnn7-dev=$CUDNN_VERSION-1+cuda10.0 && \
@@ -48,13 +49,14 @@ RUN apt-get update \
     && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/* \
     && pip3 install -U --no-cache \
-    && pip3 install tqdm \
+    tqdm \
     wheel \
     numpy \
     setuptools \
     protobuf \
     Deprecated \
-    future
+    future \
+    onnx==1.6.0
 
 # install cmake to correctly find Cuda 10
 RUN wget https://github.com/Kitware/CMake/releases/download/v3.12.2/cmake-3.12.2.tar.gz -P /tmp/ \
