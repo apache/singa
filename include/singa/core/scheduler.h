@@ -15,15 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef SINGA_CORE_SCHEDULER_H_
 #define SINGA_CORE_SCHEDULER_H_
 
-#include <mutex>
-#include <vector>
-#include <thread>
-#include <functional>
-#include <unordered_map>
 #include <condition_variable>
+#include <functional>
+#include <mutex>
+#include <thread>
+#include <unordered_map>
+#include <vector>
 
 #include "singa/core/common.h"
 #include "singa/utils/safe_queue.h"
@@ -38,24 +39,35 @@ class Node;
 class Edge;
 class Graph;
 class Device;
+class BlkInfo;
+
+typedef std::vector<Node *> NodeVec;
+typedef std::vector<Edge *> EdgeVec;
+typedef std::vector<Block *> BlockVec;
+typedef std::function<void(Context *)> OpFunc;
+typedef std::unordered_map<Block *, BlkInfo *> Blk2InfoMap;
 
 enum BlockType { kUnknow, kInput, kParam, kInter, kEnd };
 
 class Node {
  public:
-  Node(int id, std::function<void(Context *)> &&op)
-      : id_(id), op_(std::move(op)) {}
+  Node(int id, OpFunc &&op) : id_(id), op_(std::move(op)) {}
 
   void AddInEdge(Edge *in_edge);
   void AddOutEdge(Edge *out_edge);
+
+  // getters of Node
+  int id() const { return id_; }
+  const EdgeVec &in_edges() const { return in_edges_; }
+  const EdgeVec &out_edges() const { return out_edges_; }
 
  private:
   friend Graph;
 
   int id_;
-  std::function<void(Context *)> op_;
-  std::vector<Edge *> in_edges_;
-  std::vector<Edge *> out_edges_;
+  OpFunc op_;
+  EdgeVec in_edges_;
+  EdgeVec out_edges_;
 };
 
 class Edge {
@@ -67,6 +79,12 @@ class Edge {
   void SetSrcNode(Node *src_node);
   void SetDstNode(Node *dst_node);
 
+  // getters of Edge
+  int id() const { return id_; }
+  Block *block() const { return blk_; }
+  Node *src_node() const { return src_node_; }
+  Node *dst_node() const { return dst_node_; }
+
  private:
   friend Graph;
 
@@ -76,15 +94,23 @@ class Edge {
   Node *dst_node_;
 };
 
-class BlockInfo {
+class BlkInfo {
  public:
-  BlockInfo(int id, Block *blk, BlockType type = BlockType::kUnknow)
+  BlkInfo(int id, Block *blk, BlockType type = BlockType::kUnknow)
       : id_(id),
         blk_(blk),
         type_(type),
         graph_ref_(0),
         write_node_(nullptr),
         last_node_(nullptr) {}
+
+  // getters of BlkInfo
+  int id() const { return id_; }
+  Block *block() const { return blk_; }
+  BlockType type() const { return type_; }
+  int graph_ref() const { return graph_ref_; }
+  Node *write_node() const { return write_node_; }
+  Node *last_node() const { return last_node_; }
 
  private:
   friend Graph;
@@ -106,8 +132,6 @@ class Graph {
     CBData(Graph *graph, Node *node) : graph_(graph), node_(node) {}
   };
 
-  typedef std::vector<Block *> BlockSet;
-
   ~Graph();
   Graph(Device *device);
 
@@ -115,8 +139,30 @@ class Graph {
   void Debug();
   void RunGraph();
   void RunInSerial();
-  void AddOperation(function<void(Context *)> &&op, const BlockSet &read_blocks,
-                    const BlockSet &write_blocks);
+  void AddOperation(OpFunc &&op, const BlockVec &read_blocks,
+                    const BlockVec &write_blocks);
+
+  // getters of Graph
+  const NodeVec &nodes() const { return nodes_; }
+  const EdgeVec &edges() const { return edges_; }
+  const Blk2InfoMap &blocks() const { return blocks_; }
+
+  const BlockVec &write_blocks() const { return write_blocks_; }
+
+  bool dirty() const { return dirty_; }
+  const NodeVec &begin_nodes() const { return begin_nodes_; }
+  const std::vector<NodeVec> &next_nodes() const { return next_nodes_; }
+  const std::vector<BlockVec> &free_blocks() const { return free_blocks_; }
+
+  Node *node(const size_t idx) const;
+  Edge *edge(const size_t idx) const;
+  BlkInfo *block(Block *blk) const;
+
+  Block *write_block(const size_t idx) const;
+
+  Node *begin_node(const size_t idx) const;
+  const NodeVec &next_nodes(const size_t idx) const;
+  const BlockVec &free_blocks(const size_t idx) const;
 
  private:
   void Analysis();
@@ -128,16 +174,20 @@ class Graph {
 
  private:
   Device *device_;
-  std::vector<Node *> nodes_;
-  std::vector<Edge *> edges_;
-  std::unordered_map<Block *, BlockInfo *> blocks_;
 
-  std::vector<Block *> write_blocks_;
+  // nodes, edges and blocks included in the calculation graph
+  NodeVec nodes_;
+  EdgeVec edges_;
+  Blk2InfoMap blocks_;
 
-  bool dirty = false;
-  std::vector<Node *> begin_nodes_;
-  std::vector<std::vector<Node *> > next_nodes_;
-  std::vector<std::vector<Block *> > free_blocks_;
+  // Blocks written by the last operation, used for sync op
+  BlockVec write_blocks_;
+
+  // Calculation graph analysis
+  bool dirty_ = false;
+  NodeVec begin_nodes_;
+  std::vector<NodeVec> next_nodes_;
+  std::vector<BlockVec> free_blocks_;
 
   SafeQueue<int> free_queue_;
 };
