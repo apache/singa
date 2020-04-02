@@ -177,8 +177,13 @@ class Tensor(object):
         return self.data.transpose()
 
     def transpose(self, axes=None):
-        '''
-        To transpose the tensor
+        ''' To transpose the tensor
+
+        Args:
+            axes: axes to transpose
+
+        Returns:
+            new transposed tensor
         '''
         t = Tensor(self.shape, self.device, self.dtype)
         if axes is None:
@@ -208,12 +213,15 @@ class Tensor(object):
         return self.data.MemSize()
 
     def reshape(self, shape):
-        '''Return a new tensor with the given shape, and the original 
-        tensor is not changed.
+        '''Return a new tensor with the given shape, and the original
+            tensor is not changed.
 
         Args:
-            shape (list<int>): new shape, which should have the same 
-            volumn as the original shape.
+            shape (list<int>): new shape, which should have the same
+                volumn as the original shape.
+
+        Returns:
+            new tensor reshaped
         '''
         t = Tensor(self.shape, self.device, self.dtype)
         assert product(self.shape) == product(shape), \
@@ -226,7 +234,7 @@ class Tensor(object):
         '''Reset the shape, dtype and device as the given tensor.
 
         Args:
-            t (Tensor)
+            t (Tensor): a tensor
         '''
         self.data.ResetLike(t.data)
         self.shape = t.shape
@@ -237,7 +245,10 @@ class Tensor(object):
         '''Change the data type.
 
         Args:
-            dtype:
+            dtype: accepts 'int', 'float', 'singa.kFloat32', 'singa.kInt'
+
+        Returns:
+            new tensor with new type
         '''
         if dtype == singa.kInt:
             pass
@@ -286,7 +297,11 @@ class Tensor(object):
         '''Set all elements of the tensor to be the give value.
 
         Args:
-            x (float), a float value to be set to all elements.
+            x (float): a float value to be set to all elements.
+            inplace: inplace flag
+
+        Returns:
+            this tensor
         '''
         # assert type(x) == float, 'set value only accepts float input'
         # if isinstance(x, float):
@@ -332,7 +347,7 @@ class Tensor(object):
         return _call_singa_func(self.data.Clone)
 
     def repeat(self, repeats, axis):
-        '''Repeat data of a tensor 
+        '''Repeat data of a tensor
 
         Args:
             repeats(int or a sequence): the number that the tensor need to repeat for
@@ -340,7 +355,7 @@ class Tensor(object):
                        If it is None, then the repeated tensor will be flattened.If it isn't None,
                        the repeats could be sequence, but it's size should match the axis's shape
 
-        Return:
+        Returns:
             the tensor which has been repeated
 
         '''
@@ -402,6 +417,9 @@ class Tensor(object):
 
     def copy(self):
         '''shallow copy calls copy constructor of singa::Tensor
+
+        Returns:
+            new tensor copied
         '''
         return _call_singa_func(CTensor, self.data)
 
@@ -418,6 +436,10 @@ class Tensor(object):
 
         Args:
             p (float): with probability p, each element is sample to 1.
+            inplace: inplace flag
+
+        Returns:
+            this tensor
         '''
         if not inplace:
             # return new tensor
@@ -432,6 +454,10 @@ class Tensor(object):
         Args:
             mean (float): mean of the distribution
             std (float): standard variance of the distribution
+            inplace: inplace flag
+
+        Returns:
+            this tensor
         '''
         if not inplace:
             # return new tensor
@@ -446,6 +472,10 @@ class Tensor(object):
         Args:
             low (float): the lower bound
             high (float): the hight bound
+            inplace: inplace flag
+
+        Returns:
+            this tensor
         '''
         if not inplace:
             # return new tensor
@@ -516,7 +546,10 @@ class Tensor(object):
         ''' inplace element-wise addition with a tensor or a float value.
 
         Args:
-            x (float or Tensor):
+            x (float or Tensor): input value
+
+        Returns:
+            this tensor
         '''
         if isinstance(x, Tensor):
             self.data += x.data
@@ -528,7 +561,10 @@ class Tensor(object):
         ''' inplace element-wise subtraction with a tensor or a float value.
 
         Args:
-            x (float or Tensor):
+            x (float or Tensor): input value
+
+        Returns:
+            this tensor
         '''
 
         if isinstance(x, Tensor):
@@ -541,7 +577,10 @@ class Tensor(object):
         ''' inplace element-wise multiplication with a tensor or a float value.
 
         Args:
-            x (float or Tensor):
+            x (float or Tensor): input value
+
+        Returns:
+            this tensor
         '''
         if isinstance(x, Tensor):
             self.data *= x.data
@@ -553,7 +592,10 @@ class Tensor(object):
         ''' inplace element-wise division by a tensor or a float value.
 
         Args:
-            x (float or Tensor):
+            x (float or Tensor): input value
+
+        Returns:
+            this tensor
         '''
         if isinstance(x, Tensor):
             self.data /= x.data
@@ -693,7 +735,11 @@ def product(shape):
 
 
 def sizeof(dtype):
-    '''
+    '''Get size of datatype
+
+    Args:
+        dtype: singa datatype
+
     Returns:
         the number of bytes of the given SINGA data type defined in core.proto
     '''
@@ -701,12 +747,12 @@ def sizeof(dtype):
 
 
 def reshape(tensor, shape):
-    '''Reshape the input tensor with the given shape and 
+    '''Reshape the input tensor with the given shape and
     the original tensor is not changed
 
     Args:
-        t (Tensor): the tensor to be changed
-        s (list<int>): the new shape, which should have the same volumn as the
+        tensor (Tensor): the tensor to be changed
+        shape (list<int>): the new shape, which should have the same volumn as the
             old shape.
 
     Returns:
@@ -716,9 +762,14 @@ def reshape(tensor, shape):
 
 
 def transpose(t, axes=None):
-    '''
+    '''To transpose the tensor
+
+    Args:
+        t: input tensor
+        axes: axes to transpose
+
     Returns:
-        the transposed tensor 
+        the transposed tensor
     '''
     ret = t.transpose(axes)
     return ret
@@ -769,6 +820,12 @@ def from_numpy(np_array):
 
 def to_host(t):
     '''Copy the data to a host tensor.
+
+    Args:
+        t (Tensor): a Tensor
+
+    Returns:
+        new Tensor at host
     '''
     ret = t.clone()
     ret.to_host()
@@ -779,7 +836,7 @@ def to_numpy(t):
     '''Copy the tensor into a numpy array.
 
     Args:
-        t (Tensor), a Tensor
+        t (Tensor): a Tensor
 
     Returns:
         a numpy array
@@ -910,7 +967,7 @@ def sum(t, axis=None, out=None):
             It must have the same shape as the expected output,
             but the type of the output values will be cast if necessary.
 
-    Return: sum_along_axis: tensor
+    Returns:
         A tensor with the same shape as t, with the specified axis removed.
         If a is a 0-d array, or if axis is None, a scalar is returned.
         If an output array is specified, a reference to out is returned
@@ -996,9 +1053,11 @@ def average(t, axis=None):
 
 def softmax(t, out=None):
     '''Apply SoftMax for each row of the Tensor.
+
     Args:
         t (Tensor): the input 1d or 2d tensor
         out (Tensor, optional): if not None, it is used to store the result
+
     Returns:
         the result Tensor
     '''
@@ -1069,8 +1128,8 @@ def add(lhs, rhs, ret=None):
     '''Elementi-wise addition.
 
     Args:
-        lhs (Tensor)
-        rhs (Tensor)
+        lhs (Tensor): lhs tensor
+        rhs (Tensor): rhs tensor
         ret (Tensor, optional): if not None, the result is stored in it;
             otherwise, a new Tensor would be created for the result.
 
@@ -1092,8 +1151,8 @@ def sub(lhs, rhs, ret=None):
     '''Elementi-wise subtraction.
 
     Args:
-        lhs (Tensor)
-        rhs (Tensor)
+        lhs (Tensor): lhs tensor
+        rhs (Tensor): rhs tensor
         ret (Tensor, optional): if not None, the result is stored in it;
             otherwise, a new Tensor would be created for the result.
 
@@ -1115,8 +1174,8 @@ def eltwise_mult(lhs, rhs, ret=None):
     '''Elementi-wise multiplication.
 
     Args:
-        lhs (Tensor)
-        rhs (Tensor)
+        lhs (Tensor): lhs tensor
+        rhs (Tensor): rhs tensor
         ret (Tensor, optional): if not None, the result is stored in it;
             otherwise, a new Tensor would be created for the result.
 
@@ -1137,10 +1196,8 @@ def eltwise_mult(lhs, rhs, ret=None):
 
 def mult(A, B, C=None, alpha=1.0, beta=0.0):
     '''Do matrix-matrix or matrix-vector multiplication.
-
     This function returns C = alpha * A * B + beta * C
-
-    Args:
+    Currently below cases are supported
         case 1 - matrix * vector:
             A (Tensor): 2d Tensor
             B (Tensor): 1d Tensor, GEMV would be invoked
@@ -1153,10 +1210,12 @@ def mult(A, B, C=None, alpha=1.0, beta=0.0):
             Where first/first and second dimension(s) of A, B should be exactly the same
             e.g. C{2,3,4,6} = A{2,3,4,5} * B{2,3,5,6}
 
-        C (Tensor, optional): for storing the result; If None, a new Tensor
-            would be created.
-        alpha (float)
-        beta (float)
+    Args:
+        A: n-d tensor
+        B: n-d tensor
+        C (Tensor, optional): for storing the result; If None, a new Tensor would be created.
+        alpha (float): scaling factor
+        beta (float): scaling factor
 
     Returns:
         the result Tensor
@@ -1169,21 +1228,22 @@ def mult(A, B, C=None, alpha=1.0, beta=0.0):
 
 
 def einsum(ops, *args):
-    '''
-    function TODO list to finish the function in cpp(just like numpy function):
+    ''' function TODO list to finish the function in cpp(just like numpy function):
     1.sum(A,axis = None)
     2.repeat(A,repeats)
     3.transpose(A,axes = None)
     Do the matrix to matrix einsum calculation according to the operands
     Warning : this function could only support two matrix' einsum calcultion
+
     Args:
-        ops(string):
-            the string specifies the subscripts for summation such as 'ki,kj->kij'
-            Here all the 26 lowercase letter can be used here.
-        arg(list of array_like):
-                These are the tensors for the operation,but here only support two tensors.
-    Returns: Singa.Tensor
-        the output matirx of the einsum calculation
+        ops(string): the string specifies the subscripts for summation such as
+            'ki,kj->kij' Here all the 26 lowercase letter can be used here.
+        args(list of array_like): These are the tensors for the operation,
+            but here only support two tensors.
+
+    Returns:
+        Singa.Tensor the output matirx of the einsum calculation
+
     The best way to understand this function is to try the examples below:
     A_ = [0,1,2,3,4,5,6,7,8,9,10,11]
     A = A_.reshape(4,3)
@@ -1306,6 +1366,7 @@ def einsum(ops, *args):
 
 def repeat(t, repeats, axis=None):
     '''Return the repeated tensor
+
     Args:
         t(tensor): the tensor to be repeated
         repeats(int or a sequence): the number that the tensor need to repeat for
@@ -1313,7 +1374,7 @@ def repeat(t, repeats, axis=None):
                     If it is None, then the repeated tensor will be flattened.If it isn't None,
                     the repeats could be sequence, but it's size should match the axis's shape
 
-    Return:
+    Returns:
         the tensor which has been repeated
     '''
     ret = t.repeat(repeats, axis)
@@ -1336,7 +1397,7 @@ def tensordot(A, B, axes=2):
               sequences specify the list of axes for ''a'' and ''b''. The
               corresponding axes are paired for sum-product.
 
-    Return:
+    Returns:
         singa.tensor: The tensor  product of ''A'' and ''B'' along the
         axes specified by ''axes''.
 
@@ -1440,8 +1501,8 @@ def div(lhs, rhs, ret=None):
     '''Elementi-wise division.
 
     Args:
-        lhs (Tensor)
-        rhs (Tensor)
+        lhs (Tensor): lhs tensor
+        rhs (Tensor): rhs tensor
         ret (Tensor, optional): if not None, the result is stored in it;
             otherwise, a new Tensor would be created for the result.
 
@@ -1463,9 +1524,9 @@ def axpy(alpha, x, y):
     '''Element-wise operation for y += alpha * x.
 
     Args:
-        alpha (float)
-        x (Tensor)
-        y (Tensor)
+        alpha (float): scaling factor
+        x (Tensor): a tensor
+        y (Tensor): a tensor
 
     Returns:
         y
@@ -1508,7 +1569,7 @@ def uniform(low, high, t):
 
     Args:
         low (float): the lower bound
-        hight (float): the higher bound
+        high (float): the higher bound
         t (Tensor): the results are put into t
 
     Returns:
@@ -1524,12 +1585,13 @@ def add_column(alpha, v, beta, M):
     Denote each column of M as m, m = alpha * v + beta * m
 
     Args:
-        alpha (float)
-        v (Tensor)
-        beta (float)
+        alpha (float): scalar factor
+        v (Tensor): a tensor
+        beta (float): scalar factor
         M (Tensor): 2d tensor
+
     Returns:
-        M
+        Resulted tensor M
     '''
     singa.AddColumnWithScale(float(alpha), float(beta), v.data, M.data)
     return M
@@ -1541,12 +1603,13 @@ def add_row(alpha, v, beta, M):
     Denote each row of M as m, m = alpha * v + beta * m
 
     Args:
-        alpha (float)
-        v (Tensor)
-        beta (float)
+        alpha (float): scaling factor
+        v (Tensor): a tensor
+        beta (float): scaling factor
         M (Tensor): 2d tensor
+
     Returns:
-        M
+        Resulted tensor M
     '''
     singa.AddRowWithScale(alpha, beta, v.data, M.data)
     return M
@@ -1590,6 +1653,13 @@ def _call_singa_func(_singa_func, *args):
     ''' this function calls singa global functions that returns Tensor
         and create new python Tensor instance
         e.g., Tensor [singa_func](args...)
+
+    Args:
+        _singa_func: singa CPP API
+        args: args for singa CPP API
+
+    Returns:
+        new singa tensor
     '''
     new_t = Tensor()
     new_t.data = _singa_func(*args)
@@ -1600,8 +1670,12 @@ def _call_singa_func(_singa_func, *args):
 
 
 def copy_from_numpy(data, np_array):
-    '''
-    Copy the data from the numpy array.
+    ''' Copy the data from the numpy array.
+        used as static method
+
+    Args:
+        data: singa ctensor
+        np_array: source numpy array
     '''
     assert np_array.size == data.Size(), \
         'tensor shape should be the same'
@@ -1617,9 +1691,15 @@ def copy_from_numpy(data, np_array):
 
 
 def concatenate(tensors, axis):
-    '''
-        concatenate tensors on given axis, all the dim should be the same
-        except the axis to be concatenated.
+    '''concatenate list of tensors together based on given axis
+
+    Args:
+        tensors: list of tensors.
+        axis: number of axis to cancatenate on, all the dim should be the same
+            except the axis to be concatenated.
+
+    Returns:
+        new tensor concatenated
     '''
     ctensors = singa.VecTensor()
     for t in tensors:
