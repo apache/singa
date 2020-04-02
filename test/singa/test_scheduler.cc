@@ -19,6 +19,9 @@
  *
  *************************************************************/
 
+#include <sstream>
+#include <utility>
+
 #include "gtest/gtest.h"
 #include "singa/core/device.h"
 #include "singa/core/scheduler.h"
@@ -39,26 +42,22 @@ using singa::NodeVec;
 using singa::Shape;
 using singa::Tensor;
 
-class TestGraph : public testing::Test {
- protected:
-  virtual void SetUp();
-  virtual void TearDown();
+namespace testing::internal {
+enum GTestColor { COLOR_DEFAULT, COLOR_RED, COLOR_GREEN, COLOR_YELLOW };
+extern void ColoredPrintf(GTestColor color, const char *fmt, ...);
+}  // namespace testing::internal
 
- protected:
-  std::vector<std::shared_ptr<Device> > devices;
+class Gout : public std::stringstream {
+ public:
+  ~Gout() {
+    testing::internal::ColoredPrintf(testing::internal::COLOR_GREEN,
+                                     "[          ] ");
+    testing::internal::ColoredPrintf(testing::internal::COLOR_YELLOW,
+                                     str().c_str());
+  }
 };
 
-void TestGraph::SetUp() {
-  auto cpp_cpu = singa::Platform::GetDefaultDevice();
-  devices.push_back(cpp_cpu);
-
-#ifdef USE_CUDA
-  auto cuda_gpu = std::make_shared<singa::CudaGPU>();
-  devices.push_back(cuda_gpu);
-#endif
-}
-
-void TestGraph::TearDown() { devices.clear(); }
+#define GOUT Gout()
 
 #define CheckNode(node, id_, in_edges_, out_edges_)         \
   do {                                                      \
@@ -102,46 +101,32 @@ void TestGraph::TearDown() { devices.clear(); }
     }                                                            \
   } while (false)
 
-TEST_F(TestGraph, AddOp) {
-  for (auto &dev : devices) {
-    Graph graph(dev.get());
+class TestGraph : public testing::Test {
+ protected:
+  virtual void SetUp();
+  virtual void TearDown();
 
-    Tensor in(Shape{1}, dev);
-    Tensor out(Shape{1}, dev);
-    auto op = [in, out](Context *ctx) mutable {};
+ protected:
+  std::vector<std::pair<std::string, std::shared_ptr<Device> > > devices;
+};
 
-    graph.AddOperation(op, {in.block()}, {out.block()});
+void TestGraph::SetUp() {
+  auto cpp_cpu = singa::Platform::GetDefaultDevice();
+  devices.push_back(std::make_pair("cpp_cpu", cpp_cpu));
 
-    auto nodes = graph.nodes();
-    auto edges = graph.edges();
-    auto blocks = graph.blocks();
-    auto write_blocks = graph.write_blocks();
-
-    EXPECT_EQ(1u, nodes.size());
-    EXPECT_EQ(1u, edges.size());
-    EXPECT_EQ(2u, blocks.size());
-    EXPECT_EQ(1u, write_blocks.size());
-
-    auto node = nodes[0];
-    auto edge = edges[0];
-    auto block1 = blocks[in.block()];
-    auto block2 = blocks[out.block()];
-
-    CheckNode(node, 0u, EdgeVec({nullptr}), EdgeVec({}));
-
-    CheckEdge(edge, 0u, in.block(), nullptr, node);
-
-    CheckBlock(block1, 0u, in.block(), BlockType::kInput, 1u, nullptr, node);
-    CheckBlock(block2, 1u, out.block(), BlockType::kEnd, 1u, node, node);
-
-    CheckWriteBlocks(write_blocks, BlockVec({out.block()}));
-
-    EXPECT_EQ(true, graph.dirty());
-  }
+#ifdef USE_CUDA
+  auto cuda_gpu = std::make_shared<singa::CudaGPU>();
+  devices.push_back(std::make_pair("cuda_gpu", cuda_gpu));
+#endif
 }
 
-TEST_F(TestGraph, AddSyncOp) {
-  for (auto &dev : devices) {
+void TestGraph::TearDown() { devices.clear(); }
+
+TEST_F(TestGraph, AddOp) {
+  for (auto &it : devices) {
+    GOUT << "Test graph on device [" << it.first << "]" << std::endl;
+
+    auto dev = it.second;
     Graph graph(dev.get());
 
     Tensor in(Shape{1}, dev);
@@ -164,7 +149,6 @@ TEST_F(TestGraph, AddSyncOp) {
     auto edge = edges[0];
     auto block1 = blocks[in.block()];
     auto block2 = blocks[out.block()];
-    auto write_block = write_blocks[0];
 
     CheckNode(node, 0u, EdgeVec({edge}), EdgeVec({}));
 
@@ -179,18 +163,116 @@ TEST_F(TestGraph, AddSyncOp) {
   }
 }
 
-TEST_F(TestGraph, AddInplaceOp) {}
+TEST_F(TestGraph, AddSyncOp) {
+  for (auto &it : devices) {
+    GOUT << "Test graph on device [" << it.first << "]" << std::endl;
 
-TEST_F(TestGraph, BlockTypeInput) {}
+    auto dev = it.second;
+    Graph graph(dev.get());
 
-TEST_F(TestGraph, BlockTypeParam) {}
+    Tensor in(Shape{1}, dev);
+    Tensor out(Shape{1}, dev);
+    auto op = [in, out](Context *ctx) mutable {};
 
-TEST_F(TestGraph, BlockTypeInter) {}
+    graph.AddOperation(op, {in.block()}, {out.block()});
 
-TEST_F(TestGraph, BlockTypeEnd) {}
+    auto nodes = graph.nodes();
+    auto edges = graph.edges();
+    auto blocks = graph.blocks();
+    auto write_blocks = graph.write_blocks();
 
-TEST_F(TestGraph, RunGraph) {}
+    EXPECT_EQ(1u, nodes.size());
+    EXPECT_EQ(1u, edges.size());
+    EXPECT_EQ(2u, blocks.size());
+    EXPECT_EQ(1u, write_blocks.size());
 
-TEST_F(TestGraph, RunInSerial) {}
+    auto node = nodes[0];
+    auto edge = edges[0];
+    auto block1 = blocks[in.block()];
+    auto block2 = blocks[out.block()];
 
-TEST_F(TestGraph, AutoRecycle) {}
+    CheckNode(node, 0u, EdgeVec({edge}), EdgeVec({}));
+
+    CheckEdge(edge, 0u, in.block(), nullptr, node);
+
+    CheckBlock(block1, 0u, in.block(), BlockType::kInput, 1u, nullptr, node);
+    CheckBlock(block2, 1u, out.block(), BlockType::kEnd, 1u, node, node);
+
+    CheckWriteBlocks(write_blocks, BlockVec({out.block()}));
+
+    EXPECT_EQ(true, graph.dirty());
+  }
+}
+
+TEST_F(TestGraph, AddInplaceOp) {
+  for (auto &it : devices) {
+    GOUT << "Test graph on device [" << it.first << "]" << std::endl;
+
+    auto dev = it.second;
+    Graph graph(dev.get());
+  }
+}
+
+TEST_F(TestGraph, BlockTypeInput) {
+  for (auto &it : devices) {
+    GOUT << "Test graph on device [" << it.first << "]" << std::endl;
+
+    auto dev = it.second;
+    Graph graph(dev.get());
+  }
+}
+
+TEST_F(TestGraph, BlockTypeParam) {
+  for (auto &it : devices) {
+    GOUT << "Test graph on device [" << it.first << "]" << std::endl;
+
+    auto dev = it.second;
+    Graph graph(dev.get());
+  }
+
+}
+
+TEST_F(TestGraph, BlockTypeInter) {
+  for (auto &it : devices) {
+    GOUT << "Test graph on device [" << it.first << "]" << std::endl;
+
+    auto dev = it.second;
+    Graph graph(dev.get());
+  }
+}
+
+TEST_F(TestGraph, BlockTypeEnd) {
+  for (auto &it : devices) {
+    GOUT << "Test graph on device [" << it.first << "]" << std::endl;
+
+    auto dev = it.second;
+    Graph graph(dev.get());
+  }
+}
+
+TEST_F(TestGraph, RunGraph) {
+  for (auto &it : devices) {
+    GOUT << "Test graph on device [" << it.first << "]" << std::endl;
+
+    auto dev = it.second;
+    Graph graph(dev.get());
+  }
+}
+
+TEST_F(TestGraph, RunInSerial) {
+  for (auto &it : devices) {
+    GOUT << "Test graph on device [" << it.first << "]" << std::endl;
+
+    auto dev = it.second;
+    Graph graph(dev.get());
+  }
+}
+
+TEST_F(TestGraph, AutoRecycle) {
+  for (auto &it : devices) {
+    GOUT << "Test graph on device [" << it.first << "]" << std::endl;
+
+    auto dev = it.second;
+    Graph graph(dev.get());
+  }
+}
