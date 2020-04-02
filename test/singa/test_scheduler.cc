@@ -67,11 +67,11 @@ void TestGraph::TearDown() { devices.clear(); }
     EXPECT_EQ(out_edges_.size(), node->out_edges().size()); \
     for (size_t i = 0; i < in_edges_.size(); ++i) {         \
       EXPECT_EQ(in_edges_[i], node->in_edges()[i])          \
-          << "in_edges is wrong at index" << i;             \
+          << "in_edges is wrong at index [" << i << "]";    \
     }                                                       \
     for (size_t i = 0; i < out_edges_.size(); ++i) {        \
       EXPECT_EQ(out_edges_[i], node->out_edges()[i])        \
-          << "out_edges is wrong at index" << i;            \
+          << "out_edges is wrong at index [" << i << "]";   \
     }                                                       \
   } while (false)
 
@@ -98,11 +98,49 @@ void TestGraph::TearDown() { devices.clear(); }
     EXPECT_EQ(correct_write_blocks.size(), write_blocks.size()); \
     for (size_t i = 0; i < write_blocks.size(); ++i) {           \
       EXPECT_EQ(correct_write_blocks[i], write_blocks[i])        \
-          << "write_blocks is wrong at index" << i;              \
+          << "write_blocks is wrong at index [" << i << "]";     \
     }                                                            \
   } while (false)
 
 TEST_F(TestGraph, AddOp) {
+  for (auto &dev : devices) {
+    Graph graph(dev.get());
+
+    Tensor in(Shape{1}, dev);
+    Tensor out(Shape{1}, dev);
+    auto op = [in, out](Context *ctx) mutable {};
+
+    graph.AddOperation(op, {in.block()}, {out.block()});
+
+    auto nodes = graph.nodes();
+    auto edges = graph.edges();
+    auto blocks = graph.blocks();
+    auto write_blocks = graph.write_blocks();
+
+    EXPECT_EQ(1u, nodes.size());
+    EXPECT_EQ(1u, edges.size());
+    EXPECT_EQ(2u, blocks.size());
+    EXPECT_EQ(1u, write_blocks.size());
+
+    auto node = nodes[0];
+    auto edge = edges[0];
+    auto block1 = blocks[in.block()];
+    auto block2 = blocks[out.block()];
+
+    CheckNode(node, 0u, EdgeVec({nullptr}), EdgeVec({}));
+
+    CheckEdge(edge, 0u, in.block(), nullptr, node);
+
+    CheckBlock(block1, 0u, in.block(), BlockType::kInput, 1u, nullptr, node);
+    CheckBlock(block2, 1u, out.block(), BlockType::kEnd, 1u, node, node);
+
+    CheckWriteBlocks(write_blocks, BlockVec({out.block()}));
+
+    EXPECT_EQ(true, graph.dirty());
+  }
+}
+
+TEST_F(TestGraph, AddSyncOp) {
   for (auto &dev : devices) {
     Graph graph(dev.get());
 
@@ -140,8 +178,6 @@ TEST_F(TestGraph, AddOp) {
     EXPECT_EQ(true, graph.dirty());
   }
 }
-
-TEST_F(TestGraph, AddSyncOp) {}
 
 TEST_F(TestGraph, AddInplaceOp) {}
 
