@@ -463,6 +463,7 @@ class DistOpt(object):
                 if (acc > threshold):
                     k += 1
                     if (k == self.partial):
+                        self.fused_all_reduce(plist, send=False)
                         self.fused_all_reduce(plist)
                         reduced = tenlist
                     acc = 0
@@ -471,6 +472,7 @@ class DistOpt(object):
         if plist:
             k += 1
             if (k == self.partial):
+                self.fused_all_reduce(plist, send=False)
                 self.fused_all_reduce(plist)
                 reduced = tenlist
         self.wait()
