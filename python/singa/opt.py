@@ -458,6 +458,8 @@ class DistOpt(object):
             else:
                 # smaller than threshold -> accumulate
                 plist.append(p.data)
+                if ((k + 1) == self.partial):
+                    self.fused_all_reduce([p.data], send=False)
                 tenlist.append(p)
                 acc += p.size()
                 if (acc > threshold):
