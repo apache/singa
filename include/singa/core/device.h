@@ -91,6 +91,8 @@ class Device {
 
   void RunGraph(bool serial = false);
 
+  void ResetGraph() { graph_->Reset(); }
+
   // Wait for one event.
   // void WaitFor();
 

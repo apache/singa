@@ -92,6 +92,10 @@ void Graph::Reset() {
     delete it.second;
   }
   blocks_.clear();
+
+  write_blocks_.clear();
+
+  dirty_ = false;
 }
 
 void Graph::Debug() {

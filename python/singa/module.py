@@ -34,22 +34,21 @@ class Graph(type):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             if self.graph_mode and self.training:
-                if func.called == False:
-                    func.called = True
+                name = func.__name__
+                if name not in self._called:
+                    self._called.add(name)
                     self._device.EnableGraph(True)
                     ret = func(self, *args, **kwargs)
                     self._device.Sync()
                     self._device.EnableGraph(False)
                     self._device.RunGraph(self.sequential)
-                    self.results[func.__name__] = ret
+                    self._results[name] = ret
                     self.initialized = True
                     return ret
 
-                return self.results[func.__name__]
+                return self._results[name]
             else:
                 return func(self, *args, **kwargs)
-
-        func.called = False
 
         return wrapper
 
@@ -105,7 +104,8 @@ class Module(object, metaclass=Graph):
         self.initialized = False
         self._device = get_default_device()
 
-        self.results = {}
+        self._results = {}
+        self._called = set()
 
     def forward(self, *input):
         """Defines the computation performed at every call.
