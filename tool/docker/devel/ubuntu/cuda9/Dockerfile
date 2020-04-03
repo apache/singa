@@ -86,8 +86,8 @@ RUN git clone https://github.com/NVIDIA/nccl.git $HOME/nccl \
     && apt-get update \
     && apt install build-essential devscripts debhelper fakeroot -y \
     && make pkg.debian.build \
-    && dpkg -i build/pkg/deb/libnccl2_2.4.8-1+cuda10.0_amd64.deb \
-    && dpkg -i build/pkg/deb/libnccl-dev_2.4.8-1+cuda10.0_amd64.deb
+    && dpkg -i build/pkg/deb/libnccl2_2.4.8-1+cuda9.0_amd64.deb \
+    && dpkg -i build/pkg/deb/libnccl-dev_2.4.8-1+cuda9.0_amd64.deb
 
 # build mpiexec
 RUN wget http://www.mpich.org/static/downloads/3.3.2/mpich-3.3.2.tar.gz -P $HOME \
