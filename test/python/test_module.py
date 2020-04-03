@@ -41,7 +41,7 @@ class MLP(module.Module):
 
         self.w0.gaussian(0.0, 0.1)
         self.b0.set_value(0.0)
-        self.w1.set_value(0.0, 0.1)
+        self.w1.gaussian(0.0, 0.1)
         self.b1.set_value(0.0)
 
         self.optimizer = optimizer
@@ -117,14 +117,25 @@ class TestPythonModule(unittest.TestCase):
             model.on_device(dev)
             self.get_numpy_params(model)
 
-            x = model(self.inputs)
+            out = model(self.inputs)
 
-            np_x = self.numpy_forward(self.data)
+            np_out = self.numpy_forward(self.data)
 
-            np.testing.assert_array_almost_equal(tensor.to_numpy(x), np_x)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(out), np_out)
 
     def test_forward_loss(self):
-        pass
+        for dev in [cpu_dev, gpu_dev]:
+            model = MLP(self.sgd)
+            model.on_device(dev)
+            self.get_numpy_params(model)
+
+            out = model(self.inputs)
+            loss = model.loss(out, self.target)
+
+            np_out = self.numpy_forward(self.data)
+            np_loss = self.numpy_loss(np_out, self.label)
+
+            np.testing.assert_array_almost_equal(tensor.to_numpy(out), np_out)
 
     def test_forward_loss_optim(self):
         pass
