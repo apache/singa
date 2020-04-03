@@ -84,12 +84,24 @@ class TestPythonModule(unittest.TestCase):
         self.target = Tensor(data=self.label)
 
     def get_numpy_params(self, model):
-        W0 = tensor.to_numpy(model.w0)
-        B0 = tensor.to_numpy(model.b0)
-        W1 = tensor.to_numpy(model.w1)
-        B1 = tensor.to_numpy(model.b1)
+        self.W0 = tensor.to_numpy(model.w0)
+        self.B0 = tensor.to_numpy(model.b0)
+        self.W1 = tensor.to_numpy(model.w1)
+        self.B1 = tensor.to_numpy(model.b1)
 
-        return W0, B0, W1, B1
+    def numpy_forward(self, inputs):
+        res = np.matmul(inputs, self.W0)
+        res = np.add(res, self.B0)
+        res = np.maximum(res, 0)
+        res = np.matmul(res, self.W1)
+        res = np.add(res, self.B1)
+        return res
+
+    def numpy_loss(self, out, y):
+        pass
+
+    def numpy_optim(self, loss):
+        pass
 
     def setUp(self):
         self.sgd = opt.SGD(lr=0.05)
@@ -103,17 +115,13 @@ class TestPythonModule(unittest.TestCase):
         for dev in [cpu_dev, gpu_dev]:
             model = MLP(self.sgd)
             model.on_device(dev)
-            W0, B0, W1, B1 = self.get_numpy_params(model)
+            self.get_numpy_params(model)
 
             x = model(self.inputs)
 
-            res = np.matmul(self.data, W0)
-            res = np.add(res, B0)
-            res = np.maximum(res, 0)
-            res = np.matmul(res, W1)
-            res = np.add(res, B1)
+            np_x = self.numpy_forward(self.data)
 
-            np.testing.assert_array_almost_equal(tensor.to_numpy(x), res)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(x), np_x)
 
     def test_forward_loss(self):
         pass
