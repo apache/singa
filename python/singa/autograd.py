@@ -596,7 +596,7 @@ class Matmul(Operation):
 
     def forward(self, x, w):
         """
-        Return np.matmul(x,w), where x and w are CTensor.
+        Return `np.matmul(x,w)`, where x and w are CTensor.
         """
         if training:
             self.input = (x, w)
@@ -617,7 +617,7 @@ class Matmul(Operation):
 
 def matmul(x, w):
     """
-    Return np.matmul(x,w), where x and w are Tensor.
+    Return `np.matmul(x,w)`, where x and w are Tensor.
     """
     return Matmul()(x, w)[0]
 
@@ -778,8 +778,8 @@ def reshape(x, shape):
 
 class PRelu(Operation):
     """
-    PRelu applies the function f(x) = slope * x for x < 0, 
-    f(x) = x for x >= 0 to the data tensor elementwise.
+    PRelu applies the function `f(x) = slope * x` for x < 0, 
+    `f(x) = x` for x >= 0 to the data tensor elementwise.
     """
 
     def __init__(self):
@@ -828,8 +828,8 @@ class PRelu(Operation):
 
 def prelu(x, slope):
     """
-    PRelu applies the function f(x) = slope * x for x < 0, 
-    f(x) = x for x >= 0 to the data tensor elementwise.
+    PRelu applies the function `f(x) = slope * x` for x < 0, 
+    `f(x) = x` for x >= 0 to the data tensor elementwise.
     Args:
         x (Tensor): matrix.
     Return:
@@ -848,7 +848,7 @@ class Add(Operation):
 
     def forward(self, a, b):
         """
-        Return a+b, where a and b are CTensor.
+        Return `a+b`, where a and b are CTensor.
         """
         res = singa.__add__(a, b)
         if training:
@@ -877,14 +877,14 @@ class Add(Operation):
 
 def add(a, b):
     """
-    Return a+b, where a and b are Tensor.
+    Return `a+b`, where a and b are Tensor.
     """
     return Add()(a, b)[0]
 
 
 class Elu(Operation):
     """
-    f(x) = alpha * (exp(x) - 1.) for x < 0, f(x) = x for x >= 0., is applied to 
+    `f(x) = alpha * (exp(x) - 1.)` for x < 0, `f(x) = x` for x >= 0., is applied to 
     the tensor elementwise.
     """
     def __init__(self, alpha=1.):
@@ -932,7 +932,7 @@ class Elu(Operation):
 
 def elu(x, alpha=1):
     """
-    f(x) = alpha * (exp(x) - 1.) for x < 0, f(x) = x for x >= 0., is applied to 
+    `f(x) = alpha * (exp(x) - 1.)` for x < 0, `f(x) = x` for x >= 0., is applied to 
     the tensor elementwise.
     Args:
         x (Tensor): matrix
@@ -953,7 +953,7 @@ class Equal(Operation):
 
     def forward(self, x, y):
         """
-        Return a=b, where a and b are CTensor.
+        Return `a=b`, where a and b are CTensor.
         """
         m = singa.__sub__(x, y)
         cur = singa.__mul__(singa.GEFloat(m, 0), singa.LEFloat(m, 0))
@@ -971,14 +971,14 @@ class Equal(Operation):
 
 def equal(x, y):
     """
-    Return a=b, where a and b are Tensor.
+    Return `a=b`, where a and b are Tensor.
     """
     return Equal()(x, y)[0]
 
 
 class SeLU(Operation):
     """
-    y = gamma * (alpha * e^x - alpha) for x <= 0, y = gamma * x for x > 0 
+    `y = gamma * (alpha * e^x - alpha)` for x <= 0, `y = gamma * x` for x > 0 
     is applied to the tensor elementwise.
     """
 
@@ -1032,7 +1032,7 @@ class SeLU(Operation):
 
 def selu(x, alpha=1.67326, gamma=1.0507):
     """
-    y = gamma * (alpha * e^x - alpha) for x <= 0, y = gamma * x for x > 0 
+    `y = gamma * (alpha * e^x - alpha)` for x <= 0, `y = gamma * x` for x > 0 
     is applied to the tensor elementwise.
     Args:
         x (Tensor): matrix
@@ -1248,8 +1248,8 @@ def ctensor2numpy(x):
 class Flatten(Operation):
     """
     Flattens the input tensor into a 2D matrix. If input tensor has shape 
-    (d_0, d_1, ... d_n) then the output will have shape (d_0 X d_1 ... 
-    d_(axis-1), d_axis X d_(axis+1) ... X dn).
+    `(d_0, d_1, ... d_n)` then the output will have shape `(d_0 X d_1 ... 
+    d_(axis-1), d_axis X d_(axis+1) ... X dn)`.
     """
 
     def __init__(self, axis=1):
@@ -1260,8 +1260,8 @@ class Flatten(Operation):
                 value for axis must be in the range [-r, r], where r is the 
                 rank of the input tensor. Negative value means counting 
                 dimensions from the back. When axis = 0, the shape of the 
-                output tensor is (1, (d_0 X d_1 ... d_n), where the shape 
-                of the input tensor is (d_0, d_1, ... d_n).
+                output tensor is `(1, (d_0 X d_1 ... d_n)`, where the shape 
+                of the input tensor is `(d_0, d_1, ... d_n)`.
         Returns:
             the result CTensor
         """
@@ -1303,8 +1303,8 @@ class Flatten(Operation):
 def flatten(x, axis=1):
     """
     Flattens the input tensor into a 2D matrix. If input tensor has shape 
-    (d_0, d_1, ... d_n) then the output will have shape (d_0 X d_1 ... 
-    d_(axis-1), d_axis X d_(axis+1) ... X dn).
+    `(d_0, d_1, ... d_n)` then the output will have shape `(d_0 X d_1 ... 
+    d_(axis-1), d_axis X d_(axis+1) ... X dn)`.
     Args:
         x (Tensor): the input tensor
         axis (int): Indicate up to which input dimensions (exclusive) 
@@ -1312,8 +1312,8 @@ def flatten(x, axis=1):
             value for axis must be in the range [-r, r], where r is the 
             rank of the input tensor. Negative value means counting 
             dimensions from the back. When axis = 0, the shape of the 
-            output tensor is (1, (d_0 X d_1 ... d_n), where the shape 
-            of the input tensor is (d_0, d_1, ... d_n).
+            output tensor is `(1, (d_0 X d_1 ... d_n)`, where the shape 
+            of the input tensor is `(d_0, d_1, ... d_n)`.
     Returns:
         the result Tensor
     """
@@ -2896,7 +2896,7 @@ def atanh(x):
 
 class Sigmoid(Operation):
     """
-    y = 1 / (1 + exp(-x)), is applied to the tensor elementwise.
+    `y = 1 / (1 + exp(-x))`, is applied to the tensor elementwise.
     """
 
     def __init__(self):
@@ -2930,7 +2930,7 @@ class Sigmoid(Operation):
 
 def sigmoid(x):
     """
-    y = 1 / (1 + exp(-x)), is applied to the tensor elementwise.
+    `y = 1 / (1 + exp(-x))`, is applied to the tensor elementwise.
     Args:
         x (Tensor): Input tensor
     Returns: 
@@ -2950,7 +2950,7 @@ class Mul(Operation):
 
     def forward(self, a, b):
         """
-        Return np.multiply(a,b), where a and b are CTensor.
+        Return `np.multiply(a,b)`, where a and b are CTensor.
         """
         # todo we cannot support mul op for int tensors
         _a, _b = a, b
@@ -2991,7 +2991,7 @@ class Mul(Operation):
 
 def mul(x, y):
     """
-    Return np.multiply(x,y), where a and b are Tensor.
+    Return `np.multiply(x,y)`, where a and b are Tensor.
     """
     return Mul()(x, y)[0]
 
@@ -3332,12 +3332,12 @@ class LSTM(RNN_Base):
 
 class Abs(Operation):
     """
-    y = abs(x), is applied to the tensor elementwise.
+    `y = abs(x)`, is applied to the tensor elementwise.
     """
 
     def forward(self, a):
         """
-        Return abs(a), where a is CTensor.
+        Return `abs(a)`, where a is CTensor.
         """
         if training:
             self.input = a
@@ -3364,12 +3364,12 @@ def abs(a):
 
 class Exp(Operation):
     """
-    y = exp(x), is applied to the tensor elementwise.
+    `y = exp(x)`, is applied to the tensor elementwise.
     """
 
     def forward(self, a):
         """
-        Return exp(a), where a is Tensor.
+        Return `exp(a)`, where a is Tensor.
         """
         if training:
             self.input = a
@@ -3389,14 +3389,14 @@ class Exp(Operation):
 
 def exp(a):
     """
-    Return exp(a), where a is Tensor.
+    Return `exp(a)`, where a is Tensor.
     """
     return Exp()(a)[0]
 
 
 class LeakyRelu(Operation):
     """
-    f(x) = alpha * x for x < 0, f(x) = x for x >= 0, is applied to the tensor elementwise.
+    `f(x) = alpha * x` for x < 0, `f(x) = x` for x >= 0, is applied to the tensor elementwise.
     """
 
     def __init__(self, a):
@@ -3441,7 +3441,7 @@ class LeakyRelu(Operation):
 
 def leakyrelu(x, a=0.01):
     """
-    f(x) = alpha * x for x < 0, f(x) = x for x >= 0 is applied to the tensor 
+    `f(x) = alpha * x` for x < 0, `f(x) = x` for x >= 0 is applied to the tensor 
     elementwise.
     Args:
         x (Tensor): Input tensor
@@ -3497,7 +3497,7 @@ def sign(a):
 
 class Pow(Operation):
     """
-    f(x) = a^b, is applied to the tensor elementwise.
+    `f(x) = a^b`, is applied to the tensor elementwise.
     """
 
     def __init__(self):
@@ -3505,7 +3505,7 @@ class Pow(Operation):
 
     def forward(self, a, b):
         """
-        Return a^b, where a and b are CTensor.
+        Return `a^b`, where a and b are CTensor.
         """
         res = singa.Pow(a, b)
         if training:
@@ -3541,14 +3541,14 @@ class Pow(Operation):
 
 def pow(a, b):
     """
-    Return a^b, where a and b are Tensor.
+    Return `a^b`, where a and b are Tensor.
     """
     return Pow()(a, b)[0]
 
 
 class SoftSign(Operation):
     """
-    Calculates the softsign (x/(1+|x|)) of the given input tensor element-wise.
+    Calculates the softsign `(x/(1+|x|))` of the given input tensor element-wise.
     """
 
     def __init__(self):
@@ -3556,7 +3556,7 @@ class SoftSign(Operation):
 
     def forward(self, x):
         """
-        Return (x/(1+|x|)), where x is CTensor.
+        Return `(x/(1+|x|))`, where x is CTensor.
         """
         # y = x / (1 + np.abs(x))
         if training:
@@ -3581,14 +3581,14 @@ class SoftSign(Operation):
 
 def softsign(x):
     """
-    Return (x/(1+|x|)), where x is Tensor.
+    Return `(x/(1+|x|))`, where x is Tensor.
     """
     return SoftSign()(x)[0]
 
 
 class Sqrt(Operation):
     """
-    y = x^0.5, is applied to the tensor elementwise.
+    `y = x^0.5`, is applied to the tensor elementwise.
     """
 
     def __init__(self):
@@ -3596,7 +3596,7 @@ class Sqrt(Operation):
 
     def forward(self, x):
         """
-        Return x^0.5, where x is CTensor.
+        Return `x^0.5`, where x is CTensor.
         """
         if training:
             self.input = x
@@ -3617,14 +3617,14 @@ class Sqrt(Operation):
 
 def sqrt(x):
     """
-    Return x^0.5, where x is Tensor.
+    Return `x^0.5`, where x is Tensor.
     """
     return Sqrt()(x)[0]
 
 
 class SoftPlus(Operation):
     """
-    y = ln(exp(x) + 1) is applied to the tensor elementwise.
+    `y = ln(exp(x) + 1)` is applied to the tensor elementwise.
     """
 
     def __init__(self):
@@ -3632,7 +3632,7 @@ class SoftPlus(Operation):
 
     def forward(self, x):
         """
-        Return ln(exp(x) + 1), where x is CTensor.
+        Return `ln(exp(x) + 1)`, where x is CTensor.
         """
         #f(x) = ln(exp(x) + 1)
         if training:
@@ -3656,7 +3656,7 @@ class SoftPlus(Operation):
 
 def softplus(x):
     """
-    Return ln(exp(x) + 1), where x is Tensor.
+    Return `ln(exp(x) + 1)`, where x is Tensor.
     """
     return SoftPlus()(x)[0]
 
@@ -3672,7 +3672,7 @@ class Sub(Operation):
 
     def forward(self, a, b):
         """
-        Return a-b, where x is CTensor.
+        Return `a-b`, where x is CTensor.
         """
         res = singa.__sub__(a, b)
         if training:
@@ -3790,7 +3790,7 @@ def min(*l):
 
 class Log(Operation):
     """
-    y = log(x), is applied to the tensor elementwise.
+    `y = log(x)`, is applied to the tensor elementwise.
     """
 
     def __init__(self):
@@ -3798,7 +3798,7 @@ class Log(Operation):
 
     def forward(self, x):
         """
-        Return log(x), where x is CTensor.
+        Return `log(x)`, where x is CTensor.
         """
         if training:
             self.input = x
@@ -3825,7 +3825,7 @@ def log(x):
 
 class HardSigmoid(Operation):
     """
-    y = max(0, min(1, alpha * x + beta)), is applied to the tensor elementwise.
+    `y = max(0, min(1, alpha * x + beta))`, is applied to the tensor elementwise.
     """
 
     def __init__(self, alpha=0.2, gamma=0.5):
@@ -3871,7 +3871,7 @@ class HardSigmoid(Operation):
 
 def hardsigmoid(x, alpha=0.2, gamma=0.5):
     """
-    y = max(0, min(1, alpha * x + beta)), is applied to the tensor elementwise.
+    `y = max(0, min(1, alpha * x + beta))`, is applied to the tensor elementwise.
     Args:
         x (Tensor): matrix
         alpha (float): Value of alpha.
@@ -3963,7 +3963,7 @@ class Div(Operation):
 
     def forward(self, a, b):
         """
-        Return np.div(a,b), where a and b are CTensor.
+        Return `np.div(a,b)`, where a and b are CTensor.
         """
         res = singa.__mul__(a, singa.PowFloat(b, -1.0))
         # res = singa.__div__(a, b)
@@ -3999,7 +3999,7 @@ class Div(Operation):
 
 def div(a, b):
     """
-    Return np.div(a,b), where a and b are Tensor.
+    Return `np.div(a,b)`, where a and b are Tensor.
     """
     return Div()(a, b)[0]
 
@@ -4029,6 +4029,8 @@ class Shape(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
+        Returns: 
+            list of int, the shape of dy
         """
         return list(dy.shape())
 
@@ -4120,7 +4122,7 @@ def max(*l):
     Args:
         *x (a list of Tensor): List of tensors for max.
     Returns: 
-        CTensor, the output
+        Tensor, the output
     """
     return Max()(*l)[0]
 
@@ -4135,7 +4137,7 @@ class And(Operation):
 
     def forward(self, a, b):
         """
-        Return np.logical_and(a,b), where a and b are CTensor.
+        Return `np.logical_and(a,b)`, where a and b are CTensor.
         """
         m = singa.__mul__(a, b)
         cur = singa.PowFloat(singa.Sign(m), 2)
@@ -4154,7 +4156,7 @@ class And(Operation):
 
 def _and(a, b):
     """
-    Return np.logical_and(a,b), where a and b are Tensor.
+    Return `np.logical_and(a,b)`, where a and b are Tensor.
     """
     return And()(a, b)[0]
 
@@ -4169,7 +4171,7 @@ class Or(Operation):
 
     def forward(self, a, b):
         """
-        Return np.logical_or(a,b), where a and b are CTensor.
+        Return `np.logical_or(a,b)`, where a and b are CTensor.
         """
         m = singa.__add__(singa.PowFloat(singa.Sign(a), 2.0),
                           singa.PowFloat(singa.Sign(b), 2.0))
@@ -4180,7 +4182,7 @@ class Or(Operation):
     def backward(self, dy):
         """
         Args:
-            dy (CTensor): the gradient tensor from upper operations
+            dy (CTensor): data for the `dL / dy`, L is the loss.
         Raises:
             AssertionError: no backward function for this operator
         """
@@ -4204,7 +4206,7 @@ class Not(Operation):
 
     def forward(self, x):
         """
-        Return np.logical_not(x), where x is CTensor.
+        Return `np.logical_not(x)`, where x is CTensor.
         """
         mask0 = singa.GEFloat(x, 0)
         mask1 = singa.LEFloat(x, 0)
@@ -4224,7 +4226,7 @@ class Not(Operation):
 
 def _not(x):
     """
-    Return np.logical_not(x), where x is Tensor.
+    Return `np.logical_not(x)`, where x is Tensor.
     """
     return Not()(x)[0]
 
@@ -4239,7 +4241,7 @@ class Xor(Operation):
 
     def forward(self, a, b):
         """
-        Return np.logical_xor(a,b), where a and b are CTensor.
+        Return `np.logical_xor(a,b)`, where a and b are CTensor.
         """
         m = singa.__sub__(singa.PowFloat(singa.Sign(a), 2.0),
                           singa.PowFloat(singa.Sign(b), 2.0))
@@ -4259,14 +4261,14 @@ class Xor(Operation):
 
 def _xor(a, b):
     """
-    Return np.logical_xor(a,b), where a and b are Tensor.
+    Return `np.logical_xor(a,b)`, where a and b are Tensor.
     """
     return Xor()(a, b)[0]
 
 
 class Negative(Operation):
     """
-    y = -x, is applied to the tensor elementwise.
+    `y = -x`, is applied to the tensor elementwise.
     """
 
     def __init__(self):
@@ -4274,7 +4276,7 @@ class Negative(Operation):
 
     def forward(self, x):
         """
-        Return -x, where x is CTensor.
+        Return `-x`, where x is CTensor.
         """
         #y=-x
         return singa.MultFloat(x, -1)
@@ -4291,14 +4293,14 @@ class Negative(Operation):
 
 def negative(x):
     """
-    Return -x, where x is Tensor.
+    Return `-x`, where x is Tensor.
     """
     return Negative()(x)[0]
 
 
 class Reciprocal(Operation):
     """
-    y = 1/x, is applied to the tensor elementwise.
+    `y = 1/x`, is applied to the tensor elementwise.
     """
 
     def __init__(self):
@@ -4306,7 +4308,7 @@ class Reciprocal(Operation):
 
     def forward(self, x):
         """
-        Return 1/x, where x is CTensor.
+        Return `1/x`, where x is CTensor.
         """
         #y=1/x elementwise
         if training:
@@ -4335,12 +4337,12 @@ def reciprocal(x):
 
 class Gemm(Operation):
     """
-    Init a General Matrix multiplication(Gemm) operator. Compute Y = alpha * 
-    A' * B' + beta * C, where input tensor A has shape (M, K) or (K, M), input 
+    Init a General Matrix multiplication(Gemm) operator. Compute `Y = alpha * 
+    A' * B' + beta * C`, where input tensor A has shape (M, K) or (K, M), input 
     tensor B has shape (K, N) or (N, K), input tensor C is broadcastable to 
     shape (M, N), and output tensor Y has shape (M, N).
-    A' = transpose(A) if transA else A
-    B' = transpose(B) if transB else B
+    `A' = transpose(A)` if transA else A
+    `B' = transpose(B)` if transB else B
     """
 
     def __init__(self, alpha=1.0, beta=1.0, transA=0, transB=0):
@@ -4421,12 +4423,12 @@ class Gemm(Operation):
 
 def gemm(A, B, C=None, alpha=1.0, beta=1.0, transA=0, transB=0):
     """
-    Init a General Matrix multiplication(Gemm) operator. Compute Y = alpha * 
-    A' * B' + beta * C, where input tensor A has shape (M, K) or (K, M), input 
+    Init a General Matrix multiplication(Gemm) operator. Compute `Y = alpha * 
+    A' * B' + beta * C`, where input tensor A has shape (M, K) or (K, M), input 
     tensor B has shape (K, N) or (N, K), input tensor C is broadcastable to 
     shape (M, N), and output tensor Y has shape (M, N).
-    A' = transpose(A) if transA else A
-    B' = transpose(B) if transB else B
+    `A' = transpose(A)` if transA else A
+    `B' = transpose(B)` if transB else B
     Args:
         A (Tensor): The shape of A should be (M, K) if transA is 0, or 
             (K, M) if transA is non-zero.
@@ -4586,7 +4588,7 @@ def constant_of_shape(x, value=0):
 class Dropout(Operation):
     """
     Init a Dropout, which scales the masked input data by the following equation:
-    output = scale * data * mask, scale = 1. / (1. - ratio).
+    `output = scale * data * mask`, `scale = 1. / (1. - ratio)`.
     """
 
     def __init__(self, ratio=0.5):
@@ -4628,7 +4630,7 @@ class Dropout(Operation):
 def dropout(x, ratio=0.5):
     """
     Init a Dropout, which scales the masked input data by the following 
-    equation: output = scale * data * mask, scale = 1. / (1. - ratio).
+    equation: `output = scale * data * mask`, `scale = 1. / (1. - ratio)`.
     Args:
         x (Tensor): input tensor.
         ratio (float): the ratio of random dropout, with value in [0, 1).
@@ -4901,7 +4903,7 @@ def slice(x, starts, ends, axes=None, steps=None):
 class Ceil(Operation):
     """
     Ceil takes one input data (Tensor) and produces one output data (Tensor) 
-    where the ceil is, y = ceil(x), is applied to the tensor elementwise.
+    where the ceil is, `y = ceil(x)`, is applied to the tensor elementwise.
     """
 
     def __init__(self):
@@ -4933,7 +4935,7 @@ class Ceil(Operation):
 def ceil(x):
     """
     Ceil takes one input data (Tensor) and produces one output data (Tensor) 
-    where the ceil is, y = ceil(x), is applied to the tensor elementwise.
+    where the ceil is, `y = ceil(x)`, is applied to the tensor elementwise.
     Args:
         x (Tensor): input tensor.
     Returns:
@@ -5023,7 +5025,7 @@ class Gather(Operation):
     """
     Init a Gather, Given data tensor of rank r >= 1, and indices tensor of 
     rank q, gather entries of the axis dimension of data (by default outer-most 
-    one as axis=0) indexed by indices, and concatenates them in an output tensor of rank q + (r - 1).
+    one as axis=0) indexed by indices, and concatenates them in an output tensor of rank `q + (r - 1)`.
     """
 
     def __init__(self, axis, indices):
@@ -5123,7 +5125,7 @@ def gather(x, axis, indices):
     """
     Init a Gather, Given data tensor of rank r >= 1, and indices tensor of 
     rank q, gather entries of the axis dimension of data (by default outer-most 
-    one as axis=0) indexed by indices, and concatenates them in an output tensor of rank q + (r - 1).
+    one as axis=0) indexed by indices, and concatenates them in an output tensor of rank `q + (r - 1)`.
     Args:
         x (Tensor): input tensor.
         axis (int): which axis to slice on. A negative value means counting 
