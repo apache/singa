@@ -41,6 +41,42 @@ Graph::Graph(Device *device) : device_(device) {}
 
 Graph::~Graph() { Reset(); }
 
+Node *Graph::node(const size_t idx) const {
+  CHECK_LT(idx, nodes_.size());
+  return nodes_[idx];
+}
+
+Edge *Graph::edge(const size_t idx) const {
+  CHECK_LT(idx, edges_.size());
+  return edges_[idx];
+}
+
+BlkInfo *Graph::block(Block *blk) const {
+  auto it = blocks_.find(blk);
+  CHECK(it != blocks_.end());
+  return it->second;
+}
+
+Block *Graph::write_block(const size_t idx) const {
+  CHECK_LT(idx, write_blocks_.size());
+  return write_blocks_[idx];
+}
+
+Node *Graph::begin_node(const size_t idx) const {
+  CHECK_LT(idx, begin_nodes_.size());
+  return begin_nodes_[idx];
+}
+
+const NodeVec &Graph::next_nodes(const size_t idx) const {
+  CHECK_LT(idx, next_nodes_.size());
+  return next_nodes_[idx];
+}
+
+const BlockVec &Graph::free_blocks(const size_t idx) const {
+  CHECK_LT(idx, free_blocks_.size());
+  return free_blocks_[idx];
+}
+
 void Graph::Reset() {
   for (auto it : nodes_) {
     delete it;
@@ -56,6 +92,10 @@ void Graph::Reset() {
     delete it.second;
   }
   blocks_.clear();
+
+  write_blocks_.clear();
+
+  dirty_ = false;
 }
 
 void Graph::Debug() {
@@ -111,7 +151,7 @@ void Graph::Debug() {
 }
 
 void Graph::RunGraph() {
-  if (dirty) Analysis();
+  if (dirty_) Analysis();
 
   SafeQueue<Node *> node_queue;
 
@@ -151,7 +191,7 @@ void Graph::RunGraph() {
 }
 
 void Graph::RunInSerial() {
-  if (dirty) Analysis();
+  if (dirty_) Analysis();
 
   for (size_t i = 0; i < nodes_.size(); ++i) {
     Node *curNode = nodes_[i];
@@ -173,10 +213,9 @@ void Graph::RunInSerial() {
   }
 }
 
-void Graph::AddOperation(function<void(Context *)> &&op,
-                         const BlockSet &read_blocks,
-                         const BlockSet &write_blocks) {
-  dirty = true;
+void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
+                         const BlockVec &write_blocks) {
+  dirty_ = true;
 
   if (read_blocks.size() == 0 && write_blocks.size() == 0) {
     AddSyncOp(std::move(op));
@@ -193,12 +232,12 @@ void Graph::AddOperation(function<void(Context *)> &&op,
   for (size_t i = 0; i < read_blocks.size(); ++i) {
     Block *blk = read_blocks[i];
     Edge *edge = nullptr;
-    BlockInfo *blkInfo = nullptr;
+    BlkInfo *blkInfo = nullptr;
 
     auto it = blocks_.find(blk);
     if (it == blocks_.end()) {
       edge = new Edge(edges_.size(), blk, nullptr, node);
-      blkInfo = new BlockInfo(blocks_.size(), blk, BlockType::kInput);
+      blkInfo = new BlkInfo(blocks_.size(), blk, BlockType::kInput);
       blocks_[blk] = blkInfo;
     } else {
       blkInfo = it->second;
@@ -224,11 +263,11 @@ void Graph::AddOperation(function<void(Context *)> &&op,
   // update last node for write_blocks
   for (size_t i = 0; i < write_blocks.size(); ++i) {
     Block *blk = write_blocks[i];
-    BlockInfo *blkInfo = nullptr;
+    BlkInfo *blkInfo = nullptr;
 
     auto it = blocks_.find(blk);
     if (it == blocks_.end()) {
-      blkInfo = new BlockInfo(blocks_.size(), blk, BlockType::kEnd);
+      blkInfo = new BlkInfo(blocks_.size(), blk, BlockType::kEnd);
       blocks_[blk] = blkInfo;
     } else {
       blkInfo = it->second;
@@ -295,7 +334,7 @@ void Graph::Analysis() {
     for (size_t i = 0; i < curNode->in_edges_.size(); ++i) {
       Edge *edge = curNode->in_edges_[i];
       Block *blk = edge->blk_;
-      BlockInfo *blkInfo = blocks_[blk];
+      BlkInfo *blkInfo = blocks_[blk];
       if (blkInfo->last_node_ == curNode && blkInfo->write_node_ != curNode) {
         BlockType type = blkInfo->type_;
         if (type == BlockType::kInter &&
@@ -322,7 +361,7 @@ void Graph::Analysis() {
     }
   }
 
-  dirty = false;
+  dirty_ = false;
 }
 
 void Graph::FreeLoop() {
@@ -345,7 +384,7 @@ void Graph::AddSyncOp(function<void(Context *)> &&op) {
 
   for (size_t i = 0; i < write_blocks_.size(); ++i) {
     Block *blk = write_blocks_[i];
-    BlockInfo *blkInfo = blocks_[blk];
+    BlkInfo *blkInfo = blocks_[blk];
 
     if (blkInfo->type_ == BlockType::kEnd) {
       blkInfo->type_ = BlockType::kInter;
