@@ -28,11 +28,13 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # install conda
-RUN wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-4.5.12-Linux-x86_64.sh -O miniconda.sh;
+RUN wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
 RUN bash miniconda.sh -b -p /root/miniconda
 ENV PATH /root/miniconda/bin:${PATH}
 RUN conda config --set always_yes yes --set changeps1 no
-RUN conda install -c nusdbsystem singa-gpu
+RUN conda config --add channels conda-forge
+RUN conda config --add channels nusdbsystem
+RUN conda install -c conda-forge -c nusdbsystem singa-gpu
 RUN conda install -c conda-forge sphinx
 RUN conda install -c conda-forge sphinx_rtd_theme
 RUN conda install -c conda-forge recommonmark
