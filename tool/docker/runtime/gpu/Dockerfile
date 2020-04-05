@@ -28,7 +28,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # install conda
-RUN wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+RUN wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-py37_4.8.2-Linux-x86_64.sh -O miniconda.sh;
 RUN bash miniconda.sh -b -p /root/miniconda
 ENV PATH /root/miniconda/bin:${PATH}
 RUN conda config --set always_yes yes --set changeps1 no
