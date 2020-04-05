@@ -1,0 +1,7 @@
+name: singa
+channels:
+  - shicong
+  - conda-forge
+dependencies:
+  - singa=3.0.0.rc0=cpu_py37 [--no-deps]
+  - python_abi=3.7 [--no-deps]
