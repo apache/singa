@@ -80,8 +80,7 @@ class Communicator {
   int MPIRankInLocal;
 
   Communicator(int limit);
-  Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder,
-               int size);
+  Communicator(int gpu_num, int num_gpus, const NcclIdHolder &holder, int size);
   ~Communicator();
   void synch(Tensor &t);
   void fusedSynch(vector<Tensor> &t, bool send = true);

@@ -20,15 +20,8 @@
 # the code is modified from
 # https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
 
-from singa import opt
-from singa import device
-from singa import tensor
-from singa import module
 from singa import autograd
-
-import time
-import numpy as np
-from tqdm import trange
+from singa import module
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -132,6 +125,7 @@ class ResNet(module.Module):
 
     def __init__(self, block, layers, num_classes=1000):
         self.inplanes = 64
+        self.num_classes = num_classes
         super(ResNet, self).__init__()
         self.conv1 = autograd.Conv2d(3,
                                      64,
@@ -212,6 +206,7 @@ def resnet18(pretrained=False, **kwargs):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model = ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
+    model.input_size = 224
 
     return model
 
@@ -223,6 +218,7 @@ def resnet34(pretrained=False, **kwargs):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model = ResNet(BasicBlock, [3, 4, 6, 3], **kwargs)
+    model.input_size = 224
 
     return model
 
@@ -234,6 +230,7 @@ def resnet50(pretrained=False, **kwargs):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
+    model.input_size = 224
 
     return model
 
@@ -245,6 +242,7 @@ def resnet101(pretrained=False, **kwargs):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model = ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
+    model.input_size = 224
 
     return model
 
@@ -256,71 +254,11 @@ def resnet152(pretrained=False, **kwargs):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model = ResNet(Bottleneck, [3, 8, 36, 3], **kwargs)
+    model.input_size = 224
 
     return model
 
 
-def train_resnet(DIST=True, graph=True, sequential=False):
-
-    # Define the hypermeters good for the train_resnet
-    niters = 100
-    batch_size = 32
-    sgd = opt.SGD(lr=0.1, momentum=0.9, weight_decay=1e-5)
-
-    device_id = 0
-    world_size = 1
-    rank_in_global = 0
-    IMG_SIZE = 224
-
-    if DIST:
-        sgd = opt.DistOpt(sgd)
-        world_size = sgd.world_size
-        device_id = sgd.rank_in_local
-        rank_in_global = sgd.rank_in_global
-
-    dev = device.create_cuda_gpu_on(device_id)
-
-    tx = tensor.Tensor((batch_size, 3, IMG_SIZE, IMG_SIZE), dev)
-    ty = tensor.Tensor((batch_size,), dev, tensor.int32)
-    x = np.random.randn(batch_size, 3, IMG_SIZE, IMG_SIZE).astype(np.float32)
-    y = np.random.randint(0, 1000, batch_size, dtype=np.int32)
-    tx.copy_from_numpy(x)
-    ty.copy_from_numpy(y)
-
-    # construct the model
-    model = resnet50()
-    model.train()
-    model.on_device(dev)
-    model.set_optimizer(sgd)
-    model.graph(graph, sequential)
-
-    # train model
-    dev.Sync()
-    start = time.time()
-    with trange(niters) as t:
-        for _ in t:
-            out = model(tx)
-            loss = model.loss(out, ty)
-            model.optim(loss)
-
-    dev.Sync()
-    end = time.time()
-    titer = (end - start) / float(niters)
-    throughput = float(niters * batch_size * world_size) / (end - start)
-    if rank_in_global == 0:
-        print("Throughput = {} per second".format(throughput), flush=True)
-        print("TotalTime={}".format(end - start), flush=True)
-        print("Total={}".format(titer), flush=True)
-
-
-if __name__ == "__main__":
-
-    DIST = True
-    graph = True
-    sequential = False
-
-    # For distributed training, sequential has better throughput in the current version
-    if DIST:
-        sequential = True
-
-    train_resnet(DIST=DIST, graph=graph, sequential=sequential)
+__all__ = [
+    'ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152'
+]

@@ -44,7 +44,7 @@ public:
   int totalMPIRanksInGlobal;
   int MPIRankInLocal;
   Communicator(int limit);
-  Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder, int limit);
+  Communicator(int gpu_num, int num_gpus, const NcclIdHolder &holder, int limit);
   void synch(Tensor &t);
   void fusedSynch(std::vector<Tensor> &t, bool send = true);
   void synchHalf(Tensor &t);

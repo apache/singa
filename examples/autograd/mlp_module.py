@@ -95,12 +95,13 @@ def generate_data(num=400):
     return data, label
 
 
-def train_mlp(sgd,
-              niters,
-              batch_size,
-              DIST=False,
-              graph=True,
-              sequential=False):
+def train_mlp(DIST=False, graph=True, sequential=False):
+
+    # Define the hypermeters good for the train_mlp
+    niters = 10000
+    batch_size = 64
+    sgd = opt.SGD(lr=0.05)
+
     device_id = 0
     world_size = 1
     rank_in_global = 0
@@ -147,14 +148,9 @@ if __name__ == "__main__":
     DIST = False
     graph = True
     sequential = False
-    niters = 10000
-    batch_size = 64
 
-    sgd = opt.SGD(lr=0.05)
+    # For distributed training, sequential has better throughput in the current version
+    if DIST:
+        sequential = True
 
-    train_mlp(sgd=sgd,
-              niters=niters,
-              batch_size=batch_size,
-              DIST=DIST,
-              graph=graph,
-              sequential=sequential)
+    train_mlp(DIST=DIST, graph=graph, sequential=sequential)

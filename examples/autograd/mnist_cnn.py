@@ -131,7 +131,7 @@ def reduce_variable(variable, dist_opt, reducer):
 
 
 # Function to sychronize SINGA TENSOR initial model parameters
-def sychronize(tensor, dist_opt):
+def synchronize(tensor, dist_opt):
     dist_opt.all_reduce(tensor.data)
     dist_opt.wait()
     tensor /= dist_opt.world_size
@@ -150,17 +150,27 @@ def augmentation(x, batch_size):
     return x
 
 
-def train_mnist_cnn(sgd,
-                    max_epoch,
-                    batch_size,
-                    DIST=False,
-                    data_partition=None,
+# Data partition
+def data_partition(dataset_x, dataset_y, rank_in_global, world_size):
+    data_per_rank = dataset_x.shape[0] // world_size
+    idx_start = rank_in_global * data_per_rank
+    idx_end = (rank_in_global + 1) * data_per_rank
+    return dataset_x[idx_start:idx_end], dataset_y[idx_start:idx_end]
+
+
+def train_mnist_cnn(DIST=False,
                     gpu_num=None,
-                    gpu_per_node=None,
+                    num_gpus=None,
                     nccl_id=None,
                     spars=0,
                     topK=False,
                     corr=True):
+
+    # Define the hypermeters good for the mnist_cnn
+    max_epoch = 10
+    batch_size = 64
+    sgd = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)
+
     # Prepare training and valadiation data
     train_x, train_y, test_x, test_y = load_dataset()
     IMG_SIZE = 28
@@ -177,7 +187,7 @@ def train_mnist_cnn(sgd,
         sgd = opt.DistOpt(sgd,
                           nccl_id=nccl_id,
                           gpu_num=gpu_num,
-                          gpu_per_node=gpu_per_node)
+                          num_gpus=num_gpus)
         dev = device.create_cuda_gpu_on(sgd.rank_in_local)
         # Dataset partition for distributed training
         train_x, train_y = data_partition(train_x, train_y, sgd.rank_in_global,
@@ -210,7 +220,7 @@ def train_mnist_cnn(sgd,
         out = model.forward(tx)
         loss = autograd.softmax_cross_entropy(out, ty)
         for p, g in autograd.backward(loss):
-            sychronize(p, sgd)
+            synchronize(p, sgd)
 
     # Training and Evaulation Loop
     for epoch in range(max_epoch):
@@ -240,10 +250,10 @@ def train_mnist_cnn(sgd,
                 if (spars == 0):
                     sgd.backward_and_update(loss, threshold=50000)
                 else:
-                    sgd.backward_and_spars_update(loss,
-                                                  spars=spars,
-                                                  topK=topK,
-                                                  corr=corr)
+                    sgd.backward_and_sparse_update(loss,
+                                                   spars=spars,
+                                                   topK=topK,
+                                                   corr=corr)
             else:
                 sgd.backward_and_update(loss)
 
@@ -284,9 +294,5 @@ def train_mnist_cnn(sgd,
 
 if __name__ == '__main__':
 
-    sgd = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)
-
-    max_epoch = 10
-    batch_size = 64
-
-    train_mnist_cnn(sgd=sgd, max_epoch=max_epoch, batch_size=batch_size)
+    DIST = False
+    train_mnist_cnn(DIST=DIST)

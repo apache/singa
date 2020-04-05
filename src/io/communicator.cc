@@ -51,13 +51,13 @@ NcclIdHolder::NcclIdHolder() { ncclGetUniqueId(&id); }  // end of constructor
 NcclIdHolder::~NcclIdHolder() {}
 
 // contructer for application with python multi-processing module
-Communicator::Communicator(int gpu_num, int gpu_per_node,
+Communicator::Communicator(int gpu_num, int num_gpus,
                            const NcclIdHolder &holder, int buffSize) {
   maxSize = (size_t)buffSize;
   // this contructor is for NCCL WITHOUT MPI
   UseMPI = false;
   // Determine the rank of the collective communication
-  totalMPIRanksInGlobal = gpu_per_node;
+  totalMPIRanksInGlobal = num_gpus;
   MPIRankInLocal = gpu_num;
   MPIRankInGlobal = gpu_num;
 

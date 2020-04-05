@@ -139,21 +139,30 @@ def reduce_variable(variable, dist_opt, reducer):
 
 
 # Function to sychronize SINGA TENSOR initial model parameters
-def sychronize(tensor, dist_opt):
+def synchronize(tensor, dist_opt):
     dist_opt.all_reduce(tensor.data)
     dist_opt.wait()
     tensor /= dist_opt.world_size
 
 
-def train_cifar10(sgd,
-                  max_epoch,
-                  batch_size,
-                  DIST=False,
-                  data_partition=None,
+# Data partition
+def data_partition(dataset_x, dataset_y, rank_in_global, world_size):
+    data_per_rank = dataset_x.shape[0] // world_size
+    idx_start = rank_in_global * data_per_rank
+    idx_end = (rank_in_global + 1) * data_per_rank
+    return dataset_x[idx_start:idx_end], dataset_y[idx_start:idx_end]
+
+
+def train_cifar10(DIST=False,
                   gpu_num=None,
-                  gpu_per_node=None,
+                  num_gpus=None,
                   nccl_id=None,
                   partial_update=False):
+
+    # Define the hypermeters good for the train_cifar10
+    sgd = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)
+    max_epoch = 5
+    batch_size = 32
 
     train_x, train_y = load_train_data()
     test_x, test_y = load_test_data()
@@ -166,7 +175,7 @@ def train_cifar10(sgd,
         sgd = opt.DistOpt(sgd,
                           nccl_id=nccl_id,
                           gpu_num=gpu_num,
-                          gpu_per_node=gpu_per_node)
+                          num_gpus=num_gpus)
         dev = device.create_cuda_gpu_on(sgd.rank_in_local)
         # Dataset partition for distributed training
         train_x, train_y = data_partition(train_x, train_y, sgd.rank_in_global,
@@ -200,7 +209,7 @@ def train_cifar10(sgd,
         loss = autograd.softmax_cross_entropy(out, ty)
         param = []
         for p, _ in autograd.backward(loss):
-            sychronize(p, sgd)
+            synchronize(p, sgd)
             param.append(p)
 
     for epoch in range(max_epoch):
@@ -250,7 +259,7 @@ def train_cifar10(sgd,
         if partial_update:
             # sychronize parameters before evaluation phase
             for p in param:
-                sychronize(p, sgd)
+                synchronize(p, sgd)
 
         #Evaulation Phase
         autograd.training = False
@@ -278,9 +287,5 @@ def train_cifar10(sgd,
 
 if __name__ == '__main__':
 
-    sgd = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)
-
-    max_epoch = 10
-    batch_size = 32
-
-    train_cifar10(sgd=sgd, max_epoch=max_epoch, batch_size=batch_size)
+    DIST = False
+    train_cifar10(DIST=DIST)

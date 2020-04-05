@@ -77,12 +77,13 @@ def data_partition(dataset_x, dataset_y, rank_in_global, world_size):
     return dataset_x[idx_start:idx_end], dataset_y[idx_start:idx_end]
 
 
-def train_mnist_cnn(sgd,
-                    max_epoch,
-                    batch_size,
-                    DIST=False,
-                    graph=True,
-                    sequential=False):
+def train_mnist_cnn(DIST=False, graph=True, sequential=False):
+
+    # Define the hypermeters good for the mnist_cnn
+    max_epoch = 10
+    batch_size = 64
+    sgd = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)
+
     device_id = 0
     world_size = 1
     rank_in_global = 0
@@ -171,8 +172,6 @@ def train_mnist_cnn(sgd,
 
         # Evaluation Phase
         model.eval()
-        if rank_in_global == 0:
-            print("Evaluation Phase", flush=True)
         for b in range(num_test_batch):
             x = test_x[b * batch_size:(b + 1) * batch_size]
             y = test_y[b * batch_size:(b + 1) * batch_size]
@@ -198,14 +197,9 @@ if __name__ == '__main__':
     DIST = False
     graph = True
     sequential = False
-    max_epoch = 10
-    batch_size = 64
 
-    sgd = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)
+    # For distributed training, sequential has better throughput in the current version
+    if DIST:
+        sequential = True
 
-    train_mnist_cnn(sgd=sgd,
-                    max_epoch=max_epoch,
-                    batch_size=batch_size,
-                    DIST=DIST,
-                    graph=graph,
-                    sequential=sequential)
+    train_mnist_cnn(DIST=DIST, graph=graph, sequential=sequential)

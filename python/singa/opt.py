@@ -199,7 +199,7 @@ class DistOpt(object):
         opt(Optimizer): The optimizer to be wrapped.
         nccl_id(NcclIdHolder): an nccl id holder object for a unique communication id
         gpu_num(int): the GPU id in a single node
-        gpu_per_node(int): the number of GPUs in a single node
+        num_gpus(int): the number of GPUs in a single node
         buffSize(int): the buffSize in terms of number of elements used in nccl communicator
 
     Attributes:
@@ -218,7 +218,7 @@ class DistOpt(object):
                  opt=SGD(),
                  nccl_id=None,
                  gpu_num=None,
-                 gpu_per_node=None,
+                 num_gpus=None,
                  buffSize=4194304):
         self.opt = opt
         if nccl_id is None:
@@ -226,8 +226,8 @@ class DistOpt(object):
             self.communicator = singa.Communicator(buffSize)
         else:
             # constructor for application using python multi-process module
-            self.communicator = singa.Communicator(gpu_num, gpu_per_node,
-                                                   nccl_id, buffSize)
+            self.communicator = singa.Communicator(gpu_num, num_gpus, nccl_id,
+                                                   buffSize)
 
         self.world_size = self.communicator.totalMPIRanksInGlobal
         self.rank_in_local = self.communicator.MPIRankInLocal
@@ -483,12 +483,12 @@ class DistOpt(object):
         if (k == self.partial):
             self.partial = 0
 
-    def backward_and_spars_update(self,
-                                  loss,
-                                  threshold=2097152,
-                                  spars=0.05,
-                                  topK=False,
-                                  corr=True):
+    def backward_and_sparse_update(self,
+                                   loss,
+                                   threshold=2097152,
+                                   spars=0.05,
+                                   topK=False,
+                                   corr=True):
         """ Performs backward propagation from the loss and parameter update with sparsification.
 
         THIS IS A EXPERIMENTAL FUNCTION FOR RESEARCH PURPOSE:
