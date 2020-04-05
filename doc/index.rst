@@ -133,27 +133,6 @@ Companies like `NetEase <http://tech.163.com/17/0602/17/CLUL016I00098GJ5.html>`_
    :hidden:
 
    docs/index
-   downloads
-   security
-
-.. toctree::
-   :hidden:
-   :maxdepth: 2
-   :caption: Development
-
-   develop/contribute-code
-   develop/contribute-docs
-   develop/how-to-release
-
-.. toctree::
-   :hidden:
-   :maxdepth: 2
-   :caption: Community
-
-   community/source-repository
-   community/mail-lists
-   community/issue-tracking
-   community/team-list
 
 License
 ----------
