@@ -16,10 +16,11 @@
     specific language governing permissions and limitations
     under the License.
 -->
-# Train a RBM model against MNIST dataset
+# Train a RBM model using SINGA Tensor APIs
 
-This example is to train an RBM model using the
-MNIST dataset. The RBM model and its hyper-parameters are set following
+This example is to train a RBM model over the MNIST dataset
+using SINGA Python Tensor APIs.
+The RBM model and its hyper-parameters are set following
 [Hinton's paper](http://www.cs.toronto.edu/~hinton/science.pdf)
 
 ## Running instructions
