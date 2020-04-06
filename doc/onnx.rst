@@ -16,7 +16,7 @@
    under the License.
 
 
-FeedForward Net
+ONNX
 ===============
 
 .. automodule:: singa.sonnx

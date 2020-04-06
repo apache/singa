@@ -22,6 +22,7 @@
 # Apache SINGA
 
 [![Build Status](https://travis-ci.org/apache/singa.png)](https://travis-ci.org/apache/singa)
+[![Documentation Status](https://readthedocs.org/projects/apache-singa/badge/?version=latest)](https://apache-singa.readthedocs.io/en/latest/?badge=latest)
 ![License](http://img.shields.io/:license-Apache%202.0-blue.svg)
 [![Follow Apache SINGA on Twitter](https://img.shields.io/twitter/follow/apachesinga.svg?style=social&label=Follow)](https://twitter.com/ApacheSinga)
 [![Docker pulls](https://img.shields.io/docker/pulls/apache/singa.svg)](https://hub.docker.com/r/apache/singa/)
