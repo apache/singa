@@ -82,7 +82,8 @@ def reduce_variable(variable, dist_opt, reducer):
 def resize_dataset(x, image_size):
     num_data = x.shape[0]
     dim = x.shape[1]
-    X = np.zeros(shape=(num_data, dim, image_size, image_size), dtype=np.float32)
+    X = np.zeros(shape=(num_data, dim, image_size, image_size),
+                 dtype=np.float32)
     for n in range(0, num_data):
         for d in range(0, dim):
             X[n, d, :, :] = np.array(Image.fromarray(x[n, d, :, :]).resize(
@@ -91,8 +92,16 @@ def resize_dataset(x, image_size):
     return X
 
 
-def run(global_rank, world_size, local_rank, max_epoch, batch_size, model, data,
-        sgd):
+def run(global_rank,
+        world_size,
+        local_rank,
+        max_epoch,
+        batch_size,
+        model,
+        data,
+        sgd,
+        dist_option='fp32',
+        spars=None):
     dev = device.create_cuda_gpu_on(local_rank)
     dev.SetRandSeed(0)
     np.random.seed(0)
@@ -107,11 +116,11 @@ def run(global_rank, world_size, local_rank, max_epoch, batch_size, model, data,
     num_channels = train_x.shape[1]
     image_size = train_x.shape[2]
 
-    print(num_channels)
+    #print(num_channels)
 
     if model == 'resnet':
         from model import resnet
-        model = resnet.resnet50(num_channels=num_channels)
+        model = resnet.resnet18(num_channels=num_channels)
     elif model == 'xceptionnet':
         from model import xceptionnet
         model = xceptionnet.create_model(num_channels=num_channels)
@@ -181,8 +190,8 @@ def run(global_rank, world_size, local_rank, max_epoch, batch_size, model, data,
             # Train the model
             out = model(tx)
             loss = model.loss(out, ty)
-            model.optim(loss)
-            train_correct += accuracy(tensor.to_numpy(out),y)
+            model.optim(loss, dist_option, spars)
+            train_correct += accuracy(tensor.to_numpy(out), y)
             train_loss += tensor.to_numpy(loss)[0]
 
         if DIST:
@@ -207,7 +216,7 @@ def run(global_rank, world_size, local_rank, max_epoch, batch_size, model, data,
             tx.copy_from_numpy(x)
             ty.copy_from_numpy(y)
             out_test = model(tx)
-            test_correct += accuracy(tensor.to_numpy(out_test),y)
+            test_correct += accuracy(tensor.to_numpy(out_test), y)
 
         if DIST:
             # Reduce the Evaulation Accuracy from Multiple Devices
@@ -247,7 +256,7 @@ if __name__ == '__main__':
                         type=float,
                         help='initial learning rate',
                         dest='lr')
-    # determine which gpu to use in gpu
+    # determine which gpu to use
     parser.add_argument('--id',
                         '--device-id',
                         default=0,
@@ -258,4 +267,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5)
-    run(0, 1, args.device_id, args.max_epoch, args.batch_size, args.model, args.data, sgd)
+    run(0, 1, args.device_id, args.max_epoch, args.batch_size, args.model,
+        args.data, sgd)

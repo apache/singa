@@ -261,8 +261,21 @@ class Xception(module.Module):
     def loss(self, out, ty):
         return autograd.softmax_cross_entropy(out, ty)
 
-    def optim(self, loss):
-        self.optimizer.backward_and_update(loss)
+    def optim(self, loss, dist_option, spars):
+        if dist_option == 'fp32':
+            self.optimizer.backward_and_update(loss)
+        elif dist_option == 'fp16':
+            self.optimizer.backward_and_update_half(loss)
+        elif dist_option == 'partialUpdate':
+            self.optimizer.backward_and_partial_update(loss)
+        elif dist_option == 'sparseTopK':
+            self.optimizer.backward_and_sparse_update(loss,
+                                                      topK=True,
+                                                      spars=spars)
+        elif dist_option == 'sparseThreshold':
+            self.optimizer.backward_and_sparse_update(loss,
+                                                      topK=False,
+                                                      spars=spars)
 
     def set_optimizer(self, optimizer):
         self.optimizer = optimizer

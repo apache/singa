@@ -28,7 +28,7 @@ def run(args, local_rank, world_size, nccl_id):
     sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5)
     sgd = opt.DistOpt(sgd, nccl_id=nccl_id, local_rank=local_rank, world_size=world_size)
     train.run(sgd.global_rank, sgd.world_size, sgd.local_rank,
-              args.max_epoch, args.batch_size, args.model, args.data, sgd)
+              args.max_epoch, args.batch_size, args.model, args.data, sgd, args.dist_option, args.spars)
 
 
 if __name__ == '__main__':
@@ -63,6 +63,19 @@ if __name__ == '__main__':
                         type=int,
                         help='number of gpus to be used',
                         dest='world_size')
+    parser.add_argument('--op',
+                        '--option',
+                        default='fp32',
+                        choices=['fp32','fp16','partialUpdate','sparseTopK','sparseThreshold'],
+                        help='distibuted training options',
+                        dest='dist_option')
+    parser.add_argument('--spars',
+                        '--sparsifciation',
+                        default='0.05',
+                        type=float,
+                        help='the sparsity parameter used for sparsifcation, between 0 to 1',
+                        dest='spars')
+
 
     args = parser.parse_args()
 

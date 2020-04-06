@@ -49,6 +49,18 @@ if __name__ == '__main__':
                         type=float,
                         help='initial learning rate',
                         dest='lr')
+    parser.add_argument('--op',
+                        '--option',
+                        default='fp32',
+                        choices=['fp32','fp16','partialUpdate','sparseTopK','sparseThreshold'],
+                        help='distibuted training options',
+                        dest='dist_option')
+    parser.add_argument('--spars',
+                        '--sparsifciation',
+                        default='0.05',
+                        type=float,
+                        help='the sparsity parameter used for sparsifcation, between 0 to 1',
+                        dest='spars')
 
     args = parser.parse_args()
 
@@ -56,4 +68,4 @@ if __name__ == '__main__':
     sgd = opt.DistOpt(sgd)
 
     train.run(sgd.global_rank, sgd.world_size, sgd.local_rank, args.max_epoch,
-              args.batch_size, args.model, args.data, sgd)
+              args.batch_size, args.model, args.data, sgd, args.dist_option, args.spars)
