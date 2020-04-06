@@ -75,12 +75,12 @@ class NcclIdHolder {
 
 class Communicator {
  public:
-  int MPIRankInGlobal;
-  int totalMPIRanksInGlobal;
-  int MPIRankInLocal;
+  int global_rank;
+  int world_size;
+  int local_rank;
 
   Communicator(int limit);
-  Communicator(int gpu_num, int num_gpus, const NcclIdHolder &holder, int size);
+  Communicator(int local_rank, int world_size, const NcclIdHolder &holder, int size);
   ~Communicator();
   void synch(Tensor &t);
   void fusedSynch(vector<Tensor> &t, bool send = true);

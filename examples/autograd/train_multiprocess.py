@@ -24,10 +24,10 @@ import argparse
 import train
 import multiprocessing
 
-def run(args, gpu_num, num_gpus, nccl_id):
+def run(args, local_rank, world_size, nccl_id):
     sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5)
-    sgd = opt.DistOpt(sgd, nccl_id=nccl_id, gpu_num=gpu_num, num_gpus=num_gpus)
-    train.run(sgd.rank_in_global, sgd.world_size, sgd.rank_in_local,
+    sgd = opt.DistOpt(sgd, nccl_id=nccl_id, local_rank=local_rank, world_size=world_size)
+    train.run(sgd.global_rank, sgd.world_size, sgd.local_rank,
               args.max_epoch, args.batch_size, args.model, args.data, sgd)
 
 
@@ -57,12 +57,12 @@ if __name__ == '__main__':
                         type=float,
                         help='initial learning rate',
                         dest='lr')
-    parser.add_argument('--num_gpus',
-                        '--number-of-gpus',
+    parser.add_argument('--ws',
+                        '--world-size',
                         default=2,
                         type=int,
                         help='number of gpus to be used',
-                        dest='num_gpus')
+                        dest='world_size')
 
     args = parser.parse_args()
 
@@ -70,10 +70,10 @@ if __name__ == '__main__':
     nccl_id = singa.NcclIdHolder()
 
     process = []
-    for gpu_num in range(0, args.num_gpus):
+    for local_rank in range(0, args.world_size):
         process.append(
             multiprocessing.Process(target=run,
-                                    args=(args, gpu_num, args.num_gpus, nccl_id)))
+                                    args=(args, local_rank, args.world_size, nccl_id)))
 
     for p in process:
         p.start()

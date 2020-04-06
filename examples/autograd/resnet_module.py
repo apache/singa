@@ -267,18 +267,18 @@ def train_resnet(DIST=True, graph=True, sequential=False):
     batch_size = 32
     sgd = opt.SGD(lr=0.1, momentum=0.9, weight_decay=1e-5)
 
-    device_id = 0
+    local_rank = 0
     world_size = 1
-    rank_in_global = 0
+    global_rank = 0
     IMG_SIZE = 224
 
     if DIST:
         sgd = opt.DistOpt(sgd)
         world_size = sgd.world_size
-        device_id = sgd.rank_in_local
-        rank_in_global = sgd.rank_in_global
+        local_rank = sgd.local_rank
+        global_rank = sgd.global_rank
 
-    dev = device.create_cuda_gpu_on(device_id)
+    dev = device.create_cuda_gpu_on(local_rank)
 
     tx = tensor.Tensor((batch_size, 3, IMG_SIZE, IMG_SIZE), dev)
     ty = tensor.Tensor((batch_size,), dev, tensor.int32)
@@ -307,7 +307,7 @@ def train_resnet(DIST=True, graph=True, sequential=False):
     end = time.time()
     titer = (end - start) / float(niters)
     throughput = float(niters * batch_size * world_size) / (end - start)
-    if rank_in_global == 0:
+    if global_rank == 0:
         print("Throughput = {} per second".format(throughput), flush=True)
         print("TotalTime={}".format(end - start), flush=True)
         print("Total={}".format(titer), flush=True)

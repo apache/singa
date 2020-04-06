@@ -55,5 +55,5 @@ if __name__ == '__main__':
     sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5)
     sgd = opt.DistOpt(sgd)
 
-    train.run(sgd.rank_in_global, sgd.world_size, sgd.rank_in_local, args.max_epoch,
+    train.run(sgd.global_rank, sgd.world_size, sgd.local_rank, args.max_epoch,
               args.batch_size, args.model, args.data, sgd)

@@ -27,7 +27,7 @@ if __name__ == '__main__':
     nccl_id = singa.NcclIdHolder()
 
     # number of GPUs to be used
-    num_gpus = int(sys.argv[1])
+    world_size = int(sys.argv[1])
 
     # Use sparsification with parameters
     topK = False  # When topK = False, Sparsification based on a constant absolute threshold
@@ -35,10 +35,10 @@ if __name__ == '__main__':
     sparsThreshold = 0.05  # The constant absolute threshold for sparsification
 
     process = []
-    for gpu_num in range(0, num_gpus):
+    for local_rank in range(0, world_size):
         process.append(
             multiprocessing.Process(target=train_mnist_cnn,
-                                    args=(True, gpu_num, num_gpus, nccl_id,
+                                    args=(True, local_rank, world_size, nccl_id,
                                           sparsThreshold, topK, corr)))
 
     for p in process:

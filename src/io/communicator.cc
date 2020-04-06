@@ -51,15 +51,15 @@ NcclIdHolder::NcclIdHolder() { ncclGetUniqueId(&id); }  // end of constructor
 NcclIdHolder::~NcclIdHolder() {}
 
 // contructer for application with python multi-processing module
-Communicator::Communicator(int gpu_num, int num_gpus,
+Communicator::Communicator(int local_rank, int world_size,
                            const NcclIdHolder &holder, int buffSize) {
   maxSize = (size_t)buffSize;
   // this contructor is for NCCL WITHOUT MPI
   UseMPI = false;
   // Determine the rank of the collective communication
-  totalMPIRanksInGlobal = num_gpus;
-  MPIRankInLocal = gpu_num;
-  MPIRankInGlobal = gpu_num;
+  this->world_size = world_size;
+  this->local_rank = local_rank;
+  this->global_rank = local_rank;
 
   // copy the nccl unqiue id from the input id holder
   id = holder.id;
@@ -77,24 +77,24 @@ Communicator::Communicator(int buffSize) {
 
   // MPI initialization
   MPICHECK(MPI_Init(NULL, NULL));
-  MPICHECK(MPI_Comm_rank(MPI_COMM_WORLD, &MPIRankInGlobal));
-  MPICHECK(MPI_Comm_size(MPI_COMM_WORLD, &totalMPIRanksInGlobal));
+  MPICHECK(MPI_Comm_rank(MPI_COMM_WORLD, &global_rank));
+  MPICHECK(MPI_Comm_size(MPI_COMM_WORLD, &world_size));
 
-  // calculating MPIRankInLocal which is used in selecting a GPU
-  MPIRankInLocal = 0;
-  uint64_t hostHashs[totalMPIRanksInGlobal];
+  // calculating local_rank which is used in selecting a GPU
+  local_rank = 0;
+  uint64_t hostHashs[world_size];
   char hostname[1024];
   getHostName(hostname, 1024);
-  hostHashs[MPIRankInGlobal] = getHostHash(hostname);
+  hostHashs[global_rank] = getHostHash(hostname);
   MPICHECK(MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, hostHashs,
                          sizeof(uint64_t), MPI_BYTE, MPI_COMM_WORLD));
-  for (int p = 0; p < totalMPIRanksInGlobal; p++) {
-    if (p == MPIRankInGlobal) break;
-    if (hostHashs[p] == hostHashs[MPIRankInGlobal]) MPIRankInLocal++;
+  for (int p = 0; p < world_size; p++) {
+    if (p == global_rank) break;
+    if (hostHashs[p] == hostHashs[global_rank]) local_rank++;
   }
 
   // generating NCCL unique nccl ID at one process and broadcasting it to all
-  if (MPIRankInGlobal == 0) ncclGetUniqueId(&id);
+  if (global_rank == 0) ncclGetUniqueId(&id);
   MPICHECK(MPI_Bcast((void *)&id, sizeof(id), MPI_BYTE, 0, MPI_COMM_WORLD));
 
   // setup cuda stream and nccl communicator
@@ -103,9 +103,8 @@ Communicator::Communicator(int buffSize) {
 }  // end of constructor
 
 void Communicator::setup() {
-  CUDA_CHECK(cudaSetDevice(MPIRankInLocal));
-  NCCLCHECK(
-      ncclCommInitRank(&comm, totalMPIRanksInGlobal, id, MPIRankInGlobal));
+  CUDA_CHECK(cudaSetDevice(local_rank));
+  NCCLCHECK(ncclCommInitRank(&comm, world_size, id, global_rank));
   CUDA_CHECK(cudaStreamCreateWithFlags(&s, cudaStreamNonBlocking));
   CUDA_CHECK(cudaStreamCreateWithFlags(&c1, cudaStreamNonBlocking));
   CUDA_CHECK(cudaStreamCreateWithFlags(&c2, cudaStreamNonBlocking));
@@ -126,9 +125,9 @@ void Communicator::halfInit() {
 
 void Communicator::sparsInit() {
   // initize sparsification environment
-  CUDA_CHECK(cudaSetDevice(MPIRankInLocal));
-  CUDA_CHECK(cudaMalloc(
-      &sparsRecvBuff, (int)(maxSize * sizeof(float) * totalMPIRanksInGlobal)));
+  CUDA_CHECK(cudaSetDevice(local_rank));
+  CUDA_CHECK(
+      cudaMalloc(&sparsRecvBuff, (int)(maxSize * sizeof(float) * world_size)));
   CUDA_CHECK(cudaMalloc(&sparsSendBuff, (int)(maxSize * sizeof(float))));
   CUDA_CHECK(cudaMalloc(&backupBuff, maxSize * sizeof(float)));
   CUDA_CHECK(cudaMalloc(&fusedIndex, maxSize * sizeof(int)));
@@ -137,9 +136,9 @@ void Communicator::sparsInit() {
   CUSPARSE_CHECK(cusparseCreate(&cusparse_handle));
   CUSPARSE_CHECK(cusparseSetStream(cusparse_handle, c2));
   nnz = (int *)malloc(sizeof(int));
-  nnzAll = (int *)malloc(sizeof(int) * totalMPIRanksInGlobal);
-  CUDA_CHECK(cudaMalloc(&nnzGPU, sizeof(int) * totalMPIRanksInGlobal));
-  CUDA_CHECK(cudaMalloc(&nnzAllGPU, sizeof(int) * totalMPIRanksInGlobal));
+  nnzAll = (int *)malloc(sizeof(int) * world_size);
+  CUDA_CHECK(cudaMalloc(&nnzGPU, sizeof(int) * world_size));
+  CUDA_CHECK(cudaMalloc(&nnzAllGPU, sizeof(int) * world_size));
   sparsInitialized = true;
 }
 
@@ -539,13 +538,13 @@ void Communicator::valSparsAllReduce(size_t num, float *accumulation) {
                           comm, c1));
 
   CUDA_CHECK(cudaMemcpyAsync((void *)nnzAll, (const void *)nnzAllGPU,
-                             sizeof(int) * totalMPIRanksInGlobal,
-                             cudaMemcpyDeviceToHost, c1));
+                             sizeof(int) * world_size, cudaMemcpyDeviceToHost,
+                             c1));
 
   CUDA_CHECK(cudaStreamSynchronize(c1));
 
   int nnzMax = 0;
-  for (int i = 0; i < totalMPIRanksInGlobal; i++)
+  for (int i = 0; i < world_size; i++)
     if (nnzAll[i] > nnzMax) nnzMax = nnzAll[i];
 
   // remove zero of values to become sprase array
@@ -578,7 +577,7 @@ void Communicator::valSparsAllReduce(size_t num, float *accumulation) {
 
   // add the spase gradent from each rank to the sum buff to finish the
   // all-reduce process
-  for (int i = 0; i < totalMPIRanksInGlobal; i++) {
+  for (int i = 0; i < world_size; i++) {
     CUDA_CHECK(
         cudaMemcpyAsync((void *)xInd, (const void *)(sparsRecvBuff + offset),
                         sizeof(int) * nnzAll[i], cudaMemcpyDeviceToDevice, c2));
@@ -653,7 +652,7 @@ void Communicator::topKSparsAllReduce(size_t num, float *accumulation) {
 
   // add the spase gradent from each rank to the sum buff to finish the
   // all-reduce process
-  for (int i = 0; i < totalMPIRanksInGlobal; i++) {
+  for (int i = 0; i < world_size; i++) {
     CUDA_CHECK(
         cudaMemcpyAsync((void *)xInd, (const void *)(sparsRecvBuff + offset),
                         sizeof(int) * nnzMax, cudaMemcpyDeviceToDevice, c2));

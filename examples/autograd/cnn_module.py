@@ -70,10 +70,10 @@ class CNN(module.Module):
             self.optimizer.backward_and_update(loss)
 
 
-def data_partition(dataset_x, dataset_y, rank_in_global, world_size):
+def data_partition(dataset_x, dataset_y, global_rank, world_size):
     data_per_rank = dataset_x.shape[0] // world_size
-    idx_start = rank_in_global * data_per_rank
-    idx_end = (rank_in_global + 1) * data_per_rank
+    idx_start = global_rank * data_per_rank
+    idx_end = (global_rank + 1) * data_per_rank
     return dataset_x[idx_start:idx_end], dataset_y[idx_start:idx_end]
 
 
@@ -84,9 +84,9 @@ def train_mnist_cnn(DIST=False, graph=True, sequential=False):
     batch_size = 64
     sgd = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)
 
-    device_id = 0
+    local_rank = 0
     world_size = 1
-    rank_in_global = 0
+    global_rank = 0
     IMG_SIZE = 28
     num_classes = 10
 
@@ -99,14 +99,14 @@ def train_mnist_cnn(DIST=False, graph=True, sequential=False):
     if DIST:
         sgd = opt.DistOpt(sgd)
         world_size = sgd.world_size
-        device_id = sgd.rank_in_local
-        rank_in_global = sgd.rank_in_global
-        train_x, train_y = data_partition(train_x, train_y, rank_in_global,
+        local_rank = sgd.local_rank
+        global_rank = sgd.global_rank
+        train_x, train_y = data_partition(train_x, train_y, global_rank,
                                           world_size)
-        test_x, test_y = data_partition(test_x, test_y, rank_in_global,
+        test_x, test_y = data_partition(test_x, test_y, global_rank,
                                         world_size)
 
-    dev = device.create_cuda_gpu_on(device_id)
+    dev = device.create_cuda_gpu_on(local_rank)
     dev.SetRandSeed(0)
     np.random.seed(0)
 
@@ -131,7 +131,7 @@ def train_mnist_cnn(DIST=False, graph=True, sequential=False):
         start_time = time.time()
         np.random.shuffle(idx)
 
-        if rank_in_global == 0:
+        if global_rank == 0:
             print('Starting Epoch %d:' % (epoch))
 
         # Training Phase
@@ -164,7 +164,7 @@ def train_mnist_cnn(DIST=False, graph=True, sequential=False):
             train_correct = reduce_variable(train_correct, sgd, reducer)
             train_loss = reduce_variable(train_loss, sgd, reducer)
 
-        if rank_in_global == 0:
+        if global_rank == 0:
             print('Training loss = %f, training accuracy = %f' %
                   (train_loss, train_correct /
                    (num_train_batch * batch_size * world_size)),
@@ -185,7 +185,7 @@ def train_mnist_cnn(DIST=False, graph=True, sequential=False):
             test_correct = reduce_variable(test_correct, sgd, reducer)
 
         # Output the Evaluation Accuracy
-        if rank_in_global == 0:
+        if global_rank == 0:
             print('Evaluation accuracy = %f, Elapsed Time = %fs' %
                   (test_correct / (num_test_batch * batch_size * world_size),
                    time.time() - start_time),

@@ -27,16 +27,16 @@ if __name__ == '__main__':
     nccl_id = singa.NcclIdHolder()
 
     # number of GPUs to be used
-    num_gpus = int(sys.argv[1])
+    world_size = int(sys.argv[1])
 
     # Testing the experimental partial-parameter update asynchronous training
     partial_update = True
 
     process = []
-    for gpu_num in range(0, num_gpus):
+    for local_rank in range(0, world_size):
         process.append(
             multiprocessing.Process(target=train_cifar10,
-                                    args=(True, gpu_num, num_gpus, nccl_id,
+                                    args=(True, local_rank, world_size, nccl_id,
                                           partial_update)))
 
     for p in process:

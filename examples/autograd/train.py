@@ -54,17 +54,17 @@ def accuracy(pred, target):
 
 
 # Data partition according to the rank
-def partition(worker_id, num_workers, train_x, train_y, val_x, val_y):
+def partition(global_rank, world_size, train_x, train_y, val_x, val_y):
     # Partition training data
-    data_per_rank = train_x.shape[0] // num_workers
-    idx_start = worker_id * data_per_rank
-    idx_end = (worker_id + 1) * data_per_rank
+    data_per_rank = train_x.shape[0] // world_size
+    idx_start = global_rank * data_per_rank
+    idx_end = (global_rank + 1) * data_per_rank
     train_x = train_x[idx_start:idx_end]
     train_y = train_y[idx_start:idx_end]
     # Partition evaluation data
-    data_per_rank = val_x.shape[0] // num_workers
-    idx_start = worker_id * data_per_rank
-    idx_end = (worker_id + 1) * data_per_rank
+    data_per_rank = val_x.shape[0] // world_size
+    idx_start = global_rank * data_per_rank
+    idx_end = (global_rank + 1) * data_per_rank
     val_x = val_x[idx_start:idx_end]
     val_y = val_y[idx_start:idx_end]
     return train_x, train_y, val_x, val_y
@@ -91,9 +91,9 @@ def resize_dataset(x, image_size):
     return X
 
 
-def run(worker_id, num_workers, device_id, max_epoch, batch_size, model, data,
+def run(global_rank, world_size, local_rank, max_epoch, batch_size, model, data,
         sgd):
-    dev = device.create_cuda_gpu_on(device_id)
+    dev = device.create_cuda_gpu_on(local_rank)
     dev.SetRandSeed(0)
     np.random.seed(0)
 
@@ -120,12 +120,12 @@ def run(worker_id, num_workers, device_id, max_epoch, batch_size, model, data,
         DIST = False
 
     if DIST:
-        train_x, train_y, val_x, val_y = partition(worker_id, num_workers,
+        train_x, train_y, val_x, val_y = partition(global_rank, world_size,
                                                    train_x, train_y, val_x,
                                                    val_y)
     '''
     # check dataset shape correctness
-    if worker_id == 0:
+    if global_rank == 0:
         print("Check the shape of dataset:")
         print(train_x.shape)
         print(train_y.shape)
@@ -160,7 +160,7 @@ def run(worker_id, num_workers, device_id, max_epoch, batch_size, model, data,
         start_time = time.time()
         np.random.shuffle(idx)
 
-        if worker_id == 0:
+        if global_rank == 0:
             print('Starting Epoch %d:' % (epoch))
 
         # Training Phase
@@ -194,10 +194,10 @@ def run(worker_id, num_workers, device_id, max_epoch, batch_size, model, data,
             train_correct = reduce_variable(train_correct, sgd, reducer)
             train_loss = reduce_variable(train_loss, sgd, reducer)
 
-        if worker_id == 0:
+        if global_rank == 0:
             print('Training loss = %f, training accuracy = %f' %
                   (train_loss, train_correct /
-                   (num_train_batch * batch_size * num_workers)),
+                   (num_train_batch * batch_size * world_size)),
                   flush=True)
 
         # Evaluation Phase
@@ -217,9 +217,9 @@ def run(worker_id, num_workers, device_id, max_epoch, batch_size, model, data,
             test_correct = reduce_variable(test_correct, sgd, reducer)
 
         # Output the Evaluation Accuracy
-        if worker_id == 0:
+        if global_rank == 0:
             print('Evaluation accuracy = %f, Elapsed Time = %fs' %
-                  (test_correct / (num_val_batch * batch_size * num_workers),
+                  (test_correct / (num_val_batch * batch_size * world_size),
                    time.time() - start_time),
                   flush=True)
 

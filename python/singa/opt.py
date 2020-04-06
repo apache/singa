@@ -198,14 +198,14 @@ class DistOpt(object):
     Args:
         opt(Optimizer): The optimizer to be wrapped.
         nccl_id(NcclIdHolder): an nccl id holder object for a unique communication id
-        gpu_num(int): the GPU id in a single node
-        num_gpus(int): the number of GPUs in a single node
+        local_rank(int): local rank of a process on the current node
+        world_size(int): total number of processes
         buffSize(int): the buffSize in terms of number of elements used in nccl communicator
 
     Attributes:
         world_size(int): total number of processes
-        rank_in_local(int): local rank of a process on the current node
-        rank_in_global(int): global rank of a process
+        local_rank(int): local rank of a process on the current node
+        global_rank(int): global rank of a process
 
     Typical usage example:
         >> > from singa import opt
@@ -217,8 +217,8 @@ class DistOpt(object):
     def __init__(self,
                  opt=SGD(),
                  nccl_id=None,
-                 gpu_num=None,
-                 num_gpus=None,
+                 local_rank=None,
+                 world_size=None,
                  buffSize=4194304):
         self.opt = opt
         if nccl_id is None:
@@ -226,12 +226,12 @@ class DistOpt(object):
             self.communicator = singa.Communicator(buffSize)
         else:
             # constructor for application using python multi-process module
-            self.communicator = singa.Communicator(gpu_num, num_gpus, nccl_id,
+            self.communicator = singa.Communicator(local_rank, world_size, nccl_id,
                                                    buffSize)
 
-        self.world_size = self.communicator.totalMPIRanksInGlobal
-        self.rank_in_local = self.communicator.MPIRankInLocal
-        self.rank_in_global = self.communicator.MPIRankInGlobal
+        self.world_size = self.communicator.world_size
+        self.local_rank = self.communicator.local_rank
+        self.global_rank = self.communicator.global_rank
 
     def update(self, param, grad):
         """Performs a single optimization step.

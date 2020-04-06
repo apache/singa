@@ -102,17 +102,17 @@ def train_mlp(DIST=False, graph=True, sequential=False):
     batch_size = 64
     sgd = opt.SGD(lr=0.05)
 
-    device_id = 0
+    local_rank = 0
     world_size = 1
-    rank_in_global = 0
+    global_rank = 0
 
     if DIST:
         sgd = opt.DistOpt(sgd)
         world_size = sgd.world_size
-        device_id = sgd.rank_in_local
-        rank_in_global = sgd.rank_in_global
+        local_rank = sgd.local_rank
+        global_rank = sgd.global_rank
 
-    dev = device.create_cuda_gpu_on(device_id)
+    dev = device.create_cuda_gpu_on(local_rank)
 
     data, label = generate_data(num=400)
     inputs = Tensor(data=data)
@@ -130,14 +130,14 @@ def train_mlp(DIST=False, graph=True, sequential=False):
         loss = model.loss(out, target)
         model.optim(loss)
 
-        if i % (niters / 10) == 0 and rank_in_global == 0:
+        if i % (niters / 10) == 0 and global_rank == 0:
             print("training loss = ", tensor.to_numpy(loss)[0], flush=True)
 
     dev.Sync()
     end = time.time()
     titer = (end - start) / float(niters)
     throughput = float(niters * batch_size * world_size) / (end - start)
-    if rank_in_global == 0:
+    if global_rank == 0:
         print("Throughput = {} per second".format(throughput), flush=True)
         print("Total Time={}".format(end - start), flush=True)
         print("Total={}".format(titer), flush=True)

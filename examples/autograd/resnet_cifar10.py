@@ -146,16 +146,16 @@ def synchronize(tensor, dist_opt):
 
 
 # Data partition
-def data_partition(dataset_x, dataset_y, rank_in_global, world_size):
+def data_partition(dataset_x, dataset_y, global_rank, world_size):
     data_per_rank = dataset_x.shape[0] // world_size
-    idx_start = rank_in_global * data_per_rank
-    idx_end = (rank_in_global + 1) * data_per_rank
+    idx_start = global_rank * data_per_rank
+    idx_end = (global_rank + 1) * data_per_rank
     return dataset_x[idx_start:idx_end], dataset_y[idx_start:idx_end]
 
 
 def train_cifar10(DIST=False,
-                  gpu_num=None,
-                  num_gpus=None,
+                  local_rank=None,
+                  world_size=None,
                   nccl_id=None,
                   partial_update=False):
 
@@ -174,13 +174,13 @@ def train_cifar10(DIST=False,
         # For Distributed GPU Training
         sgd = opt.DistOpt(sgd,
                           nccl_id=nccl_id,
-                          gpu_num=gpu_num,
-                          num_gpus=num_gpus)
-        dev = device.create_cuda_gpu_on(sgd.rank_in_local)
+                          local_rank=local_rank,
+                          world_size=world_size)
+        dev = device.create_cuda_gpu_on(sgd.local_rank)
         # Dataset partition for distributed training
-        train_x, train_y = data_partition(train_x, train_y, sgd.rank_in_global,
+        train_x, train_y = data_partition(train_x, train_y, sgd.global_rank,
                                           sgd.world_size)
-        test_x, test_y = data_partition(test_x, test_y, sgd.rank_in_global,
+        test_x, test_y = data_partition(test_x, test_y, sgd.global_rank,
                                         sgd.world_size)
         world_size = sgd.world_size
     else:
@@ -216,7 +216,7 @@ def train_cifar10(DIST=False,
         start_time = time.time()
         np.random.shuffle(idx)
 
-        if ((DIST == False) or (sgd.rank_in_global == 0)):
+        if ((DIST == False) or (sgd.global_rank == 0)):
             print('Starting Epoch %d:' % (epoch))
 
         #Training Phase
@@ -250,7 +250,7 @@ def train_cifar10(DIST=False,
             train_loss = reduce_variable(train_loss, sgd, reducer)
 
         # Output the Training Loss and Accuracy
-        if ((DIST == False) or (sgd.rank_in_global == 0)):
+        if ((DIST == False) or (sgd.global_rank == 0)):
             print('Training loss = %f, training accuracy = %f' %
                   (train_loss, train_correct /
                    (num_train_batch * batch_size * world_size)),
@@ -278,7 +278,7 @@ def train_cifar10(DIST=False,
             test_correct = reduce_variable(test_correct, sgd, reducer)
 
         # Output the Evaluation Accuracy
-        if ((DIST == False) or (sgd.rank_in_global == 0)):
+        if ((DIST == False) or (sgd.global_rank == 0)):
             print('Evaluation accuracy = %f, Elapsed Time = %fs' %
                   (test_correct / (num_test_batch * batch_size * world_size),
                    time.time() - start_time),
