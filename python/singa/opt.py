@@ -530,9 +530,12 @@ class DistOpt(object):
                 k += 1
                 if (corr and (not self.sparsInit)):
                     # create a tensor for the gradient accumulation
+                    flag = p.device.graph_enabled()
+                    p.device.EnableGraph(False)
                     self.gradAccumulation.append(
                         tensor.Tensor((g.size(),), p.device, p.dtype))
                     self.gradAccumulation[k].set_value(0.0)
+                    p.device.EnableGraph(flag)
                 if corr:
                     self.sparsification(g.data, self.gradAccumulation[k].data,
                                         spars, topK)
@@ -546,9 +549,12 @@ class DistOpt(object):
                     k += 1
                     if (corr and (not self.sparsInit)):
                         # create a tensor for the gradient accumulation
+                        flag = p.device.graph_enabled()
+                        p.device.EnableGraph(False)
                         self.gradAccumulation.append(
                             tensor.Tensor((acc,), p.device, p.dtype))
                         self.gradAccumulation[k].set_value(0.0)
+                        p.device.EnableGraph(flag)
                     if corr:
                         self.fused_sparsification(glist,
                                                   self.gradAccumulation[k].data,
@@ -562,9 +568,12 @@ class DistOpt(object):
             k += 1
             if (corr and (not self.sparsInit)):
                 # create a tensor for the gradient accumulation
+                flag = p.device.graph_enabled()
+                p.device.EnableGraph(False)
                 self.gradAccumulation.append(
                     tensor.Tensor((acc,), p.device, p.dtype))
                 self.gradAccumulation[k].set_value(0.0)
+                p.device.EnableGraph(flag)
             if corr:
                 self.fused_sparsification(glist, self.gradAccumulation[k].data,
                                           spars, topK)
