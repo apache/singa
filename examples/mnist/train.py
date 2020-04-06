@@ -20,6 +20,7 @@ from builtins import range
 
 import numpy as np
 import os
+import sys
 import gzip
 import argparse
 try:
@@ -35,7 +36,10 @@ from singa import tensor
 
 def load_train_data(file_path):
     f = gzip.open(file_path, 'rb')
-    train_set, valid_set, test_set = pickle.load(f)
+    if sys.version_info.major > 2:
+        train_set, valid_set, test_set = pickle.load(f, encoding='latin1')
+    else:
+        train_set, valid_set, test_set = pickle.load(f)
     traindata = train_set[0].astype(np.float32)
     validdata = valid_set[0].astype(np.float32)
     print(traindata.shape, validdata.shape)
@@ -77,7 +81,7 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
                 train_x[(b * batch_size):((b + 1) * batch_size), :])
             tdata.to_device(dev)
             tposhidprob = tensor.mult(tdata, tweight)
-            tposhidprob.add_row(thbias)
+            tposhidprob = tposhidprob + thbias
             tposhidprob = tensor.sigmoid(tposhidprob)
             tposhidrandom = tensor.Tensor(tposhidprob.shape, dev)
             tposhidrandom.uniform(0.0, 1.0)
@@ -85,11 +89,11 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
 
             # negative phase
             tnegdata = tensor.mult(tposhidsample, tweight.T())
-            tnegdata.add_row(tvbias)
+            tnegdata = tnegdata + tvbias
             tnegdata = tensor.sigmoid(tnegdata)
 
             tneghidprob = tensor.mult(tnegdata, tweight)
-            tneghidprob.add_row(thbias)
+            tneghidprob = tneghidprob + thbias
             tneghidprob = tensor.sigmoid(tneghidprob)
             error = tensor.sum(tensor.square((tdata - tnegdata)))
             trainerrorsum = error + trainerrorsum
@@ -109,14 +113,14 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
         tvaliddata = tensor.from_numpy(valid_x)
         tvaliddata.to_device(dev)
         tvalidposhidprob = tensor.mult(tvaliddata, tweight)
-        tvalidposhidprob.add_row(thbias)
+        tvalidposhidprob = tvalidposhidprob + thbias
         tvalidposhidprob = tensor.sigmoid(tvalidposhidprob)
         tvalidposhidrandom = tensor.Tensor(tvalidposhidprob.shape, dev)
         initializer.uniform(tvalidposhidrandom, 0.0, 1.0)
         tvalidposhidsample = tensor.gt(tvalidposhidprob, tvalidposhidrandom)
 
         tvalidnegdata = tensor.mult(tvalidposhidsample, tweight.T())
-        tvalidnegdata.add_row(tvbias)
+        tvalidnegdata = tvalidnegdata + tvbias
         tvalidnegdata = tensor.sigmoid(tvalidnegdata)
 
         validerrorsum = tensor.sum(tensor.square((tvaliddata - tvalidnegdata)))
