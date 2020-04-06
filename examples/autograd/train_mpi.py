@@ -56,10 +56,10 @@ if __name__ == '__main__':
                         help='distibuted training options',
                         dest='dist_option')
     parser.add_argument('--spars',
-                        '--sparsifciation',
+                        '--sparsification',
                         default='0.05',
                         type=float,
-                        help='the sparsity parameter used for sparsifcation, between 0 to 1',
+                        help='the sparsity parameter used for sparsification, between 0 to 1',
                         dest='spars')
 
     args = parser.parse_args()
