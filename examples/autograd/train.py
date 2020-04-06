@@ -97,16 +97,6 @@ def run(global_rank, world_size, local_rank, max_epoch, batch_size, model, data,
     dev.SetRandSeed(0)
     np.random.seed(0)
 
-    if model == 'resnet':
-        from model import resnet
-        model = resnet.resnet50()
-    elif model == 'xceptionnet':
-        from model import xceptionnet
-        model = xceptionnet.create_model()
-    elif model == 'cnn':
-        from model import cnn
-        model = cnn.create_model()
-
     if data == 'cifar10':
         from data import cifar10
         train_x, train_y, val_x, val_y = cifar10.load()
@@ -114,10 +104,28 @@ def run(global_rank, world_size, local_rank, max_epoch, batch_size, model, data,
         from data import mnist
         train_x, train_y, val_x, val_y = mnist.load()
 
+    num_channels = train_x.shape[1]
+    image_size = train_x.shape[2]
+
+    print(num_channels)
+
+    if model == 'resnet':
+        from model import resnet
+        model = resnet.resnet50(num_channels=num_channels)
+    elif model == 'xceptionnet':
+        from model import xceptionnet
+        model = xceptionnet.create_model(num_channels=num_channels)
+    elif model == 'cnn':
+        from model import cnn
+        model = cnn.create_model(num_channels=num_channels)
+
+    # For distributed training, sequential gives better performance
     if hasattr(sgd, "communicator"):
         DIST = True
+        sequential = True
     else:
         DIST = False
+        sequential = False
 
     if DIST:
         train_x, train_y, val_x, val_y = partition(global_rank, world_size,
@@ -131,9 +139,6 @@ def run(global_rank, world_size, local_rank, max_epoch, batch_size, model, data,
         print(train_y.shape)
     '''
 
-    num_channels = train_x.shape[1]
-    image_size = train_x.shape[2]
-
     tx = tensor.Tensor(
         (batch_size, num_channels, model.input_size, model.input_size), dev,
         tensor.float32)
@@ -143,17 +148,9 @@ def run(global_rank, world_size, local_rank, max_epoch, batch_size, model, data,
     idx = np.arange(train_x.shape[0], dtype=np.int32)
 
     # attached model to graph
-    graph = True
-
-    # For distributed training, sequential gives better performance
-    if DIST:
-        sequential = True
-    else:
-        sequential = False
-
     model.on_device(dev)
     model.set_optimizer(sgd)
-    model.graph(graph, sequential)
+    model.graph(True, sequential)
 
     # Training and Evaluation Loop
     for epoch in range(max_epoch):
@@ -250,8 +247,15 @@ if __name__ == '__main__':
                         type=float,
                         help='initial learning rate',
                         dest='lr')
+    # determine which gpu to use in gpu
+    parser.add_argument('--id',
+                        '--device-id',
+                        default=0,
+                        type=int,
+                        help='which GPU to use',
+                        dest='device_id')
 
     args = parser.parse_args()
 
     sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5)
-    run(0, 1, 0, args.max_epoch, args.batch_size, args.model, args.data, sgd)
+    run(0, 1, args.device_id, args.max_epoch, args.batch_size, args.model, args.data, sgd)

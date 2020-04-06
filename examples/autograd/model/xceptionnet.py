@@ -112,7 +112,7 @@ class Xception(module.Module):
     https://arxiv.org/pdf/1610.02357.pdf
     """
 
-    def __init__(self, num_classes=1000):
+    def __init__(self, num_classes=1000, num_channels=3):
         """ Constructor
         Args:
             num_classes: number of classes
@@ -120,7 +120,7 @@ class Xception(module.Module):
         super(Xception, self).__init__()
         self.num_classes = num_classes
 
-        self.conv1 = autograd.Conv2d(3, 32, 3, 2, 0, bias=False)
+        self.conv1 = autograd.Conv2d(num_channels, 32, 3, 2, 0, bias=False)
         self.bn1 = autograd.BatchNorm2d(32)
 
         self.conv2 = autograd.Conv2d(32, 64, 3, 1, 1, bias=False)
