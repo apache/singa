@@ -123,10 +123,12 @@ __all__ = [
 
 class ResNet(module.Module):
 
-    def __init__(self, block, layers, num_classes=1000, num_channels=3):
+    def __init__(self, block, layers, num_classes=10, num_channels=3):
         self.inplanes = 64
-        self.num_classes = num_classes
         super(ResNet, self).__init__()
+        self.num_classes = num_classes
+        self.input_size = 224
+        self.dimension = 4
         self.conv1 = autograd.Conv2d(num_channels,
                                      64,
                                      kernel_size=7,
@@ -219,7 +221,6 @@ def resnet18(pretrained=False, **kwargs):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model = ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
-    model.input_size = 224
 
     return model
 
@@ -231,7 +232,6 @@ def resnet34(pretrained=False, **kwargs):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model = ResNet(BasicBlock, [3, 4, 6, 3], **kwargs)
-    model.input_size = 224
 
     return model
 
@@ -243,7 +243,6 @@ def resnet50(pretrained=False, **kwargs):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
-    model.input_size = 224
 
     return model
 
@@ -255,7 +254,6 @@ def resnet101(pretrained=False, **kwargs):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model = ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
-    model.input_size = 224
 
     return model
 
@@ -267,7 +265,6 @@ def resnet152(pretrained=False, **kwargs):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model = ResNet(Bottleneck, [3, 8, 36, 3], **kwargs)
-    model.input_size = 224
 
     return model
 

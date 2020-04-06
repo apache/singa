@@ -112,13 +112,15 @@ class Xception(module.Module):
     https://arxiv.org/pdf/1610.02357.pdf
     """
 
-    def __init__(self, num_classes=1000, num_channels=3):
+    def __init__(self, num_classes=10, num_channels=3):
         """ Constructor
         Args:
             num_classes: number of classes
         """
         super(Xception, self).__init__()
         self.num_classes = num_classes
+        self.input_size = 299
+        self.dimension = 4
 
         self.conv1 = autograd.Conv2d(num_channels, 32, 3, 2, 0, bias=False)
         self.bn1 = autograd.BatchNorm2d(32)
@@ -288,7 +290,6 @@ def create_model(pretrained=False, **kwargs):
         pretrained (bool): If True, returns a model pre-trained
     """
     model = Xception(**kwargs)
-    model.input_size = 299
 
     return model
 

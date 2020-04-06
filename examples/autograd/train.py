@@ -115,6 +115,7 @@ def run(global_rank,
 
     num_channels = train_x.shape[1]
     image_size = train_x.shape[2]
+    data_size = np.prod(train_x.shape[1:train_x.ndim]).item()
 
     #print(num_channels)
 
@@ -127,6 +128,9 @@ def run(global_rank,
     elif model == 'cnn':
         from model import cnn
         model = cnn.create_model(num_channels=num_channels)
+    elif model == 'mlp':
+        from model import mlp
+        model = mlp.create_model(data_size=data_size)
 
     # For distributed training, sequential gives better performance
     if hasattr(sgd, "communicator"):
@@ -148,9 +152,15 @@ def run(global_rank,
         print(train_y.shape)
     '''
 
-    tx = tensor.Tensor(
-        (batch_size, num_channels, model.input_size, model.input_size), dev,
-        tensor.float32)
+    if model.dimension == 4:
+        tx = tensor.Tensor(
+            (batch_size, num_channels, model.input_size, model.input_size), dev,
+            tensor.float32)
+    elif model.dimension == 2:
+        tx = tensor.Tensor((batch_size, data_size), dev, tensor.float32)
+        np.reshape(train_x, (train_x.shape[0], -1))
+        np.reshape(val_x, (val_x.shape[0], -1))
+
     ty = tensor.Tensor((batch_size,), dev, tensor.int32)
     num_train_batch = train_x.shape[0] // batch_size
     num_val_batch = val_x.shape[0] // batch_size
@@ -178,9 +188,10 @@ def run(global_rank,
         for b in range(num_train_batch):
             # Generate the patch data in this iteration
             x = train_x[idx[b * batch_size:(b + 1) * batch_size]]
-            x = augmentation(x, batch_size)
-            if (image_size != model.input_size):
-                x = resize_dataset(x, model.input_size)
+            if model.dimension == 4:
+                x = augmentation(x, batch_size)
+                if (image_size != model.input_size):
+                    x = resize_dataset(x, model.input_size)
             y = train_y[idx[b * batch_size:(b + 1) * batch_size]]
 
             # Copy the patch data into input tensors
@@ -210,8 +221,9 @@ def run(global_rank,
         model.eval()
         for b in range(num_val_batch):
             x = val_x[b * batch_size:(b + 1) * batch_size]
-            if (image_size != model.input_size):
-                x = resize_dataset(x, model.input_size)
+            if model.dimension == 4:
+                if (image_size != model.input_size):
+                    x = resize_dataset(x, model.input_size)
             y = val_y[b * batch_size:(b + 1) * batch_size]
             tx.copy_from_numpy(x)
             ty.copy_from_numpy(y)
@@ -235,7 +247,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Training using the autograd and graph.')
     parser.add_argument('model',
-                        choices=['resnet', 'xceptionnet', 'cnn'],
+                        choices=['resnet', 'xceptionnet', 'cnn', 'mlp'],
                         default='cnn')
     parser.add_argument('data', choices=['cifar10', 'mnist'], default='mnist')
     parser.add_argument('--epoch',

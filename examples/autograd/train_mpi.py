@@ -28,7 +28,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Training using the autograd and graph.')
     parser.add_argument('model',
-                        choices=['resnet', 'xceptionnet', 'cnn'],
+                        choices=['resnet', 'xceptionnet', 'cnn', 'mlp'],
                         default='cnn')
     parser.add_argument('data', choices=['cifar10', 'mnist'], default='mnist')
     parser.add_argument('--epoch',

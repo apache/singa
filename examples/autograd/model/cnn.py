@@ -23,13 +23,15 @@ from singa import module
 
 class CNN(module.Module):
 
-    def __init__(self, num_channels=1):
+    def __init__(self, num_classes=10, num_channels=1):
         super(CNN, self).__init__()
-        self.num_classes = 10
+        self.num_classes = num_classes
+        self.input_size = 28
+        self.dimension = 4
         self.conv1 = autograd.Conv2d(num_channels, 20, 5, padding=0)
         self.conv2 = autograd.Conv2d(20, 50, 5, padding=0)
         self.linear1 = autograd.Linear(4 * 4 * 50, 500)
-        self.linear2 = autograd.Linear(500, 10)
+        self.linear2 = autograd.Linear(500, num_classes)
         self.pooling1 = autograd.MaxPool2d(2, 2, padding=0)
         self.pooling2 = autograd.MaxPool2d(2, 2, padding=0)
 
@@ -43,7 +45,7 @@ class CNN(module.Module):
         y = autograd.flatten(y)
         y = self.linear1(y)
         y = autograd.relu(y)
-        y = self.linear2(y)    
+        y = self.linear2(y)
         return y
 
     def loss(self, out, ty):
@@ -76,7 +78,6 @@ def create_model(pretrained=False, **kwargs):
         pretrained (bool): If True, returns a model pre-trained
     """
     model = CNN(**kwargs)
-    model.input_size = 28
 
     return model
 
