@@ -48,7 +48,3 @@ The following code provides examples of creating devices::
    host = device.get_default_device()  # get the default host device (a CppCPU)
    ary1 = device.create_cuda_gpus(2)  # create 2 devices, starting from ID 0
    ary2 = device.create_cuda_gpus([0,2])  # create 2 devices on ID 0 and 2
-
-
-CPP API
----------

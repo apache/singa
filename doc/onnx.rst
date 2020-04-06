@@ -16,8 +16,10 @@
    under the License.
 
 
-Caffe Converter
-================
+FeedForward Net
+===============
 
-.. automodule:: singa.converter
+.. automodule:: singa.sonnx
    :members:
+   :member-order: bysource
+   :undoc-members:

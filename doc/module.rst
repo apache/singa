@@ -20,6 +20,6 @@ Loss
 =========
 
 
-.. automodule:: singa.loss
+.. automodule:: singa.module
    :members:
    :show-inheritance:
