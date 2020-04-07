@@ -23,7 +23,7 @@ from singa import device
 
 sgd = opt.SGD(lr=0.1)
 sgd = opt.DistOpt(sgd)
-dev = device.create_cuda_gpu_on(sgd.rank_in_local)
+dev = device.create_cuda_gpu_on(sgd.local_rank)
 param = tensor.Tensor((10, 10), dev, tensor.float32)
 grad = tensor.Tensor((10, 10), dev, tensor.float32)
 expected = np.ones((10, 10), dtype=np.float32) * (10 - 0.1)
