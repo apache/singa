@@ -20,15 +20,8 @@
 # the code is modified from
 # https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
 
-from singa import opt
-from singa import device
-from singa import tensor
-from singa import module
 from singa import autograd
-
-import time
-import numpy as np
-from tqdm import trange
+from singa import module
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -130,10 +123,13 @@ __all__ = [
 
 class ResNet(module.Module):
 
-    def __init__(self, block, layers, num_classes=1000):
+    def __init__(self, block, layers, num_classes=10, num_channels=3):
         self.inplanes = 64
         super(ResNet, self).__init__()
-        self.conv1 = autograd.Conv2d(3,
+        self.num_classes = num_classes
+        self.input_size = 224
+        self.dimension = 4
+        self.conv1 = autograd.Conv2d(num_channels,
                                      64,
                                      kernel_size=7,
                                      stride=2,
@@ -198,8 +194,21 @@ class ResNet(module.Module):
     def loss(self, out, ty):
         return autograd.softmax_cross_entropy(out, ty)
 
-    def optim(self, loss):
-        self.optimizer.backward_and_update(loss)
+    def optim(self, loss, dist_option, spars):
+        if dist_option == 'fp32':
+            self.optimizer.backward_and_update(loss)
+        elif dist_option == 'fp16':
+            self.optimizer.backward_and_update_half(loss)
+        elif dist_option == 'partialUpdate':
+            self.optimizer.backward_and_partial_update(loss)
+        elif dist_option == 'sparseTopK':
+            self.optimizer.backward_and_sparse_update(loss,
+                                                      topK=True,
+                                                      spars=spars)
+        elif dist_option == 'sparseThreshold':
+            self.optimizer.backward_and_sparse_update(loss,
+                                                      topK=False,
+                                                      spars=spars)
 
     def set_optimizer(self, optimizer):
         self.optimizer = optimizer
@@ -260,67 +269,6 @@ def resnet152(pretrained=False, **kwargs):
     return model
 
 
-def train_resnet(DIST=True, graph=True, sequential=False):
-
-    # Define the hypermeters good for the train_resnet
-    niters = 100
-    batch_size = 32
-    sgd = opt.SGD(lr=0.1, momentum=0.9, weight_decay=1e-5)
-
-    local_rank = 0
-    world_size = 1
-    global_rank = 0
-    IMG_SIZE = 224
-
-    if DIST:
-        sgd = opt.DistOpt(sgd)
-        world_size = sgd.world_size
-        local_rank = sgd.local_rank
-        global_rank = sgd.global_rank
-
-    dev = device.create_cuda_gpu_on(local_rank)
-
-    tx = tensor.Tensor((batch_size, 3, IMG_SIZE, IMG_SIZE), dev)
-    ty = tensor.Tensor((batch_size,), dev, tensor.int32)
-    x = np.random.randn(batch_size, 3, IMG_SIZE, IMG_SIZE).astype(np.float32)
-    y = np.random.randint(0, 1000, batch_size, dtype=np.int32)
-    tx.copy_from_numpy(x)
-    ty.copy_from_numpy(y)
-
-    # construct the model
-    model = resnet50()
-    model.train()
-    model.on_device(dev)
-    model.set_optimizer(sgd)
-    model.graph(graph, sequential)
-
-    # train model
-    dev.Sync()
-    start = time.time()
-    with trange(niters) as t:
-        for _ in t:
-            out = model(tx)
-            loss = model.loss(out, ty)
-            model.optim(loss)
-
-    dev.Sync()
-    end = time.time()
-    titer = (end - start) / float(niters)
-    throughput = float(niters * batch_size * world_size) / (end - start)
-    if global_rank == 0:
-        print("Throughput = {} per second".format(throughput), flush=True)
-        print("TotalTime={}".format(end - start), flush=True)
-        print("Total={}".format(titer), flush=True)
-
-
-if __name__ == "__main__":
-
-    DIST = True
-    graph = True
-    sequential = False
-
-    # For distributed training, sequential has better throughput in the current version
-    if DIST:
-        sequential = True
-
-    train_resnet(DIST=DIST, graph=graph, sequential=sequential)
+__all__ = [
+    'ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152'
+]

@@ -139,21 +139,30 @@ def reduce_variable(variable, dist_opt, reducer):
 
 
 # Function to sychronize SINGA TENSOR initial model parameters
-def sychronize(tensor, dist_opt):
+def synchronize(tensor, dist_opt):
     dist_opt.all_reduce(tensor.data)
     dist_opt.wait()
     tensor /= dist_opt.world_size
 
 
-def train_cifar10(sgd,
-                  max_epoch,
-                  batch_size,
-                  DIST=False,
-                  data_partition=None,
-                  gpu_num=None,
-                  gpu_per_node=None,
+# Data partition
+def data_partition(dataset_x, dataset_y, global_rank, world_size):
+    data_per_rank = dataset_x.shape[0] // world_size
+    idx_start = global_rank * data_per_rank
+    idx_end = (global_rank + 1) * data_per_rank
+    return dataset_x[idx_start:idx_end], dataset_y[idx_start:idx_end]
+
+
+def train_cifar10(DIST=False,
+                  local_rank=None,
+                  world_size=None,
                   nccl_id=None,
                   partial_update=False):
+
+    # Define the hypermeters good for the train_cifar10
+    sgd = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)
+    max_epoch = 5
+    batch_size = 32
 
     train_x, train_y = load_train_data()
     test_x, test_y = load_test_data()
@@ -165,13 +174,13 @@ def train_cifar10(sgd,
         # For Distributed GPU Training
         sgd = opt.DistOpt(sgd,
                           nccl_id=nccl_id,
-                          gpu_num=gpu_num,
-                          gpu_per_node=gpu_per_node)
-        dev = device.create_cuda_gpu_on(sgd.rank_in_local)
+                          local_rank=local_rank,
+                          world_size=world_size)
+        dev = device.create_cuda_gpu_on(sgd.local_rank)
         # Dataset partition for distributed training
-        train_x, train_y = data_partition(train_x, train_y, sgd.rank_in_global,
+        train_x, train_y = data_partition(train_x, train_y, sgd.global_rank,
                                           sgd.world_size)
-        test_x, test_y = data_partition(test_x, test_y, sgd.rank_in_global,
+        test_x, test_y = data_partition(test_x, test_y, sgd.global_rank,
                                         sgd.world_size)
         world_size = sgd.world_size
     else:
@@ -200,14 +209,14 @@ def train_cifar10(sgd,
         loss = autograd.softmax_cross_entropy(out, ty)
         param = []
         for p, _ in autograd.backward(loss):
-            sychronize(p, sgd)
+            synchronize(p, sgd)
             param.append(p)
 
     for epoch in range(max_epoch):
         start_time = time.time()
         np.random.shuffle(idx)
 
-        if ((DIST == False) or (sgd.rank_in_global == 0)):
+        if ((DIST == False) or (sgd.global_rank == 0)):
             print('Starting Epoch %d:' % (epoch))
 
         #Training Phase
@@ -241,7 +250,7 @@ def train_cifar10(sgd,
             train_loss = reduce_variable(train_loss, sgd, reducer)
 
         # Output the Training Loss and Accuracy
-        if ((DIST == False) or (sgd.rank_in_global == 0)):
+        if ((DIST == False) or (sgd.global_rank == 0)):
             print('Training loss = %f, training accuracy = %f' %
                   (train_loss, train_correct /
                    (num_train_batch * batch_size * world_size)),
@@ -250,7 +259,7 @@ def train_cifar10(sgd,
         if partial_update:
             # sychronize parameters before evaluation phase
             for p in param:
-                sychronize(p, sgd)
+                synchronize(p, sgd)
 
         #Evaulation Phase
         autograd.training = False
@@ -269,7 +278,7 @@ def train_cifar10(sgd,
             test_correct = reduce_variable(test_correct, sgd, reducer)
 
         # Output the Evaluation Accuracy
-        if ((DIST == False) or (sgd.rank_in_global == 0)):
+        if ((DIST == False) or (sgd.global_rank == 0)):
             print('Evaluation accuracy = %f, Elapsed Time = %fs' %
                   (test_correct / (num_test_batch * batch_size * world_size),
                    time.time() - start_time),
@@ -278,9 +287,5 @@ def train_cifar10(sgd,
 
 if __name__ == '__main__':
 
-    sgd = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)
-
-    max_epoch = 10
-    batch_size = 32
-
-    train_cifar10(sgd=sgd, max_epoch=max_epoch, batch_size=batch_size)
+    DIST = False
+    train_cifar10(DIST=DIST)

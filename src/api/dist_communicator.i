@@ -40,11 +40,11 @@ public:
 
 class Communicator {
 public:
-  int MPIRankInGlobal;
-  int totalMPIRanksInGlobal;
-  int MPIRankInLocal;
+  int global_rank;
+  int world_size;
+  int local_rank;
   Communicator(int limit);
-  Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder, int limit);
+  Communicator(int local_rank, int world_size, const NcclIdHolder &holder, int limit);
   void synch(Tensor &t);
   void fusedSynch(std::vector<Tensor> &t, bool send = true);
   void synchHalf(Tensor &t);
