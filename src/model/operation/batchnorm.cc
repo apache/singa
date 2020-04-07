@@ -307,7 +307,7 @@ const std::vector<Tensor> GpuBatchNormForwardTraining(
   output.ResetLike(x);
 
   output.device()->Exec(
-      [&, input, output, mean, var, x](Context* ctx) mutable {
+      [=, &cbnh](Context* ctx) mutable {
         const float alpha = 1.0f, beta = 0.0f;
         double epsilon = CUDNN_BN_MIN_EPSILON;
         CUDNN_CHECK(cudnnBatchNormalizationForwardTraining(
@@ -346,7 +346,7 @@ Tensor GpuBatchNormForwardInference(const CudnnBatchNormHandle& cbnh,
   Tensor output;
   output.ResetLike(x);
   output.device()->Exec(
-      [&, input, output](Context* ctx) mutable {
+      [=, &cbnh](Context* ctx) mutable {
         const float alpha = 1.0f, beta = 0.0f;
         double epsilon = CUDNN_BN_MIN_EPSILON;
         CUDNN_CHECK(cudnnBatchNormalizationForwardInference(
@@ -382,7 +382,7 @@ const std::vector<Tensor> GpuBatchNormBackward(
   dbnBias.ResetLike(bnScale);
 
   dx.device()->Exec(
-      [&, x, dy, dx, dbnScale, dbnBias, mean, var](Context* ctx) mutable {
+      [=, &cbnh](Context* ctx) mutable {
         const float alpha = 1.0f, beta = .0f;
         double epsilon = CUDNN_BN_MIN_EPSILON;
         CUDNN_CHECK(cudnnBatchNormalizationBackward(

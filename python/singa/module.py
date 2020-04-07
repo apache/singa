@@ -25,6 +25,9 @@ from functools import wraps
 from singa import autograd
 from . import singa_wrap as singa
 from .device import get_default_device
+from .tensor import Tensor
+
+import gc
 
 
 class Graph(type):
@@ -36,13 +39,23 @@ class Graph(type):
             if self.graph_mode and self.training:
                 name = func.__name__
                 if name not in self._called:
+                    # tag this function
                     self._called.add(name)
+                    # buffer operations
                     self._device.EnableGraph(True)
                     ret = func(self, *args, **kwargs)
                     self._device.Sync()
                     self._device.EnableGraph(False)
-                    self._device.RunGraph(self.sequential)
+                    # deconstruct Operations before running the entire graph
+                    if name == 'optim':
+                        for fname in self._results:
+                            self._results[fname].creator = None
+                        # make sure all Operations are deallocated
+                        gc.collect()
+                    # add result tensor
                     self._results[name] = ret
+                    # run graph
+                    self._device.RunGraph(self.sequential)
                     self.initialized = True
                     return ret
 

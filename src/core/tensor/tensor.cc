@@ -514,7 +514,8 @@ Tensor &Tensor::operator=(Tensor &&in) {
 
 #define GenUnaryTensorArgMemberFn(op, fn) \
   Tensor &Tensor::op(const Tensor &in) {  \
-    fn(*this, in, this);                  \
+    Tensor out(*this);                    \
+    fn(*this, in, &out);                  \
     return *this;                         \
   }
 
@@ -526,7 +527,8 @@ GenUnaryTensorArgMemberFn(operator/=, Div);
 #define GenUnaryScalarArgMemberFn(op, fn) \
   template <typename DType>               \
   Tensor &Tensor::op(const DType x) {     \
-    fn(*this, x, this);                   \
+    Tensor out(*this);                    \
+    fn(*this, x, &out);                   \
     return *this;                         \
   }                                       \
   template Tensor &Tensor::op<float>(const float x)
@@ -1466,7 +1468,7 @@ template <typename SType>
 void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
           Tensor *C) {
   vector<Block *> read_blocks = {A.block(), B.block()};
-  if (beta) read_blocks.push_back(C->block());
+  // if (beta) read_blocks.push_back(C->block());
   if (B.nDim() == 1u) {
     CHECK_EQ(A.shape().size(), 2u);
     TYPE_LANG_SWITCH(A.data_type(), DType, A.device()->lang(), Lang, {
