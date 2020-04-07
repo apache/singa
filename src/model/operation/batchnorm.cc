@@ -84,7 +84,7 @@ Tensor CpuBatchNormForwardInference(const BatchNormHandle& bnh, const Tensor& x,
   Tensor w = get_bn_weight_from(bnScale, bnBias);
 
   y.device()->Exec(
-      [y, w, &x, &running_mean, &running_var, &bnh](Context* ctx) mutable {
+      [y, w, x, &running_mean, &running_var, &bnh](Context* ctx) mutable {
         auto eng = ctx->dnnl_engine;
         using namespace dnnl;
 
@@ -138,7 +138,7 @@ const std::vector<Tensor> CpuBatchNormForwardTraining(
   Tensor w = get_bn_weight_from(bnScale, bnBias);
 
   y.device()->Exec(
-      [y, mean, var, w, &x, &running_mean, &running_var,
+      [y, mean, var, w, x, &running_mean, &running_var,
        &bnh](Context* ctx) mutable {
         auto eng = ctx->dnnl_engine;
         using namespace dnnl;
@@ -202,7 +202,7 @@ const std::vector<Tensor> CpuBatchNormBackwardx(
   dw.ResetLike(w);
 
   dx.device()->Exec(
-      [w, dw, dx, dy, &x, &y, &mean, &var, &bnh](Context* ctx) mutable {
+      [w, dw, dx, dy, x, y, mean, var, &bnh](Context* ctx) mutable {
         auto eng = ctx->dnnl_engine;
         using namespace dnnl;
 
@@ -307,7 +307,7 @@ const std::vector<Tensor> GpuBatchNormForwardTraining(
   output.ResetLike(x);
 
   output.device()->Exec(
-      [&, mean, var, input, output](Context* ctx) mutable {
+      [&, input, output, mean, var, x](Context* ctx) mutable {
         const float alpha = 1.0f, beta = 0.0f;
         double epsilon = CUDNN_BN_MIN_EPSILON;
         CUDNN_CHECK(cudnnBatchNormalizationForwardTraining(
@@ -382,7 +382,7 @@ const std::vector<Tensor> GpuBatchNormBackward(
   dbnBias.ResetLike(bnScale);
 
   dx.device()->Exec(
-      [&, dy, dx, dbnScale, dbnBias](Context* ctx) mutable {
+      [&, x, dy, dx, dbnScale, dbnBias, mean, var](Context* ctx) mutable {
         const float alpha = 1.0f, beta = .0f;
         double epsilon = CUDNN_BN_MIN_EPSILON;
         CUDNN_CHECK(cudnnBatchNormalizationBackward(

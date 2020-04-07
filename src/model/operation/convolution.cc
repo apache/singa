@@ -113,7 +113,7 @@ Tensor CpuConvForward(const Tensor &x, Tensor &W, Tensor &b,
   Tensor output(shape, dev, dtype);
 
   output.device()->Exec(
-      [output, &x, &W, &b, &ch](Context *ctx) mutable {
+      [output, x, &W, &b, &ch](Context *ctx) mutable {
         using namespace dnnl;
         using tag = memory::format_tag;
         auto eng = ctx->dnnl_engine;
@@ -241,7 +241,7 @@ Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x,
   dx.ResetLike(x);
 
   dy.device()->Exec(
-      [dx, dy, &x, &W, &ch](Context *ctx) mutable {
+      [dx, dy, x, &W, &ch](Context *ctx) mutable {
         using namespace dnnl;
         auto eng = ctx->dnnl_engine;
         auto s = ctx->dnnl_stream;
@@ -325,7 +325,7 @@ Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
   dW.ResetLike(W);
 
   dy.device()->Exec(
-      [dy, dW, &x, &ch](Context *ctx) mutable {
+      [dy, dW, x, &ch](Context *ctx) mutable {
         using namespace dnnl;
         auto eng = ctx->dnnl_engine;
         auto s = ctx->dnnl_stream;
@@ -587,7 +587,7 @@ Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b,
   Tensor output(shape, dev, dtype);
 
   output.device()->Exec(
-      [output, &x, &W, &cch](Context *ctx) mutable {
+      [output, x, &W, &cch](Context *ctx) mutable {
         Block *inblock = x.block(), *outblock = output.block(),
               *wblock = W.block();
         float alpha = 1.f, beta = 0.f;
@@ -646,7 +646,7 @@ Tensor GpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
   dW.ResetLike(W);
 
   dy.device()->Exec(
-      [dW, dy, &x, &cch](Context *ctx) {
+      [dW, dy, x, &cch](Context *ctx) {
         Block *inblock = x.block(), *dyblock = dy.block(),
               *dwblock = dW.block();
         float alpha = 1.f, beta = 0.f;
