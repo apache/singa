@@ -38,7 +38,7 @@ if __name__ == '__main__':
     parser.add_argument('model',
                         choices=['resnet', 'xceptionnet', 'cnn', 'mlp'],
                         default='cnn')
-    parser.add_argument('data', choices=['cifar10', 'mnist'], default='mnist')
+    parser.add_argument('data', choices=['cifar10', 'cifar100', 'mnist'], default='mnist')
     parser.add_argument('--epoch',
                         '--max-epoch',
                         default=10,

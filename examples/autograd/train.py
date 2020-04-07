@@ -110,6 +110,9 @@ def run(global_rank,
     if data == 'cifar10':
         from data import cifar10
         train_x, train_y, val_x, val_y = cifar10.load()
+    elif data == 'cifar100':
+        from data import cifar100
+        train_x, train_y, val_x, val_y = cifar100.load()
     elif data == 'mnist':
         from data import mnist
         train_x, train_y, val_x, val_y = mnist.load()
@@ -254,7 +257,7 @@ if __name__ == '__main__':
     parser.add_argument('model',
                         choices=['resnet', 'xceptionnet', 'cnn', 'mlp'],
                         default='cnn')
-    parser.add_argument('data', choices=['cifar10', 'mnist'], default='mnist')
+    parser.add_argument('data', choices=['cifar10', 'cifar100', 'mnist'], default='mnist')
     parser.add_argument('--epoch',
                         '--max-epoch',
                         default=10,
