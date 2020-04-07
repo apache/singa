@@ -531,7 +531,7 @@ class SingaFrontend(object):
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
 
         node.attribute.extend([
-            helper.make_attribute('axis', op.start_axis),
+            helper.make_attribute('axis', op.axis),
         ])
         return node
 
@@ -1666,7 +1666,7 @@ class SingaBackend(Backend):
         x = inputs[0]
         factor = onnx_node.getattr('momentum', 0.9)
         if x.device.id() == -1:
-            raise NotImplementedError
+            handle = singa.BatchNormHandle(factor, x.data)
         else:
             handle = singa.CudnnBatchNormHandle(factor, x.data)
 
@@ -1769,7 +1769,7 @@ class SingaBackend(Backend):
 
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs,
                                                        opset_version)
-        return None, forward(start_axis=factor)
+        return None, forward(axis=factor)
 
     @classmethod
     def _common_onnx_node_to_singa_op(cls, onnx_node, inputs, opset_version):
