@@ -103,8 +103,7 @@ def train_mnist_cnn(DIST=False, graph=True, sequential=False):
         global_rank = sgd.global_rank
         train_x, train_y = data_partition(train_x, train_y, global_rank,
                                           world_size)
-        test_x, test_y = data_partition(test_x, test_y, global_rank,
-                                        world_size)
+        test_x, test_y = data_partition(test_x, test_y, global_rank, world_size)
 
     dev = device.create_cuda_gpu_on(local_rank)
     dev.SetRandSeed(0)
@@ -199,7 +198,7 @@ if __name__ == '__main__':
     sequential = False
 
     # For distributed training, sequential has better throughput in the current version
-    if DIST:
-        sequential = True
+    # if DIST:
+    #     sequential = True
 
     train_mnist_cnn(DIST=DIST, graph=graph, sequential=sequential)

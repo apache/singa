@@ -150,7 +150,7 @@ if __name__ == "__main__":
     sequential = False
 
     # For distributed training, sequential has better throughput in the current version
-    if DIST:
-        sequential = True
+    # if DIST:
+    #     sequential = True
 
     train_mlp(DIST=DIST, graph=graph, sequential=sequential)

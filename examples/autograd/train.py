@@ -116,21 +116,24 @@ def run(global_rank,
     num_channels = train_x.shape[1]
     image_size = train_x.shape[2]
     data_size = np.prod(train_x.shape[1:train_x.ndim]).item()
-
-    #print(num_channels)
+    num_classes = (np.max(train_y) + 1).item()
+    #print(num_classes)
 
     if model == 'resnet':
         from model import resnet
-        model = resnet.resnet18(num_channels=num_channels)
+        model = resnet.resnet18(num_channels=num_channels,
+                                num_classes=num_classes)
     elif model == 'xceptionnet':
         from model import xceptionnet
-        model = xceptionnet.create_model(num_channels=num_channels)
+        model = xceptionnet.create_model(num_channels=num_channels,
+                                         num_classes=num_classes)
     elif model == 'cnn':
         from model import cnn
-        model = cnn.create_model(num_channels=num_channels)
+        model = cnn.create_model(num_channels=num_channels,
+                                 num_classes=num_classes)
     elif model == 'mlp':
         from model import mlp
-        model = mlp.create_model(data_size=data_size)
+        model = mlp.create_model(data_size=data_size, num_classes=num_classes)
 
     # For distributed training, sequential gives better performance
     if hasattr(sgd, "communicator"):
