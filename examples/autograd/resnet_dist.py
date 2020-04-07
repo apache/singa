@@ -32,10 +32,10 @@ if __name__ == "__main__":
     sgd = opt.SGD(lr=0.1, momentum=0.9, weight_decay=1e-5)
     sgd = opt.DistOpt(sgd)
 
-    if (sgd.rank_in_global == 0):
+    if (sgd.global_rank == 0):
         print("Start intialization...........", flush=True)
 
-    dev = device.create_cuda_gpu_on(sgd.rank_in_local)
+    dev = device.create_cuda_gpu_on(sgd.local_rank)
 
     from resnet import resnet50
     model = resnet50()
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     tsoftmax = float(softmax) / float(niters)
     tbackward = titer - tforward - tsoftmax
 
-    if (sgd.rank_in_global == 0):
+    if (sgd.global_rank == 0):
         print("\nThroughput = {} per second".format(throughput), flush=True)
         print("Total={}, forward={}, softmax={}, backward={}".format(
             titer, tforward, tsoftmax, tbackward),

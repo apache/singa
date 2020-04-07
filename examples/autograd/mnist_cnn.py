@@ -131,7 +131,7 @@ def reduce_variable(variable, dist_opt, reducer):
 
 
 # Function to sychronize SINGA TENSOR initial model parameters
-def sychronize(tensor, dist_opt):
+def synchronize(tensor, dist_opt):
     dist_opt.all_reduce(tensor.data)
     dist_opt.wait()
     tensor /= dist_opt.world_size
@@ -150,17 +150,27 @@ def augmentation(x, batch_size):
     return x
 
 
-def train_mnist_cnn(sgd,
-                    max_epoch,
-                    batch_size,
-                    DIST=False,
-                    data_partition=None,
-                    gpu_num=None,
-                    gpu_per_node=None,
+# Data partition
+def data_partition(dataset_x, dataset_y, global_rank, world_size):
+    data_per_rank = dataset_x.shape[0] // world_size
+    idx_start = global_rank * data_per_rank
+    idx_end = (global_rank + 1) * data_per_rank
+    return dataset_x[idx_start:idx_end], dataset_y[idx_start:idx_end]
+
+
+def train_mnist_cnn(DIST=False,
+                    local_rank=None,
+                    world_size=None,
                     nccl_id=None,
                     spars=0,
                     topK=False,
                     corr=True):
+
+    # Define the hypermeters good for the mnist_cnn
+    max_epoch = 10
+    batch_size = 64
+    sgd = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)
+
     # Prepare training and valadiation data
     train_x, train_y, test_x, test_y = load_dataset()
     IMG_SIZE = 28
@@ -176,13 +186,13 @@ def train_mnist_cnn(sgd,
         # For Distributed GPU Training
         sgd = opt.DistOpt(sgd,
                           nccl_id=nccl_id,
-                          gpu_num=gpu_num,
-                          gpu_per_node=gpu_per_node)
-        dev = device.create_cuda_gpu_on(sgd.rank_in_local)
+                          local_rank=local_rank,
+                          world_size=world_size)
+        dev = device.create_cuda_gpu_on(sgd.local_rank)
         # Dataset partition for distributed training
-        train_x, train_y = data_partition(train_x, train_y, sgd.rank_in_global,
+        train_x, train_y = data_partition(train_x, train_y, sgd.global_rank,
                                           sgd.world_size)
-        test_x, test_y = data_partition(test_x, test_y, sgd.rank_in_global,
+        test_x, test_y = data_partition(test_x, test_y, sgd.global_rank,
                                         sgd.world_size)
         world_size = sgd.world_size
     else:
@@ -210,14 +220,14 @@ def train_mnist_cnn(sgd,
         out = model.forward(tx)
         loss = autograd.softmax_cross_entropy(out, ty)
         for p, g in autograd.backward(loss):
-            sychronize(p, sgd)
+            synchronize(p, sgd)
 
     # Training and Evaulation Loop
     for epoch in range(max_epoch):
         start_time = time.time()
         np.random.shuffle(idx)
 
-        if ((DIST == False) or (sgd.rank_in_global == 0)):
+        if ((DIST == False) or (sgd.global_rank == 0)):
             print('Starting Epoch %d:' % (epoch))
 
         # Training Phase
@@ -240,10 +250,10 @@ def train_mnist_cnn(sgd,
                 if (spars == 0):
                     sgd.backward_and_update(loss, threshold=50000)
                 else:
-                    sgd.backward_and_spars_update(loss,
-                                                  spars=spars,
-                                                  topK=topK,
-                                                  corr=corr)
+                    sgd.backward_and_sparse_update(loss,
+                                                   spars=spars,
+                                                   topK=topK,
+                                                   corr=corr)
             else:
                 sgd.backward_and_update(loss)
 
@@ -254,7 +264,7 @@ def train_mnist_cnn(sgd,
             train_loss = reduce_variable(train_loss, sgd, reducer)
 
         # Output the Training Loss and Accuracy
-        if ((DIST == False) or (sgd.rank_in_global == 0)):
+        if ((DIST == False) or (sgd.global_rank == 0)):
             print('Training loss = %f, training accuracy = %f' %
                   (train_loss, train_correct /
                    (num_train_batch * batch_size * world_size)),
@@ -275,7 +285,7 @@ def train_mnist_cnn(sgd,
             test_correct = reduce_variable(test_correct, sgd, reducer)
 
         # Output the Evaluation Accuracy
-        if ((DIST == False) or (sgd.rank_in_global == 0)):
+        if ((DIST == False) or (sgd.global_rank == 0)):
             print('Evaluation accuracy = %f, Elapsed Time = %fs' %
                   (test_correct / (num_test_batch * batch_size * world_size),
                    time.time() - start_time),
@@ -284,9 +294,5 @@ def train_mnist_cnn(sgd,
 
 if __name__ == '__main__':
 
-    sgd = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)
-
-    max_epoch = 10
-    batch_size = 64
-
-    train_mnist_cnn(sgd=sgd, max_epoch=max_epoch, batch_size=batch_size)
+    DIST = False
+    train_mnist_cnn(DIST=DIST)
