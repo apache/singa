@@ -54,13 +54,19 @@ if __name__ == '__main__':
                         default='fp32',
                         choices=['fp32','fp16','partialUpdate','sparseTopK','sparseThreshold'],
                         help='distibuted training options',
-                        dest='dist_option')
+                        dest='dist_option')  # currently partialUpdate support graph=False only 
     parser.add_argument('--spars',
                         '--sparsification',
                         default='0.05',
                         type=float,
                         help='the sparsity parameter used for sparsification, between 0 to 1',
                         dest='spars')
+    parser.add_argument('--no-graph',
+                        '--disable-graph',
+                        default='True',
+                        action='store_false',
+                        help='disable graph',
+                        dest='graph')
 
     args = parser.parse_args()
 
@@ -68,4 +74,4 @@ if __name__ == '__main__':
     sgd = opt.DistOpt(sgd)
 
     train.run(sgd.global_rank, sgd.world_size, sgd.local_rank, args.max_epoch,
-              args.batch_size, args.model, args.data, sgd, args.dist_option, args.spars)
+              args.batch_size, args.model, args.data, sgd, args.graph, args.dist_option, args.spars)
