@@ -182,7 +182,7 @@ Tensor Tensor::AsType(const DataType type) {
 Tensor &Tensor::ToDevice(std::shared_ptr<Device> dst) {
   // TODO(wangwei) the comparison is restricted. May compare against device ID?
   if (device_ != dst) {
-    // TODO(rulin) fix the memory leak for tmp variable
+    // WARNING: this function can't be buffered
     Tensor tmp(shape_, dst, data_type_);
     if (block_ != nullptr && Size() && block_->initialized())
       tmp.CopyData(*this);
@@ -1148,9 +1148,7 @@ void AddRow(const SType alpha, const SType beta, const Tensor &v, Tensor *M) {
 
     Tensor one(Shape{nb_row, 1}, M->device(), M->data_type());
     one.SetValue(1.0f);
-    // printf("before create1\n");
     Tensor vmat(Reshape(v, Shape{1, nb_col}));
-    // printf("before create2\n");
     Mult(alpha, one, vmat, beta, M);
   }
 }
@@ -1433,8 +1431,9 @@ void Axpy(const SType alpha, const Tensor &in, Tensor *out) {
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     auto a = TypeCast<SType, DType>(alpha);
     Tensor &outRef = *out;
+    Tensor fake(*out);
     out->device()->Exec(
-        [a, in, outRef](Context *ctx) mutable {
+        [a, in, outRef, fake](Context *ctx) mutable {
           Axpy<DType, Lang>(a, in, &outRef, ctx);
         },
         {in.block(), out->block()}, {out->block()});
@@ -1577,8 +1576,9 @@ void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p) {
   size_t dim = p->Size() / batchsize;
   TYPE_LANG_SWITCH(p->data_type(), DType, p->device()->lang(), Lang, {
     Tensor &pRef = *p;
+    Tensor pFake(*p);  // just add a ref count
     p->device()->Exec(
-        [batchsize, dim, t, pRef](Context *ctx) mutable {
+        [batchsize, dim, t, pRef, pFake](Context *ctx) mutable {
           bool int_target = t.Size() == batchsize;
           SoftmaxCrossEntropyBwd<DType, Lang>(int_target, batchsize, dim,
                                               pRef.block(), t.block(),

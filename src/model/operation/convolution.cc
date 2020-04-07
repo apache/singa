@@ -325,7 +325,7 @@ Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
   dW.ResetLike(W);
 
   dy.device()->Exec(
-      [dy, dW, x, &ch](Context *ctx) mutable {
+      [dy, dW, x, &W, &ch](Context *ctx) mutable {
         using namespace dnnl;
         auto eng = ctx->dnnl_engine;
         auto s = ctx->dnnl_stream;
@@ -598,11 +598,12 @@ Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b,
                                 cch.workspace_count * sizeof(float), &beta,
                                 cch.y_desc, outblock->mutable_data());
       },
-      {x.block(), W.block()}, {output.block()}, cch.workspace.block());
+      {x.block(), W.block()}, {output.block(), cch.workspace.block()});
 
   if (cch.bias_term) {
+    Tensor outputFake(output);
     output.device()->Exec(
-        [output, &b, &cch](Context *ctx) mutable {
+        [output, outputFake, &b, &cch](Context *ctx) mutable {
           float beta = 1.f, alpha = 1.0f;
           Block *outblock = output.block(), *bblock = b.block();
           cudnnAddTensor(ctx->cudnn_handle, &alpha, cch.bias_desc,
@@ -671,7 +672,7 @@ Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b,
   db.ResetLike(b);
 
   dy.device()->Exec(
-      [db, dy, &cch](Context *ctx) mutable {
+      [dy, db, &cch](Context *ctx) mutable {
         Block *dyblock = dy.block(), *dbblock = db.block();
         float alpha = 1.f, beta = 0.f;
         cudnnConvolutionBackwardBias(ctx->cudnn_handle, &alpha, cch.y_desc,
