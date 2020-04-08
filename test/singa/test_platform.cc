@@ -28,8 +28,10 @@ using singa::Platform;
 TEST(Platform, CreateMultDevice) {
   int n = Platform::GetNumGPUs();
   auto devs = Platform::CreateCudaGPUs(n);
-  for (int i = 0; i < devs.size(); i++) {
+  for (size_t i = 0; i < devs.size(); i++) {
     auto b = devs[i]->NewBlock(512 + 512 * (2 - i));
+    // for lazy allocation
+    b->mutable_data();
     EXPECT_EQ(512 + 512 * (2 - i), devs[i]->GetAllocatedMem());
     devs[i]->FreeBlock(b);
   }
@@ -54,6 +56,8 @@ TEST(Platform, CreateDevice) {
   size_t size[] = {128, 256, 3, 24};
   {
     auto ptr = dev->NewBlock(size[0]);
+    // for lazy allocation
+    ptr->mutable_data();
     auto allocated = dev->GetAllocatedMem();
     EXPECT_LE(size[0], allocated);
     dev->FreeBlock(ptr);
@@ -63,9 +67,13 @@ TEST(Platform, CreateDevice) {
     auto ptr0 = dev->NewBlock(size[0]);
     auto ptr1 = dev->NewBlock(size[1]);
     auto ptr2 = dev->NewBlock(size[2]);
+    ptr0->mutable_data();
+    ptr1->mutable_data();
+    ptr2->mutable_data();
     auto allocated = dev->GetAllocatedMem();
     EXPECT_LE(size[0] + size[1] + size[2], allocated);
     auto ptr3 = dev->NewBlock(size[3]);
+    ptr3->mutable_data();
     allocated = dev->GetAllocatedMem();
     EXPECT_LE(size[0] + size[1] + size[2] + size[3], allocated);
     dev->FreeBlock(ptr0);

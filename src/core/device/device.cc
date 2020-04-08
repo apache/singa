@@ -50,8 +50,6 @@ void Device::RunGraph(bool serial) {
   bool previous_state = graph_enabled_;
   graph_enabled_ = false;
 
-  // graph_->Debug();
-
   if (serial) {
     // sequential execution
     graph_->RunInSerial();
@@ -59,6 +57,8 @@ void Device::RunGraph(bool serial) {
     // execute according to dependencies
     graph_->RunGraph();
   }
+
+  // graph_->Debug();
 
   graph_enabled_ = previous_state;
 }

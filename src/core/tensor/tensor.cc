@@ -161,6 +161,9 @@ Tensor Resize(const Tensor &in, const Shape &shape) {
 
 // return new tensor
 Tensor Tensor::AsType(const DataType type) {
+  CHECK(block() && block()->initialized() == true)
+      << "the data of the tensor needs be initialized before casting to "
+         "another type";
   if (data_type_ != type) {
     Tensor &thisRef = *this;
     Tensor ret(shape_, device_, type);
@@ -1466,8 +1469,12 @@ void Mult(const Tensor &A, const Tensor &B, Tensor *out) {
 template <typename SType>
 void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
           Tensor *C) {
+  Tensor fakeC;
   vector<Block *> read_blocks = {A.block(), B.block()};
-  // if (beta) read_blocks.push_back(C->block());
+  if (beta) {
+    fakeC = *C;
+    read_blocks.push_back(C->block());
+  }
   if (B.nDim() == 1u) {
     CHECK_EQ(A.shape().size(), 2u);
     TYPE_LANG_SWITCH(A.data_type(), DType, A.device()->lang(), Lang, {
@@ -1475,7 +1482,7 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
       auto b = TypeCast<SType, DType>(beta);
       Tensor &CRef = *C;
       C->device()->Exec(
-          [a, A, b, B, CRef](Context *ctx) mutable {
+          [a, A, b, B, CRef, fakeC](Context *ctx) mutable {
             GEMV<DType, Lang>(a, A, B, b, &CRef, ctx);
           },
           read_blocks, {C->block()});
@@ -1488,7 +1495,7 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
       auto b = TypeCast<SType, DType>(beta);
       Tensor &CRef = *C;
       C->device()->Exec(
-          [a, A, b, B, CRef](Context *ctx) mutable {
+          [a, A, b, B, CRef, fakeC](Context *ctx) mutable {
             GEMM<DType, Lang>(a, A, B, b, &CRef, ctx);
           },
           read_blocks, {C->block()});
@@ -1523,7 +1530,7 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
 
       Tensor &CRef = *C;
       C->device()->Exec(
-          [a, A_tmp, b, B_tmp, CRef](Context *ctx) mutable {
+          [a, A_tmp, b, B_tmp, CRef, fakeC](Context *ctx) mutable {
             GEMMBatched<DType, Lang>(a, A_tmp, B_tmp, b, &CRef, ctx);
           },
           read_blocks, {C->block()});

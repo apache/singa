@@ -79,8 +79,8 @@ TEST(Snapshot, ReadIntTest) {
     singa::Snapshot int_snapshot_write(prefix + ".int",
                                        singa::Snapshot::kWrite);
     singa::Tensor int_param(singa::Shape{4});
-    int_param.AsType(singa::kInt);
     int_param.CopyDataFromHostPtr(int_data, 4);
+    int_param.AsType(singa::kInt);
     int_snapshot_write.Write("IntParam", int_param);
   }
 

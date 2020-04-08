@@ -18,7 +18,10 @@
 
 #include "singa/core/scheduler.h"
 
+#include <algorithm>
 #include <functional>
+#include <iomanip>
+#include <sstream>
 #include <thread>
 #include <unordered_set>
 
@@ -99,39 +102,97 @@ void Graph::Reset() {
 }
 
 void Graph::Debug() {
-  for (size_t i = 0; i < nodes_.size(); ++i) {
-    printf("OP[%2lu]: ", i);
-    printf("Inputs: ");
-    auto node = nodes_[i];
-    for (size_t j = 0; j < node->in_edges_.size(); ++j) {
-      printf("%d\t", blocks_[node->in_edges_[j]->blk_]->id_);
-    }
-    for (size_t j = node->in_edges_.size(); j < 3; ++j) {
-      printf("\t");
-    }
-    printf("Outputs: ");
-    for (size_t j = 0; j < node->out_edges_.size(); ++j) {
-      printf("%d\t", blocks_[node->out_edges_[j]->blk_]->id_);
-    }
-    printf("\n");
+  if (dirty_) Analysis();
+
+  size_t max_in_num = 0, max_out_num = 0, max_next_num = 0, max_free_num = 0;
+  for (auto &it : nodes_) {
+    max_in_num = std::max(max_in_num, it->in_edges_.size());
+    max_out_num = std::max(max_out_num, it->out_edges_.size());
   }
 
+  for (auto &it : next_nodes_) {
+    max_next_num = std::max(max_next_num, it.size());
+  }
+
+  for (auto &it : free_blocks_) {
+    max_free_num = std::max(max_free_num, it.size());
+  }
+
+  int w = 2;
+  std::stringstream ss;
+  ss << "begin nodes:[";
+  for (size_t i = 0; i < begin_nodes_.size(); ++i) {
+    ss << begin_nodes_[i]->id_;
+  }
+  ss << "]" << std::endl;
+
+  size_t size = 0;
+  for (size_t i = 0; i < nodes_.size(); ++i) {
+    ss << "OP[" << std::setw(w) << i;
+    auto node = nodes_[i];
+
+    ss << "] Inputs:[";
+    size = node->in_edges_.size();
+    for (size_t j = 0; j < max_in_num; ++j) {
+      if (j < size)
+        ss << std::setw(w) << blocks_[node->in_edges_[j]->blk_]->id_ << " ";
+      else
+        ss << std::setw(w + 1) << " ";
+    }
+
+    ss << "] Outputs:[";
+    size = node->out_edges_.size();
+    for (size_t j = 0; j < max_out_num; ++j) {
+      if (j < size)
+        ss << std::setw(w) << blocks_[node->out_edges_[j]->blk_]->id_ << " ";
+      else
+        ss << std::setw(w + 1) << " ";
+    }
+
+    ss << "] Next nodes:[";
+    size = next_nodes_[i].size();
+    for (size_t j = 0; j < max_next_num; ++j) {
+      if (j < size)
+        ss << std::setw(w) << next_nodes_[i][j]->id_ << " ";
+      else
+        ss << std::setw(w + 1) << " ";
+    }
+
+    ss << "] Free blocks:[";
+    size = free_blocks_[i].size();
+    for (size_t j = 0; j < max_free_num; ++j) {
+      if (j < size)
+        ss << std::setw(w) << blocks_[free_blocks_[i][j]]->id_ << " ";
+      else
+        ss << std::setw(w + 1) << " ";
+    }
+    ss << "]" << std::endl;
+  }
+
+  std::vector<BlkInfo *> blkInfos;
+  blkInfos.resize(blocks_.size());
+
   for (auto it : blocks_) {
-    auto blkInfo = it.second;
-    printf("Block[%2d]: addr[%p] graph_ref[%d] ref_count[%d] ", blkInfo->id_,
-           blkInfo->blk_, blkInfo->graph_ref_, it.first->ref_count());
+    blkInfos[it.second->id_] = it.second;
+  }
+
+  for (auto it : blkInfos) {
+    auto blkInfo = it;
+    ss << "Block[" << std::setw(w) << blkInfo->id_ << "] addr[" << std::setw(w)
+       << blkInfo->blk_ << "] graph_ref[" << std::setw(w) << blkInfo->graph_ref_
+       << "] ref_count[" << std::setw(w) << blkInfo->blk_->ref_count() << "] ";
     switch (blkInfo->type_) {
       case BlockType::kInput:
-        printf("type[input] ");
+        ss << "type[input] ";
         break;
       case BlockType::kParam:
-        printf("type[param] ");
+        ss << "type[param] ";
         break;
       case BlockType::kInter:
-        printf("type[inter] ");
+        ss << "type[inter] ";
         break;
       case BlockType::kEnd:
-        printf("type[_end_] ");
+        ss << "type[_end_] ";
         break;
       default:
         break;
@@ -140,14 +201,16 @@ void Graph::Debug() {
     if (blkInfo->write_node_) {
       id = blkInfo->write_node_->id_;
     }
-    printf(" write_node[%2d]", id);
+    ss << " write_node[" << std::setw(w) << id << "]";
     id = -1;
     if (blkInfo->last_node_) {
       id = blkInfo->last_node_->id_;
     }
-    printf(" last_node[%2d]", id);
-    printf("\n");
+    ss << " last_node[" << std::setw(w) << id << "]" << std::endl;
+    ;
   }
+
+  printf("%s", ss.str().c_str());
 }
 
 void Graph::RunGraph() {
@@ -358,6 +421,8 @@ void Graph::Analysis() {
   }
 
   dirty_ = false;
+
+  // Debug();
 }
 
 void Graph::FreeLoop() {
