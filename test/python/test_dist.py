@@ -20,16 +20,19 @@ import numpy as np
 from singa import tensor
 from singa import opt
 from singa import device
+from singa import singa_wrap
 
-sgd = opt.SGD(lr=0.1)
-sgd = opt.DistOpt(sgd)
-dev = device.create_cuda_gpu_on(sgd.local_rank)
-param = tensor.Tensor((10, 10), dev, tensor.float32)
-grad = tensor.Tensor((10, 10), dev, tensor.float32)
-expected = np.ones((10, 10), dtype=np.float32) * (10 - 0.1)
+if (singa_wrap.USE_DIST):
+    sgd = opt.SGD(lr=0.1)
+    sgd = opt.DistOpt(sgd)
+    dev = device.create_cuda_gpu_on(sgd.local_rank)
+    param = tensor.Tensor((10, 10), dev, tensor.float32)
+    grad = tensor.Tensor((10, 10), dev, tensor.float32)
+    expected = np.ones((10, 10), dtype=np.float32) * (10 - 0.1)
 
-
+@unittest.skipIf(not singa_wrap.USE_DIST,'DIST is not enabled')
 class TestDistOptimizer(unittest.TestCase):
+
 
     def test_dist_opt_fp32(self):
         # Test the C++ all reduce operation in fp32
