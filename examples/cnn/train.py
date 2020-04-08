@@ -136,8 +136,14 @@ def run(global_rank,
         model = cnn.create_model(num_channels=num_channels,
                                  num_classes=num_classes)
     elif model == 'mlp':
-        from model import mlp
-        model = mlp.create_model(data_size=data_size, num_classes=num_classes)
+        import os, sys, inspect
+        current = os.path.dirname(
+            os.path.abspath(inspect.getfile(inspect.currentframe())))
+        parent = os.path.dirname(current)
+        sys.path.insert(0, parent)
+        from mlp import module
+        model = module.create_model(data_size=data_size,
+                                    num_classes=num_classes)
 
     # For distributed training, sequential gives better performance
     if hasattr(sgd, "communicator"):
@@ -177,7 +183,6 @@ def run(global_rank,
     model.on_device(dev)
     model.set_optimizer(sgd)
     model.graph(graph, sequential)
-
 
     # Training and Evaluation Loop
     for epoch in range(max_epoch):
@@ -257,7 +262,9 @@ if __name__ == '__main__':
     parser.add_argument('model',
                         choices=['resnet', 'xceptionnet', 'cnn', 'mlp'],
                         default='cnn')
-    parser.add_argument('data', choices=['cifar10', 'cifar100', 'mnist'], default='mnist')
+    parser.add_argument('data',
+                        choices=['cifar10', 'cifar100', 'mnist'],
+                        default='mnist')
     parser.add_argument('--epoch',
                         '--max-epoch',
                         default=10,
