@@ -86,6 +86,6 @@ def load():
     train_x, val_x = normalize(train_x, val_x)
     train_x = train_x.astype(np.float32)
     val_x = val_x.astype(np.float32)
-    train_y = np.reshape(train_y, (-1, 1)).astype(np.int32)
-    val_y = np.reshape(val_y, (-1, 1)).astype(np.int32)
+    train_y = train_y.astype(np.int32)
+    val_y = val_y.astype(np.int32)
     return train_x, train_y, val_x, val_y

@@ -22,6 +22,7 @@ from singa import autograd
 from singa import tensor
 from singa.tensor import Tensor
 
+
 class MLP(module.Module):
 
     def __init__(self, data_size=10, perceptron_size=100, num_classes=10):
@@ -90,3 +91,42 @@ def create_model(pretrained=False, **kwargs):
 
 
 __all__ = ['MLP', 'create_model']
+
+if __name__ == "__main__":
+
+    import numpy as np
+    from singa import opt
+    from singa import device
+
+    # generate the boundary
+    f = lambda x: (5 * x + 1)
+    bd_x = np.linspace(-1.0, 1, 200)
+    bd_y = f(bd_x)
+    # generate the training data
+    x = np.random.uniform(-1, 1, 400)
+    y = f(x) + 2 * np.random.randn(len(x))
+    # convert training data to 2d space
+    label = np.asarray([5 * a + 1 > b for (a, b) in zip(x, y)]).astype(np.int32)
+    data = np.array([[a, b] for (a, b) in zip(x, y)], dtype=np.float32)
+
+    dev = device.create_cuda_gpu_on(0)
+    sgd = opt.SGD(0.05)
+    tx = tensor.Tensor((400, 2), dev, tensor.float32)
+    ty = tensor.Tensor((400,), dev, tensor.int32)
+    model = MLP(data_size=2, perceptron_size=3, num_classes=2)
+
+    # attached model to graph
+    model.on_device(dev)
+    model.set_optimizer(sgd)
+    model.graph(True, False)
+    model.train()
+
+    for i in range(1001):
+        tx.copy_from_numpy(data)
+        ty.copy_from_numpy(label)
+        out = model(tx)
+        loss = model.loss(out, ty)
+        model.optim(loss, 'fp32', spars=None)
+
+        if i % 100 == 0:
+            print("training loss = ", tensor.to_numpy(loss)[0])

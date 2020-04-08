@@ -43,11 +43,9 @@ def augmentation(x, batch_size):
 
 # Calculate Accuracy
 def accuracy(pred, target):
-    # y is binary array for ground truth
+    # y is network output to be compared with ground truth (int)
     y = np.argmax(pred, axis=1)
-    # t is integer for ground truth, the dim of t is (batch, 1)
-    t = np.max(target, axis=1)
-    a = y == t
+    a = y == target
     correct = np.array(a, "int").sum()
     # print(correct)
     return correct
