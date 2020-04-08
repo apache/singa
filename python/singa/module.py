@@ -144,6 +144,9 @@ class Module(object, metaclass=Graph):
 
     def train(self, mode=True):
         """Set the module in evaluation mode.
+
+        Args:
+            mode(bool): when mode is True, this module will enter training mode
         """
         self.training = mode
         autograd.training = True
@@ -156,6 +159,11 @@ class Module(object, metaclass=Graph):
 
     def graph(self, mode=True, sequential=False):
         """ Turn on the computational graph. Specify execution mode.
+
+        Args:
+            mode(bool): when mode is True, module will use computational graph
+            sequential(bool): when sequential is True, module will execute ops
+            in the graph follow the order of joining the graph
         """
         self.graph_mode = mode
         self.sequential = sequential
