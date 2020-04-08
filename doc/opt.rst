@@ -16,16 +16,14 @@
    under the License.
 
 
-Documentation
-=============
+Optimizer
+=========
 
-.. toctree::
 
-   installation
-   software_stack
-   device
-   tensor
-   autograd
-   onnx
-   benchmark
-   model_zoo/index
+.. automodule:: singa.opt
+   :members:
+   :member-order: bysource
+   :show-inheritance:
+   :undoc-members:
+
+
