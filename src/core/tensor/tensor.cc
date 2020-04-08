@@ -161,6 +161,9 @@ Tensor Resize(const Tensor &in, const Shape &shape) {
 
 // return new tensor
 Tensor Tensor::AsType(const DataType type) {
+  CHECK(block() && block()->initialized() == true)
+      << "the data of the tensor needs be initialized before casting to "
+         "another type";
   if (data_type_ != type) {
     Tensor &thisRef = *this;
     Tensor ret(shape_, device_, type);
