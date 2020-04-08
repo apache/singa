@@ -42,8 +42,10 @@ class TestSoftmaxCrossEntropy : public ::testing::Test {
 
 TEST_F(TestSoftmaxCrossEntropy, CppForward) {
   p.CopyDataFromHostPtr(pdat, 8);
-  t.AsType(singa::kInt);
+  EXPECT_TRUE(p.block()->initialized());
   t.CopyDataFromHostPtr(tdat, 2);
+  t.AsType(singa::kInt);
+
 
   singa::SoftmaxCrossEntropy cross_entropy;
   const Tensor& loss = cross_entropy.Forward(singa::kEval, p, t);
@@ -56,8 +58,8 @@ TEST_F(TestSoftmaxCrossEntropy, CppForward) {
 
 TEST_F(TestSoftmaxCrossEntropy, CppForwardAryTarget) {
   p.CopyDataFromHostPtr(pdat, 8);
-  ta.AsType(singa::kInt);
   ta.CopyDataFromHostPtr(tary, 8);
+  ta.AsType(singa::kInt);
 
   singa::SoftmaxCrossEntropy cross_entropy;
   const Tensor& loss = cross_entropy.Forward(singa::kEval, p, ta);
@@ -70,8 +72,8 @@ TEST_F(TestSoftmaxCrossEntropy, CppForwardAryTarget) {
 
 TEST_F(TestSoftmaxCrossEntropy, CppBackward) {
   p.CopyDataFromHostPtr(pdat, 8);
-  t.AsType(singa::kInt);
   t.CopyDataFromHostPtr(tdat, 2);
+  t.AsType(singa::kInt);
 
   singa::SoftmaxCrossEntropy cross_entropy;
   cross_entropy.Forward(singa::kTrain, p, t);
@@ -90,8 +92,8 @@ TEST_F(TestSoftmaxCrossEntropy, CppBackward) {
 
 TEST_F(TestSoftmaxCrossEntropy, CppBackwardAryTarget) {
   p.CopyDataFromHostPtr(pdat, 8);
-  ta.AsType(singa::kInt);
   ta.CopyDataFromHostPtr(tary, 8);
+  ta.AsType(singa::kInt);
 
   singa::SoftmaxCrossEntropy cross_entropy;
   cross_entropy.Forward(singa::kTrain, p, ta);
