@@ -16,7 +16,10 @@
 #
 
 from singa import device
+from singa import singa_wrap
 
 # avoid singleton error
-gpu_dev = device.create_cuda_gpu()
+gpu_dev = None
+if singa_wrap.USE_CUDA:
+    gpu_dev = device.create_cuda_gpu()
 cpu_dev = device.get_default_device()
