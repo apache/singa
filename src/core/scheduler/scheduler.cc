@@ -396,7 +396,7 @@ void Graph::Analysis() {
         BlockType type = blkInfo->type_;
         // if the block belongs to a inter tensor
         // and isn't refered on the Python Side
-        if ((type == BlockType::kInter) &&
+        if ((type == BlockType::kInter || type == BlockType::kEnd) &&
             blkInfo->graph_ref_ >= blk->ref_count()) {
           free_blocks_[curIndex].push_back(blk);
         }
