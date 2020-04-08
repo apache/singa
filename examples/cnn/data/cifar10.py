@@ -84,4 +84,6 @@ def load():
     train_x, train_y = load_train_data()
     val_x, val_y = load_test_data()
     train_x, val_x = normalize(train_x, val_x)
+    train_y = train_y.flatten()
+    val_y = val_y.flatten()
     return train_x, train_y, val_x, val_y
