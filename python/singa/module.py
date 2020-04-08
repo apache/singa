@@ -25,7 +25,6 @@ from functools import wraps
 from singa import autograd
 from . import singa_wrap as singa
 from .device import get_default_device
-from .tensor import Tensor
 
 import gc
 
