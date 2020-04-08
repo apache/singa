@@ -103,6 +103,7 @@ def print_t(t1):
 
 class TestAPI(unittest.TestCase):
 
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
     def test_batchnorm_training_gpu(self):
         dev = gpu_dev
 
@@ -159,6 +160,7 @@ class TestAPI(unittest.TestCase):
         rv_0 = np.random.random((1, c, 1, 1)).astype(np.float32)
         _run_training(x_0, s_0, b_0, rm_0, rv_0, m_0=0.2)
 
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
     def test_batchnorm_testing_gpu(self):
         dev = gpu_dev
 
@@ -199,7 +201,7 @@ class TestAPI(unittest.TestCase):
         rv_0 = np.random.random((1, c, 1, 1)).astype(np.float32)
         _run_testing(x_0, s_0, b_0, rm_0, rv_0, m_0=1.0)
 
-    def test_softmax_api(self):
+    def _softmax_api_helper(self, dev):
 
         def _run_test(dev, org_shape, axis, aft_shape):
             x_0 = np.random.random(org_shape).astype(np.float32)
@@ -219,27 +221,33 @@ class TestAPI(unittest.TestCase):
 
             np.testing.assert_array_almost_equal(tensor.to_numpy(y0), y1)
 
-        for dev in [gpu_dev, cpu_dev]:
-            _run_test(dev, [2, 2], 1, [2, 2])
-            _run_test(dev, [2, 2], 0, [1, 4])
-            _run_test(dev, [2, 2], -1, [2, 2])
-            _run_test(dev, [2, 2], -2, [1, 4])
-            _run_test(dev, [2, 2, 2], 2, [4, 2])
-            _run_test(dev, [2, 2, 2], 1, [2, 4])
-            _run_test(dev, [2, 2, 2], 0, [1, 8])
-            _run_test(dev, [2, 2, 2], -1, [4, 2])
-            _run_test(dev, [2, 2, 2], -2, [2, 4])
-            _run_test(dev, [2, 2, 2], -3, [1, 8])
-            _run_test(dev, [2, 2, 2, 2], 3, [8, 2])
-            _run_test(dev, [2, 2, 2, 2], 2, [4, 4])
-            _run_test(dev, [2, 2, 2, 2], 1, [2, 8])
-            _run_test(dev, [2, 2, 2, 2], 0, [1, 16])
-            _run_test(dev, [2, 2, 2, 2], -1, [8, 2])
-            _run_test(dev, [2, 2, 2, 2], -2, [4, 4])
-            _run_test(dev, [2, 2, 2, 2], -3, [2, 8])
-            _run_test(dev, [2, 2, 2, 2], -4, [1, 16])
+        _run_test(dev, [2, 2], 1, [2, 2])
+        _run_test(dev, [2, 2], 0, [1, 4])
+        _run_test(dev, [2, 2], -1, [2, 2])
+        _run_test(dev, [2, 2], -2, [1, 4])
+        _run_test(dev, [2, 2, 2], 2, [4, 2])
+        _run_test(dev, [2, 2, 2], 1, [2, 4])
+        _run_test(dev, [2, 2, 2], 0, [1, 8])
+        _run_test(dev, [2, 2, 2], -1, [4, 2])
+        _run_test(dev, [2, 2, 2], -2, [2, 4])
+        _run_test(dev, [2, 2, 2], -3, [1, 8])
+        _run_test(dev, [2, 2, 2, 2], 3, [8, 2])
+        _run_test(dev, [2, 2, 2, 2], 2, [4, 4])
+        _run_test(dev, [2, 2, 2, 2], 1, [2, 8])
+        _run_test(dev, [2, 2, 2, 2], 0, [1, 16])
+        _run_test(dev, [2, 2, 2, 2], -1, [8, 2])
+        _run_test(dev, [2, 2, 2, 2], -2, [4, 4])
+        _run_test(dev, [2, 2, 2, 2], -3, [2, 8])
+        _run_test(dev, [2, 2, 2, 2], -4, [1, 16])
 
-    def test_tensor_arithmetic_op_broadcast(self):
+    def test_softmax_api_cpu(self):
+        self._softmax_api_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_softmax_api_gpu(self):
+        self._softmax_api_helper(gpu_dev)
+
+    def _tensor_arithmetic_op_broadcast_helper(self, dev):
 
         def _run_test(dev, singa_op, np_op, s1, s2):
             x_0 = np.random.random(s1).astype(np.float32)
@@ -253,30 +261,34 @@ class TestAPI(unittest.TestCase):
                                                  np_op(x_0, y_0))
             return
 
-        for dev in [gpu_dev, cpu_dev]:
-            for s_op, n_op in zip([
-                    singa_api.Pow,
-                    singa_api.__add__,
-                    singa_api.__div__,
-                    singa_api.__sub__,
-                    singa_api.__mul__,
-            ], [np.power, np.add, np.divide, np.subtract, np.multiply]):
-                _run_test(dev, s_op, n_op, [6], [1])
-                _run_test(dev, s_op, n_op, [2, 3], [2, 3])
-                _run_test(dev, s_op, n_op, [3, 2], [1])
-                _run_test(dev, s_op, n_op, [3, 1, 2], [3, 1, 1])
-                _run_test(dev, s_op, n_op, [2, 3, 4, 5], [5])
-                _run_test(dev, s_op, n_op, [2, 3, 4, 5], [1, 1, 1])
-                _run_test(dev, s_op, n_op, [2, 3, 4, 5], [1, 1, 1, 1])
-                _run_test(dev, s_op, n_op, [2, 3, 4, 5], [4, 5])  # 45+2345=2345
-                _run_test(dev, s_op, n_op, [3, 1, 2, 1], [3, 1, 2])
-                _run_test(dev, s_op, n_op, [4, 5], [2, 3, 4, 5])  # 45+2345=2345
-                _run_test(dev, s_op, n_op, [1, 4, 5],
-                          [2, 3, 1, 1])  # 145+2311=2345
-                _run_test(dev, s_op, n_op, [3, 4, 5],
-                          [2, 1, 1, 1])  # 345+2111=2345
+        for s_op, n_op in zip([
+                singa_api.Pow,
+                singa_api.__add__,
+                singa_api.__div__,
+                singa_api.__sub__,
+                singa_api.__mul__,
+        ], [np.power, np.add, np.divide, np.subtract, np.multiply]):
+            _run_test(dev, s_op, n_op, [6], [1])
+            _run_test(dev, s_op, n_op, [2, 3], [2, 3])
+            _run_test(dev, s_op, n_op, [3, 2], [1])
+            _run_test(dev, s_op, n_op, [3, 1, 2], [3, 1, 1])
+            _run_test(dev, s_op, n_op, [2, 3, 4, 5], [5])
+            _run_test(dev, s_op, n_op, [2, 3, 4, 5], [1, 1, 1])
+            _run_test(dev, s_op, n_op, [2, 3, 4, 5], [1, 1, 1, 1])
+            _run_test(dev, s_op, n_op, [2, 3, 4, 5], [4, 5])  # 45+2345=2345
+            _run_test(dev, s_op, n_op, [3, 1, 2, 1], [3, 1, 2])
+            _run_test(dev, s_op, n_op, [4, 5], [2, 3, 4, 5])  # 45+2345=2345
+            _run_test(dev, s_op, n_op, [1, 4, 5], [2, 3, 1, 1])  # 145+2311=2345
+            _run_test(dev, s_op, n_op, [3, 4, 5], [2, 1, 1, 1])  # 345+2111=2345
 
-    def test_transpose_and_arithmetic_op_broadcast(self):
+    def test_tensor_arithmetic_op_broadcast_cpu(self):
+        self._tensor_arithmetic_op_broadcast_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_tensor_arithmetic_op_broadcast_gpu(self):
+        self._tensor_arithmetic_op_broadcast_helper(gpu_dev)
+
+    def _transpose_and_arithmetic_op_broadcast_helper(self, dev):
 
         def _test(s1, s2, axis1, axis2, s3, s_op, n_op, dev):
             x_0 = np.random.random(s1).astype(np.float32)
@@ -297,34 +309,40 @@ class TestAPI(unittest.TestCase):
             np.testing.assert_array_almost_equal(z0.shape, s3)
             return
 
-        for dev in [gpu_dev, cpu_dev]:
-            for s_op, n_op in zip([
-                    singa_api.Pow,
-                    singa_api.__add__,
-                    singa_api.__div__,
-                    singa_api.__sub__,
-                    singa_api.__mul__,
-            ], [np.power, np.add, np.divide, np.subtract, np.multiply]):
-                s1 = [1, 5, 1, 3]
-                s2 = [3, 1, 1, 4]
-                axis1 = [3, 2, 1, 0]  # 3121
-                axis2 = [1, 0, 2, 3]  # 1314
-                s3 = [3, 3, 5, 4]
-                _test(s1, s2, axis1, axis2, s3, s_op, n_op, dev)
+        for s_op, n_op in zip([
+                singa_api.Pow,
+                singa_api.__add__,
+                singa_api.__div__,
+                singa_api.__sub__,
+                singa_api.__mul__,
+        ], [np.power, np.add, np.divide, np.subtract, np.multiply]):
+            s1 = [1, 5, 1, 3]
+            s2 = [3, 1, 1, 4]
+            axis1 = [3, 2, 1, 0]  # 3121
+            axis2 = [1, 0, 2, 3]  # 1314
+            s3 = [3, 3, 5, 4]
+            _test(s1, s2, axis1, axis2, s3, s_op, n_op, dev)
 
-                s1 = [1, 5, 1]
-                s2 = [1, 3, 2]
-                axis1 = [2, 1, 0]  # 151
-                axis2 = [1, 0, 2]  # 312
-                s3 = [3, 5, 2]
-                _test(s1, s2, axis1, axis2, s3, s_op, n_op, dev)
+            s1 = [1, 5, 1]
+            s2 = [1, 3, 2]
+            axis1 = [2, 1, 0]  # 151
+            axis2 = [1, 0, 2]  # 312
+            s3 = [3, 5, 2]
+            _test(s1, s2, axis1, axis2, s3, s_op, n_op, dev)
 
-                s1 = [5, 1]
-                s2 = [1, 3]
-                axis1 = [1, 0]  # 15
-                axis2 = [1, 0]  # 31
-                s3 = [3, 5]
-                _test(s1, s2, axis1, axis2, s3, s_op, n_op, dev)
+            s1 = [5, 1]
+            s2 = [1, 3]
+            axis1 = [1, 0]  # 15
+            axis2 = [1, 0]  # 31
+            s3 = [3, 5]
+            _test(s1, s2, axis1, axis2, s3, s_op, n_op, dev)
+
+    def test_transpose_and_arithmetic_op_broadcast_cpu(self):
+        self._transpose_and_arithmetic_op_broadcast_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_transpose_and_arithmetic_op_broadcast_gpu(self):
+        self._transpose_and_arithmetic_op_broadcast_helper(gpu_dev)
 
     def test_batchnorm_training_dnnl(self):
         dev = cpu_dev
@@ -500,11 +518,12 @@ class TestAPI(unittest.TestCase):
         return
 
     def test_softmax_api_dnnl_backend(self):
+        dev = cpu_dev
 
         def _run_test(org_shape, axis, aft_shape):
             x_0 = np.random.random(org_shape).astype(np.float32)
             x_0 = x_0 + 1000
-            x0 = tensor.Tensor(device=cpu_dev, data=x_0)
+            x0 = tensor.Tensor(device=dev, data=x_0)
 
             # test with axis
             y0 = tensor._call_singa_func(singa_api.SoftMax, x0.data, axis)
@@ -601,87 +620,115 @@ class TestAPI(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             tensor.to_numpy(_cTensor_to_pyTensor(dx0_ct)), dx1)
 
-    def test_concat(self):
+    def _concat_helper(self, dev):
         np1 = np.random.random([5, 6, 7, 8]).astype(np.float32)
         np2 = np.random.random([5, 6, 7, 1]).astype(np.float32)
         np3 = np.concatenate((np1, np2), axis=3)
 
-        for dev in [cpu_dev, gpu_dev]:
-            t1 = tensor.Tensor(device=dev, data=np1)
-            t2 = tensor.Tensor(device=dev, data=np2)
+        t1 = tensor.Tensor(device=dev, data=np1)
+        t2 = tensor.Tensor(device=dev, data=np2)
 
-            ctensors = singa_api.VecTensor()
-            ctensors.append(t1.data)
-            ctensors.append(t2.data)
+        ctensors = singa_api.VecTensor()
+        ctensors.append(t1.data)
+        ctensors.append(t2.data)
 
-            t3_ct = singa_api.ConcatOn(ctensors, 3)
+        t3_ct = singa_api.ConcatOn(ctensors, 3)
 
-            np.testing.assert_array_almost_equal(
-                tensor.to_numpy(_cTensor_to_pyTensor(t3_ct)), np3)
+        np.testing.assert_array_almost_equal(
+            tensor.to_numpy(_cTensor_to_pyTensor(t3_ct)), np3)
 
-    def test_ceil(self):
+    def test_concat_cpu(self):
+        self._concat_helper(cpu_dev)
 
-        for dev in [cpu_dev, gpu_dev]:
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_concat_gpu(self):
+        self._concat_helper(gpu_dev)
 
-            np1 = np.random.random([5, 6, 7, 8]).astype(np.float32)
-            np1 = np1 * 10
-            np2 = np.ceil(np1)
+    def _ceil_helper(self, dev):
 
-            t1 = tensor.Tensor(device=dev, data=np1)
+        np1 = np.random.random([5, 6, 7, 8]).astype(np.float32)
 
-            t2_ct = singa_api.Ceil(t1.data)
+        np1 = np.random.random([5, 6, 7, 8]).astype(np.float32)
+        np1 = np1 * 10
+        np2 = np.ceil(np1)
 
-            np.testing.assert_array_almost_equal(
-                tensor.to_numpy(_cTensor_to_pyTensor(t2_ct)), np2)
+        t1 = tensor.Tensor(device=dev, data=np1)
 
-    def test_as_type(self):
+        t2_ct = singa_api.Ceil(t1.data)
+
+        np.testing.assert_array_almost_equal(
+            tensor.to_numpy(_cTensor_to_pyTensor(t2_ct)), np2)
+
+    def test_ceil_cpu(self):
+        self._ceil_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_ceil_gpu(self):
+        self._ceil_helper(gpu_dev)
+
+    def _as_type_helper(self, dev):
+
         np1 = np.random.random([3]).astype(np.float32)
         np1 = np1 * 10 - 5
         np2 = np1.astype(np.int32)
         np3 = np2.astype(np.float32)
 
-        for dev in [cpu_dev, gpu_dev]:
-            t1 = tensor.Tensor(device=dev, data=np1)
+        t1 = tensor.Tensor(device=dev, data=np1)
 
-            t1_ct = t1.data
+        t1 = tensor.Tensor(device=dev, data=np1)
 
-            self.assertEqual(t1_ct.data_type(), singa_api.kFloat32)
+        t1_ct = t1.data
 
-            t1_ct = t1_ct.AsType(singa_api.kInt)
+        self.assertEqual(t1_ct.data_type(), singa_api.kFloat32)
 
-            self.assertEqual(t1_ct.data_type(), singa_api.kInt)
+        t1_ct = t1_ct.AsType(singa_api.kInt)
 
-            np.testing.assert_array_almost_equal(
-                tensor.to_numpy(_cTensor_to_pyTensor(t1_ct)), np2)
+        self.assertEqual(t1_ct.data_type(), singa_api.kInt)
 
-            t1_ct = t1_ct.AsType(singa_api.kFloat32)
+        np.testing.assert_array_almost_equal(
+            tensor.to_numpy(_cTensor_to_pyTensor(t1_ct)), np2)
 
-            self.assertEqual(t1_ct.data_type(), singa_api.kFloat32)
+        t1_ct = t1_ct.AsType(singa_api.kFloat32)
 
-            np.testing.assert_array_almost_equal(
-                tensor.to_numpy(_cTensor_to_pyTensor(t1_ct)), np3)
+        self.assertEqual(t1_ct.data_type(), singa_api.kFloat32)
 
-    def test_as_type2(self):
-        for dev in [cpu_dev, gpu_dev]:
-            shape1 = [1, 2, 3, 4]
-            shape2 = [4, 3, 2, 1]
-            np_int = np.random.randint(0, 10, shape1).astype(np.int32)
-            np_flt = np_int.astype(np.float32)
+        np.testing.assert_array_almost_equal(
+            tensor.to_numpy(_cTensor_to_pyTensor(t1_ct)), np3)
 
-            t1 = singa_api.Tensor(shape1, dev, singa_api.kInt)
-            t1.CopyIntDataFromHostPtr(np_int.flatten())
-            _ctensor_eq_ndarray(t1, np_int)
+    def test_as_type_cpu(self):
+        self._as_type_helper(cpu_dev)
 
-            t1 = singa_api.Reshape(t1, shape2)
-            t2 = t1.AsType(singa_api.kFloat32)
-            _ctensor_eq_ndarray(t2, np_flt.reshape(shape2))
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_as_type_gpu(self):
+        self._as_type_helper(gpu_dev)
 
-            t3 = t2.AsType(singa_api.kInt)
-            _ctensor_eq_ndarray(t3, np_int.reshape(shape2))
+    def _as_type2_helper(self, dev):
+        shape1 = [1, 2, 3, 4]
+        shape2 = [4, 3, 2, 1]
+        np_int = np.random.randint(0, 10, shape1).astype(np.int32)
+        np_flt = np_int.astype(np.float32)
 
-            t1 = singa_api.Reshape(t1, shape1)
-            t4 = t1.AsType(singa_api.kFloat32)
-            _ctensor_eq_ndarray(t4, np_flt.reshape(shape1))
+        t1 = singa_api.Tensor(shape1, dev, singa_api.kInt)
+        t1.CopyIntDataFromHostPtr(np_int.flatten())
+        _ctensor_eq_ndarray(t1, np_int)
+
+        t1 = singa_api.Reshape(t1, shape2)
+        t2 = t1.AsType(singa_api.kFloat32)
+        _ctensor_eq_ndarray(t2, np_flt.reshape(shape2))
+
+        t3 = t2.AsType(singa_api.kInt)
+        _ctensor_eq_ndarray(t3, np_int.reshape(shape2))
+
+        t1 = singa_api.Reshape(t1, shape1)
+        t4 = t1.AsType(singa_api.kFloat32)
+        _ctensor_eq_ndarray(t4, np_flt.reshape(shape1))
+
+    def test_as_type2_cpu(self):
+        self._as_type2_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_as_type2_gpu(self):
+        self._as_type2_helper(gpu_dev)
 
 
 if __name__ == '__main__':

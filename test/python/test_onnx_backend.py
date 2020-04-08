@@ -46,23 +46,26 @@ def expect(node,
            name,
            opset_version=_default_opset_version,
            decimal=5):
-    onnx_node = sonnx.OnnxNode(node)
-    input_tensors = {}
-    input_labels = [x for x in onnx_node.inputs if x != ""]
-    # prepare input tensors
-    for key, val in zip(input_labels, inputs):
-        # very important! must be float
-        if not isinstance(val, np.ndarray) or len(val.shape) == 0:
-            val = np.array([val])
-        x = tensor.from_numpy(val.astype(np.float32))
-        x.to_device(gpu_dev)
-        input_tensors[key] = x
-    outputs_dict = sonnx.run_node(onnx_node, input_tensors, opset_version)
-    for out1, out2 in zip(outputs, outputs_dict.values()):
-        np.testing.assert_array_almost_equal(out1,
-                                             tensor.to_numpy(out2),
-                                             decimal=decimal)
-
+    def _helper(dev):
+        onnx_node = sonnx.OnnxNode(node)
+        input_tensors = {}
+        input_labels = [x for x in onnx_node.inputs if x != ""]
+        # prepare input tensors
+        for key, val in zip(input_labels, inputs):
+            # very important! must be float
+            if not isinstance(val, np.ndarray) or len(val.shape) == 0:
+                val = np.array([val])
+            x = tensor.from_numpy(val.astype(np.float32))
+            x.to_device(gpu_dev)
+            input_tensors[key] = x
+        outputs_dict = sonnx.run_node(onnx_node, input_tensors, opset_version)
+        for out1, out2 in zip(outputs, outputs_dict.values()):
+            np.testing.assert_array_almost_equal(out1,
+                                                tensor.to_numpy(out2),
+                                                decimal=decimal)
+    _helper(cpu_dev)
+    if (singa.USE_CUDA):
+        _helper(gpu_dev)
 
 class TestPythonOnnxBackend(unittest.TestCase):
     """

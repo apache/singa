@@ -22,6 +22,7 @@ import unittest
 import numpy as np
 
 from singa import tensor
+from singa import singa_wrap as singa_api
 from singa import autograd
 from singa.proto import core_pb2
 
@@ -298,138 +299,173 @@ class TestTensorMethods(unittest.TestCase):
             tensor.to_numpy(ta),
             np.reshape(a.transpose(TRANSPOSE_AXES), RESHAPE_DIMS))
 
-    def test_concatenate(self):
+    def _concatenate_helper(self, dev):
         np1 = np.random.random([5, 6, 7, 8]).astype(np.float32)
         np2 = np.random.random([5, 6, 7, 1]).astype(np.float32)
         np3 = np.concatenate((np1, np2), axis=3)
 
-        for dev in [cpu_dev, gpu_dev]:
-            t1 = tensor.Tensor(device=dev, data=np1)
-            t2 = tensor.Tensor(device=dev, data=np2)
+        t1 = tensor.Tensor(device=dev, data=np1)
+        t2 = tensor.Tensor(device=dev, data=np2)
 
-            t3 = tensor.concatenate((t1, t2), 3)
+        t3 = tensor.concatenate((t1, t2), 3)
 
-            np.testing.assert_array_almost_equal(tensor.to_numpy(t3), np3)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(t3), np3)
+
+    def test_concatenate_cpu(self):
+        self._concatenate_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_concatenate_gpu(self):
+        self._concatenate_helper(gpu_dev)
+
+    def _subscription_helper(self, dev):
+        np1 = np.random.random((5, 5, 5, 5)).astype(np.float32)
+        sg_tensor = tensor.Tensor(device=dev, data=np1)
+        sg_tensor_ret = sg_tensor[1:3, :, 1:, :-1]
+        np.testing.assert_array_almost_equal((tensor.to_numpy(sg_tensor_ret)),
+                                             np1[1:3, :, 1:, :-1])
 
     def test_subscription_cpu(self):
-        np1 = np.random.random((5, 5, 5, 5)).astype(np.float32)
-        sg_tensor = tensor.Tensor(device=cpu_dev, data=np1)
-        sg_tensor_ret = sg_tensor[1:3, :, 1:, :-1]
-        np.testing.assert_array_almost_equal((tensor.to_numpy(sg_tensor_ret)),
-                                             np1[1:3, :, 1:, :-1])
+        self._subscription_helper(cpu_dev)
 
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
     def test_subscription_gpu(self):
-        np1 = np.random.random((5, 5, 5, 5)).astype(np.float32)
-        sg_tensor = tensor.Tensor(device=gpu_dev, data=np1)
-        sg_tensor_ret = sg_tensor[1:3, :, 1:, :-1]
-        np.testing.assert_array_almost_equal((tensor.to_numpy(sg_tensor_ret)),
-                                             np1[1:3, :, 1:, :-1])
+        self._subscription_helper(gpu_dev)
 
-    def test_ceil(self):
+    def _ceil_helper(self, dev):
 
-        for dev in [cpu_dev, gpu_dev]:
+        np1 = np.random.random([5, 6, 7, 8]).astype(np.float32)
+        np1 = np1 * 10
+        np2 = np.ceil(np1)
 
-            np1 = np.random.random([5, 6, 7, 8]).astype(np.float32)
-            np1 = np1 * 10
-            np2 = np.ceil(np1)
+        t1 = tensor.Tensor(device=dev, data=np1)
 
-            t1 = tensor.Tensor(device=dev, data=np1)
+        t2 = tensor.ceil(t1)
 
-            t2 = tensor.ceil(t1)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(t2), np2)
 
-            np.testing.assert_array_almost_equal(tensor.to_numpy(t2), np2)
+    def test_ceil_cpu(self):
+        self._ceil_helper(cpu_dev)
 
-    def test_astype(self):
-        for dev in [cpu_dev, gpu_dev]:
-            shape1 = [2, 3]
-            shape2 = [3, 2]
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_ceil_gpu(self):
+        self._ceil_helper(gpu_dev)
 
-            np_flt = np.random.random(shape1).astype(np.float32)
-            np_flt = np_flt * 10 - 5
+    def _astype_helper(self, dev):
+        shape1 = [2, 3]
+        shape2 = [3, 2]
 
-            np_int = np_flt.astype(np.int32)
-            np_flt2 = np_int.astype(np.float32)
+        np_flt = np.random.random(shape1).astype(np.float32)
+        np_flt = np_flt * 10 - 5
 
-            t2 = tensor.Tensor(device=dev, data=np_flt)
-            t2 = t2.as_type('int')
-            np.testing.assert_array_almost_equal(tensor.to_numpy(t2), np_int)
+        np_int = np_flt.astype(np.int32)
+        np_flt2 = np_int.astype(np.float32)
 
-            t1 = t2.reshape(shape2)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(t1),
-                                                 np_int.reshape(shape2))
+        t2 = tensor.Tensor(device=dev, data=np_flt)
+        t2 = t2.as_type('int')
+        np.testing.assert_array_almost_equal(tensor.to_numpy(t2), np_int)
 
-            t1 = t1.as_type('float')
-            np.testing.assert_array_almost_equal(tensor.to_numpy(t1),
-                                                 np_flt2.reshape(shape2))
+        t1 = t2.reshape(shape2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(t1),
+                                             np_int.reshape(shape2))
 
-    def test_3d_matmul(self):
-        for dev in [cpu_dev, gpu_dev]:
-            np_x1 = np.random.randn(2, 3, 4).astype(np.float32)
-            np_x2 = np.random.randn(2, 4, 3).astype(np.float32)
-            x1 = tensor.from_numpy(np_x1)
-            x1.to_device(dev)
-            x2 = tensor.from_numpy(np_x2)
-            x2.to_device(dev)
-            y = autograd.matmul(x1, x2)
-            np_y = np.matmul(np_x1, np_x2)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(y), np_y)
+        t1 = t1.as_type('float')
+        np.testing.assert_array_almost_equal(tensor.to_numpy(t1),
+                                             np_flt2.reshape(shape2))
 
-            np_x1 = np.random.randn(2, 3, 4).astype(np.float32)
-            np_x2 = np.random.randn(2, 4, 5).astype(np.float32)
-            x1 = tensor.from_numpy(np_x1)
-            x1.to_device(dev)
-            x2 = tensor.from_numpy(np_x2)
-            x2.to_device(dev)
-            y = autograd.matmul(x1, x2)
-            np_y = np.matmul(np_x1, np_x2)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(y), np_y)
+    def test_astype_cpu(self):
+        self._astype_helper(cpu_dev)
 
-    def test_4d_matmul(self):
-        for dev in [cpu_dev, gpu_dev]:
-            np_x1 = np.random.randn(2, 12, 256, 64).astype(np.float32)
-            np_x2 = np.random.randn(2, 12, 64, 256).astype(np.float32)
-            x1 = tensor.from_numpy(np_x1)
-            x1.to_device(dev)
-            x2 = tensor.from_numpy(np_x2)
-            x2.to_device(dev)
-            y = autograd.matmul(x1, x2)
-            np_y = np.matmul(np_x1, np_x2)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(y), np_y)
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_astype_gpu(self):
+        self._astype_helper(gpu_dev)
 
-            np_x1 = np.random.randn(2, 12, 256, 64).astype(np.float32)
-            np_x2 = np.random.randn(2, 12, 64, 1024).astype(np.float32)
-            x1 = tensor.from_numpy(np_x1)
-            x1.to_device(dev)
-            x2 = tensor.from_numpy(np_x2)
-            x2.to_device(dev)
-            y = autograd.matmul(x1, x2)
-            np_y = np.matmul(np_x1, np_x2)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(y), np_y)
+    def _3d_matmul_helper(self, dev):
+        np_x1 = np.random.randn(2, 3, 4).astype(np.float32)
+        np_x2 = np.random.randn(2, 4, 3).astype(np.float32)
+        x1 = tensor.from_numpy(np_x1)
+        x1.to_device(dev)
+        x2 = tensor.from_numpy(np_x2)
+        x2.to_device(dev)
+        y = autograd.matmul(x1, x2)
+        np_y = np.matmul(np_x1, np_x2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), np_y)
 
-    def test_matmul_transpose(self):
-        for dev in [cpu_dev, gpu_dev]:
+        np_x1 = np.random.randn(2, 3, 4).astype(np.float32)
+        np_x2 = np.random.randn(2, 4, 5).astype(np.float32)
+        x1 = tensor.from_numpy(np_x1)
+        x1.to_device(dev)
+        x2 = tensor.from_numpy(np_x2)
+        x2.to_device(dev)
+        y = autograd.matmul(x1, x2)
+        np_y = np.matmul(np_x1, np_x2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), np_y)
 
-            X = np.random.random((1, 256, 12, 64)).astype(np.float32)
-            x = tensor.from_numpy(X)
-            x.to_device(dev)
+    def test_3d_matmul_cpu(self):
+        self._3d_matmul_helper(cpu_dev)
 
-            W = np.random.random((1, 256, 12, 64)).astype(np.float32)
-            w = tensor.from_numpy(W)
-            w.to_device(dev)
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_3d_matmul_gpu(self):
+        self._3d_matmul_helper(gpu_dev)
 
-            X = np.transpose(X, (0, 2, 1, 3))
-            W = np.transpose(W, (0, 2, 1, 3))
-            W = np.transpose(W, (0, 1, 3, 2))
-            Y = np.matmul(X, W)
+    def _4d_matmul_helper(self, dev):
+        np_x1 = np.random.randn(2, 12, 256, 64).astype(np.float32)
+        np_x2 = np.random.randn(2, 12, 64, 256).astype(np.float32)
+        x1 = tensor.from_numpy(np_x1)
+        x1.to_device(dev)
+        x2 = tensor.from_numpy(np_x2)
+        x2.to_device(dev)
+        y = autograd.matmul(x1, x2)
+        np_y = np.matmul(np_x1, np_x2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), np_y)
 
-            x = autograd.transpose(x, (0, 2, 1, 3))
-            w = autograd.transpose(w, (0, 2, 1, 3))
-            w = autograd.transpose(w, (0, 1, 3, 2))
-            y = autograd.matmul(x, w)
+        np_x1 = np.random.randn(2, 12, 256, 64).astype(np.float32)
+        np_x2 = np.random.randn(2, 12, 64, 1024).astype(np.float32)
+        x1 = tensor.from_numpy(np_x1)
+        x1.to_device(dev)
+        x2 = tensor.from_numpy(np_x2)
+        x2.to_device(dev)
+        y = autograd.matmul(x1, x2)
+        np_y = np.matmul(np_x1, np_x2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), np_y)
 
-            np.testing.assert_array_almost_equal(tensor.to_numpy(x), X)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(w), W)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(y), Y)
+    def test_4d_matmul_cpu(self):
+        self._4d_matmul_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_4d_matmul_gpu(self):
+        self._4d_matmul_helper(gpu_dev)
+
+    def _matmul_transpose_helper(self, dev):
+
+        X = np.random.random((1, 256, 12, 64)).astype(np.float32)
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        W = np.random.random((1, 256, 12, 64)).astype(np.float32)
+        w = tensor.from_numpy(W)
+        w.to_device(dev)
+
+        X = np.transpose(X, (0, 2, 1, 3))
+        W = np.transpose(W, (0, 2, 1, 3))
+        W = np.transpose(W, (0, 1, 3, 2))
+        Y = np.matmul(X, W)
+
+        x = autograd.transpose(x, (0, 2, 1, 3))
+        w = autograd.transpose(w, (0, 2, 1, 3))
+        w = autograd.transpose(w, (0, 1, 3, 2))
+        y = autograd.matmul(x, w)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(x), X)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(w), W)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), Y)
+
+    def test_matmul_transpose_cpu(self):
+        self._matmul_transpose_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_matmul_transpose_gpu(self):
+        self._matmul_transpose_helper(gpu_dev)
 
 
 if __name__ == '__main__':
