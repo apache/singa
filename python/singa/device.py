@@ -97,14 +97,17 @@ def create_cuda_gpus(num):
     return singa.Platform.CreateCudaGPUs(num)
 
 
-def create_cuda_gpu():
+def create_cuda_gpu(set_default=True):
     '''Create a single CudaGPU device.
 
     Returns:
         a swig converted CudaGPU device.
     '''
     assert singa.USE_CUDA, 'SINGA has not been compiled with CUDA enabled.'
-    return singa.Platform.CreateCudaGPUs(1)[0]
+    devices = singa.Platform.CreateCudaGPUs(1)
+    if set_default is True:
+        set_default_device(devices[0])
+    return devices[0]
 
 
 def create_cuda_gpus_on(device_ids):

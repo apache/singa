@@ -145,7 +145,7 @@ void Graph::Debug() {
     if (blkInfo->last_node_) {
       id = blkInfo->last_node_->id_;
     }
-    printf(" write_node[%2d]", id);
+    printf(" last_node[%2d]", id);
     printf("\n");
   }
 }
@@ -225,9 +225,6 @@ void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
   // create new node
   Node *node = new Node(nodes_.size(), std::move(op));
 
-  // create a set to determine if there is a loop
-  std::unordered_set<Block *> circle;
-
   // create edges for read_blocks
   for (size_t i = 0; i < read_blocks.size(); ++i) {
     Block *blk = read_blocks[i];
@@ -252,7 +249,6 @@ void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
       }
     }
 
-    circle.insert(blk);
     blkInfo->graph_ref_ += 1;
     blkInfo->last_node_ = node;
 
@@ -276,15 +272,12 @@ void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
       }
     }
 
-    if (circle.find(blk) == circle.end()) {
-      circle.insert(blk);
-      blkInfo->graph_ref_ += 1;
-    }
-
+    blkInfo->graph_ref_ += 1;
     blkInfo->write_node_ = node;
     blkInfo->last_node_ = node;
   }
 
+  // for sync op
   write_blocks_ = write_blocks;
 
   // add node into nodes
@@ -335,10 +328,13 @@ void Graph::Analysis() {
       Edge *edge = curNode->in_edges_[i];
       Block *blk = edge->blk_;
       BlkInfo *blkInfo = blocks_[blk];
-      if (blkInfo->last_node_ == curNode && blkInfo->write_node_ != curNode) {
+      // if curnode is the last node accessing the block
+      if (blkInfo->last_node_ == curNode) {
         BlockType type = blkInfo->type_;
-        if (type == BlockType::kInter &&
-            blkInfo->graph_ref_ == blk->ref_count()) {
+        // if the block belongs to a inter tensor
+        // and isn't refered on the Python Side
+        if ((type == BlockType::kInter || type == BlockType::kEnd) &&
+            blkInfo->graph_ref_ >= blk->ref_count()) {
           free_blocks_[curIndex].push_back(blk);
         }
       }
