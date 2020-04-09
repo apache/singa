@@ -46,6 +46,7 @@ def expect(node,
            name,
            opset_version=_default_opset_version,
            decimal=5):
+
     def _helper(dev):
         onnx_node = sonnx.OnnxNode(node)
         input_tensors = {}
@@ -61,11 +62,13 @@ def expect(node,
         outputs_dict = sonnx.run_node(onnx_node, input_tensors, opset_version)
         for out1, out2 in zip(outputs, outputs_dict.values()):
             np.testing.assert_array_almost_equal(out1,
-                                                tensor.to_numpy(out2),
-                                                decimal=decimal)
+                                                 tensor.to_numpy(out2),
+                                                 decimal=decimal)
+
     _helper(cpu_dev)
     if (singa.USE_CUDA):
         _helper(gpu_dev)
+
 
 class TestPythonOnnxBackend(unittest.TestCase):
     """
@@ -2192,21 +2195,21 @@ class TestPythonOnnxBackend(unittest.TestCase):
                name='test_gemm_all_attributes')
 
     def test_constantOfShape_float_ones(self):
-            x = np.array([4, 3, 2]).astype(np.int64)
-            tensor_value = onnx.helper.make_tensor("value", onnx.TensorProto.FLOAT,
-                                                [1], [1])
-            node = onnx.helper.make_node(
-                'ConstantOfShape',
-                inputs=['x'],
-                outputs=['y'],
-                value=tensor_value,
-            )
+        x = np.array([4, 3, 2]).astype(np.int64)
+        tensor_value = onnx.helper.make_tensor("value", onnx.TensorProto.FLOAT,
+                                               [1], [1])
+        node = onnx.helper.make_node(
+            'ConstantOfShape',
+            inputs=['x'],
+            outputs=['y'],
+            value=tensor_value,
+        )
 
-            y = np.ones(x, dtype=np.float32)
-            expect(node,
-                inputs=[x],
-                outputs=[y],
-                name='test_constantofshape_float_ones')
+        y = np.ones(x, dtype=np.float32)
+        expect(node,
+               inputs=[x],
+               outputs=[y],
+               name='test_constantofshape_float_ones')
 
     def test_constantOfShape_int32_zeros(self):
         x = np.array([10, 6]).astype(np.int64)
@@ -2620,7 +2623,9 @@ class TestPythonOnnxBackend(unittest.TestCase):
         axes = np.array([0, 1], dtype=np.int64)
         steps = np.array([1, 1], dtype=np.int64)
 
-        expect(node, inputs=[x, starts, ends, axes, steps], outputs=[y],
+        expect(node,
+               inputs=[x, starts, ends, axes, steps],
+               outputs=[y],
                name='test_slice')
 
     def test_slice_neg(self):
@@ -2637,7 +2642,9 @@ class TestPythonOnnxBackend(unittest.TestCase):
         steps = np.array([1], dtype=np.int64)
         y = x[:, 0:-1]
 
-        expect(node, inputs=[x, starts, ends, axes, steps], outputs=[y],
+        expect(node,
+               inputs=[x, starts, ends, axes, steps],
+               outputs=[y],
                name='test_slice_neg')
 
     # not support empty tensor
@@ -2672,7 +2679,9 @@ class TestPythonOnnxBackend(unittest.TestCase):
         steps = np.array([1], dtype=np.int64)
         y = x[:, 1:1000]
 
-        expect(node, inputs=[x, starts, ends, axes, steps], outputs=[y],
+        expect(node,
+               inputs=[x, starts, ends, axes, steps],
+               outputs=[y],
                name='test_slice_end_out_of_bounds')
 
     def test_slice_default_axes(self):
@@ -2687,7 +2696,9 @@ class TestPythonOnnxBackend(unittest.TestCase):
         ends = np.array([20, 10, 4], dtype=np.int64)
         y = x[:, :, 3:4]
 
-        expect(node, inputs=[x, starts, ends], outputs=[y],
+        expect(node,
+               inputs=[x, starts, ends],
+               outputs=[y],
                name='test_slice_default_axes')
 
     def test_slice_default_steps(self):
@@ -2703,7 +2714,9 @@ class TestPythonOnnxBackend(unittest.TestCase):
         axes = np.array([0, 1, 2], dtype=np.int64)
         y = x[:, :, 3:4]
 
-        expect(node, inputs=[x, starts, ends, axes], outputs=[y],
+        expect(node,
+               inputs=[x, starts, ends, axes],
+               outputs=[y],
                name='test_slice_default_steps')
 
     def test_slice_neg_steps(self):
@@ -2720,7 +2733,9 @@ class TestPythonOnnxBackend(unittest.TestCase):
         steps = np.array([-1, -3, -2])
         y = x[20:0:-1, 10:0:-3, 4:1:-2]
 
-        expect(node, inputs=[x, starts, ends, axes, steps], outputs=[y],
+        expect(node,
+               inputs=[x, starts, ends, axes, steps],
+               outputs=[y],
                name='test_slice_neg_steps')
 
     def test_slice_negative_axes(self):
@@ -2736,7 +2751,9 @@ class TestPythonOnnxBackend(unittest.TestCase):
         axes = np.array([0, -2, -1], dtype=np.int64)
         y = x[:, :, 3:4]
 
-        expect(node, inputs=[x, starts, ends, axes], outputs=[y],
+        expect(node,
+               inputs=[x, starts, ends, axes],
+               outputs=[y],
                name='test_slice_negative_axes')
 
     def test_split_1d(self):
@@ -2746,51 +2763,67 @@ class TestPythonOnnxBackend(unittest.TestCase):
             'Split',
             inputs=['input'],
             outputs=['output_1', 'output_2', 'output_3'],
-            axis=0
-        )
+            axis=0)
 
-        expected_outputs = [np.array([1., 2.]).astype(np.float32), np.array([3., 4.]).astype(np.float32), np.array([5., 6.]).astype(np.float32)]
-        expect(node, inputs=[input], outputs=[y for y in expected_outputs], name='test_split_equal_parts_1d')
+        expected_outputs = [
+            np.array([1., 2.]).astype(np.float32),
+            np.array([3., 4.]).astype(np.float32),
+            np.array([5., 6.]).astype(np.float32)
+        ]
+        expect(node,
+               inputs=[input],
+               outputs=[y for y in expected_outputs],
+               name='test_split_equal_parts_1d')
 
-        node = onnx.helper.make_node(
-            'Split',
-            inputs=['input'],
-            outputs=['output_1', 'output_2'],
-            axis=0,
-            split=[2, 4]
-        )
+        node = onnx.helper.make_node('Split',
+                                     inputs=['input'],
+                                     outputs=['output_1', 'output_2'],
+                                     axis=0,
+                                     split=[2, 4])
 
-        expected_outputs = [np.array([1., 2.]).astype(np.float32), np.array([3., 4., 5., 6.]).astype(np.float32)]
-        expect(node, inputs=[input], outputs=[y for y in expected_outputs], name='test_split_variable_parts_1d')
+        expected_outputs = [
+            np.array([1., 2.]).astype(np.float32),
+            np.array([3., 4., 5., 6.]).astype(np.float32)
+        ]
+        expect(node,
+               inputs=[input],
+               outputs=[y for y in expected_outputs],
+               name='test_split_variable_parts_1d')
 
     def test_split_2d(self):
-        input = np.array([[1., 2., 3., 4., 5., 6.],
-                          [7., 8., 9., 10., 11., 12.]]).astype(np.float32)
+        input = np.array([[1., 2., 3., 4., 5., 6.], [7., 8., 9., 10., 11.,
+                                                     12.]]).astype(np.float32)
 
-        node = onnx.helper.make_node(
-            'Split',
-            inputs=['input'],
-            outputs=['output_1', 'output_2'],
-            axis=1
-        )
+        node = onnx.helper.make_node('Split',
+                                     inputs=['input'],
+                                     outputs=['output_1', 'output_2'],
+                                     axis=1)
 
-        expected_outputs = [np.array([[1., 2., 3.], [7., 8., 9.]]).astype(np.float32),
-                            np.array([[4., 5., 6.], [10., 11., 12.]]).astype(np.float32)]
+        expected_outputs = [
+            np.array([[1., 2., 3.], [7., 8., 9.]]).astype(np.float32),
+            np.array([[4., 5., 6.], [10., 11., 12.]]).astype(np.float32)
+        ]
 
-        expect(node, inputs=[input], outputs=[y for y in expected_outputs], name='test_split_equal_parts_2d')
+        expect(node,
+               inputs=[input],
+               outputs=[y for y in expected_outputs],
+               name='test_split_equal_parts_2d')
 
-        node = onnx.helper.make_node(
-            'Split',
-            inputs=['input'],
-            outputs=['output_1', 'output_2'],
-            axis=1,
-            split=[2, 4]
-        )
+        node = onnx.helper.make_node('Split',
+                                     inputs=['input'],
+                                     outputs=['output_1', 'output_2'],
+                                     axis=1,
+                                     split=[2, 4])
 
-        expected_outputs = [np.array([[1., 2.], [7., 8.]]).astype(np.float32),
-                            np.array([[3., 4., 5., 6.], [9., 10., 11., 12.]]).astype(np.float32)]
+        expected_outputs = [
+            np.array([[1., 2.], [7., 8.]]).astype(np.float32),
+            np.array([[3., 4., 5., 6.], [9., 10., 11., 12.]]).astype(np.float32)
+        ]
 
-        expect(node, inputs=[input], outputs=[y for y in expected_outputs], name='test_split_variable_parts_2d')
+        expect(node,
+               inputs=[input],
+               outputs=[y for y in expected_outputs],
+               name='test_split_variable_parts_2d')
 
     def test_split_default_values(self):
         input = np.array([1., 2., 3., 4., 5., 6.]).astype(np.float32)
@@ -2799,21 +2832,31 @@ class TestPythonOnnxBackend(unittest.TestCase):
         node = onnx.helper.make_node(
             'Split',
             inputs=['input'],
-            outputs=['output_1', 'output_2', 'output_3']
-        )
+            outputs=['output_1', 'output_2', 'output_3'])
 
-        expected_outputs = [np.array([1., 2.]).astype(np.float32), np.array([3., 4.]).astype(np.float32), np.array([5., 6.]).astype(np.float32)]
-        expect(node, inputs=[input], outputs=[y for y in expected_outputs], name='test_split_equal_parts_default_axis')
+        expected_outputs = [
+            np.array([1., 2.]).astype(np.float32),
+            np.array([3., 4.]).astype(np.float32),
+            np.array([5., 6.]).astype(np.float32)
+        ]
+        expect(node,
+               inputs=[input],
+               outputs=[y for y in expected_outputs],
+               name='test_split_equal_parts_default_axis')
 
-        node = onnx.helper.make_node(
-            'Split',
-            inputs=['input'],
-            outputs=['output_1', 'output_2'],
-            split=[2, 4]
-        )
+        node = onnx.helper.make_node('Split',
+                                     inputs=['input'],
+                                     outputs=['output_1', 'output_2'],
+                                     split=[2, 4])
 
-        expected_outputs = [np.array([1., 2.]).astype(np.float32), np.array([3., 4., 5., 6.]).astype(np.float32)]
-        expect(node, inputs=[input], outputs=[y for y in expected_outputs], name='test_split_variable_parts_default_axis')
+        expected_outputs = [
+            np.array([1., 2.]).astype(np.float32),
+            np.array([3., 4., 5., 6.]).astype(np.float32)
+        ]
+        expect(node,
+               inputs=[input],
+               outputs=[y for y in expected_outputs],
+               name='test_split_variable_parts_default_axis')
 
     # not support empty tensor
     # def test_split_zero_size_splits(self):
@@ -2841,7 +2884,9 @@ class TestPythonOnnxBackend(unittest.TestCase):
         indices = np.array([0, 1, 3])
         y = np.take(data, indices, axis=0)
 
-        expect(node, inputs=[data, indices.astype(np.int64)], outputs=[y],
+        expect(node,
+               inputs=[data, indices.astype(np.int64)],
+               outputs=[y],
                name='test_gather_0')
 
     def test_gather_1(self):
@@ -2855,7 +2900,9 @@ class TestPythonOnnxBackend(unittest.TestCase):
         indices = np.array([0, 1, 3])
         y = np.take(data, indices, axis=1)
 
-        expect(node, inputs=[data, indices.astype(np.int64)], outputs=[y],
+        expect(node,
+               inputs=[data, indices.astype(np.int64)],
+               outputs=[y],
                name='test_gather_1')
 
     def test_gather_negative_indices(self):
@@ -2869,47 +2916,32 @@ class TestPythonOnnxBackend(unittest.TestCase):
         indices = np.array([0, -9, -10])
         y = np.take(data, indices, axis=0)
 
-        expect(node, inputs=[data, indices.astype(np.int64)], outputs=[y],
+        expect(node,
+               inputs=[data, indices.astype(np.int64)],
+               outputs=[y],
                name='test_gather_negative_indices')
 
     def test_tile(self):
-        node = onnx.helper.make_node(
-            'Tile',
-            inputs=['x', 'y'],
-            outputs=['z']
-        )
+        node = onnx.helper.make_node('Tile', inputs=['x', 'y'], outputs=['z'])
 
         x = np.random.rand(2, 3, 4, 5).astype(np.float32)
 
-        repeats = np.random.randint(low=1, high=10, size=(np.ndim(x),)).astype(np.int64)
+        repeats = np.random.randint(low=1, high=10,
+                                    size=(np.ndim(x),)).astype(np.int64)
 
         z = np.tile(x, repeats)
 
-        expect(node,
-               inputs=[x, repeats],
-               outputs=[z],
-               name='test_tile')
+        expect(node, inputs=[x, repeats], outputs=[z], name='test_tile')
 
     def test_tile_precomputed(self):
-        node = onnx.helper.make_node(
-            'Tile',
-            inputs=['x', 'y'],
-            outputs=['z']
-        )
+        node = onnx.helper.make_node('Tile', inputs=['x', 'y'], outputs=['z'])
 
-        x = np.array([
-            [0, 1],
-            [2, 3]
-        ], dtype=np.float32)
+        x = np.array([[0, 1], [2, 3]], dtype=np.float32)
 
         repeats = np.array([2, 2], dtype=np.int64)
 
-        z = np.array([
-            [0, 1, 0, 1],
-            [2, 3, 2, 3],
-            [0, 1, 0, 1],
-            [2, 3, 2, 3]
-        ], dtype=np.float32)
+        z = np.array([[0, 1, 0, 1], [2, 3, 2, 3], [0, 1, 0, 1], [2, 3, 2, 3]],
+                     dtype=np.float32)
 
         expect(node,
                inputs=[x, repeats],

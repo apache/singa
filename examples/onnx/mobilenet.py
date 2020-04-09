@@ -30,6 +30,7 @@ from utils import download_model, update_batch_size, check_exist_or_download
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 
+
 def preprocess(img):
     img = img.resize((256, 256))
     img = img.crop((16, 16, 240, 240))
