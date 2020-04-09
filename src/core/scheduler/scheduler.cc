@@ -207,7 +207,6 @@ void Graph::Debug() {
       id = blkInfo->last_node_->id_;
     }
     ss << " last_node[" << std::setw(w) << id << "]" << std::endl;
-    ;
   }
 
   printf("%s", ss.str().c_str());
