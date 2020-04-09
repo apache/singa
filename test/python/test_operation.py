@@ -518,6 +518,30 @@ class TestPythonOperation(unittest.TestCase):
     def test_numerical_gradients_check_for_lstm_gpu(self):
         self._numerical_gradients_check_for_lstm_helper(gpu_dev)
 
+    def _MeanSquareError_helper(self, dev):
+        X = np.array([4.3, 5.4, 3.3, 3.6, 5.7,
+                      6.0]).reshape(3, 2).astype(np.float32)
+        T = np.array([4.4, 5.3, 3.2, 3.7, 5.4,
+                      6.3]).reshape(3, 2).astype(np.float32)
+        x = tensor.from_numpy(X)
+        t = tensor.from_numpy(T)
+        x.to_device(dev)
+        t.to_device(dev)
+
+        loss = autograd.mse_loss(x, t)
+        dx = loss.creator.backward()[0]
+
+        loss_np = tensor.to_numpy(loss)[0]
+        self.assertAlmostEqual(loss_np, 0.0366666, places=4)
+        self.check_shape(dx.shape(), (3, 2))
+
+    def test_MeanSquareError_cpu(self):
+        self._MeanSquareError_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_MeanSquareError_gpu(self):
+        self._MeanSquareError_helper(gpu_dev)
+
     def _Abs_helper(self, dev):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5,
                       0.5]).reshape(3, 2).astype(np.float32)
@@ -2364,20 +2388,19 @@ class TestPythonOperation(unittest.TestCase):
             dx0, dx1 = result.creator.backward(dy.data)
             # use realtive and total error instead of demical number
             np.testing.assert_allclose(tensor.to_numpy(result),
-                                                 y,
-                                                 rtol=1e-4,
-                                                 atol=1e-4)
+                                       y,
+                                       rtol=1e-4,
+                                       atol=1e-4)
             np.testing.assert_allclose(tensor.to_numpy(
                 tensor.from_raw_tensor(dx0)),
-                                                 grad0,
-                                                 rtol=1e-4,
-                                                 atol=1e-4)
+                                       grad0,
+                                       rtol=1e-4,
+                                       atol=1e-4)
             np.testing.assert_allclose(tensor.to_numpy(
                 tensor.from_raw_tensor(dx1)),
-                                                 grad1,
-                                                 rtol=1e-4,
-                                                 atol=1e-4)
-
+                                       grad1,
+                                       rtol=1e-4,
+                                       atol=1e-4)
 
     def test_div_broadcast_cpu(self):
         self._div_broadcast_helper(cpu_dev)

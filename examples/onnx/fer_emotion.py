@@ -30,6 +30,7 @@ from utils import download_model, update_batch_size, check_exist_or_download
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 
+
 def preprocess(img):
     input_shape = (1, 1, 64, 64)
     img = img.resize((64, 64), Image.ANTIALIAS)
@@ -84,7 +85,7 @@ if __name__ == "__main__":
     autograd.training = False
     model = Infer(sg_ir)
 
-    # verifty the test 
+    # verifty the test
     # from utils import load_dataset
     # inputs, ref_outputs = load_dataset(os.path.join('/tmp', 'emotion_ferplus', 'test_data_set_0'))
     # x_batch = tensor.Tensor(device=dev, data=inputs[0])

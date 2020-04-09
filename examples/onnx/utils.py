@@ -25,6 +25,7 @@ from onnx import numpy_helper
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(message)s')
 
+
 def download_model(url):
     download_dir = '/tmp/'
     with tarfile.open(check_exist_or_download(url), 'r') as t:

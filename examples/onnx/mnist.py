@@ -21,7 +21,6 @@ import gzip
 import numpy as np
 import codecs
 
-
 from singa import device
 from singa import tensor
 from singa import opt
@@ -32,6 +31,7 @@ from utils import check_exist_or_download
 
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(message)s')
+
 
 def load_dataset():
     train_x_url = 'http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz'
@@ -143,7 +143,7 @@ def train(model,
 
             if b % 1e2 == 0:
                 logging.info("acc %6.2f loss, %6.2f" %
-                      (accuracy_rate, tensor.to_numpy(loss)[0]))
+                             (accuracy_rate, tensor.to_numpy(loss)[0]))
     logging.info("training completed")
     return x_batch, output_batch
 
@@ -196,7 +196,7 @@ def re_train(sg_ir,
 
             if b % 1e2 == 0:
                 logging.info("acc %6.2f loss, %6.2f" %
-                      (accuracy_rate, tensor.to_numpy(loss)[0]))
+                             (accuracy_rate, tensor.to_numpy(loss)[0]))
     logging.info("re-training completed")
     return new_model
 
@@ -251,7 +251,7 @@ def transfer_learning(sg_ir,
 
             if b % 1e2 == 0:
                 logging.info("acc %6.2f loss, %6.2f" %
-                      (accuracy_rate, tensor.to_numpy(loss)[0]))
+                             (accuracy_rate, tensor.to_numpy(loss)[0]))
     logging.info("transfer-learning completed")
     return trans_model
 

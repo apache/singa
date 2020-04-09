@@ -20,7 +20,6 @@ import os
 import numpy as np
 from PIL import Image, ImageDraw
 
-
 from singa import device
 from singa import tensor
 from singa import autograd
