@@ -37,10 +37,10 @@ namespace singa {
 class CudnnRNNHandle {
  public:
    CudnnRNNHandle(const vector<Tensor> &x,
-       const size_t feature_size,
-       const size_t hidden_size,
+       const int feature_size,
+       const int hidden_size,
        const int mode = 0,
-       const size_t num_layers = 1,
+       const int num_layers = 1,
        const int  bias = 1,
        const float dropout = 0.0f,
        const int bidirectional = 0);

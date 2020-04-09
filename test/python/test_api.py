@@ -731,5 +731,34 @@ class TestAPI(unittest.TestCase):
         self._as_type2_helper(gpu_dev)
 
 
+    def test_rnn(self):
+        if not singa_api.USE_CUDA:
+            return
+
+        dev = gpu_dev
+
+        hidden_size = 7
+        seq_length = 5
+        batch_size = 6
+        feature_size = 3
+
+        x = singa_api.VecTensor()
+        for i in range(seq_length):
+            tmp_np = np.random.random((batch_size, feature_size)).astype(np.float32)
+            tmp = tensor.Tensor(device=dev, data=tmp_np)
+            x.append(tmp.data)
+
+        rnn_handle=singa_api.CudnnRNNHandle(x,feature_size,hidden_size,2)
+
+        w_np = np.random.random((rnn_handle.weights_size,)).astype(np.float32)
+        w = tensor.Tensor(device=dev, data=w_np)
+        print("weights size is ", rnn_handle.weights_size)
+
+        y1 = singa_api.GpuRNNForwardInference(x, w.data, rnn_handle)
+        y2 = singa_api.GpuRNNForwardTraining(x, w.data, rnn_handle)
+        dx = singa_api.GpuRNNBackwardx(y1, y2, w.data, rnn_handle)
+        dW = singa_api.GpuRNNBackwardW(x, y1, rnn_handle)
+
+
 if __name__ == '__main__':
     unittest.main()

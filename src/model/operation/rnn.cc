@@ -23,10 +23,10 @@
 namespace singa {
 #ifdef USE_CUDNN
 CudnnRNNHandle::CudnnRNNHandle(const vector<Tensor> &x,
-  const size_t feature_size,
-  const size_t hidden_size,
+  const int feature_size,
+  const int hidden_size,
   const int mode,
-  const size_t num_layers,
+  const int num_layers,
   const int  bias,
   const float dropout,
   const int bidirectional)

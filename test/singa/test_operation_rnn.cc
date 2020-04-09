@@ -47,7 +47,6 @@ TEST(Operation_RNN, tranining) {
   Tensor W(Shape{rnn_handle.weights_size}, cuda);
   Gaussian(0.0f, 1.0f, &W);
 
-  std::cout<<"forward training\n";
   auto y1 = GpuRNNForwardTraining(x, W, rnn_handle);
   auto y2 = GpuRNNForwardInference(x, W, rnn_handle);
   auto dx = GpuRNNBackwardx(y1, y2, W, rnn_handle);
