@@ -188,6 +188,49 @@ Tensor GpuPoolingForward(const CudnnPoolingHandle &cph, const Tensor &x);
 
 Tensor GpuPoolingBackward(const CudnnPoolingHandle &cph, const Tensor &dy, const Tensor& x, const Tensor& y);
 
+
+
+class CudnnRNNHandle {
+ public:
+   CudnnRNNHandle(const vector<Tensor> &x,
+       const size_t feature_size,
+       const size_t hidden_size,
+       const int mode = 0,
+       const size_t num_layers = 1,
+       const int  bias = 1,
+       const float dropout = 0.0f,
+       const int bidirectional = 0);
+  int bias;
+  int mode;
+  float dropout;
+  int bidirectional;
+  size_t feature_size;
+  size_t hidden_size;
+  size_t weights_size;
+  int num_layers;
+  size_t batch_size;
+  size_t seq_length;
+  size_t workspace_size;
+  size_t reserve_size;
+  Tensor workspace;
+  Tensor reserve_space;
+  void *states;
+  void update_data_desc(const vector<Tensor> &x);
+  void init_dropout_desc();
+  void init_rnn_desc();
+  void init_parameters_desc();
+  void init_workspace();
+  Tensor merge_inputs(size_t num, const vector<Tensor> &in);
+  vector<Tensor> split_output(size_t num, size_t dim,
+                                     const vector<Tensor> &in,
+                                     const Tensor output);
+};
+vector<Tensor> GpuRNNForwardTraining(const vector<Tensor> &x, Tensor &W, CudnnRNNHandle &rnn_handle);
+vector<Tensor> GpuRNNForwardInference(const vector<Tensor> &x, Tensor &W, CudnnRNNHandle &rnn_handle);
+vector<Tensor> GpuRNNBackwardx(const vector<Tensor> &y, const vector<Tensor> &dy, const Tensor &W, CudnnRNNHandle &rnn_handle);
+Tensor GpuRNNBackwardW(const vector<Tensor> &x, const vector<Tensor> &y, CudnnRNNHandle &rnn_handle);
+
+
 #endif  // USE_CUDNN
 
 }  //namespace singa
