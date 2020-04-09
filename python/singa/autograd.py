@@ -1209,33 +1209,6 @@ def softmax_cross_entropy(x, t):
     return SoftMaxCrossEntropy(t)(x)[0]
 
 
-class MeanSquareError(Operation):
-
-    def __init__(self):
-        super(MeanSquareError, self).__init__()
-
-    def forward(self, x, t):
-        self.err = singa.__sub__(x, t)
-        sqr = singa.Square(self.err)
-        loss = singa.SumAll(sqr)
-        loss /= (x.shape()[0] * 2)
-        return loss
-
-    def backward(self, dy=1.0):
-        dx = self.err
-        dx *= float(1 / self.err.shape()[0])
-        if isinstance(dy, float):
-            # dtype of dy: float
-            dx *= dy
-            return dx, None
-        elif isinstance(dy, CTensor):
-            pass  # TODO, broadcast elementwise multiply seems not support
-
-
-def mse_loss(x, t):
-    return MeanSquareError()(x, t)[0]
-
-
 def ctensor2numpy(x):
     """
     To be used in SoftMax Operation.

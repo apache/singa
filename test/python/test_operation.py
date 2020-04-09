@@ -315,10 +315,14 @@ class TestPythonOperation(unittest.TestCase):
 
     def _SeparableConv2d_helper(self, dev):
         # SeparableConv2d(in_channels, out_channels, kernel_size)
-        separ_conv = autograd.SeparableConv2d(8, 16, 3, padding=1)
+        if dev == cpu_dev:
+            in_channels = 1
+        else:
+            in_channels = 8
+        separ_conv = autograd.SeparableConv2d(in_channels, 16, 3, padding=1)
 
-        x = np.random.random((10, 8, 28, 28)).astype(np.float32)
-        x = tensor.Tensor(device=gpu_dev, data=x)
+        x = np.random.random((10, in_channels, 28, 28)).astype(np.float32)
+        x = tensor.Tensor(device=dev, data=x)
 
         y1 = separ_conv.depthwise_conv(x)
         y2 = separ_conv.point_conv(y1)
@@ -328,11 +332,11 @@ class TestPythonOperation(unittest.TestCase):
 
         self.check_shape(y2.shape, (10, 16, 28, 28))
 
-        self.check_shape(dy1.shape(), (10, 8, 28, 28))
-        self.check_shape(dW_depth.shape(), (16, 8, 1, 1))
+        self.check_shape(dy1.shape(), (10, in_channels, 28, 28))
+        self.check_shape(dW_depth.shape(), (16, in_channels, 1, 1))
 
-        self.check_shape(dx.shape(), (10, 8, 28, 28))
-        self.check_shape(dW_spacial.shape(), (8, 1, 3, 3))
+        self.check_shape(dx.shape(), (10, in_channels, 28, 28))
+        self.check_shape(dW_spacial.shape(), (in_channels, 1, 3, 3))
 
         y = separ_conv(x)
         self.check_shape(y.shape, (10, 16, 28, 28))
@@ -373,7 +377,7 @@ class TestPythonOperation(unittest.TestCase):
                         autograds,
                         h=0.0005,
                         df=1,
-                        dev=gpu_dev):
+                        dev=cpu_dev):
         # param: PyTensor
         # autograds: numpy_tensor
         p = tensor.to_numpy(param)
@@ -513,29 +517,6 @@ class TestPythonOperation(unittest.TestCase):
     @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_numerical_gradients_check_for_lstm_gpu(self):
         self._numerical_gradients_check_for_lstm_helper(gpu_dev)
-
-    def _MeanSquareError_helper(self, dev):
-        X = np.array([4.3, 5.4, 3.3, 3.6, 5.7,
-                      6.0]).reshape(3, 2).astype(np.float32)
-        T = np.array([4.4, 5.3, 3.2, 3.7, 5.4,
-                      6.3]).reshape(3, 2).astype(np.float32)
-        x = tensor.from_numpy(X)
-        t = tensor.from_numpy(T)
-        x.to_device(dev)
-        t.to_device(dev)
-
-        loss = autograd.mse_loss(x, t)
-        dx = loss.creator.backward()[0]
-
-        loss_np = tensor.to_numpy(loss)[0]
-        self.assertAlmostEqual(loss_np, 0.0366666, places=4)
-        self.check_shape(dx.shape(), (3, 2))
-
-    def test_MeanSquareError_cpu(self):
-        self._MeanSquareError_helper(cpu_dev)
-
-    def test_MeanSquareError_gpu(self):
-        self._MeanSquareError_helper(gpu_dev)
 
     def _Abs_helper(self, dev):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5,
@@ -2061,7 +2042,6 @@ class TestPythonOperation(unittest.TestCase):
         self._reciprocal_helper(gpu_dev)
 
     def _and_broadcast_helper(self, dev):
-        dev = gpu_dev
         cases = [
             ([3, 4, 5], [5]),  # 3d vs 1d
             ([3, 4, 5], [4, 5]),  # 3d vs 2d
@@ -2092,7 +2072,6 @@ class TestPythonOperation(unittest.TestCase):
         self._and_broadcast_helper(gpu_dev)
 
     def _or_broadcast_helper(self, dev):
-        dev = gpu_dev
         cases = [
             ([3, 4, 5], [5]),  # 3d vs 1d
             ([3, 4, 5], [4, 5]),  # 3d vs 2d
@@ -2123,7 +2102,6 @@ class TestPythonOperation(unittest.TestCase):
         self._or_broadcast_helper(gpu_dev)
 
     def _xor_broadcast_helper(self, dev):
-        dev = gpu_dev
         cases = [
             ([3, 4, 5], [5]),  # 3d vs 1d
             ([3, 4, 5], [4, 5]),  # 3d vs 2d
@@ -2154,7 +2132,6 @@ class TestPythonOperation(unittest.TestCase):
         self._xor_broadcast_helper(gpu_dev)
 
     def _greater_broadcast_helper(self, dev):
-        dev = gpu_dev
         cases = [
             ([3, 4, 5], [5]),  # 3d vs 1d
             ([3, 4, 5], [4, 5]),  # 3d vs 2d
@@ -2216,7 +2193,6 @@ class TestPythonOperation(unittest.TestCase):
         self._less_broadcast_helper(gpu_dev)
 
     def _add_broadcast_helper(self, dev):
-        dev = gpu_dev
         cases = [
             ([3, 4, 5], [5]),  # 3d vs 1d
             ([3, 4, 5], [4, 5]),  # 3d vs 2d
@@ -2264,7 +2240,6 @@ class TestPythonOperation(unittest.TestCase):
         self._add_broadcast_helper(gpu_dev)
 
     def _sub_broadcast_helper(self, dev):
-        dev = gpu_dev
         cases = [
             ([3, 4, 5], [5]),  # 3d vs 1d
             ([3, 4, 5], [4, 5]),  # 3d vs 2d
@@ -2387,17 +2362,22 @@ class TestPythonOperation(unittest.TestCase):
 
             result = autograd.div(x, x1)
             dx0, dx1 = result.creator.backward(dy.data)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(result),
+            # use realtive and total error instead of demical number
+            np.testing.assert_allclose(tensor.to_numpy(result),
                                                  y,
-                                                 decimal=2)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(
+                                                 rtol=1e-4,
+                                                 atol=1e-4)
+            np.testing.assert_allclose(tensor.to_numpy(
                 tensor.from_raw_tensor(dx0)),
                                                  grad0,
-                                                 decimal=2)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(
+                                                 rtol=1e-4,
+                                                 atol=1e-4)
+            np.testing.assert_allclose(tensor.to_numpy(
                 tensor.from_raw_tensor(dx1)),
                                                  grad1,
-                                                 decimal=2)
+                                                 rtol=1e-4,
+                                                 atol=1e-4)
+
 
     def test_div_broadcast_cpu(self):
         self._div_broadcast_helper(cpu_dev)
