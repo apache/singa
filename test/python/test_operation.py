@@ -2387,17 +2387,22 @@ class TestPythonOperation(unittest.TestCase):
 
             result = autograd.div(x, x1)
             dx0, dx1 = result.creator.backward(dy.data)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(result),
+            # use realtive and total error instead of demical number
+            np.testing.assert_allclose(tensor.to_numpy(result),
                                                  y,
-                                                 decimal=2)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(
+                                                 rtol=1e-4,
+                                                 atol=1e-4)
+            np.testing.assert_allclose(tensor.to_numpy(
                 tensor.from_raw_tensor(dx0)),
                                                  grad0,
-                                                 decimal=2)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(
+                                                 rtol=1e-4,
+                                                 atol=1e-4)
+            np.testing.assert_allclose(tensor.to_numpy(
                 tensor.from_raw_tensor(dx1)),
                                                  grad1,
-                                                 decimal=2)
+                                                 rtol=1e-4,
+                                                 atol=1e-4)
+
 
     def test_div_broadcast_cpu(self):
         self._div_broadcast_helper(cpu_dev)
