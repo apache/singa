@@ -66,6 +66,7 @@ class BatchNormHandle{
     BatchNormHandle(const float momentum, const Tensor& input);
 
     size_t batchsize;
+    float factor;
 };
 
 #if USE_DNNL
