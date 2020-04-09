@@ -56,7 +56,7 @@ def expect(node,
             if not isinstance(val, np.ndarray) or len(val.shape) == 0:
                 val = np.array([val])
             x = tensor.from_numpy(val.astype(np.float32))
-            x.to_device(gpu_dev)
+            x.to_device(dev)
             input_tensors[key] = x
         outputs_dict = sonnx.run_node(onnx_node, input_tensors, opset_version)
         for out1, out2 in zip(outputs, outputs_dict.values()):
