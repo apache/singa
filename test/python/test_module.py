@@ -19,6 +19,7 @@ import unittest
 import numpy as np
 from builtins import str
 
+from singa import singa_wrap
 from singa import opt
 from singa import device
 from singa import tensor
@@ -138,129 +139,167 @@ class TestPythonModule(unittest.TestCase):
         self.generate_data(400)
 
         cpu_dev.ResetGraph()
-        gpu_dev.ResetGraph()
 
-    def test_forward(self):
-        for dev in [cpu_dev, gpu_dev]:
-            model = MLP(self.sgd)
-            model.train()
-            model.on_device(dev)
-            self.get_numpy_params(model)
+        if singa_wrap.USE_CUDA:
+            gpu_dev.ResetGraph()
 
-            out = model(self.inputs)
+    def _forward_helper(self, dev):
+        model = MLP(self.sgd)
+        model.train()
+        model.on_device(dev)
+        self.get_numpy_params(model)
 
-            np_out = self.numpy_forward(self.data)
+        out = model(self.inputs)
 
-            np.testing.assert_array_almost_equal(tensor.to_numpy(out), np_out)
+        np_out = self.numpy_forward(self.data)
 
-    def test_forward_loss(self):
-        for dev in [cpu_dev, gpu_dev]:
-            model = MLP(self.sgd)
-            model.train()
-            model.on_device(dev)
-            self.get_numpy_params(model)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(out), np_out)
+    
+    def test_forward_cpu(self):
+        self._forward_helper(cpu_dev)
 
-            out = model(self.inputs)
-            loss = model.loss(out, self.target)
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_forward_gpu(self):
+        self._forward_helper(gpu_dev)
 
-            np_out = self.numpy_forward(self.data)
-            np_loss = self.numpy_loss(np_out, self.label)
+    def _forward_loss_helper(self, dev):
+        model = MLP(self.sgd)
+        model.train()
+        model.on_device(dev)
+        self.get_numpy_params(model)
 
-            np.testing.assert_array_almost_equal(tensor.to_numpy(out), np_out)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(loss), np_loss)
+        out = model(self.inputs)
+        loss = model.loss(out, self.target)
 
-    def test_forward_loss_optim(self):
-        for dev in [cpu_dev, gpu_dev]:
-            model = MLP(self.sgd)
-            model.train()
-            model.on_device(dev)
-            self.get_numpy_params(model)
+        np_out = self.numpy_forward(self.data)
+        np_loss = self.numpy_loss(np_out, self.label)
 
-            out = model(self.inputs)
-            loss = model.loss(out, self.target)
-            model.optim(loss)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(out), np_out)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(loss), np_loss)
 
-            np_out = self.numpy_forward(self.data)
-            np_loss = self.numpy_loss(np_out, self.label)
-            self.numpy_optim(np_loss)
+    def test_forward_loss_cpu(self):
+        self._forward_loss_helper(cpu_dev)
 
-            np.testing.assert_array_almost_equal(tensor.to_numpy(out), np_out)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(loss), np_loss)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(model.w0),
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_forward_loss_gpu(self):
+        self._forward_loss_helper(gpu_dev)
+
+    def _forward_loss_optim_helper(self, dev):
+        model = MLP(self.sgd)
+        model.train()
+        model.on_device(dev)
+        self.get_numpy_params(model)
+
+        out = model(self.inputs)
+        loss = model.loss(out, self.target)
+        model.optim(loss)
+
+        np_out = self.numpy_forward(self.data)
+        np_loss = self.numpy_loss(np_out, self.label)
+        self.numpy_optim(np_loss)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(out), np_out)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(loss), np_loss)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(model.w0),
                                                  self.W0)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(model.b0),
+        np.testing.assert_array_almost_equal(tensor.to_numpy(model.b0),
                                                  self.B0)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(model.w1),
+        np.testing.assert_array_almost_equal(tensor.to_numpy(model.w1),
                                                  self.W1)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(model.b1),
+        np.testing.assert_array_almost_equal(tensor.to_numpy(model.b1),
                                                  self.B1)
 
-    def test_train_without_graph(self):
-        for dev in [cpu_dev, gpu_dev]:
-            model = MLP(self.sgd)
-            model.train()
-            model.on_device(dev)
-            model.graph(False)
-            self.get_numpy_params(model)
+    def test_forward_loss_optim_cpu(self):
+        self._forward_loss_optim_helper(cpu_dev)
 
-            out = model(self.inputs)
-            loss = model.loss(out, self.target)
-            model.optim(loss)
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_forward_loss_optim_gpu(self):
+        self._forward_loss_optim_helper(gpu_dev)
 
-            np_out = self.numpy_forward(self.data)
-            np_loss = self.numpy_loss(np_out, self.label)
-            self.numpy_optim(np_loss)
+    def _train_without_graph_helper(self, dev):
+        model = MLP(self.sgd)
+        model.train()
+        model.on_device(dev)
+        model.graph(False)
+        self.get_numpy_params(model)
 
-            np.testing.assert_array_almost_equal(tensor.to_numpy(out), np_out)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(loss), np_loss)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(model.w0),
+        out = model(self.inputs)
+        loss = model.loss(out, self.target)
+        model.optim(loss)
+
+        np_out = self.numpy_forward(self.data)
+        np_loss = self.numpy_loss(np_out, self.label)
+        self.numpy_optim(np_loss)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(out), np_out)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(loss), np_loss)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(model.w0),
                                                  self.W0)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(model.b0),
+        np.testing.assert_array_almost_equal(tensor.to_numpy(model.b0),
                                                  self.B0)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(model.w1),
+        np.testing.assert_array_almost_equal(tensor.to_numpy(model.w1),
                                                  self.W1)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(model.b1),
+        np.testing.assert_array_almost_equal(tensor.to_numpy(model.b1),
                                                  self.B1)
 
-    def test_run_in_serial(self):
-        for dev in [cpu_dev, gpu_dev]:
-            model = MLP(self.sgd)
-            model.train()
-            model.on_device(dev)
-            model.graph(True, False)
-            self.get_numpy_params(model)
+    def test_without_graph_cpu(self):
+        self._train_without_graph_helper(cpu_dev)
 
-            out = model(self.inputs)
-            loss = model.loss(out, self.target)
-            model.optim(loss)
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_without_graph_gpu(self):
+        self._train_without_graph_helper(gpu_dev)
 
-            np_out = self.numpy_forward(self.data)
-            np_loss = self.numpy_loss(np_out, self.label)
-            self.numpy_optim(np_loss)
+    def _run_in_serial_helper(self, dev):
+        model = MLP(self.sgd)
+        model.train()
+        model.on_device(dev)
+        model.graph(True, False)
+        self.get_numpy_params(model)
 
-            np.testing.assert_array_almost_equal(tensor.to_numpy(out), np_out)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(loss), np_loss)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(model.w0),
+        out = model(self.inputs)
+        loss = model.loss(out, self.target)
+        model.optim(loss)
+
+        np_out = self.numpy_forward(self.data)
+        np_loss = self.numpy_loss(np_out, self.label)
+        self.numpy_optim(np_loss)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(out), np_out)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(loss), np_loss)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(model.w0),
                                                  self.W0)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(model.b0),
+        np.testing.assert_array_almost_equal(tensor.to_numpy(model.b0),
                                                  self.B0)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(model.w1),
+        np.testing.assert_array_almost_equal(tensor.to_numpy(model.w1),
                                                  self.W1)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(model.b1),
+        np.testing.assert_array_almost_equal(tensor.to_numpy(model.b1),
                                                  self.B1)
 
-    def test_evaluate(self):
-        for dev in [cpu_dev, gpu_dev]:
-            model = MLP(self.sgd)
-            model.eval()
-            model.on_device(dev)
-            self.get_numpy_params(model)
+    def test_run_in_serial_cpu(self):
+        self._run_in_serial_helper(cpu_dev)
 
-            out = model(self.inputs)
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_run_in_serial_gpu(self):
+        self._run_in_serial_helper(gpu_dev)
 
-            np_out = self.numpy_forward(self.data)
+    def _evaluate_helper(self, dev):
+        model = MLP(self.sgd)
+        model.eval()
+        model.on_device(dev)
+        self.get_numpy_params(model)
 
-            np.testing.assert_array_almost_equal(tensor.to_numpy(out), np_out)
+        out = model(self.inputs)
+
+        np_out = self.numpy_forward(self.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(out), np_out)
+
+    def test_evaluate_cpu(self):
+        self._evaluate_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_evaluate_gpu(self):
+        self._evaluate_helper(gpu_dev)
 
 
 if __name__ == '__main__':
