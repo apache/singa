@@ -752,7 +752,7 @@ class TestAPI(unittest.TestCase):
 
         w_np = np.random.random((rnn_handle.weights_size,)).astype(np.float32)
         w = tensor.Tensor(device=dev, data=w_np)
-        print("weights size is ", rnn_handle.weights_size)
+        # print("weights size is ", rnn_handle.weights_size)
 
         y1 = singa_api.GpuRNNForwardInference(x, w.data, rnn_handle)
         y2 = singa_api.GpuRNNForwardTraining(x, w.data, rnn_handle)

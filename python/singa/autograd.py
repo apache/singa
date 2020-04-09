@@ -3222,6 +3222,8 @@ class LSTM(RNN_Base):
         batch_first=False,
         dropout=0,
         bidirectional=False,
+        backend="python",
+        inputs=None
     ):
         """
         Args:
@@ -3239,95 +3241,169 @@ class LSTM(RNN_Base):
             bidirectional (bool): If True, becomes a bidirectional RNN. 
                 Default: False
         """
-        self.nonlinearity = nonlinearity
+        self.backend=backend
+        if backend == "singa":
+            self.nonlinearity = nonlinearity
 
-        Wx_shape = (input_size, hidden_size)
-        self.Wx = []
-        for i in range(4):
-            w = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
-            w.gaussian(0.0, 1.0)
-            self.Wx.append(w)
+            Wx_shape = (input_size, hidden_size)
+            self.Wx = []
+            for i in range(4):
+                w = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
+                w.gaussian(0.0, 1.0)
+                self.Wx.append(w)
 
-        Wh_shape = (hidden_size, hidden_size)
-        self.Wh = []
-        for i in range(4):
-            w = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
-            w.gaussian(0.0, 1.0)
-            self.Wh.append(w)
+            Wh_shape = (hidden_size, hidden_size)
+            self.Wh = []
+            for i in range(4):
+                w = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
+                w.gaussian(0.0, 1.0)
+                self.Wh.append(w)
 
-        Bx_shape = (hidden_size,)
-        self.Bx = []
-        for i in range(4):
-            b = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
-            b.set_value(0.0)
-            self.Bx.append(b)
+            Bx_shape = (hidden_size,)
+            self.Bx = []
+            for i in range(4):
+                b = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+                b.set_value(0.0)
+                self.Bx.append(b)
 
-        self.Bh = []
-        for i in range(4):
-            b = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
-            b.set_value(0.0)
-            self.Bh.append(b)
+            self.Bh = []
+            for i in range(4):
+                b = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+                b.set_value(0.0)
+                self.Bh.append(b)
 
-        self.params = self.Wx + self.Wh + self.Bx + self.Bh
+            self.params = self.Wx + self.Wh + self.Bx + self.Bh
+        elif backend == "cudnn":
+            if not singa.USE_CUDA:
+                raise Exception("Could not use cudnn without cuda compiled.\n")
+            if not inputs:
+                raise Exception("Input is required for init cudnn LSTM.\n")
+
+            CUDNN_LSTM_MODE = 2
+
+            cinputs = singa.VecTensor()
+            [cinputs.append(i.data) for i in inputs]
+            self.rnn_handle=singa.CudnnRNNHandle(cinputs, input_size,hidden_size, CUDNN_LSTM_MODE)
+        else:
+            raise Exception("Unsupported backend %s.\n" % backend)
+
+
+    def cpp_vec_tensor_to_py_tensor(self,cpp_vec_tensor):
+        py_tensors=list()
+        for cTensor in cpp_vec_tensor:
+            new_t = tensor.Tensor()
+            new_t.data = cTensor
+            new_t.shape = tuple(new_t.data.shape())
+            new_t.device = new_t.data.device()
+            new_t.dtype = new_t.data.data_type()
+            py_tensors.append(new_t)
+        return py_tensors
 
     def __call__(self, xs, h0_c0):
-        # xs: a tuple or list of input tensors
-        # h0_c0: a tuple of (h0, c0)
-        h0, c0 = h0_c0
-        if not isinstance(xs, list):
-            xs = list(xs)
-        inputs = xs + list((h0, c0))
-        self.device_check(*inputs)
-        # self.device_check(inputs[0], *self.params)
-        self.device_check(inputs[0], *(self.Wx + self.Wh + self.Bx + self.Bh))
-        batchsize = xs[0].shape[0]
-        out = []
-        h, c = self.step_forward(xs[0], h0, c0, self.Wx, self.Wh, self.Bx,
-                                 self.Bh)
-        out.append(h)
-        for x in xs[1:]:
-            assert x.shape[0] == batchsize
-            h, c = self.step_forward(x, h, c, self.Wx, self.Wh, self.Bx,
+        if self.backend == "singa":
+            # xs: a tuple or list of input tensors
+            # h0_c0: a tuple of (h0, c0)
+            h0, c0 = h0_c0
+            if not isinstance(xs, list):
+                xs = list(xs)
+            inputs = xs + list((h0, c0))
+            self.device_check(*inputs)
+            # self.device_check(inputs[0], *self.params)
+            self.device_check(inputs[0], *(self.Wx + self.Wh + self.Bx + self.Bh))
+            batchsize = xs[0].shape[0]
+            out = []
+            h, c = self.step_forward(xs[0], h0, c0, self.Wx, self.Wh, self.Bx,
                                      self.Bh)
             out.append(h)
-        return out, h, c
+            for x in xs[1:]:
+                assert x.shape[0] == batchsize
+                h, c = self.step_forward(x, h, c, self.Wx, self.Wh, self.Bx,
+                                         self.Bh)
+                out.append(h)
+            return out, h, c
+        elif self.backend == "cudnn":
+            if not singa.USE_CUDA:
+                raise Exception("Could not use cudnn without cuda compiled.\n")
+
+            cpp_x = singa.VecTensor()
+            [cpp_x.append(i.data) for i in xs]
+
+            self.W = Tensor(shape=(self.rnn_handle.weights_size,), requires_grad=True, stores_grad=True)
+            self.W.gaussian(0.0, 1.0)
+
+            cpp_y = singa.GpuRNNForwardTraining(cpp_x, self.W.data, self.rnn_handle)
+            y = self.cpp_vec_tensor_to_py_tensor(cpp_y)
+
+            if training:
+                self.buffer = {"cpp_y":cpp_y, "cpp_x": cpp_x}
+
+            return y
+        else:
+            raise Exception("Unsupported backend %s.\n" % backend)
 
     def step_forward(self, x, h, c, Wx, Wh, Bx, Bh):
-        y1 = matmul(x, Wx[0])
-        y1 = add_bias(y1, Bx[0], axis=0)
-        y2 = matmul(h, Wh[0])
-        y2 = add_bias(y2, Bh[0], axis=0)
-        i = add(y1, y2)
-        i = sigmoid(i)
+        if self.backend == "singa":
+            y1 = matmul(x, Wx[0])
+            y1 = add_bias(y1, Bx[0], axis=0)
+            y2 = matmul(h, Wh[0])
+            y2 = add_bias(y2, Bh[0], axis=0)
+            i = add(y1, y2)
+            i = sigmoid(i)
 
-        y1 = matmul(x, Wx[1])
-        y1 = add_bias(y1, Bx[1], axis=0)
-        y2 = matmul(h, Wh[1])
-        y2 = add_bias(y2, Bh[1], axis=0)
-        f = add(y1, y2)
-        f = sigmoid(f)
+            y1 = matmul(x, Wx[1])
+            y1 = add_bias(y1, Bx[1], axis=0)
+            y2 = matmul(h, Wh[1])
+            y2 = add_bias(y2, Bh[1], axis=0)
+            f = add(y1, y2)
+            f = sigmoid(f)
 
-        y1 = matmul(x, Wx[2])
-        y1 = add_bias(y1, Bx[2], axis=0)
-        y2 = matmul(h, Wh[2])
-        y2 = add_bias(y2, Bh[2], axis=0)
-        o = add(y1, y2)
-        o = sigmoid(o)
+            y1 = matmul(x, Wx[2])
+            y1 = add_bias(y1, Bx[2], axis=0)
+            y2 = matmul(h, Wh[2])
+            y2 = add_bias(y2, Bh[2], axis=0)
+            o = add(y1, y2)
+            o = sigmoid(o)
 
-        y1 = matmul(x, Wx[3])
-        y1 = add_bias(y1, Bx[3], axis=0)
-        y2 = matmul(h, Wh[3])
-        y2 = add_bias(y2, Bh[3], axis=0)
-        g = add(y1, y2)
-        g = tanh(g)
+            y1 = matmul(x, Wx[3])
+            y1 = add_bias(y1, Bx[3], axis=0)
+            y2 = matmul(h, Wh[3])
+            y2 = add_bias(y2, Bh[3], axis=0)
+            g = add(y1, y2)
+            g = tanh(g)
 
-        cout1 = mul(f, c)
-        cout2 = mul(i, g)
-        cout = add(cout1, cout2)
+            cout1 = mul(f, c)
+            cout2 = mul(i, g)
+            cout = add(cout1, cout2)
 
-        hout = tanh(cout)
-        hout = mul(o, hout)
-        return hout, cout
+            hout = tanh(cout)
+            hout = mul(o, hout)
+            return hout, cout
+        elif self.backend == "cudnn":
+            if not singa.USE_CUDA:
+                raise Exception("Could not use cudnn without cuda compiled.\n")
+            raise Exception("Not avail for cudnn LSTM \n")
+        else:
+            raise Exception("Unsupported backend %s.\n" % backend)
+
+    def backward(self, dy):
+        if self.backend == "cudnn":
+            if not singa.USE_CUDA:
+                raise Exception("Could not use cudnn without cuda compiled.\n")
+
+            assert training is True and hasattr(
+                self, "inputs"), "Please set training as True before do BP. "
+
+            cpp_dy = singa.VecTensor()
+            [cpp_dy.append(i.data) for i in dy]
+
+            cpp_dx = singa.GpuRNNBackwardx(self.buffer["cpp_y"], cpp_dy, self.W.data, self.rnn_handle)
+            cpp_dW = singa.GpuRNNBackwardW(self.buffer["cpp_x"], self.buffer["cpp_y"], self.rnn_handle)
+
+            dx = self.cpp_vec_tensor_to_py_tensor(cpp_dx)
+            dW = self.cpp_vec_tensor_to_py_tensor([cpp_dW])[0]
+            return dx, dW
+        else:
+            raise Exception("Unsupported backend %s.\n" % backend)
 
 
 class Abs(Operation):

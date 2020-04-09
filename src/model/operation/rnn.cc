@@ -47,7 +47,6 @@ CudnnRNNHandle::CudnnRNNHandle(const vector<Tensor> &x,
   init_parameters_desc();
   init_workspace();
 
-std::cout<<"handle ok\n";
 }
 
 void CudnnRNNHandle::init_workspace(){
@@ -229,12 +228,10 @@ vector<Tensor> CudnnRNNHandle::split_output(size_t num, size_t dim,
 }
 
 CudnnRNNHandle::~CudnnRNNHandle() {
-  std::cout<<"destructing\n";
   free(xDesc);
   free(yDesc);
   free(dxDesc);
   free(dyDesc);
-  std::cout<<"destructor ok\n";
 }
 
 vector<Tensor> GpuRNNForwardInference(const vector<Tensor> &x, Tensor &W, CudnnRNNHandle &rnn_handle){
@@ -267,7 +264,6 @@ vector<Tensor> GpuRNNForwardInference(const vector<Tensor> &x, Tensor &W, CudnnR
             rnn_handle.workspace_size));
       },
       {contiguous_x.block(), W.block()}, {contiguous_y.block()});
-  std::cout<<"inference ok\n";
 
   vector<Tensor> y = rnn_handle.split_output(x.size(), rnn_handle.hidden_size, x, contiguous_y);
   return y;
@@ -308,8 +304,6 @@ vector<Tensor> GpuRNNForwardTraining(const vector<Tensor> &x, Tensor &W, CudnnRN
       },
       {contiguous_x.block(), W.block()}, {contiguous_y.block()});
 
-  std::cout<<"training ok\n";
-
   vector<Tensor> y = rnn_handle.split_output(x.size(), rnn_handle.hidden_size, x, contiguous_y);
   return y;
 }
@@ -342,7 +336,6 @@ vector<Tensor> GpuRNNBackwardx(const vector<Tensor> &y, const vector<Tensor> &dy
             rnn_handle.reserve_size));
       },
       {contiguous_y.block(), contiguous_dy.block(), W.block()}, {contiguous_dx.block()});
-  std::cout<<"back x ok\n";
 
   vector<Tensor> dx = rnn_handle.split_output(y.size(), rnn_handle.feature_size, y, contiguous_dx);
   return dx;
@@ -369,7 +362,6 @@ Tensor GpuRNNBackwardW(const vector<Tensor> &x, const vector<Tensor> &y, CudnnRN
             rnn_handle.reserve_size));
       },
       {contiguous_x.block(), contiguous_y.block()}, {dW.block()});
-  std::cout<<"back w ok\n";
   return dW;
 }
 
