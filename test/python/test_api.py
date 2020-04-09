@@ -730,7 +730,6 @@ class TestAPI(unittest.TestCase):
     def test_as_type2_gpu(self):
         self._as_type2_helper(gpu_dev)
 
-
     def test_rnn(self):
         if not singa_api.USE_CUDA:
             return
@@ -744,11 +743,12 @@ class TestAPI(unittest.TestCase):
 
         x = singa_api.VecTensor()
         for i in range(seq_length):
-            tmp_np = np.random.random((batch_size, feature_size)).astype(np.float32)
+            tmp_np = np.random.random(
+                (batch_size, feature_size)).astype(np.float32)
             tmp = tensor.Tensor(device=dev, data=tmp_np)
             x.append(tmp.data)
 
-        rnn_handle=singa_api.CudnnRNNHandle(x,feature_size,hidden_size,2)
+        rnn_handle = singa_api.CudnnRNNHandle(x, feature_size, hidden_size, 2)
 
         w_np = np.random.random((rnn_handle.weights_size,)).astype(np.float32)
         w = tensor.Tensor(device=dev, data=w_np)

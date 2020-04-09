@@ -27,7 +27,6 @@ using namespace singa;
 
 #ifdef USE_CUDNN
 TEST(Operation_RNN, tranining) {
-
   auto cuda = std::make_shared<singa::CudaGPU>();
 
   int hidden_size = 7;
@@ -36,13 +35,13 @@ TEST(Operation_RNN, tranining) {
   int feature_size = 3;
 
   vector<Tensor> x;
-  for (int i=0;i<seq_length;i++){
+  for (int i = 0; i < seq_length; i++) {
     Tensor tmp(Shape{batch_size, feature_size}, cuda);
     Gaussian(0.0f, 1.0f, &tmp);
     x.push_back(tmp);
   }
 
-  CudnnRNNHandle rnn_handle(x, feature_size,hidden_size, 2);
+  CudnnRNNHandle rnn_handle(x, feature_size, hidden_size, 2);
 
   Tensor W(Shape{rnn_handle.weights_size}, cuda);
   Gaussian(0.0f, 1.0f, &W);

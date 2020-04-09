@@ -22,22 +22,17 @@
 #include "rnn.h"
 namespace singa {
 #ifdef USE_CUDNN
-CudnnRNNHandle::CudnnRNNHandle(const vector<Tensor> &x,
-  const int feature_size,
-  const int hidden_size,
-  const int mode,
-  const int num_layers,
-  const int  bias,
-  const float dropout,
-  const int bidirectional)
-  : bias(bias),
-    dropout(dropout),
-    bidirectional(bidirectional),
-    feature_size(feature_size),
-    hidden_size(hidden_size),
-    mode(mode),
-    num_layers(num_layers)
-{
+CudnnRNNHandle::CudnnRNNHandle(const vector<Tensor> &x, const int feature_size,
+                               const int hidden_size, const int mode,
+                               const int num_layers, const int bias,
+                               const float dropout, const int bidirectional)
+    : bias(bias),
+      dropout(dropout),
+      bidirectional(bidirectional),
+      feature_size(feature_size),
+      hidden_size(hidden_size),
+      mode(mode),
+      num_layers(num_layers) {
   dev = x[0].device();
   ctx = x[0].device()->context(0);
 
@@ -46,10 +41,9 @@ CudnnRNNHandle::CudnnRNNHandle(const vector<Tensor> &x,
   init_rnn_desc();
   init_parameters_desc();
   init_workspace();
-
 }
 
-void CudnnRNNHandle::init_workspace(){
+void CudnnRNNHandle::init_workspace() {
   /* workspace data */
   // Need for every pass
   CUDNN_CHECK(cudnnGetRNNWorkspaceSize(ctx->cudnn_handle, rnnDesc, seq_length,
@@ -62,7 +56,7 @@ void CudnnRNNHandle::init_workspace(){
   reserve_space = Tensor(Shape{reserve_size}, dev);
 }
 
-void CudnnRNNHandle::init_parameters_desc(){
+void CudnnRNNHandle::init_parameters_desc() {
   /* weights size
    *   depends on rnn desc */
   CUDNN_CHECK(cudnnGetRNNParamsSize(ctx->cudnn_handle, rnnDesc, xDesc[0],
@@ -82,7 +76,7 @@ void CudnnRNNHandle::init_parameters_desc(){
                                          CUDNN_TENSOR_NCHW, 3, dimW));
 }
 
-void CudnnRNNHandle::init_rnn_desc(){
+void CudnnRNNHandle::init_rnn_desc() {
   /* rnn desc */
   CUDNN_CHECK(cudnnCreateRNNDescriptor(&rnnDesc));
   if (mode == 0)
@@ -94,27 +88,28 @@ void CudnnRNNHandle::init_rnn_desc(){
   else if (mode == 3)
     RNNMode = CUDNN_GRU;
   algo = CUDNN_RNN_ALGO_STANDARD;  // TODO
-  CUDNN_CHECK(cudnnSetRNNDescriptor(
-      ctx->cudnn_handle, rnnDesc, hidden_size, num_layers, dropoutDesc,
-      CUDNN_LINEAR_INPUT,
-      CUDNN_UNIDIRECTIONAL, RNNMode,
-      algo,  // CUDNN_RNN_ALGO_STANDARD,
-      CUDNN_DATA_FLOAT));
+  CUDNN_CHECK(cudnnSetRNNDescriptor(ctx->cudnn_handle, rnnDesc, hidden_size,
+                                    num_layers, dropoutDesc, CUDNN_LINEAR_INPUT,
+                                    CUDNN_UNIDIRECTIONAL, RNNMode,
+                                    algo,  // CUDNN_RNN_ALGO_STANDARD,
+                                    CUDNN_DATA_FLOAT));
 }
-void CudnnRNNHandle::init_dropout_desc(){
+void CudnnRNNHandle::init_dropout_desc() {
   /* drop out */
   size_t seed = 0x1234567;
   CUDNN_CHECK(cudnnCreateDropoutDescriptor(&dropoutDesc));
   size_t stateSize;
   CUDNN_CHECK(cudnnDropoutGetStatesSize(ctx->cudnn_handle, &stateSize));
   CUDA_CHECK(cudaMalloc(&states, stateSize));
-  CUDNN_CHECK(cudnnSetDropoutDescriptor(dropoutDesc, ctx->cudnn_handle,
-                                        dropout, states, stateSize, seed));
+  CUDNN_CHECK(cudnnSetDropoutDescriptor(dropoutDesc, ctx->cudnn_handle, dropout,
+                                        states, stateSize, seed));
 }
 
-void CudnnRNNHandle::update_data_desc(const vector<Tensor> &x){
+void CudnnRNNHandle::update_data_desc(const vector<Tensor> &x) {
   /*handle x*/
-  for (int i=0;i<x.size();i++){ CHECK_EQ(x[i].shape(1), feature_size); }
+  for (int i = 0; i < x.size(); i++) {
+    CHECK_EQ(x[i].shape(1), feature_size);
+  }
   seq_length = x.size();
   batch_size = x[0].shape(0);
 
@@ -197,8 +192,7 @@ void CudnnRNNHandle::update_data_desc(const vector<Tensor> &x){
 }
 
 Tensor CudnnRNNHandle::merge_inputs(size_t num, const vector<Tensor> &in) {
-  if (num == 1)
-    return in.at(0);
+  if (num == 1) return in.at(0);
   size_t size = 0;
   for (size_t i = 0; i < num; i++) size += in.at(i).Size();
   Tensor out(Shape{size}, in.at(0).device(), in.at(0).data_type());
@@ -209,8 +203,8 @@ Tensor CudnnRNNHandle::merge_inputs(size_t num, const vector<Tensor> &in) {
   return out;
 }
 vector<Tensor> CudnnRNNHandle::split_output(size_t num, size_t dim,
-                                     const vector<Tensor> &in,
-                                     const Tensor output) {
+                                            const vector<Tensor> &in,
+                                            const Tensor output) {
   vector<Tensor> outputs;
   if (num == 1) {
     outputs.push_back(Reshape(output, Shape{in.at(0).shape(0), dim}));
@@ -234,20 +228,25 @@ CudnnRNNHandle::~CudnnRNNHandle() {
   free(dyDesc);
 }
 
-vector<Tensor> GpuRNNForwardInference(const vector<Tensor> &x, Tensor &W, CudnnRNNHandle &rnn_handle){
+vector<Tensor> GpuRNNForwardInference(const vector<Tensor> &x, Tensor &W,
+                                      CudnnRNNHandle &rnn_handle) {
   CHECK_EQ(x.size(), rnn_handle.seq_length);
-  for (int i=0;i<x.size();i++){ CHECK_EQ(x[i].shape(1), rnn_handle.feature_size); }
-  int update=0;
-  for (int i=0;i<x.size();i++){
-    if (x[i].shape(0) != rnn_handle.batch_size){
-      update=1;
+  for (int i = 0; i < x.size(); i++) {
+    CHECK_EQ(x[i].shape(1), rnn_handle.feature_size);
+  }
+  int update = 0;
+  for (int i = 0; i < x.size(); i++) {
+    if (x[i].shape(0) != rnn_handle.batch_size) {
+      update = 1;
     }
   }
-  if(update) rnn_handle.update_data_desc(x);
+  if (update) rnn_handle.update_data_desc(x);
 
   Tensor contiguous_x = rnn_handle.merge_inputs(x.size(), x);
 
-  Tensor contiguous_y(Shape{contiguous_x.Size() * rnn_handle.hidden_size / rnn_handle.feature_size}, x[0].device());
+  Tensor contiguous_y(Shape{contiguous_x.Size() * rnn_handle.hidden_size /
+                            rnn_handle.feature_size},
+                      x[0].device());
 
   contiguous_y.device()->Exec(
       [&contiguous_y, &contiguous_x, &W, &rnn_handle](Context *ctx) {
@@ -257,33 +256,39 @@ vector<Tensor> GpuRNNForwardInference(const vector<Tensor> &x, Tensor &W, CudnnR
         void *cy = NULL;
         CUDNN_CHECK(cudnnRNNForwardInference(
             ctx->cudnn_handle, rnn_handle.rnnDesc, rnn_handle.seq_length,
-            rnn_handle.xDesc, contiguous_x.block()->data(), rnn_handle.hxDesc, hx,
-            rnn_handle.cxDesc, cx, rnn_handle.wDesc, W.block()->data(),
-            rnn_handle.yDesc, contiguous_y.block()->mutable_data(), rnn_handle.hyDesc, hy,
-            rnn_handle.cyDesc, cy, rnn_handle.workspace.block()->mutable_data(),
+            rnn_handle.xDesc, contiguous_x.block()->data(), rnn_handle.hxDesc,
+            hx, rnn_handle.cxDesc, cx, rnn_handle.wDesc, W.block()->data(),
+            rnn_handle.yDesc, contiguous_y.block()->mutable_data(),
+            rnn_handle.hyDesc, hy, rnn_handle.cyDesc, cy,
+            rnn_handle.workspace.block()->mutable_data(),
             rnn_handle.workspace_size));
       },
       {contiguous_x.block(), W.block()}, {contiguous_y.block()});
 
-  vector<Tensor> y = rnn_handle.split_output(x.size(), rnn_handle.hidden_size, x, contiguous_y);
+  vector<Tensor> y = rnn_handle.split_output(x.size(), rnn_handle.hidden_size,
+                                             x, contiguous_y);
   return y;
 }
 
-
-vector<Tensor> GpuRNNForwardTraining(const vector<Tensor> &x, Tensor &W, CudnnRNNHandle &rnn_handle){
+vector<Tensor> GpuRNNForwardTraining(const vector<Tensor> &x, Tensor &W,
+                                     CudnnRNNHandle &rnn_handle) {
   CHECK_EQ(x.size(), rnn_handle.seq_length);
-  for (int i=0;i<x.size();i++){ CHECK_EQ(x[i].shape(1), rnn_handle.feature_size); }
-  int update=0;
-  for (int i=0;i<x.size();i++){
-    if (x[i].shape(0) != rnn_handle.batch_size){
-      update=1;
+  for (int i = 0; i < x.size(); i++) {
+    CHECK_EQ(x[i].shape(1), rnn_handle.feature_size);
+  }
+  int update = 0;
+  for (int i = 0; i < x.size(); i++) {
+    if (x[i].shape(0) != rnn_handle.batch_size) {
+      update = 1;
     }
   }
-  if(update) rnn_handle.update_data_desc(x);
+  if (update) rnn_handle.update_data_desc(x);
 
   Tensor contiguous_x = rnn_handle.merge_inputs(x.size(), x);
 
-  Tensor contiguous_y(Shape{contiguous_x.Size() * rnn_handle.hidden_size / rnn_handle.feature_size}, x[0].device());
+  Tensor contiguous_y(Shape{contiguous_x.Size() * rnn_handle.hidden_size /
+                            rnn_handle.feature_size},
+                      x[0].device());
 
   contiguous_y.device()->Exec(
       [&contiguous_y, &contiguous_x, &W, &rnn_handle](Context *ctx) {
@@ -294,28 +299,34 @@ vector<Tensor> GpuRNNForwardTraining(const vector<Tensor> &x, Tensor &W, CudnnRN
 
         CUDNN_CHECK(cudnnRNNForwardTraining(
             ctx->cudnn_handle, rnn_handle.rnnDesc, rnn_handle.seq_length,
-            rnn_handle.xDesc, contiguous_x.block()->data(), rnn_handle.hxDesc, hx,
-            rnn_handle.cxDesc, cx, rnn_handle.wDesc, W.block()->data(),
-            rnn_handle.yDesc, contiguous_y.block()->mutable_data(), rnn_handle.hyDesc, hy,
-            rnn_handle.cyDesc, cy, rnn_handle.workspace.block()->mutable_data(),
+            rnn_handle.xDesc, contiguous_x.block()->data(), rnn_handle.hxDesc,
+            hx, rnn_handle.cxDesc, cx, rnn_handle.wDesc, W.block()->data(),
+            rnn_handle.yDesc, contiguous_y.block()->mutable_data(),
+            rnn_handle.hyDesc, hy, rnn_handle.cyDesc, cy,
+            rnn_handle.workspace.block()->mutable_data(),
             rnn_handle.workspace_size,
             rnn_handle.reserve_space.block()->mutable_data(),
             rnn_handle.reserve_size));
       },
       {contiguous_x.block(), W.block()}, {contiguous_y.block()});
 
-  vector<Tensor> y = rnn_handle.split_output(x.size(), rnn_handle.hidden_size, x, contiguous_y);
+  vector<Tensor> y = rnn_handle.split_output(x.size(), rnn_handle.hidden_size,
+                                             x, contiguous_y);
   return y;
 }
 
-vector<Tensor> GpuRNNBackwardx(const vector<Tensor> &y, const vector<Tensor> &dy, const Tensor &W, CudnnRNNHandle &rnn_handle){
-
+vector<Tensor> GpuRNNBackwardx(const vector<Tensor> &y,
+                               const vector<Tensor> &dy, const Tensor &W,
+                               CudnnRNNHandle &rnn_handle) {
   Tensor contiguous_y = rnn_handle.merge_inputs(y.size(), y);
   Tensor contiguous_dy = rnn_handle.merge_inputs(dy.size(), dy);
-  Tensor contiguous_dx(Shape{contiguous_y.Size() * rnn_handle.feature_size / rnn_handle.hidden_size}, y[0].device());
+  Tensor contiguous_dx(Shape{contiguous_y.Size() * rnn_handle.feature_size /
+                             rnn_handle.hidden_size},
+                       y[0].device());
 
   contiguous_dx.device()->Exec(
-      [&contiguous_dx, &contiguous_y, &contiguous_dy, &W, &rnn_handle](Context *ctx) {
+      [&contiguous_dx, &contiguous_y, &contiguous_dy, &W,
+       &rnn_handle](Context *ctx) {
         void *hx = NULL;
         void *cx = NULL;
         void *dhx = NULL;
@@ -325,9 +336,9 @@ vector<Tensor> GpuRNNBackwardx(const vector<Tensor> &y, const vector<Tensor> &dy
         CUDNN_CHECK(cudnnRNNBackwardData(
             ctx->cudnn_handle, rnn_handle.rnnDesc, rnn_handle.seq_length,
             rnn_handle.yDesc, contiguous_y.block()->data(), rnn_handle.dyDesc,
-            contiguous_dy.block()->data(), rnn_handle.dhyDesc, dhy, rnn_handle.dcyDesc,
-            dcy, rnn_handle.wDesc, W.block()->data(), rnn_handle.hxDesc, hx,
-            rnn_handle.cxDesc, cx, rnn_handle.dxDesc,
+            contiguous_dy.block()->data(), rnn_handle.dhyDesc, dhy,
+            rnn_handle.dcyDesc, dcy, rnn_handle.wDesc, W.block()->data(),
+            rnn_handle.hxDesc, hx, rnn_handle.cxDesc, cx, rnn_handle.dxDesc,
             contiguous_dx.block()->mutable_data(), rnn_handle.dhxDesc, dhx,
             rnn_handle.dcxDesc, dcx,
             rnn_handle.workspace.block()->mutable_data(),
@@ -335,14 +346,16 @@ vector<Tensor> GpuRNNBackwardx(const vector<Tensor> &y, const vector<Tensor> &dy
             rnn_handle.reserve_space.block()->mutable_data(),
             rnn_handle.reserve_size));
       },
-      {contiguous_y.block(), contiguous_dy.block(), W.block()}, {contiguous_dx.block()});
+      {contiguous_y.block(), contiguous_dy.block(), W.block()},
+      {contiguous_dx.block()});
 
-  vector<Tensor> dx = rnn_handle.split_output(y.size(), rnn_handle.feature_size, y, contiguous_dx);
+  vector<Tensor> dx = rnn_handle.split_output(y.size(), rnn_handle.feature_size,
+                                              y, contiguous_dx);
   return dx;
 }
 
-Tensor GpuRNNBackwardW(const vector<Tensor> &x, const vector<Tensor> &y, CudnnRNNHandle &rnn_handle){
-
+Tensor GpuRNNBackwardW(const vector<Tensor> &x, const vector<Tensor> &y,
+                       CudnnRNNHandle &rnn_handle) {
   Tensor dW(Shape{rnn_handle.weights_size}, x[0].device());
 
   Tensor contiguous_x = rnn_handle.merge_inputs(x.size(), x);
@@ -352,8 +365,8 @@ Tensor GpuRNNBackwardW(const vector<Tensor> &x, const vector<Tensor> &y, CudnnRN
         void *hx = NULL;
         CUDNN_CHECK(cudnnRNNBackwardWeights(
             ctx->cudnn_handle, rnn_handle.rnnDesc, rnn_handle.seq_length,
-            rnn_handle.xDesc, contiguous_x.block()->data(), rnn_handle.hxDesc, hx,
-            rnn_handle.yDesc, contiguous_y.block()->data(),
+            rnn_handle.xDesc, contiguous_x.block()->data(), rnn_handle.hxDesc,
+            hx, rnn_handle.yDesc, contiguous_y.block()->data(),
             rnn_handle.workspace.block()->mutable_data(),
             rnn_handle.workspace_size, rnn_handle.dwDesc,
             dW.block()->mutable_data(),

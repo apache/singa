@@ -3212,19 +3212,17 @@ class LSTM(RNN_Base):
     Generate a LSTM operator
     """
 
-    def __init__(
-        self,
-        input_size,
-        hidden_size,
-        nonlinearity="tanh",
-        num_layers=1,
-        bias=True,
-        batch_first=False,
-        dropout=0,
-        bidirectional=False,
-        backend="python",
-        inputs=None
-    ):
+    def __init__(self,
+                 input_size,
+                 hidden_size,
+                 nonlinearity="tanh",
+                 num_layers=1,
+                 bias=True,
+                 batch_first=False,
+                 dropout=0,
+                 bidirectional=False,
+                 backend="python",
+                 inputs=None):
         """
         Args:
             input_size (int):  The number of expected features in the input x
@@ -3241,7 +3239,7 @@ class LSTM(RNN_Base):
             bidirectional (bool): If True, becomes a bidirectional RNN. 
                 Default: False
         """
-        self.backend=backend
+        self.backend = backend
         if backend == "singa":
             self.nonlinearity = nonlinearity
 
@@ -3283,13 +3281,13 @@ class LSTM(RNN_Base):
 
             cinputs = singa.VecTensor()
             [cinputs.append(i.data) for i in inputs]
-            self.rnn_handle=singa.CudnnRNNHandle(cinputs, input_size,hidden_size, CUDNN_LSTM_MODE)
+            self.rnn_handle = singa.CudnnRNNHandle(cinputs, input_size,
+                                                   hidden_size, CUDNN_LSTM_MODE)
         else:
             raise Exception("Unsupported backend %s.\n" % backend)
 
-
-    def cpp_vec_tensor_to_py_tensor(self,cpp_vec_tensor):
-        py_tensors=list()
+    def cpp_vec_tensor_to_py_tensor(self, cpp_vec_tensor):
+        py_tensors = list()
         for cTensor in cpp_vec_tensor:
             new_t = tensor.Tensor()
             new_t.data = cTensor
@@ -3309,7 +3307,8 @@ class LSTM(RNN_Base):
             inputs = xs + list((h0, c0))
             self.device_check(*inputs)
             # self.device_check(inputs[0], *self.params)
-            self.device_check(inputs[0], *(self.Wx + self.Wh + self.Bx + self.Bh))
+            self.device_check(inputs[0],
+                              *(self.Wx + self.Wh + self.Bx + self.Bh))
             batchsize = xs[0].shape[0]
             out = []
             h, c = self.step_forward(xs[0], h0, c0, self.Wx, self.Wh, self.Bx,
@@ -3328,14 +3327,17 @@ class LSTM(RNN_Base):
             cpp_x = singa.VecTensor()
             [cpp_x.append(i.data) for i in xs]
 
-            self.W = Tensor(shape=(self.rnn_handle.weights_size,), requires_grad=True, stores_grad=True)
+            self.W = Tensor(shape=(self.rnn_handle.weights_size,),
+                            requires_grad=True,
+                            stores_grad=True)
             self.W.gaussian(0.0, 1.0)
 
-            cpp_y = singa.GpuRNNForwardTraining(cpp_x, self.W.data, self.rnn_handle)
+            cpp_y = singa.GpuRNNForwardTraining(cpp_x, self.W.data,
+                                                self.rnn_handle)
             y = self.cpp_vec_tensor_to_py_tensor(cpp_y)
 
             if training:
-                self.buffer = {"cpp_y":cpp_y, "cpp_x": cpp_x}
+                self.buffer = {"cpp_y": cpp_y, "cpp_x": cpp_x}
 
             return y
         else:
@@ -3396,8 +3398,11 @@ class LSTM(RNN_Base):
             cpp_dy = singa.VecTensor()
             [cpp_dy.append(i.data) for i in dy]
 
-            cpp_dx = singa.GpuRNNBackwardx(self.buffer["cpp_y"], cpp_dy, self.W.data, self.rnn_handle)
-            cpp_dW = singa.GpuRNNBackwardW(self.buffer["cpp_x"], self.buffer["cpp_y"], self.rnn_handle)
+            cpp_dx = singa.GpuRNNBackwardx(self.buffer["cpp_y"], cpp_dy,
+                                           self.W.data, self.rnn_handle)
+            cpp_dW = singa.GpuRNNBackwardW(self.buffer["cpp_x"],
+                                           self.buffer["cpp_y"],
+                                           self.rnn_handle)
 
             dx = self.cpp_vec_tensor_to_py_tensor(cpp_dx)
             dW = self.cpp_vec_tensor_to_py_tensor([cpp_dW])[0]
