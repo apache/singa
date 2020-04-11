@@ -1806,13 +1806,13 @@ class SeparableConv2d(Layer):
     """
 
     def __init__(
-        self,
-        in_channels,
-        out_channels,
-        kernel_size,
-        stride=1,
-        padding=0,
-        bias=False,
+            self,
+            in_channels,
+            out_channels,
+            kernel_size,
+            stride=1,
+            padding=0,
+            bias=False,
     ):
         """
         Args:
@@ -3132,15 +3132,15 @@ class RNN(RNN_Base):
     """
 
     def __init__(
-        self,
-        input_size,
-        hidden_size,
-        num_layers=1,
-        nonlinearity="tanh",
-        bias=True,
-        batch_first=False,
-        dropout=0,
-        bidirectional=False,
+            self,
+            input_size,
+            hidden_size,
+            num_layers=1,
+            nonlinearity="tanh",
+            bias=True,
+            batch_first=False,
+            dropout=0,
+            bidirectional=False,
     ):
         """
         Args:
@@ -3212,15 +3212,15 @@ class LSTM(RNN_Base):
     """
 
     def __init__(
-        self,
-        input_size,
-        hidden_size,
-        nonlinearity="tanh",
-        num_layers=1,
-        bias=True,
-        batch_first=False,
-        dropout=0,
-        bidirectional=False,
+            self,
+            input_size,
+            hidden_size,
+            nonlinearity="tanh",
+            num_layers=1,
+            bias=True,
+            batch_first=False,
+            dropout=0,
+            bidirectional=False,
     ):
         """
         Args:
@@ -3244,14 +3244,14 @@ class LSTM(RNN_Base):
         self.Wx = []
         for i in range(4):
             w = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
-            w.gaussian(0.0, 1.0)
+            w.gaussian(0.0, 0.01)
             self.Wx.append(w)
 
         Wh_shape = (hidden_size, hidden_size)
         self.Wh = []
         for i in range(4):
             w = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
-            w.gaussian(0.0, 1.0)
+            w.gaussian(0.0, 0.01)
             self.Wh.append(w)
 
         Bx_shape = (hidden_size,)

@@ -49,7 +49,7 @@ def main(args):
         default=False,
         dest='confirmed',
         action='store_true',
-        help="In interactive mode, for user to confirm. Could be used in sript")
+        help="In interactive mode, for user to confirm. Could be used in script")
     parser.add_argument('type',
                         choices=['major', 'minor', 'patch', 'rc', 'stable'],
                         help="Release types")

@@ -61,7 +61,7 @@ This release includes following changes:
     After analyzing the dependency, the computational graph is created, which is further analyzed for
     speed and memory optimization. To enable this feature, use the [Module API](./python/singa/module.py).
 
-  * New website based on Docusaurus. The documentation files are moved to a separate repo [singa-doc]](https://github.com/apache/singa-doc).
+  * New website based on Docusaurus. The documentation files are moved to a separate repo [singa-doc](https://github.com/apache/singa-doc).
     The static website files are stored at [singa-site](https://github.com/apache/singa-site).
 
   * DNNL([Deep Neural Network Library](https://github.com/intel/mkl-dnn)), powered by Intel, 
