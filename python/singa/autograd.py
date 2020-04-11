@@ -3350,17 +3350,26 @@ class _RNN_cudnn(Operation):
         return dx, dW
 
 class RNN_cudnn(Layer):
-    def __init__(self, input_size, hidden_size, rnn_mode=2):
+    def __init__(self, input_size, hidden_size, rnn_mode="lstm"):
         """
             Args:
                 input_size: input feature dim
                 hidden_size: hidden feature dim
-                rnn_mode: could be 0 - RNN RELU, 1 - RNN TANH, 2 - LSTM, 3 - GRU
+                rnn_mode: accepted value: "vanilla", "lstm", "gru"
         """
         if not singa.USE_CUDA:
             raise Exception("Could not use cudnn without cuda compiled.\n")
 
         self.rnn_mode = rnn_mode
+
+        # cudnn_rnn_mode: 0 - RNN RELU, 1 - RNN TANH, 2 - LSTM, 3 - GRU
+        if self.rnn_mode == "lstm":
+            self.cudnn_rnn_mode = 2
+        elif self.rnn_mode == "vanilla":
+            self.cudnn_rnn_mode = 1
+        elif self.rnn_mode == "gru":
+            self.cudnn_rnn_mode = 3
+
         self.input_size = input_size
         self.hidden_size = hidden_size
 
@@ -3369,7 +3378,7 @@ class RNN_cudnn(Layer):
             cpp_x = singa.VecTensor()
             [cpp_x.append(i.data) for i in x]
 
-            self.handle = singa.CudnnRNNHandle(cpp_x, self.input_size, self.hidden_size, self.rnn_mode)
+            self.handle = singa.CudnnRNNHandle(cpp_x, self.input_size, self.hidden_size, self.cudnn_rnn_mode)
 
             self.W = Tensor(shape=(self.handle.weights_size,),
                             requires_grad=True,
