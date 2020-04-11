@@ -427,28 +427,6 @@ class TestPythonOperation(unittest.TestCase):
     def test_vanillaRNN_gpu_tiny_ops_shape_check_gpu(self):
         self._vanillaRNN_gpu_tiny_ops_shape_check_helper(gpu_dev)
 
-    def test_LSTM_cudnn_tiny_ops_shape_check_helper(self):
-        dev = gpu_dev
-
-        hidden_size = 7
-        seq_length = 5
-        batch_size = 6
-        feature_size = 3
-
-        x = list()
-        for i in range(seq_length):
-            tmp_np = np.random.random(
-                (batch_size, feature_size)).astype(np.float32)
-            tmp = tensor.Tensor(device=dev, data=tmp_np)
-            x.append(tmp)
-
-        lstm = autograd.LSTM(feature_size,
-                             hidden_size,
-                             backend="cudnn",
-                             inputs=x)
-        y = lstm(x, None)
-        dx, dW = lstm.backward(y)
-
     def _LSTM_gpu_tiny_ops_shape_check_helper(self, dev):
         # gradients shape check.
         inputs, target, h0 = prepare_inputs_targets_for_rnn_test(dev)
