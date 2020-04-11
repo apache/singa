@@ -22,3 +22,5 @@ github:
   features:
     # Enable wiki for documentation
     wiki: true
+    # Enable issues on github
+    issues: true
