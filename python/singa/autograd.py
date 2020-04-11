@@ -3330,54 +3330,77 @@ class LSTM(RNN_Base):
         return hout, cout
 
 
-class _RNN_cudnn(Operation):
+class _RNN(Operation):
+    """ RNN operation with c++ backend
+    """
     def __init__(self, handle):
-        super(_RNN_cudnn, self).__init__()
+        assert singa.USE_CUDA is True, "Not able to run without CUDA"
+        super(_RNN, self).__init__()
         self.handle = handle
 
     def forward(self, x, W):
-        y = singa.GpuRNNForwardTraining(x, W, self.handle)
+        # TODO: CPU forward
+
+        # GPU forward
         if training:
+            y = singa.GpuRNNForwardTraining(x, W, self.handle)
             self.inputs = (x, W, y)
+        else:
+            y = singa.GpuRNNForwardInference(x, W, self.handle)
+
         return y
 
     def backward(self, dy):
         assert training is True and hasattr(
             self, "inputs"), "Please set training as True before do BP. "
 
+        # TODO: CPU backward
+
+        # GPU backward
         dx = singa.GpuRNNBackwardx(self.inputs[2], dy, self.inputs[1], self.handle)
         dW = singa.GpuRNNBackwardW(self.inputs[0], self.inputs[2], self.handle)
         return dx, dW
 
-class RNN_cudnn(Layer):
+class RNN_direct(Layer):
+    """ `RNN_direct` class implements with c++ backend and run the operation
+          directly on cuDNN
+
+        While `RNN` class implements with high level singa API
+    """
     def __init__(self, input_size, hidden_size, rnn_mode="lstm"):
         """
             Args:
                 input_size: input feature dim
                 hidden_size: hidden feature dim
-                rnn_mode: accepted value: "vanilla", "lstm", "gru"
+                rnn_mode: accepted value: "vanilla", "tanh", "relu",  "lstm", "gru"
         """
-        if not singa.USE_CUDA:
-            raise Exception("Could not use cudnn without cuda compiled.\n")
+        assert singa.USE_CUDA is True, "Not able to run without CUDA"
 
         self.rnn_mode = rnn_mode
+        self.input_size = input_size
+        self.hidden_size = hidden_size
 
+        # TODO: CPU parameter
+
+        # GPU parameter
         # cudnn_rnn_mode: 0 - RNN RELU, 1 - RNN TANH, 2 - LSTM, 3 - GRU
         if self.rnn_mode == "lstm":
             self.cudnn_rnn_mode = 2
-        elif self.rnn_mode == "vanilla":
+        elif self.rnn_mode == "vanilla" or self.rnn_mode == "tanh":
             self.cudnn_rnn_mode = 1
+        elif self.rnn_mode == "relu":
+            self.cudnn_rnn_mode = 0
         elif self.rnn_mode == "gru":
             self.cudnn_rnn_mode = 3
-
-        self.input_size = input_size
-        self.hidden_size = hidden_size
 
     def __call__(self, x):
         if not hasattr(self, "handle"):
             cpp_x = singa.VecTensor()
             [cpp_x.append(i.data) for i in x]
 
+            # TODO: CPU handle
+
+            # GPU handle
             self.handle = singa.CudnnRNNHandle(cpp_x, self.input_size, self.hidden_size, self.cudnn_rnn_mode)
 
             self.W = Tensor(shape=(self.handle.weights_size,),
@@ -3385,14 +3408,14 @@ class RNN_cudnn(Layer):
                             stores_grad=True)
             self.W.gaussian(0.0, 1.0)
 
-        return _RNN_cudnn(self.handle)(x, self.W)[0]
+        return _RNN(self.handle)(x, self.W)[0]
 
     def get_params(self):
         return self.W
 
     def set_params(self, **parameters):
         self.allow_params = ["W"]
-        super(RNN_cudnn, self).set_params(**parameters)
+        super(RNN_direct, self).set_params(**parameters)
 
 
 class Abs(Operation):
