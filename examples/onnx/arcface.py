@@ -27,7 +27,7 @@ from singa import tensor
 from singa import autograd
 from singa import sonnx
 import onnx
-from utils import download_model, update_batch_size, check_exist_or_download
+from utils import download_model, check_exist_or_download
 
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
@@ -77,13 +77,10 @@ if __name__ == "__main__":
     download_model(url)
     onnx_model = onnx.load(model_path)
 
-    # set batch size
-    onnx_model = update_batch_size(onnx_model, 2)
-
     # prepare the model
     logging.info("prepare model...")
     dev = device.create_cuda_gpu()
-    sg_ir = sonnx.prepare(onnx_model, device=dev)
+    sg_ir = sonnx.prepare(onnx_model, device=dev, batchsize=2)
     autograd.training = False
     model = Infer(sg_ir)
 
