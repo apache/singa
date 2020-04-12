@@ -31,7 +31,7 @@ from run_onnx_squad import read_squad_examples, convert_examples_to_features, Ra
 
 import sys
 sys.path.append(os.path.dirname(__file__) + '/..')
-from utils import download_model, update_batch_size, check_exist_or_download
+from utils import download_model, check_exist_or_download
 
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(message)s')
@@ -107,8 +107,6 @@ if __name__ == "__main__":
     download_model(url)
     onnx_model = onnx.load(model_path)
 
-    # set batch size
-    onnx_model = update_batch_size(onnx_model, batch_size)
     dev = device.create_cuda_gpu()
     autograd.training = False
 
@@ -138,7 +136,8 @@ if __name__ == "__main__":
             sg_ir = sonnx.prepare(onnx_model,
                                   device=dev,
                                   init_inputs=inputs,
-                                  keep_initializers_as_inputs=False)
+                                  keep_initializers_as_inputs=False, 
+                                  batchsize=bs)
             model = Infer(sg_ir)
 
         x_batch = []

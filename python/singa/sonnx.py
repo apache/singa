@@ -1985,6 +1985,17 @@ class SingaBackend(Backend):
                     tensor_map[key] = val
                 singa_ops.extend([singa_op(node.name, node, handle, forward)])
         return weights, singa_ops
+    @classmethod
+    def update_batch_size(cls, onnx_model, batch_size):
+        # the inputs which are not in the initializer are the graph's inputs
+        graph = onnx_model.graph
+        initializer = set(t.name for t in graph.initializer)
+        for t in graph.input:
+            if t.name not in initializer:
+                t.type.tensor_type.shape.dim[0].dim_value = batch_size
+        for t in graph.output:
+            t.type.tensor_type.shape.dim[0].dim_value = batch_size
+        return onnx_model
 
     @classmethod
     def prepare(cls, model, device, **kwargs):
@@ -2006,6 +2017,10 @@ class SingaBackend(Backend):
         # sometimes, input contains all initializer's info, sometimes, may not
         cls.keep_initializers_as_inputs = kwargs.get(
             'keep_initializers_as_inputs', True)
+        # optimize and infer the shape of the model
+        batchsize = kwargs.get("batchsize", None)
+        if batchsize is not None:
+            model = cls.update_batch_size(model, batchsize)
         # optimize and infer the shape of the model
         try:
             model = onnx.utils.polish_model(model)
