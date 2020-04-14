@@ -86,7 +86,7 @@ class Data(object):
         data = [self.char_to_idx[c] for c in self.raw_data]
         # seq_length + 1 for the data + label
         nsamples = len(data) // (1 + seq_length)
-        data = data[0:300 * (1 + seq_length)]
+        data = data[0: nsamples * (1 + seq_length)]
         data = np.asarray(data, dtype=np.int32)
         data = np.reshape(data, (-1, seq_length + 1))
         # shuffle all sequences
@@ -172,13 +172,13 @@ def sample(model, data, dev, nsamples=100, use_max=False):
                 y = tensor.softmax(outputs[-1])
 
 
-def evaluate(model, data, batch_size, seq_length, dev):
+def evaluate(model, data, batch_size, seq_length, dev, inputs, labels):
     model.eval()
     val_loss = 0.0
     for b in range(data.num_test_batch):
         batch = data.val_dat[b * batch_size:(b + 1) * batch_size]
         inputs, labels = convert(batch, batch_size, seq_length, data.vocab_size,
-                                 dev)
+                                 dev, inputs, labels)
         model.reset_states(dev)
         y = model(inputs)
         loss = model.loss(y, labels)[0]
@@ -217,8 +217,8 @@ def train(data,
         print('\nEpoch %d, train loss is %f' %
               (epoch, train_loss / data.num_train_batch / seq_length))
 
-        # evaluate(model, data, batch_size, seq_length, cuda, inputs, labels)
-        # sample(model, data, cuda)
+        evaluate(model, data, batch_size, seq_length, cuda, inputs, labels)
+        sample(model, data, cuda)
 
 
 if __name__ == '__main__':
