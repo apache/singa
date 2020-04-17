@@ -1892,15 +1892,10 @@ class BatchNorm2d(Layer):
         self.device_check(x, self.scale, self.bias, self.running_mean,
                           self.running_var)
 
-        if x.device.id() == -1:
-            if not hasattr(self, "handle"):
+        if not hasattr(self, "handle"):
+            if x.device.id() == -1:
                 self.handle = singa.BatchNormHandle(self.momentum, x.data)
-            elif x.shape[0] != self.handle.batchsize:
-                self.handle = singa.BatchNormHandle(self.momentum, x.data)
-        else:
-            if not hasattr(self, "handle"):
-                self.handle = singa.CudnnBatchNormHandle(self.momentum, x.data)
-            elif x.shape[0] != self.handle.batchsize:
+            else:
                 self.handle = singa.CudnnBatchNormHandle(self.momentum, x.data)
 
         y = batchnorm_2d(
