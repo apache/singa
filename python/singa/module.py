@@ -48,7 +48,10 @@ class Graph(type):
                     # deconstruct Operations before running the entire graph
                     if name == 'optim':
                         for fname in self._results:
-                            self._results[fname].creator = None
+                            if not isinstance(self._results[fname], list):
+                                self._results[fname] = [self._results[fname]]
+                            for _matrix in self._results[fname]:
+                                _matrix.creator = None
                         # make sure all Operations are deallocated
                         gc.collect()
                     # add result tensor
