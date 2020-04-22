@@ -586,6 +586,7 @@ def identity(x):
     """
     return Identity()(x)[0]
 
+
 class Matmul(Operation):
     """
     Init matrix multiplication operator.
@@ -710,6 +711,7 @@ def add_bias(x, b, axis=0):
         the result Tensor
     """
     return AddBias(axis)(x, b)[0]
+
 
 class Reshape(Operation):
     """
@@ -887,6 +889,7 @@ class Elu(Operation):
     `f(x) = alpha * (exp(x) - 1.)` for x < 0, `f(x) = x` for x >= 0., is applied to 
     the tensor elementwise.
     """
+
     def __init__(self, alpha=1.):
         """
         Args:
@@ -948,6 +951,7 @@ class Equal(Operation):
     Returns the tensor resulted from performing the equal logical operation 
     elementwise on the input tensors x and y.
     """
+
     def __init__(self):
         super(Equal, self).__init__()
 
@@ -1224,12 +1228,8 @@ class MeanSquareError(Operation):
     def backward(self, dy=1.0):
         dx = self.err
         dx *= float(1 / self.err.shape()[0])
-        if isinstance(dy, float):
-            # dtype of dy: float
-            dx *= dy
-            return dx, None
-        elif isinstance(dy, CTensor):
-            pass  # TODO, broadcast elementwise multiply seems not support
+        dx *= dy
+        return dx, None
 
 
 def mse_loss(x, t):
@@ -1279,9 +1279,8 @@ class Flatten(Operation):
         shape, axis = self.shape, self.axis
         # the axis must be within this range (0, r-1)
         assert axis <= len(
-            shape
-        ) - 1 or axis >= 0, "the axis must be within (0, %d-1)" % len(
-            shape)
+            shape) - 1 or axis >= 0, "the axis must be within (0, %d-1)" % len(
+                shape)
         # calculate the new shape
         new_shape = (1, int(np.prod(shape))) if axis == 0 else (
             int(np.prod(shape[0:axis]).astype(int)),
@@ -1807,13 +1806,13 @@ class SeparableConv2d(Layer):
     """
 
     def __init__(
-        self,
-        in_channels,
-        out_channels,
-        kernel_size,
-        stride=1,
-        padding=0,
-        bias=False,
+            self,
+            in_channels,
+            out_channels,
+            kernel_size,
+            stride=1,
+            padding=0,
+            bias=False,
     ):
         """
         Args:
@@ -2387,7 +2386,7 @@ class Tanh(Operation):
             dy (CTensor): the gradient tensor from upper operations
         Returns: 
             CTensor, the gradient over input
-        """     
+        """
         dx = singa.__mul__(self.cache[0], self.cache[0])
         dx = singa.MultFloat(dx, -1.0)
         dx = singa.AddFloat(dx, 1.0)
@@ -2431,7 +2430,7 @@ class Cos(Operation):
             dy (CTensor): the gradient tensor from upper operations
         Returns: 
             CTensor, the gradient over input
-        """     
+        """
         dx = singa.Sin(self.input)
         dx = singa.MultFloat(dx, -1.0)
         dx *= dy
@@ -2445,7 +2444,7 @@ def cos(x):
         x (Tensor): Input tensor
     Returns: 
         Tensor, the output
-    """    
+    """
 
     return Cos()(x)[0]
 
@@ -2475,7 +2474,7 @@ class Cosh(Operation):
             dy (CTensor): the gradient tensor from upper operations
         Returns: 
             CTensor, the gradient over input
-        """     
+        """
         dx = singa.Sinh(self.input)
         dx *= dy
         return dx
@@ -2518,7 +2517,7 @@ class Acos(Operation):
             dy (CTensor): the gradient tensor from upper operations
         Returns: 
             CTensor, the gradient over input
-        """     
+        """
         dx = singa.Square(self.input)
         dx = singa.MultFloat(dx, -1.0)
         dx = singa.AddFloat(dx, 1.0)
@@ -2565,7 +2564,7 @@ class Acosh(Operation):
             dy (CTensor): the gradient tensor from upper operations
         Returns: 
             CTensor, the gradient over input
-        """     
+        """
         dx = singa.SubFloat(self.input, 1.0)
         dx = singa.Sqrt(dx)
         temp = singa.AddFloat(self.input, 1.0)
@@ -2612,7 +2611,7 @@ class Sin(Operation):
             dy (CTensor): the gradient tensor from upper operations
         Returns: 
             CTensor, the gradient over input
-        """     
+        """
         dx = singa.Cos(self.input)
         dx *= dy
         return dx
@@ -2654,7 +2653,7 @@ class Sinh(Operation):
             dy (CTensor): the gradient tensor from upper operations
         Returns: 
             CTensor, the gradient over input
-        """     
+        """
         dx = singa.Cosh(self.input)
         dx *= dy
         return dx
@@ -2696,7 +2695,7 @@ class Asin(Operation):
             dy (CTensor): the gradient tensor from upper operations
         Returns: 
             CTensor, the gradient over input
-        """     
+        """
         dx = singa.Square(self.input)
         dx = singa.MultFloat(dx, -1.0)
         dx = singa.AddFloat(dx, 1.0)
@@ -2712,7 +2711,7 @@ def asin(x):
         x (Tensor): Input tensor
     Returns: 
         Tensor, the output
-    """    
+    """
 
     return Asin()(x)[0]
 
@@ -2742,7 +2741,7 @@ class Asinh(Operation):
             dy (CTensor): the gradient tensor from upper operations
         Returns: 
             CTensor, the gradient over input
-        """             
+        """
         dx = singa.Square(self.input)
         dx = singa.AddFloat(dx, 1.0)
         dx = singa.PowFloat(dx, -0.5)
@@ -2786,7 +2785,7 @@ class Tan(Operation):
             dy (CTensor): the gradient tensor from upper operations
         Returns: 
             CTensor, the gradient over input
-        """     
+        """
         dx = singa.Cos(self.input)
         dx = singa.Square(dx)
         dx = singa.PowFloat(dx, -1.0)
@@ -2830,7 +2829,7 @@ class Atan(Operation):
             dy (CTensor): the gradient tensor from upper operations
         Returns: 
             CTensor, the gradient over input
-        """     
+        """
         dx = singa.Square(self.input)
         dx = singa.AddFloat(dx, 1.0)
         dx = singa.PowFloat(dx, -1.0)
@@ -2845,7 +2844,7 @@ def atan(x):
         x (Tensor): Input tensor
     Returns: 
         Tensor, the output
-    """    
+    """
     return Atan()(x)[0]
 
 
@@ -2874,7 +2873,7 @@ class Atanh(Operation):
             dy (CTensor): the gradient tensor from upper operations
         Returns: 
             CTensor, the gradient over input
-        """     
+        """
         dx = singa.Square(self.input)
         dx = singa.MultFloat(dx, -1.0)
         dx = singa.AddFloat(dx, 1.0)
@@ -2890,7 +2889,7 @@ def atanh(x):
         x (Tensor): Input tensor
     Returns: 
         Tensor, the output
-    """   
+    """
     return Atanh()(x)[0]
 
 
@@ -2920,7 +2919,7 @@ class Sigmoid(Operation):
             dy (CTensor): the gradient tensor from upper operations
         Returns: 
             CTensor, the gradient over input
-        """     
+        """
         dx = singa.MultFloat(self.cache[0], -1.0)
         dx = singa.AddFloat(dx, 1.0)
         dx = singa.__mul__(self.cache[0], dx)
@@ -2935,7 +2934,7 @@ def sigmoid(x):
         x (Tensor): Input tensor
     Returns: 
         Tensor, the output
-    """   
+    """
     return Sigmoid()(x)[0]
 
 
@@ -2943,7 +2942,7 @@ class Mul(Operation):
     """
     Performs element-wise binary multiplication (with Numpy-style broadcasting 
     support).        
-    """   
+    """
 
     def __init__(self):
         super(Mul, self).__init__()
@@ -3034,7 +3033,7 @@ class Unsqueeze(Operation):
             dy (CTensor): the gradient tensor from upper operations
         Returns: 
             CTensor, the gradient over input
-        """     
+        """
         return singa.Reshape(dy, self.cache)
 
 
@@ -3046,7 +3045,7 @@ def unsqueeze(x, axis=-1):
         axis (list of int): the dimensions to be inserted.
     Returns: 
         Tensor, the output
-    """  
+    """
     return Unsqueeze(axis)(x)[0]
 
 
@@ -3133,15 +3132,15 @@ class VanillaRNN(RNN_Base):
     """
 
     def __init__(
-        self,
-        input_size,
-        hidden_size,
-        num_layers=1,
-        nonlinearity="tanh",
-        bias=True,
-        batch_first=False,
-        dropout=0,
-        bidirectional=False,
+            self,
+            input_size,
+            hidden_size,
+            num_layers=1,
+            nonlinearity="tanh",
+            bias=True,
+            batch_first=False,
+            dropout=0,
+            bidirectional=False,
     ):
         """
         Args:
@@ -3213,15 +3212,15 @@ class LSTM(RNN_Base):
     """
 
     def __init__(
-        self,
-        input_size,
-        hidden_size,
-        nonlinearity="tanh",
-        num_layers=1,
-        bias=True,
-        batch_first=False,
-        dropout=0,
-        bidirectional=False,
+            self,
+            input_size,
+            hidden_size,
+            nonlinearity="tanh",
+            num_layers=1,
+            bias=True,
+            batch_first=False,
+            dropout=0,
+            bidirectional=False,
     ):
         """
         Args:
@@ -3245,14 +3244,14 @@ class LSTM(RNN_Base):
         self.Wx = []
         for i in range(4):
             w = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
-            w.gaussian(0.0, 1.0)
+            w.gaussian(0.0, 0.01)
             self.Wx.append(w)
 
         Wh_shape = (hidden_size, hidden_size)
         self.Wh = []
         for i in range(4):
             w = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
-            w.gaussian(0.0, 1.0)
+            w.gaussian(0.0, 0.01)
             self.Wh.append(w)
 
         Bx_shape = (hidden_size,)
@@ -3513,7 +3512,7 @@ class Abs(Operation):
             dy (CTensor): the gradient tensor from upper operations
         Returns: 
             CTensor, the gradient over input
-        """     
+        """
         dx = singa.Sign(self.input)
         dx *= dy
         return dx
@@ -3903,7 +3902,7 @@ class Min(Operation):
             *x (a list of CTensor): List of tensors for max.
         Returns: 
             CTensor, the output
-        """    
+        """
         assert (len(x) > 0)
         self.l = len(x)
         if len(x) == 1:
@@ -4230,7 +4229,7 @@ class Max(Operation):
         Returns: 
             CTensor, the output
             tuple of CTensor, mask tensor
-        """    
+        """
         m = singa.__sub__(a, b)
         mask0 = singa.GEFloat(m, 0)
         mask1 = singa.LTFloat(m, 0)
@@ -4243,7 +4242,7 @@ class Max(Operation):
             *x (a list of CTensor): List of tensors for max.
         Returns: 
             CTensor, the output
-        """    
+        """
         assert (len(x) > 0)
         self.l = len(x)
         if len(x) == 1:
@@ -5142,9 +5141,10 @@ class Split(Operation):
             the output CTensor.
         """
         x_shape = list(x.shape())
-        self.axis  = self.axis % len(x_shape)
+        self.axis = self.axis % len(x_shape)
         if self.parts is None:
-            self.parts = [x_shape[self.axis]//self.num_output] * self.num_output
+            self.parts = [x_shape[self.axis] // self.num_output
+                         ] * self.num_output
         xs = []
         _s = 0
         for _l in self.parts:
@@ -5458,7 +5458,6 @@ class Cast(Operation):
             x = x.AsType(self.to)
         return x
 
-
     def backward(self, dy):
         """
         backward of Cast
@@ -5528,14 +5527,15 @@ class OneHot(Operation):
             self.axis += (rank + 1)
         ls = values.shape[0:self.axis]
         rs = values.shape[self.axis:rank]
-        targets = np.reshape(depth_range, (1,) * len(ls) + depth_range.shape + (1,) * len(rs))
+        targets = np.reshape(depth_range, (1,) * len(ls) + depth_range.shape +
+                             (1,) * len(rs))
         values = np.reshape(np.mod(values, self.depth), ls + (1,) + rs)
         np_tensor = np.asarray(targets == values, dtype=np.float32)
-        np_tensor = np_tensor * (self.values[1] - self.values[0]) + self.values[0]
+        np_tensor = np_tensor * (self.values[1] -
+                                 self.values[0]) + self.values[0]
         tmp_tensor = tensor.from_numpy(np_tensor)
         tmp_tensor.to_device(indices.device())
         return tmp_tensor.data
-
 
     def backward(self, dy):
         """

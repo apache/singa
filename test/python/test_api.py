@@ -396,9 +396,9 @@ class TestAPI(unittest.TestCase):
                 tensor.Tensor(device=dev, data=rv_0).data)
 
             np.testing.assert_array_almost_equal(
-                y_1, tensor.to_numpy(_cTensor_to_pyTensor(y_2_c)))
+                y_1, tensor.to_numpy(_cTensor_to_pyTensor(y_2_c)), decimal=5)
             np.testing.assert_array_almost_equal(
-                bm_1, tensor.to_numpy(_cTensor_to_pyTensor(bm_2_c)))
+                bm_1, tensor.to_numpy(_cTensor_to_pyTensor(bm_2_c)), decimal=5)
             #print(bv_1)
             #print(tensor.to_numpy(_cTensor_to_pyTensor(bv_2_c)))
             #np.testing.assert_array_almost_equal(
