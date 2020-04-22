@@ -33,6 +33,10 @@ CudnnRNNHandle::CudnnRNNHandle(const vector<Tensor> &x, const int feature_size,
       hidden_size(hidden_size),
       mode(mode),
       num_layers(num_layers) {
+
+  CHECK_EQ(bias, 1) << "Cudnn implementation always include bias";
+  CHECK(bidirectional != 0 && bidirectional != 1) << "bidirectional shoule 0 or 1";
+
   dev = x[0].device();
   ctx = x[0].device()->context(0);
 
@@ -90,7 +94,8 @@ void CudnnRNNHandle::init_rnn_desc() {
   algo = CUDNN_RNN_ALGO_STANDARD;  // TODO
   CUDNN_CHECK(cudnnSetRNNDescriptor(ctx->cudnn_handle, rnnDesc, hidden_size,
                                     num_layers, dropoutDesc, CUDNN_LINEAR_INPUT,
-                                    CUDNN_UNIDIRECTIONAL, RNNMode,
+                                    bidirectional ? CUDNN_BIDIRECTIONAL : CUDNN_UNIDIRECTIONAL,
+                                    RNNMode,
                                     algo,  // CUDNN_RNN_ALGO_STANDARD,
                                     CUDNN_DATA_FLOAT));
 }
@@ -153,7 +158,7 @@ void CudnnRNNHandle::update_data_desc(const vector<Tensor> &x) {
     CUDNN_CHECK(cudnnSetTensorNdDescriptor(dxDesc[i], CUDNN_DATA_FLOAT, 3, dimA,
                                            strideA));
     dimA[0] = x[i].shape(0);
-    dimA[1] = hidden_size;
+    dimA[1] = bidirectional ? hidden_size * 2 : hidden_size;
     dimA[2] = 1;
 
     strideA[0] = dimA[2] * dimA[1];
@@ -165,7 +170,7 @@ void CudnnRNNHandle::update_data_desc(const vector<Tensor> &x) {
                                            strideA));
   }
 
-  dimA[0] = num_layers;
+  dimA[0] = num_layers * (bidirectional ? 2 : 1);
   dimA[1] = batch_size;
   dimA[2] = hidden_size;
 
