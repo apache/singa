@@ -3127,7 +3127,7 @@ class RNN_Base(Layer):
         raise NotImplementedError
 
 
-class RNN(RNN_Base):
+class VanillaRNN(RNN_Base):
     """
     Generate a RNN operator
     """
@@ -3212,16 +3212,17 @@ class LSTM(RNN_Base):
     Generate a LSTM operator
     """
 
-    def __init__(self,
-                 input_size,
-                 hidden_size,
-                 nonlinearity="tanh",
-                 num_layers=1,
-                 bias=True,
-                 batch_first=False,
-                 dropout=0,
-                 bidirectional=False,
-                 ):
+    def __init__(
+        self,
+        input_size,
+        hidden_size,
+        nonlinearity="tanh",
+        num_layers=1,
+        bias=True,
+        batch_first=False,
+        dropout=0,
+        bidirectional=False,
+    ):
         """
         Args:
             input_size (int):  The number of expected features in the input x
@@ -3278,8 +3279,7 @@ class LSTM(RNN_Base):
         inputs = xs + list((h0, c0))
         self.device_check(*inputs)
         # self.device_check(inputs[0], *self.params)
-        self.device_check(inputs[0],
-                          *(self.Wx + self.Wh + self.Bx + self.Bh))
+        self.device_check(inputs[0], *(self.Wx + self.Wh + self.Bx + self.Bh))
         batchsize = xs[0].shape[0]
         out = []
         h, c = self.step_forward(xs[0], h0, c0, self.Wx, self.Wh, self.Bx,
@@ -3333,6 +3333,7 @@ class LSTM(RNN_Base):
 class _RNN(Operation):
     """ RNN operation with c++ backend
     """
+
     def __init__(self, handle):
         assert singa.USE_CUDA is True, "Not able to run without CUDA"
         super(_RNN, self).__init__()
@@ -3357,17 +3358,29 @@ class _RNN(Operation):
         # TODO: CPU backward
 
         # GPU backward
-        dx = singa.GpuRNNBackwardx(self.inputs[2], dy, self.inputs[1], self.handle)
+        dx = singa.GpuRNNBackwardx(self.inputs[2], dy, self.inputs[1],
+                                   self.handle)
         dW = singa.GpuRNNBackwardW(self.inputs[0], self.inputs[2], self.handle)
         return dx, dW
 
-class RNN_direct(Layer):
+
+class CudnnRNN(Layer):
     """ `RNN_direct` class implements with c++ backend and run the operation
           directly on cuDNN
 
         While `RNN` class implements with high level singa API
     """
-    def __init__(self, input_size, hidden_size, rnn_mode="lstm"):
+
+    def __init__(self,
+                 input_size,
+                 hidden_size,
+                 nonlinearity="tanh",
+                 num_layers=1,
+                 bias=True,
+                 batch_first=False,
+                 dropout=0,
+                 bidirectional=False,
+                 rnn_mode="vanilla"):
         """
             Args:
                 input_size: input feature dim
@@ -3379,6 +3392,9 @@ class RNN_direct(Layer):
         self.rnn_mode = rnn_mode
         self.input_size = input_size
         self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.dropout = dropout
+        self.bidirectional = 1 if bidirectional else 0
 
         # TODO: CPU parameter
 
@@ -3401,7 +3417,11 @@ class RNN_direct(Layer):
             # TODO: CPU handle
 
             # GPU handle
-            self.handle = singa.CudnnRNNHandle(cpp_x, self.input_size, self.hidden_size, self.cudnn_rnn_mode)
+            self.handle = singa.CudnnRNNHandle(cpp_x, self.input_size,
+                                               self.hidden_size,
+                                               self.cudnn_rnn_mode,
+                                               self.num_layers, 1, self.dropout,
+                                               self.bidirectional)
 
             self.W = Tensor(shape=(self.handle.weights_size,),
                             requires_grad=True,
@@ -3416,6 +3436,59 @@ class RNN_direct(Layer):
     def set_params(self, **parameters):
         self.allow_params = ["W"]
         super(RNN_direct, self).set_params(**parameters)
+
+
+def RNN(
+    input_size,
+    hidden_size,
+    num_layers=1,
+    nonlinearity="tanh",
+    bias=True,
+    batch_first=False,
+    dropout=0,
+    bidirectional=False,
+    mode="vanilla",
+    backend="cudnn",
+):
+    if backend == "cudnn":
+        return CudnnRNN(
+            input_size=input_size,
+            hidden_size=input_size,
+            nonlinearity=nonlinearity,
+            num_layers=num_layers,
+            bias=bias,
+            batch_first=batch_first,
+            dropout=dropout,
+            bidirectional=bidirectional,
+            rnn_mode=mode,
+        )
+    elif backend == "native":
+        if mode == "lstm":
+            return LSTM(
+                input_size=input_size,
+                hidden_size=input_size,
+                nonlinearity=nonlinearity,
+                num_layers=num_layers,
+                bias=bias,
+                batch_first=batch_first,
+                dropout=dropout,
+                bidirectional=bidirectional,
+            )
+        elif mode == "vanilla":
+            return VanillaRNN(
+                input_size=input_size,
+                hidden_size=input_size,
+                nonlinearity=nonlinearity,
+                num_layers=num_layers,
+                bias=bias,
+                batch_first=batch_first,
+                dropout=dropout,
+                bidirectional=bidirectional,
+            )
+        else:
+            raise TypeError("Invalid RNN mode %s" % mode)
+    else:
+        raise TypeError("Invalid RNN backend %s" % backend)
 
 
 class Abs(Operation):

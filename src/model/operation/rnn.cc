@@ -35,7 +35,7 @@ CudnnRNNHandle::CudnnRNNHandle(const vector<Tensor> &x, const int feature_size,
       num_layers(num_layers) {
 
   CHECK_EQ(bias, 1) << "Cudnn implementation always include bias";
-  CHECK(bidirectional != 0 && bidirectional != 1) << "bidirectional shoule 0 or 1";
+  CHECK(bidirectional == 0 || bidirectional == 1) << "bidirectional should be 0 or 1 not " << bidirectional;
 
   dev = x[0].device();
   ctx = x[0].device()->context(0);
