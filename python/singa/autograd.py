@@ -3364,7 +3364,7 @@ class _RNN(Operation):
 
 
 class CudnnRNN(Layer):
-    """ `RNN_direct` class implements with c++ backend and run the operation
+    """ `CudnnRNN` class implements with c++ backend and run the operation
           directly on cuDNN
 
         While `RNN` class implements with high level singa API
@@ -3437,7 +3437,7 @@ class CudnnRNN(Layer):
 
     def set_params(self, **parameters):
         self.allow_params = ["W"]
-        super(RNN_direct, self).set_params(**parameters)
+        super(CudnnRNN, self).set_params(**parameters)
 
 
 def RNN(
