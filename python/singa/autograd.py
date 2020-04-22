@@ -3426,11 +3426,14 @@ class CudnnRNN(Layer):
             self.W = Tensor(shape=(self.handle.weights_size,),
                             requires_grad=True,
                             stores_grad=True)
-            self.W.gaussian(0.0, 1.0)
 
-        return _RNN(self.handle)(x, self.W)[0]
+        # outputs returned is list
+        #   inputs has shape of {sequence length, batch size, feature size}
+        #   outputs has shape of {sequence length, batch size, hidden size}
+        return _RNN(self.handle)(x, self.W)
 
     def get_params(self):
+        assert hasattr(self, "W"), ("Should ran forward to generate Weights before getting it.")
         return self.W
 
     def set_params(self, **parameters):
