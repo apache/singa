@@ -227,8 +227,11 @@ def run(global_rank,
                   flush=True)
 
         # Evaluation Phase
+        if global_rank == 0:
+            print('Starting evaluation:')
+
         model.eval()
-        for b in range(num_val_batch):
+        for b in tqdm(range(num_val_batch)):
             x = val_x[b * batch_size:(b + 1) * batch_size]
             if model.dimension == 4:
                 if (image_size != model.input_size):
@@ -272,7 +275,7 @@ if __name__ == '__main__':
                         dest='max_epoch')
     parser.add_argument('--bs',
                         '--batch-size',
-                        default=64,
+                        default=32,
                         type=int,
                         help='batch size',
                         dest='batch_size')
