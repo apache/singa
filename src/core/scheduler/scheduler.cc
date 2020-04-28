@@ -124,8 +124,8 @@ void Graph::Debug() {
     max_free_num = std::max(max_free_num, it.size());
   }
 
-  for (int i = std::max(nodes_.size(), blocks_.size()); i > 0; i /= 10, ++w)
-    ;
+  for (int i = std::max(nodes_.size(), blocks_.size()); i > 0; i /= 10, ++w) {
+  }
 
   std::stringstream ss;
   ss << "begin nodes:[";
