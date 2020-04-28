@@ -189,7 +189,8 @@ void Graph::Debug() {
   for (auto it : blkInfos) {
     auto blkInfo = it;
     ss << "Block[" << std::setw(w) << blkInfo->id_ << "] addr[" << std::setw(w)
-       << blkInfo->blk_ << "] graph_ref[" << std::setw(w) << blkInfo->graph_ref_
+       << blkInfo->blk_ << "] size[" << std::setw(10) << blkInfo->blk_->size()
+       << "] graph_ref[" << std::setw(w) << blkInfo->graph_ref_
        << "] ref_count[" << std::setw(w) << blkInfo->blk_->ref_count() << "] ";
     switch (blkInfo->type_) {
       case BlockType::kInput:
