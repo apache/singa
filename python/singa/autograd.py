@@ -1409,6 +1409,9 @@ class Linear(Layer):
             self.device_check(x, self.W, self.b)
         else:
             self.device_check(x, self.W)
+        assert x.shape[1] == self.W.shape[0], (
+            "Linear layer expects input features size %d received %d" %
+            (self.W.shape[0], x.shape[1]))
         y = matmul(x, self.W)
         if self.bias:
             y = add_bias(y, self.b, axis=0)
