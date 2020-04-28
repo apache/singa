@@ -251,8 +251,6 @@ void Graph::RunGraph() {
     // step 3: release some blocks' data that won't be used later
     for (auto it : free_blocks_[curIndex]) {
       it->free_data();
-      if (blocks_[it]->id_ == 1907) {
-      }
     }
 
     /*
