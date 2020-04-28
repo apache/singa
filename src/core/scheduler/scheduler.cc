@@ -44,6 +44,11 @@ Graph::Graph(Device *device) : device_(device) {}
 
 Graph::~Graph() { Reset(); }
 
+Node *BlkInfo::used_node(const size_t idx) const {
+  CHECK_LT(idx, used_nodes_.size());
+  return used_nodes_[idx];
+}
+
 Node *Graph::node(const size_t idx) const {
   CHECK_LT(idx, nodes_.size());
   return nodes_[idx];
