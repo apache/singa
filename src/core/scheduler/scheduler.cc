@@ -102,7 +102,7 @@ void Graph::Reset() {
 }
 
 void Graph::Debug() {
-  if (dirty_) Analysis();
+  if (dirty_) Analyze();
 
   int w = 0;
   size_t max_in_num = 0, max_out_num = 0, max_next_num = 0, max_free_num = 0;
@@ -224,7 +224,7 @@ void Graph::Debug() {
 
 void Graph::RunGraph() {
   in_serial_ = false;
-  if (dirty_) Analysis();
+  if (dirty_) Analyze();
 
   SafeQueue<Node *> node_queue;
 
@@ -267,7 +267,7 @@ void Graph::RunGraph() {
 
 void Graph::RunInSerial() {
   in_serial_ = true;
-  if (dirty_) Analysis();
+  if (dirty_) Analyze();
 
   for (size_t i = 0; i < nodes_.size(); ++i) {
     Node *curNode = nodes_[i];
@@ -374,7 +374,7 @@ void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
   nodes_.push_back(node);
 }
 
-void Graph::Analysis() {
+void Graph::Analyze() {
   begin_nodes_.clear();
   next_nodes_.resize(nodes_.size());
   free_blocks_.clear();
@@ -384,21 +384,21 @@ void Graph::Analysis() {
     it.second->used_nodes_.clear();
   }
 
-  AnalysisNodes();
+  AnalyzeNodes();
 
-  AnalysisEdges();
+  AnalyzeEdges();
 
   dirty_ = false;
 
   // Debug();
 }
 
-void Graph::AnalysisNodes() {
+void Graph::AnalyzeNodes() {
   if (in_serial_) {
     begin_nodes_.push_back(nodes_[0]);
 
     for (size_t i = 0; i < nodes_.size() - 1; ++i) {
-      Node *curNode  = nodes_[i];
+      Node *curNode = nodes_[i];
 
       next_nodes_[i].push_back(nodes_[i + 1]);
 
@@ -482,7 +482,7 @@ void Graph::AnalysisNodes() {
   }
 }
 
-void Graph::AnalysisEdges() {
+void Graph::AnalyzeEdges() {
   for (auto &it : blocks_) {
     Block *blk = it.first;
     BlkInfo *blkInfo = it.second;

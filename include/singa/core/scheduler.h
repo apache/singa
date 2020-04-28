@@ -97,11 +97,7 @@ class Edge {
 class BlkInfo {
  public:
   BlkInfo(int id, Block *blk, BlockType type = BlockType::kUnknow)
-      : id_(id),
-        blk_(blk),
-        type_(type),
-        graph_ref_(0),
-        write_edge_(nullptr) {}
+      : id_(id), blk_(blk), type_(type), graph_ref_(0), write_edge_(nullptr) {}
 
   // getters of BlkInfo
   int id() const { return id_; }
@@ -165,10 +161,10 @@ class Graph {
   const BlockVec &free_blocks(const size_t idx) const;
 
  private:
-  void Analysis();
+  void Analyze();
   void FreeLoop();
-  void AnalysisNodes();
-  void AnalysisEdges();
+  void AnalyzeNodes();
+  void AnalyzeEdges();
   void AddSyncOp(function<void(Context *)> &&op);
 
   // static void CUDART_CB Callback(cudaStream_t stream, cudaError_t status,
