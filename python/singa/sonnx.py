@@ -2094,7 +2094,7 @@ class BaseModel(module.Module):
         """
         super(BaseModel, self).__init__()
         self.optimizer = optimizer
-        self.loss = loss
+        self.ls = loss
         self.g = sg_ir.model.graph
         self.tm = sg_ir.tensor_map
         self.oq = sg_ir.singa_ops
@@ -2126,7 +2126,7 @@ class BaseModel(module.Module):
         return [self.tm[outp] for outp in final_outputs]
 
     def loss(self, out, ty):
-        return self.loss(out, ty)
+        return self.ls(out, ty)
 
     def optim(self, loss, dist_option, spars):
         if dist_option == 'fp32':
