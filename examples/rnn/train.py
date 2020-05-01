@@ -197,7 +197,7 @@ def train(data,
     cuda = device.create_cuda_gpu()
     model = CharRNN(data.vocab_size, hidden_size)
     model.on_device(cuda)
-    model.graph(True, True)
+    model.graph(True, False)
 
     inputs, labels = None, None
 

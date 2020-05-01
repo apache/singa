@@ -28,6 +28,7 @@
 #include "singa/core/tensor.h"
 #include "singa/singa_config.h"
 
+typedef std::vector<int> IntVec;
 using singa::Blk2InfoMap;
 using singa::BlkInfo;
 using singa::Block;
@@ -85,14 +86,18 @@ class Gout : public std::stringstream {
     EXPECT_EQ(dst_node_, edge->dst_node());                \
   } while (false)
 
-#define CheckBlock(blkInfo, id_, blk_, type_, ref_, write_node_, last_node_) \
-  do {                                                                       \
-    EXPECT_EQ(id_, blkInfo->id());                                           \
-    EXPECT_EQ(blk_, blkInfo->block());                                       \
-    EXPECT_EQ(type_, blkInfo->type());                                       \
-    EXPECT_EQ(ref_, blkInfo->graph_ref());                                   \
-    EXPECT_EQ(write_node_, blkInfo->write_node());                           \
-    EXPECT_EQ(last_node_, blkInfo->last_node());                             \
+#define CheckBlock(blkInfo, id_, blk_, type_, ref_, write_edge_, used_nodes_) \
+  do {                                                                        \
+    EXPECT_EQ(id_, blkInfo->id());                                            \
+    EXPECT_EQ(blk_, blkInfo->block());                                        \
+    EXPECT_EQ(type_, blkInfo->type());                                        \
+    EXPECT_EQ(ref_, blkInfo->graph_ref());                                    \
+    EXPECT_EQ(write_edge_, blkInfo->write_edge());                            \
+    EXPECT_EQ(used_nodes_, blkInfo->used_nodes());                            \
+    for (size_t i = 0; i < used_nodes_.size(); ++i) {                         \
+      EXPECT_EQ(used_nodes_[i], blkInfo->used_node(i))                        \
+          << "used_nodes is different at index [" << i << "]";                \
+    }                                                                         \
   } while (false)
 
 #define CheckWriteBlocks(write_blocks, correct_write_blocks)     \
@@ -102,6 +107,23 @@ class Gout : public std::stringstream {
       EXPECT_EQ(correct_write_blocks[i], write_blocks[i])        \
           << "write_blocks is wrong at index [" << i << "]";     \
     }                                                            \
+  } while (false)
+
+#define CheckFreeBlocks(node_id, blocks, free_blocks, correct_free_blocks)   \
+  do {                                                                       \
+    EXPECT_EQ(correct_free_blocks.size(), free_blocks.size());               \
+    for (size_t i = 0; i < correct_free_blocks.size(); ++i) {                \
+      bool flag = false;                                                     \
+      for (size_t j = 0; j < free_blocks.size(); ++j) {                      \
+        if (blocks.find(free_blocks[j])->second->id() ==                     \
+            correct_free_blocks[i]) {                                        \
+          flag = true;                                                       \
+          break;                                                             \
+        }                                                                    \
+      }                                                                      \
+      EXPECT_TRUE(flag) << "block [" << correct_free_blocks[i]               \
+                        << "] is not recycled properly at node " << node_id; \
+    }                                                                        \
   } while (false)
 
 class TestGraph : public testing::Test {
@@ -144,19 +166,22 @@ TEST_F(TestGraph, AddOp) {
     graph.AddOperation(op, {in.block()}, {out.block()});
 
     EXPECT_EQ(1u, nodes.size());
-    EXPECT_EQ(1u, edges.size());
+    EXPECT_EQ(2u, edges.size());
     EXPECT_EQ(2u, blocks.size());
     EXPECT_EQ(1u, write_blocks.size());
 
     auto node = nodes[0];
-    auto edge = edges[0];
+    auto edge1 = edges[0];
+    auto edge2 = edges[1];
     auto block1 = blocks.find(in.block())->second;
     auto block2 = blocks.find(out.block())->second;
 
-    CheckNode(node, 0, EdgeVec({edge}), EdgeVec({}));
-    CheckEdge(edge, 0, in.block(), nullptr, node);
-    CheckBlock(block1, 0, in.block(), BlockType::kInput, 1, nullptr, node);
-    CheckBlock(block2, 1, out.block(), BlockType::kEnd, 1, node, node);
+    CheckNode(node, 0, EdgeVec({edge1}), EdgeVec({edge2}));
+    CheckEdge(edge1, 0, in.block(), nullptr, node);
+    CheckEdge(edge2, 1, out.block(), node, nullptr);
+    CheckBlock(block1, 0, in.block(), BlockType::kInput, 1, nullptr,
+               NodeVec({}));
+    CheckBlock(block2, 1, out.block(), BlockType::kEnd, 1, edge2, NodeVec({}));
     CheckWriteBlocks(write_blocks, BlockVec({out.block()}));
     EXPECT_TRUE(graph.dirty());
   }
@@ -182,7 +207,7 @@ TEST_F(TestGraph, AddSyncOp) {
     graph.AddOperation(op, {}, {});
 
     EXPECT_EQ(2u, nodes.size());
-    EXPECT_EQ(2u, edges.size());
+    EXPECT_EQ(3u, edges.size());
     EXPECT_EQ(2u, blocks.size());
     EXPECT_EQ(1u, write_blocks.size());
 
@@ -190,15 +215,19 @@ TEST_F(TestGraph, AddSyncOp) {
     auto node2 = nodes[1];
     auto edge1 = edges[0];
     auto edge2 = edges[1];
+    auto edge3 = edges[2];
     auto block1 = blocks.find(in.block())->second;
     auto block2 = blocks.find(out.block())->second;
 
     CheckNode(node1, 0, EdgeVec({edge1}), EdgeVec({edge2}));
-    CheckNode(node2, 1, EdgeVec({edge2}), EdgeVec({}));
+    CheckNode(node2, 1, EdgeVec({edge2}), EdgeVec({edge3}));
     CheckEdge(edge1, 0, in.block(), nullptr, node1);
     CheckEdge(edge2, 1, out.block(), node1, node2);
-    CheckBlock(block1, 0, in.block(), BlockType::kInput, 1, nullptr, node1);
-    CheckBlock(block2, 1, out.block(), BlockType::kInter, 1, node2, node2);
+    CheckEdge(edge3, 2, out.block(), node2, nullptr);
+    CheckBlock(block1, 0, in.block(), BlockType::kInput, 1, nullptr,
+               NodeVec({}));
+    CheckBlock(block2, 1, out.block(), BlockType::kInter, 1, edge3,
+               NodeVec({}));
     CheckWriteBlocks(write_blocks, BlockVec({out.block()}));
     EXPECT_TRUE(graph.dirty());
   }
@@ -223,38 +252,42 @@ TEST_F(TestGraph, AddInplaceOp) {
     graph.AddOperation(op, {in.block()}, {in.block()});
 
     EXPECT_EQ(1u, nodes.size());
-    EXPECT_EQ(1u, edges.size());
+    EXPECT_EQ(2u, edges.size());
     EXPECT_EQ(1u, blocks.size());
     EXPECT_EQ(1u, write_blocks.size());
 
     auto node1 = nodes[0];
     auto edge1 = edges[0];
+    auto edge2 = edges[1];
     auto block1 = blocks.find(in.block())->second;
 
-    CheckNode(node1, 0, EdgeVec({edge1}), EdgeVec({}));
+    CheckNode(node1, 0, EdgeVec({edge1}), EdgeVec({edge2}));
     CheckEdge(edge1, 0, in.block(), nullptr, node1);
-    CheckBlock(block1, 0, in.block(), BlockType::kParam, 2, node1, node1);
+    CheckEdge(edge2, 1, in.block(), node1, nullptr);
+    CheckBlock(block1, 0, in.block(), BlockType::kParam, 2, edge2, NodeVec({}));
     CheckWriteBlocks(write_blocks, BlockVec({in.block()}));
     EXPECT_TRUE(graph.dirty());
 
     graph.AddOperation(op, {in.block(), out.block()}, {out.block()});
 
     EXPECT_EQ(2u, nodes.size());
-    EXPECT_EQ(3u, edges.size());
+    EXPECT_EQ(4u, edges.size());
     EXPECT_EQ(2u, blocks.size());
     EXPECT_EQ(1u, write_blocks.size());
 
     auto node2 = nodes[1];
-    auto edge2 = edges[1];
     auto edge3 = edges[2];
+    auto edge4 = edges[3];
     auto block2 = blocks.find(out.block())->second;
 
     CheckNode(node1, 0, EdgeVec({edge1}), EdgeVec({edge2}));
-    CheckNode(node2, 1, EdgeVec({edge2, edge3}), EdgeVec({}));
+    CheckNode(node2, 1, EdgeVec({edge2, edge3}), EdgeVec({edge4}));
     CheckEdge(edge2, 1, in.block(), node1, node2);
     CheckEdge(edge3, 2, out.block(), nullptr, node2);
-    CheckBlock(block1, 0, in.block(), BlockType::kParam, 3, node1, node2);
-    CheckBlock(block2, 1, out.block(), BlockType::kParam, 2, node2, node2);
+    CheckEdge(edge4, 3, out.block(), node2, nullptr);
+    CheckBlock(block1, 0, in.block(), BlockType::kParam, 3, edge2, NodeVec({}));
+    CheckBlock(block2, 1, out.block(), BlockType::kParam, 2, edge4,
+               NodeVec({}));
     CheckWriteBlocks(write_blocks, BlockVec({out.block()}));
     EXPECT_TRUE(graph.dirty());
   }
@@ -279,14 +312,14 @@ TEST_F(TestGraph, BlockTypeInput) {
     graph.AddOperation(op, {in.block()}, {out.block()});
 
     EXPECT_EQ(1u, nodes.size());
-    EXPECT_EQ(1u, edges.size());
+    EXPECT_EQ(2u, edges.size());
     EXPECT_EQ(2u, blocks.size());
     EXPECT_EQ(1u, write_blocks.size());
 
-    auto node1 = nodes[0];
     auto block1 = blocks.find(in.block())->second;
 
-    CheckBlock(block1, 0, in.block(), BlockType::kInput, 1, nullptr, node1);
+    CheckBlock(block1, 0, in.block(), BlockType::kInput, 1, nullptr,
+               NodeVec({}));
   }
 }
 
@@ -312,18 +345,18 @@ TEST_F(TestGraph, BlockTypeParam) {
     graph.AddOperation(op, {out.block()}, {mid.block()});
 
     EXPECT_EQ(3u, nodes.size());
-    EXPECT_EQ(4u, edges.size());
+    EXPECT_EQ(5u, edges.size());
     EXPECT_EQ(3u, blocks.size());
     EXPECT_EQ(1u, write_blocks.size());
 
-    auto node1 = nodes[0];
-    auto node2 = nodes[1];
-    auto node3 = nodes[2];
+    auto edge2 = edges[1];
+    auto edge5 = edges[4];
     auto block1 = blocks.find(in.block())->second;
     auto block2 = blocks.find(mid.block())->second;
 
-    CheckBlock(block1, 0, in.block(), BlockType::kParam, 3, node1, node2);
-    CheckBlock(block2, 1, mid.block(), BlockType::kParam, 2, node3, node3);
+    CheckBlock(block1, 0, in.block(), BlockType::kParam, 3, edge2, NodeVec({}));
+    CheckBlock(block2, 1, mid.block(), BlockType::kParam, 2, edge5,
+               NodeVec({}));
   }
 }
 
@@ -349,18 +382,19 @@ TEST_F(TestGraph, BlockTypeInter) {
     graph.AddOperation(op, {out.block()}, {out.block()});
 
     EXPECT_EQ(3u, nodes.size());
-    EXPECT_EQ(3u, edges.size());
+    EXPECT_EQ(4u, edges.size());
     EXPECT_EQ(3u, blocks.size());
     EXPECT_EQ(1u, write_blocks.size());
 
-    auto node1 = nodes[0];
-    auto node2 = nodes[1];
-    auto node3 = nodes[2];
+    auto edge2 = edges[1];
+    auto edge4 = edges[3];
     auto block2 = blocks.find(mid.block())->second;
     auto block3 = blocks.find(out.block())->second;
 
-    CheckBlock(block2, 1, mid.block(), BlockType::kInter, 2, node1, node2);
-    CheckBlock(block3, 2, out.block(), BlockType::kInter, 3, node3, node3);
+    CheckBlock(block2, 1, mid.block(), BlockType::kInter, 2, edge2,
+               NodeVec({}));
+    CheckBlock(block3, 2, out.block(), BlockType::kInter, 3, edge4,
+               NodeVec({}));
   }
 }
 
@@ -385,17 +419,17 @@ TEST_F(TestGraph, BlockTypeEnd) {
     graph.AddOperation(op, {}, {out2.block()});
 
     EXPECT_EQ(2u, nodes.size());
-    EXPECT_EQ(1u, edges.size());
+    EXPECT_EQ(3u, edges.size());
     EXPECT_EQ(3u, blocks.size());
     EXPECT_EQ(1u, write_blocks.size());
 
-    auto node1 = nodes[0];
-    auto node2 = nodes[1];
+    auto edge2 = edges[1];
+    auto edge3 = edges[2];
     auto block2 = blocks.find(out1.block())->second;
     auto block3 = blocks.find(out2.block())->second;
 
-    CheckBlock(block2, 1, out1.block(), BlockType::kEnd, 1, node1, node1);
-    CheckBlock(block3, 2, out2.block(), BlockType::kEnd, 1, node2, node2);
+    CheckBlock(block2, 1, out1.block(), BlockType::kEnd, 1, edge2, NodeVec({}));
+    CheckBlock(block3, 2, out2.block(), BlockType::kEnd, 1, edge3, NodeVec({}));
   }
 }
 
@@ -457,7 +491,7 @@ TEST_F(TestGraph, RunGraph) {
     graph.AddOperation(op7, {dx1.block(), dx2.block()}, {dx.block()});
 
     EXPECT_EQ(7u, nodes.size());
-    EXPECT_EQ(11u, edges.size());
+    EXPECT_EQ(14u, edges.size());
     EXPECT_EQ(12u, blocks.size());
     EXPECT_EQ(1u, write_blocks.size());
 
@@ -534,7 +568,7 @@ TEST_F(TestGraph, RunInSerial) {
     graph.AddOperation(op7, {dx1.block(), dx2.block()}, {dx.block()});
 
     EXPECT_EQ(7u, nodes.size());
-    EXPECT_EQ(11u, edges.size());
+    EXPECT_EQ(14u, edges.size());
     EXPECT_EQ(12u, blocks.size());
     EXPECT_EQ(1u, write_blocks.size());
 
@@ -635,7 +669,7 @@ TEST_F(TestGraph, AutoRecycle) {
     }
 
     EXPECT_EQ(10u, nodes.size());
-    EXPECT_EQ(18u, edges.size());
+    EXPECT_EQ(21u, edges.size());
     EXPECT_EQ(15u, blocks.size());
     EXPECT_EQ(1u, write_blocks.size());
 
@@ -657,22 +691,22 @@ TEST_F(TestGraph, AutoRecycle) {
     EXPECT_EQ(nodes[8], next_nodes[6][0]);
     EXPECT_EQ(nodes[9], next_nodes[8][0]);
 
-    EXPECT_EQ(2, blocks.find(free_blocks[5][0])->second->id());
-    EXPECT_EQ(5, blocks.find(free_blocks[3][0])->second->id());
-    EXPECT_EQ(3, blocks.find(free_blocks[4][0])->second->id());
-    EXPECT_EQ(9, blocks.find(free_blocks[8][0])->second->id());
-    EXPECT_EQ(10, blocks.find(free_blocks[8][1])->second->id());
-    EXPECT_EQ(14, blocks.find(free_blocks[9][0])->second->id());
-    EXPECT_EQ(12, blocks.find(free_blocks[9][1])->second->id());
-    EXPECT_EQ(6, blocks.find(free_blocks[5][1])->second->id());
-    EXPECT_EQ(7, blocks.find(free_blocks[7][0])->second->id());
-    EXPECT_EQ(8, blocks.find(free_blocks[6][0])->second->id());
+    CheckFreeBlocks(0, blocks, free_blocks[0], IntVec({}));
+    CheckFreeBlocks(1, blocks, free_blocks[1], IntVec({}));
+    CheckFreeBlocks(2, blocks, free_blocks[2], IntVec({}));
+    CheckFreeBlocks(3, blocks, free_blocks[3], IntVec({5}));
+    CheckFreeBlocks(4, blocks, free_blocks[4], IntVec({3}));
+    CheckFreeBlocks(5, blocks, free_blocks[5], IntVec({2, 6}));
+    CheckFreeBlocks(6, blocks, free_blocks[6], IntVec({8, 11}));
+    CheckFreeBlocks(7, blocks, free_blocks[7], IntVec({7, 13}));
+    CheckFreeBlocks(8, blocks, free_blocks[8], IntVec({9, 10}));
+    CheckFreeBlocks(9, blocks, free_blocks[9], IntVec({12, 14}));
 
     // in 0 b1 1 mid1 2 out 3 b2 4
     // mid2 5 dy1 6 dy2 7 dy3 8 dx1 9
     // dx2 10 db1 11 dx3 12 db2 13 dx 14
     bool state[15] = {true,  true,  false, false, true,  false, false, false,
-                      false, false, false, true,  false, true,  false};
+                      false, false, false, false, false, false, false};
 
     for (auto it : blocks) {
       int id = it.second->id();
