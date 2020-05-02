@@ -20,6 +20,7 @@
 from __future__ import division
 
 from collections import Counter, deque
+from warnings import warn
 import numpy as np
 import math
 
@@ -406,14 +407,14 @@ def mean(*l):
     return Mean()(*l)[0]
 
 
-class ReLU(Operation):
+class _ReLU(Operation):
     """
     Relu means rectified linear function, i.e, y = max(0, x) is applied to the 
     CTensor elementwise.
     """
 
     def __init__(self):
-        super(ReLU, self).__init__()
+        super(_ReLU, self).__init__()
 
     def forward(self, x):
         """
@@ -434,6 +435,12 @@ class ReLU(Operation):
             dx (CTensor): dL / dx = dy if x >= 0; otherwise 0.
         """
         return singa.ReLUBackward(dy, self.input)
+
+
+def ReLU(*args, **kwargs):
+    warn("use _ReLU Operation class instead for internal")
+    warn("use relu() Operation func instead for external ")
+    return _ReLU(*args, **kwargs)
 
 
 def relu(x):
