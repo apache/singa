@@ -1386,13 +1386,31 @@ class Layer(object):
         else:
             raise ValueError("parameters should be Tensor or Numpy array.")
 
-
 class Linear(Layer):
     """
     Generate a Linear operator
     """
 
-    def __init__(self, in_features, out_features, bias=True):
+    def init_params(self):
+        """ init params, W and b, for the layer
+        """
+        assert not self.initialized
+        w_shape = (self.in_features, self.out_features)
+        b_shape = (self.out_features,)
+
+        # init W
+        self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
+        std = math.sqrt(2.0 / (self.in_features + self.out_features))
+        self.W.gaussian(0.0, std)
+
+        # init bias
+        if self.use_bias:
+            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
+            self.b.set_value(0.0)
+
+        self.initialized=True
+
+    def __init__(self,out_features, in_features=None, bias=True):
         """
         Args:
             in_channels: int, the channel of input
@@ -1400,33 +1418,39 @@ class Linear(Layer):
                 filters
             bias: bool
         """
-        w_shape = (in_features, out_features)
-        b_shape = (out_features,)
-        self.bias = bias
-
-        self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
-        std = math.sqrt(2.0 / (in_features + out_features))
-        self.W.gaussian(0.0, std)
-
-        if self.bias:
-            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
-            self.b.set_value(0.0)
+        self.initialized = False
+        self.use_bias=bias
+        self.out_features=out_features
+        self.W = None
+        self.b = None
+        if in_features:
+            self.in_features=in_features
+            self.init_params()
+        pass
 
     def __call__(self, x):
-        if self.bias:
+        if not self.initialized:
+            self.in_features = x.shape[1]
+            self.init_params()
+        else:
+            assert x.shape[1] == self.in_features, ("input feature size %d does not match predefined in feature size %d" % (x.shape[1], self.in_features))
+
+        # device check
+        if self.use_bias:
             self.device_check(x, self.W, self.b)
         else:
             self.device_check(x, self.W)
-        assert x.shape[1] == self.W.shape[0], (
-            "Linear layer expects input features size %d received %d" %
-            (self.W.shape[0], x.shape[1]))
+
+        # forward
         y = matmul(x, self.W)
-        if self.bias:
+        if self.use_bias:
             y = add_bias(y, self.b, axis=0)
         return y
 
+
     def get_params(self):
-        if self.bias:
+        assert self.initialized, ("in_features size is unknown and layer is unintialized, create Linear layer with in_features size to initialize parameters")
+        if self.use_bias:
             return {"W": self.W, "b": self.b}
         else:
             return {"W": self.W}
@@ -1438,10 +1462,17 @@ class Linear(Layer):
         # examples: Linear.set_params(W=np.ones((in, out), dtype=np.float32)),
         # Linear.set_params(**{'W':np.ones((in, out), dtype=np.float32)})
         self.allow_params = ["W", "b"]
-        super(Linear, self).set_params(**parameters)
         for parameter_name in parameters:
             if parameter_name is "b":
-                self.bias = True
+                self.use_bias = True
+                assert parameters["b"].shape[0] == self.out_features
+            if parameter_name is "W":
+                assert parameters["W"].shape[1] == self.out_features, ("given parameter W shape %s does not match out features %d" % (parameters["W"].shape, self.out_features))
+                if not self.initialized:
+                    self.in_features = parameters["W"].shape[0]
+                    self.init_params()
+        super(Linear, self).set_params(**parameters)
+        self.initialized=True
 
 
 class Concat(Operation):
