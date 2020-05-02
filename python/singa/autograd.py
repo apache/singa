@@ -1380,6 +1380,7 @@ class Layer(object):
                ), "Shape dismatched."
         if isinstance(parameter_value, Tensor):
             self.__dict__[parameter_name].reset_like(parameter_value)
+            self.__dict__[parameter_name].copy_data(parameter_value)
         elif isinstance(parameter_value, np.ndarray):
             self.__dict__[parameter_name].copy_from_numpy(parameter_value)
         else:
