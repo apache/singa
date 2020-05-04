@@ -437,6 +437,7 @@ class _ReLU(Operation):
         return singa.ReLUBackward(dy, self.input)
 
 
+# to deprecate
 def ReLU(*args, **kwargs):
     warn("use _ReLU Operation class instead for internal")
     warn("use relu() Operation func instead for external ")
@@ -452,7 +453,7 @@ def relu(x):
     Returns:
         a new Tensor whose element y = x if x >= 0; otherwise 0.
     """
-    return ReLU()(x)[0]
+    return _ReLU()(x)[0]
 
 
 class Less(Operation):
@@ -1252,7 +1253,7 @@ def ctensor2numpy(x):
     return np_array.reshape(x.shape())
 
 
-class Flatten(Operation):
+class _Flatten(Operation):
     """
     Flattens the input tensor into a 2D matrix. If input tensor has shape 
     `(d_0, d_1, ... d_n)` then the output will have shape `(d_0 X d_1 ... 
@@ -1272,7 +1273,7 @@ class Flatten(Operation):
         Returns:
             the result CTensor
         """
-        super(Flatten, self).__init__()
+        super(_Flatten, self).__init__()
         self.axis = axis
 
     def forward(self, x):
@@ -1306,6 +1307,13 @@ class Flatten(Operation):
         return dx
 
 
+# to deprecate
+def Flatten(*args, **kwargs):
+    warn("use _Flatten Operation class instead for internal")
+    warn("use flatten() Operation func instead for external ")
+    return _Flatten(*args, **kwargs)
+
+
 def flatten(x, axis=1):
     """
     Flattens the input tensor into a 2D matrix. If input tensor has shape 
@@ -1323,7 +1331,7 @@ def flatten(x, axis=1):
     Returns:
         the result Tensor
     """
-    return Flatten(axis)(x)[0]
+    return _Flatten(axis)(x)[0]
 
 
 class Layer(object):
@@ -4626,7 +4634,7 @@ def constant_of_shape(x, value=0):
     return ConstantOfShape(value)(x)[0]
 
 
-class Dropout(Operation):
+class _Dropout(Operation):
     """
     Init a Dropout, which scales the masked input data by the following equation:
     `output = scale * data * mask`, `scale = 1. / (1. - ratio)`.
@@ -4637,7 +4645,7 @@ class Dropout(Operation):
         Args:
             ratio (float): the ratio of random dropout, with value in [0, 1).
         """
-        super(Dropout, self).__init__()
+        super(_Dropout, self).__init__()
         self.ratio = ratio
 
     def forward(self, x):
@@ -4668,6 +4676,13 @@ class Dropout(Operation):
         return dy
 
 
+# to deprecate
+def Dropout(*args, **kwargs):
+    warn("use _Dropout Operation class instead for internal")
+    warn("use dropout() Operation func instead for external ")
+    return _Dropout(*args, **kwargs)
+
+
 def dropout(x, ratio=0.5):
     """
     Init a Dropout, which scales the masked input data by the following 
@@ -4678,7 +4693,7 @@ def dropout(x, ratio=0.5):
     Returns:
         the output Tensor.
     """
-    return Dropout(ratio)(x)[0]
+    return _Dropout(ratio)(x)[0]
 
 
 class ReduceSum(Operation):

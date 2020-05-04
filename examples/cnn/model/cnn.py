@@ -30,8 +30,8 @@ class CNN(module.Module):
         self.dimension = 4
         self.conv1 = autograd.Conv2d(num_channels, 20, 5, padding=0)
         self.conv2 = autograd.Conv2d(20, 50, 5, padding=0)
-        self.linear1 = autograd.Linear(4 * 4 * 50, 500)
-        self.linear2 = autograd.Linear(500, num_classes)
+        self.linear1 = autograd.Linear(500)
+        self.linear2 = autograd.Linear(num_classes)
         self.pooling1 = autograd.MaxPool2d(2, 2, padding=0)
         self.pooling2 = autograd.MaxPool2d(2, 2, padding=0)
 
