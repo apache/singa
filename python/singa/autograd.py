@@ -3223,26 +3223,52 @@ class RNN_Base(Layer):
 
 
 class RNN(RNN_Base):
-    def __init__(
-            self,
-            hidden_size,
-            input_size=None,
-            num_layers=1,
-            nonlinearity="tanh",
-            bias=True,
-            batch_first=False,
-            dropout=0,
-            bidirectional=False,
-    ):
+    #def __init__(
+    #        self,
+    #        input_size,
+    #        hidden_size,
+    #        num_layers=1,
+    #        nonlinearity="tanh",
+    #        bias=True,
+    #        batch_first=False,
+    #        dropout=0,
+    #        bidirectional=False,
+    #):
+    def __init__(self, *args, **kwargs):
+        # self.hidden_size=hidden_size
+        # self.input_size=input_size
+        # self.nonlinearity = nonlinearity
         self.init_param_done = False
-        self.hidden_size=hidden_size
-        self.input_size=input_size
-        self.nonlinearity = nonlinearity
+
+        allowed_args = [ "input_size", "hidden_size", "num_layers", "nonlinearity", "bias", "batch_first", "dropout", "bidirectional" ]
+        assert all([key in allowed_args for key in kwargs])
+
+        self.hidden_size = kwargs.get("hidden_size", None)
+        self.input_size = kwargs.get("input_size", None)
+        self.nonlinearity = kwargs.get("nonlinearity", "tanh")
+
+        # TODO:
+        # To enhance the user experience, we want to enable RNN(2) to be
+        #   hidden size=2, input_size=None and derive from input X
+        #
+        # But there is more than 2 numeric args, which is ambiguous:
+        #   - RNN(2,3) => input_size:2, hidden_size:3
+        #   - RNN(2) => input_size: None, hidden_size: 2
+        #   - RNN(2,3) => input_size=2? hidden_size: 2? num_layers=3?
+        # Tmp convention, unamed args is only for input, hidden size
+        if len(args) > 1:
+            self.input_size = args[0]
+            self.hidden_size = args[1]
+        else:
+            self.hidden_size = args[0]
+
+        pass
+
 
     def config_complete(self):
         return True if all([self.input_size, self.hidden_size]) else False
 
-    def init_param(self):
+    def init_params(self):
         assert self.config_complete(), ("Config not complete, required input_size, hidden_size")
         assert not self.init_param_done
         Wx_shape = (self.input_size, self.hidden_size)
@@ -3318,102 +3344,22 @@ class RNN(RNN_Base):
         super(RNN, self).set_params(**parameters)
 
 
-class RNNOLD(RNN_Base):
-    """
-    Generate a RNN operator
-    """
-
-    def __init__(
-            self,
-            input_size,
-            hidden_size,
-            num_layers=1,
-            nonlinearity="tanh",
-            bias=True,
-            batch_first=False,
-            dropout=0,
-            bidirectional=False,
-    ):
-        """
-        Args:
-            input_size (int):  The number of expected features in the input x
-            hidden_size (int): The number of features in the hidden state h
-            num_layers (int):  Number of recurrent layers. Default: 1
-            nonlinearity (string): The non-linearity to use. Default: 'tanh'
-            bias (bool):  If False, then the layer does not use bias weights. 
-                Default: True
-            batch_first (bool):  If True, then the input and output tensors 
-                are provided as (batch, seq, feature). Default: False
-            dropout (float): If non-zero, introduces a Dropout layer on the 
-                outputs of each RNN layer except the last layer, with dropout 
-                probability equal to dropout. Default: 0
-            bidirectional (bool): If True, becomes a bidirectional RNN. 
-                Default: False
-        """
-        self.nonlinearity = nonlinearity
-
-        Wx_shape = (input_size, hidden_size)
-        self.Wx = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
-        self.Wx.gaussian(0.0, 1.0)
-
-        Wh_shape = (hidden_size, hidden_size)
-        self.Wh = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
-        self.Wh.gaussian(0.0, 1.0)
-
-        B_shape = (hidden_size,)
-        self.b = Tensor(shape=B_shape, requires_grad=True, stores_grad=True)
-        self.b.set_value(0.0)
-
-        self.params = (self.Wx, self.Wh, self.b)
-
-    def __call__(self, xs, h0):
-        # xs: a tuple or list of input tensors
-        if not isinstance(xs, tuple):
-            xs = tuple(xs)
-        inputs = xs + (h0,)
-        self.device_check(*inputs)
-        # self.device_check(inputs[0], *self.params)
-        self.device_check(inputs[0], self.Wx, self.Wh, self.b)
-        batchsize = xs[0].shape[0]
-        out = []
-        h = self.step_forward(xs[0], h0, self.Wx, self.Wh, self.b)
-        out.append(h)
-        for x in xs[1:]:
-            assert x.shape[0] == batchsize
-            h = self.step_forward(x, h, self.Wx, self.Wh, self.b)
-            out.append(h)
-        return out, h
-
-    def step_forward(self, x, h, Wx, Wh, b):
-        y2 = matmul(h, Wh)
-        y1 = matmul(x, Wx)
-        y = add(y2, y1)
-        y = add_bias(y, b, axis=0)
-        if self.nonlinearity == "tanh":
-            y = tanh(y)
-        elif self.nonlinearity == "relu":
-            y = relu(y)
-        else:
-            raise ValueError
-        return y
-
-
 class LSTM(RNN_Base):
     """
     Generate a LSTM operator
     """
-
-    def __init__(
-            self,
-            input_size,
-            hidden_size,
-            nonlinearity="tanh",
-            num_layers=1,
-            bias=True,
-            batch_first=False,
-            dropout=0,
-            bidirectional=False,
-    ):
+    #def __init__(
+    #        self,
+    #        input_size,
+    #        hidden_size,
+    #        nonlinearity="tanh",
+    #        num_layers=1,
+    #        bias=True,
+    #        batch_first=False,
+    #        dropout=0,
+    #        bidirectional=False,
+    #):
+    def __init__(self, *args, **kwargs):
         """
         Args:
             input_size (int):  The number of expected features in the input x
@@ -3430,23 +3376,52 @@ class LSTM(RNN_Base):
             bidirectional (bool): If True, becomes a bidirectional RNN. 
                 Default: False
         """
-        self.nonlinearity = nonlinearity
+        self.init_param_done = False
+        allowed_args = [ "input_size", "hidden_size", "num_layers", "nonlinearity", "bias", "batch_first", "dropout", "bidirectional" ]
+        assert all([key in allowed_args for key in kwargs])
 
-        Wx_shape = (input_size, hidden_size)
+        self.hidden_size = kwargs.get("hidden_size", None)
+        self.input_size = kwargs.get("input_size", None)
+        self.nonlinearity = kwargs.get("nonlinearity", "tanh")
+
+        # TODO:
+        # To enhance the user experience, we want to enable RNN(2) to be
+        #   hidden size=2, input_size=None and derive from input X
+        #
+        # But there is more than 2 numeric args, which is ambiguous:
+        #   - RNN(2,3) => input_size:2, hidden_size:3
+        #   - RNN(2) => input_size: None, hidden_size: 2
+        #   - RNN(2,3) => input_size=2? hidden_size: 2? num_layers=3?
+        # Tmp convention, unamed args is only for input, hidden size
+        if len(args) > 1:
+            self.input_size = args[0]
+            self.hidden_size = args[1]
+        else:
+            self.hidden_size = args[0]
+
+        pass
+
+    def config_complete(self):
+        return True if all([self.input_size, self.hidden_size]) else False
+
+    def init_params(self):
+        assert self.config_complete(), ("Config not complete, required input_size, hidden_size")
+        assert not self.init_param_done
+        Wx_shape = (self.input_size, self.hidden_size)
         self.Wx = []
         for i in range(4):
             w = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
             w.gaussian(0.0, 0.01)
             self.Wx.append(w)
 
-        Wh_shape = (hidden_size, hidden_size)
+        Wh_shape = (self.hidden_size, self.hidden_size)
         self.Wh = []
         for i in range(4):
             w = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
             w.gaussian(0.0, 0.01)
             self.Wh.append(w)
 
-        Bx_shape = (hidden_size,)
+        Bx_shape = (self.hidden_size,)
         self.Bx = []
         for i in range(4):
             b = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
@@ -3460,8 +3435,15 @@ class LSTM(RNN_Base):
             self.Bh.append(b)
 
         self.params = self.Wx + self.Wh + self.Bx + self.Bh
+        self.init_param_done = True
 
     def __call__(self, xs, h0_c0):
+        if not self.init_param_done:
+            if not self.config_complete():
+                self.input_size = xs[0].shape[1]
+                assert self.config_complete(), ("Config not complete, required input_size, hidden_size")
+            self.init_params()
+
         # xs: a tuple or list of input tensors
         # h0_c0: a tuple of (h0, c0)
         h0, c0 = h0_c0

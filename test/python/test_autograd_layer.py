@@ -31,7 +31,7 @@ from singa.proto import core_pb2
 from cuda_helper import gpu_dev, cpu_dev
 
 
-class TestLayers(unittest.TestCase):
+class TestLinearLayer(unittest.TestCase):
     def test_linear_force_in_features(self):
         li1 = autograd.Linear(2, out_features=3)
         li2 = autograd.Linear(in_features=2,out_features=3)
@@ -67,9 +67,38 @@ class TestLayers(unittest.TestCase):
         (W,b) = li1.get_params()
         pass
 
-    def test_rnn(self):
-        logging.debug("test rnn")
-        rnn1 = autograd.RNN(10)
+class TestRNNLayer(unittest.TestCase):
+    def test_forward(self):
+        batch_size = 2
+        feature_size = 3
+        sequence_size = 4
+        hidden_size = 5
+
+
+        print("gaussian 0", tensor.Tensor((hidden_size, )).gaussian(0, 0))
+
+        rnn1 = autograd.RNN(hidden_size)
+        rnn2 = autograd.RNN(feature_size, hidden_size)
+
+        for rnn in [rnn1, rnn2]:
+            xs = []
+            for i in range(sequence_size):
+                x = tensor.Tensor((batch_size,feature_size)).gaussian(1, 2)
+                xs.append(x)
+                pass
+
+            h0 = tensor.Tensor((1, hidden_size)).gaussian(1, 2)
+            Wx = tensor.Tensor((feature_size, hidden_size)).gaussian(1, 2)
+            Wh = tensor.Tensor((hidden_size, hidden_size)).gaussian(1, 2)
+            b = tensor.Tensor((hidden_size, )).gaussian(1, 2)
+
+            rnn.set_params(Wx=Wx, Wh=Wh, b=b)
+            (Wx, Wh, b) = rnn.get_params()
+
+            (ys, h) = rnn(xs, h0)
+            for y in ys:
+                print("y shape", y.shape)
+            # logging.debug("h shape", h.shape)
         pass
 
 # logging.basicConfig(stream=sys.stderr, level=logging.INFO)
