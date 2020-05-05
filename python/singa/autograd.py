@@ -1402,7 +1402,8 @@ class Linear(Layer):
     def init_params(self):
         """ init params, W and b, for the layer
         """
-        assert not self.initialized
+        assert self.config_complete(), ("Config not complete, required input_size, output_size")
+        assert not self.init_param_done
         w_shape = (self.in_features, self.out_features)
         b_shape = (self.out_features,)
 
@@ -1416,32 +1417,67 @@ class Linear(Layer):
             self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
             self.b.set_value(0.0)
 
-        self.initialized=True
+        self.init_param_done = True
 
-    def __init__(self,out_features, in_features=None, bias=True):
+    def config_complete(self):
+        return True if all([self.in_features, self.out_features]) else False
+
+    def __init__(self, *args, **kwargs):
         """
         Args:
             in_channels: int, the channel of input
             out_channels: int, the channel of output, also is the number of 
                 filters
             bias: bool
+
+            def init_backup(self,out_features, in_features=None, bias=True):
+
         """
-        self.initialized = False
-        self.use_bias=bias
-        self.out_features=out_features
-        self.W = None
-        self.b = None
-        if in_features:
-            self.in_features=in_features
-            self.init_params()
-        pass
+        # default
+        self.in_features=None
+        self.out_features=None
+        self.use_bias=True
+
+        # update by kwargs
+        for key, value in kwargs.items():
+            if key == "in_features":
+                self.in_features = value
+            elif key == "out_features":
+                self.out_features = value
+            elif key == "bias":
+                self.use_bias = bias
+            else:
+                raise TypeError("Unsupported arguments given: ", key)
+
+        # check args
+        if len(args) > 1 and (args[-1] in [True, False]):
+            assert not self.use_bias
+            self.use_bias = args.pop(-1)
+
+        if len(args) == 2:
+            assert not self.in_features
+            assert not self.out_features
+            self.in_features = args[0]
+            self.out_features = args[1]
+        elif len(args) == 1:
+            if self.out_features:
+                self.in_features = args[0]
+            else:
+                self.out_features = args[0]
+
+        if not self.out_features:
+            raise TypeError("Illegal args, missing out_features")
+
+        self.init_param_done = False
 
     def __call__(self, x):
-        if not self.initialized:
-            self.in_features = x.shape[1]
+        if not self.init_param_done:
+            if not self.config_complete():
+                self.in_features = x.shape[1]
+                assert self.config_complete(), ("Config not complete, required input_size, hidden_size")
             self.init_params()
-        else:
-            assert x.shape[1] == self.in_features, ("input feature size %d does not match predefined in feature size %d" % (x.shape[1], self.in_features))
+
+        assert x.shape[1] == self.in_features, ("input feature size %d does not match predefined in feature size %d" % (x.shape[1], self.in_features))
 
         # device check
         if self.use_bias:
@@ -1457,7 +1493,7 @@ class Linear(Layer):
 
 
     def get_params(self):
-        assert self.initialized, ("in_features size is unknown and layer is unintialized, create Linear layer with in_features size to initialize parameters")
+        assert self.init_param_done, ("in_features size is unknown and layer is unintialized, create Linear layer with in_features size to initialize parameters")
         if self.use_bias:
             return {"W": self.W, "b": self.b}
         else:
@@ -1470,17 +1506,27 @@ class Linear(Layer):
         # examples: Linear.set_params(W=np.ones((in, out), dtype=np.float32)),
         # Linear.set_params(**{'W':np.ones((in, out), dtype=np.float32)})
         self.allow_params = ["W", "b"]
-        for parameter_name in parameters:
-            if parameter_name is "b":
-                self.use_bias = True
-                assert parameters["b"].shape[0] == self.out_features
-            if parameter_name is "W":
-                assert parameters["W"].shape[1] == self.out_features, ("given parameter W shape %s does not match out features %d" % (parameters["W"].shape, self.out_features))
-                if not self.initialized:
-                    self.in_features = parameters["W"].shape[0]
-                    self.init_params()
+
+        if not self.config_complete():
+            assert "W" in parameters, ("in_features is unknown")
+            self.in_features = parameters["W"].shape[0]
+            self.init_params()
+        else:
+            if not self.init_param_done:
+                self.init_params()
+
+
+        if "b" in parameters:
+            self.use_bias = True
+            assert parameters["b"].shape[0] == self.out_features
+        if "W" in parameters:
+            assert parameters["W"].shape[1] == self.out_features
+
+        ## TODO: needed?
+        for param_name in parameters:
+            assert self.__dict__[param_name]
+
         super(Linear, self).set_params(**parameters)
-        self.initialized=True
 
 
 class Concat(Operation):
@@ -3177,6 +3223,102 @@ class RNN_Base(Layer):
 
 
 class RNN(RNN_Base):
+    def __init__(
+            self,
+            hidden_size,
+            input_size=None,
+            num_layers=1,
+            nonlinearity="tanh",
+            bias=True,
+            batch_first=False,
+            dropout=0,
+            bidirectional=False,
+    ):
+        self.init_param_done = False
+        self.hidden_size=hidden_size
+        self.input_size=input_size
+        self.nonlinearity = nonlinearity
+
+    def config_complete(self):
+        return True if all([self.input_size, self.hidden_size]) else False
+
+    def init_param(self):
+        assert self.config_complete(), ("Config not complete, required input_size, hidden_size")
+        assert not self.init_param_done
+        Wx_shape = (self.input_size, self.hidden_size)
+        self.Wx = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True).gaussian(0.0, 1.0)
+        Wh_shape = (self.hidden_size, self.hidden_size)
+        self.Wh = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True).gaussian(0.0, 1.0)
+        B_shape = (self.hidden_size,)
+        self.b = Tensor(shape=B_shape, requires_grad=True, stores_grad=True).set_value(0.0)
+
+        self.params = (self.Wx, self.Wh, self.b)
+        self.init_param_done = True
+
+    def __call__(self, xs, h0):
+        if not self.init_param_done:
+            if not self.config_complete():
+                self.input_size = xs[0].shape[1]
+                assert self.config_complete(), ("Config not complete, required input_size, hidden_size")
+            self.init_params()
+
+        # xs: a tuple or list of input tensors
+        if not isinstance(xs, tuple):
+            xs = tuple(xs)
+        inputs = xs + (h0,)
+        self.device_check(*inputs)
+        # self.device_check(inputs[0], *self.params)
+        self.device_check(inputs[0], self.Wx, self.Wh, self.b)
+        batchsize = xs[0].shape[0]
+        out = []
+        h = self.step_forward(xs[0], h0, self.Wx, self.Wh, self.b)
+        out.append(h)
+        for x in xs[1:]:
+            assert x.shape[0] == batchsize
+            h = self.step_forward(x, h, self.Wx, self.Wh, self.b)
+            out.append(h)
+        return out, h
+
+    def step_forward(self, x, h, Wx, Wh, b):
+        y2 = matmul(h, Wh)
+        y1 = matmul(x, Wx)
+        y = add(y2, y1)
+        y = add_bias(y, b, axis=0)
+        if self.nonlinearity == "tanh":
+            y = tanh(y)
+        elif self.nonlinearity == "relu":
+            y = relu(y)
+        else:
+            raise ValueError
+        return y
+
+    ## TODO: change the name
+    def get_params(self):
+        assert self.init_param_done, ("Params are not initialized")
+        return {"Wx":self.Wx, "Wh":self.Wh, "b": self.b}
+
+    def set_params(self, **parameters):
+        self.allow_params=["Wx", "Wh", "b"]
+
+        if not self.config_complete():
+            assert "Wx" in parameters, ("input_size is unknown")
+            self.input_size = parameters["Wx"].shape[0]
+            self.init_params()
+        else:
+            if not self.init_param_done:
+                self.init_params()
+
+        if "Wx" in parameters:
+            assert parameters["Wx"].shape == (self.input_size, self.hidden_size)
+        if "Wh" in parameters:
+            assert parameters["Wh"].shape == (self.hidden_size, self.hidden_size)
+        if "b" in parameters:
+            assert parameters["b"].shape == (self.hidden_size,)
+
+        super(RNN, self).set_params(**parameters)
+
+
+class RNNOLD(RNN_Base):
     """
     Generate a RNN operator
     """

@@ -33,23 +33,30 @@ from cuda_helper import gpu_dev, cpu_dev
 
 class TestLayers(unittest.TestCase):
     def test_linear_force_in_features(self):
-        x = tensor.Tensor((10,2)).gaussian(1, 2)
-        W = tensor.Tensor((2,3)).gaussian(1, 2)
-        b = tensor.Tensor((3,)).gaussian(1, 2)
-        li1 = autograd.Linear(3,in_features=2)
-        li1.set_params(W=W,b=b)
-        (W,b) = li1.get_params()
-        y=li1(x)
+        li1 = autograd.Linear(2, out_features=3)
+        li2 = autograd.Linear(in_features=2,out_features=3)
+        li3 = autograd.Linear(2, 3)
+        li4 = autograd.Linear(3)
+
+        for li in [li1,li2,li3,li4]:
+            x = tensor.Tensor((10,2)).gaussian(1, 2)
+            W = tensor.Tensor((2,3)).gaussian(1, 2)
+            b = tensor.Tensor((3,)).gaussian(1, 2)
+            li.set_params(W=W,b=b)
+            (W,b) = li.get_params()
+            y=li(x)
+        pass
 
     def test_linear_auto_in_features_by_set_params(self):
         x = tensor.Tensor((10,2)).gaussian(1, 2)
         W = tensor.Tensor((2,3)).gaussian(1, 2)
         b = tensor.Tensor((3,)).gaussian(1, 2)
         li1 = autograd.Linear(3)
-        # print(li1.__dict__)
+        # logging.debug(li1.__dict__)
         li1.set_params(W=W,b=b)
         (W,b) = li1.get_params()
         y=li1(x)
+        pass
 
     def test_linear_auto_in_features_by_forward(self):
         x = tensor.Tensor((10,2)).gaussian(1, 2)
@@ -58,6 +65,12 @@ class TestLayers(unittest.TestCase):
         li1 = autograd.Linear(3)
         y=li1(x)
         (W,b) = li1.get_params()
+        pass
+
+    def test_rnn(self):
+        logging.debug("test rnn")
+        rnn1 = autograd.RNN(10)
+        pass
 
 # logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
