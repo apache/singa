@@ -21,6 +21,7 @@ from __future__ import division
 
 from collections import Counter, deque
 from warnings import warn
+from deprecated import deprecated
 import numpy as np
 import math
 
@@ -437,11 +438,9 @@ class _ReLU(Operation):
         return singa.ReLUBackward(dy, self.input)
 
 
-# to deprecate
-def ReLU(*args, **kwargs):
-    warn("use _ReLU Operation class instead for internal")
-    warn("use relu() Operation func instead for external ")
-    return _ReLU(*args, **kwargs)
+@deprecated(reason="use _ReLU Operation class instead for internal, use relu() Operation func instead for external")
+def ReLU():
+    return _ReLU()
 
 
 def relu(x):
@@ -1307,11 +1306,9 @@ class _Flatten(Operation):
         return dx
 
 
-# to deprecate
-def Flatten(*args, **kwargs):
-    warn("use _Flatten Operation class instead for internal")
-    warn("use flatten() Operation func instead for external ")
-    return _Flatten(*args, **kwargs)
+@deprecated(reason="use _Flatten Operation class instead for internal, use flatten() Operation func instead for external")
+def Flatten(axis=1):
+    return _Flatten(axis=1)
 
 
 def flatten(x, axis=1):
@@ -4800,11 +4797,9 @@ class _Dropout(Operation):
         return dy
 
 
-# to deprecate
-def Dropout(*args, **kwargs):
-    warn("use _Dropout Operation class instead for internal")
-    warn("use dropout() Operation func instead for external ")
-    return _Dropout(*args, **kwargs)
+@deprecated(reason="use _Dropout Operation class instead for internal, use dropout() Operation func instead for external")
+def Dropout(ratio=0.5):
+    return _Dropout(ratio=0.5)
 
 
 def dropout(x, ratio=0.5):
