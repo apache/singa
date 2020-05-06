@@ -133,6 +133,10 @@ def run(global_rank,
         from model import cnn
         model = cnn.create_model(num_channels=num_channels,
                                  num_classes=num_classes)
+    elif model == 'alexnet':
+        from model import alexnet
+        model = alexnet.create_model(num_channels=num_channels,
+                                     num_classes=num_classes)
     elif model == 'mlp':
         import os, sys, inspect
         current = os.path.dirname(
@@ -258,7 +262,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Training using the autograd and graph.')
     parser.add_argument('model',
-                        choices=['resnet', 'xceptionnet', 'cnn', 'mlp'],
+                        choices=['resnet', 'xceptionnet', 'cnn', 'mlp', 'alexnet'],
                         default='cnn')
     parser.add_argument('data',
                         choices=['cifar10', 'cifar100', 'mnist'],

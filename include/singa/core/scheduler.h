@@ -97,20 +97,16 @@ class Edge {
 class BlkInfo {
  public:
   BlkInfo(int id, Block *blk, BlockType type = BlockType::kUnknow)
-      : id_(id),
-        blk_(blk),
-        type_(type),
-        graph_ref_(0),
-        write_node_(nullptr),
-        last_node_(nullptr) {}
+      : id_(id), blk_(blk), type_(type), graph_ref_(0), write_edge_(nullptr) {}
 
   // getters of BlkInfo
   int id() const { return id_; }
   Block *block() const { return blk_; }
   BlockType type() const { return type_; }
   int graph_ref() const { return graph_ref_; }
-  Node *write_node() const { return write_node_; }
-  Node *last_node() const { return last_node_; }
+  Edge *write_edge() const { return write_edge_; }
+  const NodeVec &used_nodes() const { return used_nodes_; }
+  Node *used_node(const size_t idx) const;
 
  private:
   friend Graph;
@@ -119,8 +115,8 @@ class BlkInfo {
   Block *blk_;
   BlockType type_;
   int graph_ref_;
-  Node *write_node_;  // last node that writes the block
-  Node *last_node_;   // last node that uses the block
+  Edge *write_edge_;    // the edge of last node that writes data into blk
+  NodeVec used_nodes_;  // the nodes that use this block(in order of execution)
 };
 
 class Graph {
@@ -165,8 +161,10 @@ class Graph {
   const BlockVec &free_blocks(const size_t idx) const;
 
  private:
-  void Analysis();
+  void Analyze();
   void FreeLoop();
+  void AnalyzeNodes();
+  void AnalyzeEdges();
   void AddSyncOp(function<void(Context *)> &&op);
 
   // static void CUDART_CB Callback(cudaStream_t stream, cudaError_t status,
@@ -185,6 +183,7 @@ class Graph {
 
   // Calculation graph analysis
   bool dirty_ = false;
+  bool in_serial_ = false;
   NodeVec begin_nodes_;
   std::vector<NodeVec> next_nodes_;
   std::vector<BlockVec> free_blocks_;
