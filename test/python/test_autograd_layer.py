@@ -32,6 +32,17 @@ from cuda_helper import gpu_dev, cpu_dev
 
 
 class TestLinearLayer(unittest.TestCase):
+    def test_linear_set_param_init(self):
+        x = tensor.Tensor((10,2)).gaussian(1, 2)
+        li = autograd.Linear(2, out_features=3)
+        li.set_params_initializer(
+            b=lambda x: x.gaussian(0,1),
+            W=lambda x: x.set_value(0.0)
+        )
+        y=li(x)
+        params = li.get_params()
+        pass
+
     def test_linear_force_in_features(self):
         li1 = autograd.Linear(2, out_features=3)
         li2 = autograd.Linear(in_features=2,out_features=3)

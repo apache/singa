@@ -1406,13 +1406,12 @@ class Linear(Layer):
 
         # init W
         self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
-        std = math.sqrt(2.0 / (self.in_features + self.out_features))
-        self.W.gaussian(0.0, std)
+        self.initializers["W"](self.W)
 
         # init bias
         if self.use_bias:
             self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
-            self.b.set_value(0.0)
+            self.initializers["b"](self.b)
 
         self.init_param_done = True
 
@@ -1431,9 +1430,16 @@ class Linear(Layer):
 
         """
         # default
+        self.allow_params = ["W", "b"]
         self.in_features=None
         self.out_features=None
         self.use_bias=True
+
+        # default initializers
+        self.initializers = {
+            "W": lambda x: x.gaussian(0,1),
+            "b": lambda x: x.set_value(0.0)
+        }
 
         # update by kwargs
         for key, value in kwargs.items():
@@ -1496,13 +1502,19 @@ class Linear(Layer):
         else:
             return {"W": self.W}
 
+    def set_params_initializer(self, **initializers):
+        # self.initializers = {"W": lambda, "b": lambda}
+        for param in initializers:
+            assert param in self.allow_params
+        self.initializers = initializers
+
+
     def set_params(self, **parameters):
         # TODO(wangwei) remove this funciton as Opeation's set_params() enough
         # set parameters for Linear Layer
         # input should be either a PyTensor or numpy ndarray.
         # examples: Linear.set_params(W=np.ones((in, out), dtype=np.float32)),
         # Linear.set_params(**{'W':np.ones((in, out), dtype=np.float32)})
-        self.allow_params = ["W", "b"]
 
         if not self.config_complete():
             assert "W" in parameters, ("in_features is unknown")
