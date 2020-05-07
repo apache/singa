@@ -32,7 +32,7 @@ from cuda_helper import gpu_dev, cpu_dev
 
 
 class TestLinearLayer(unittest.TestCase):
-    def test_linear_set_param_init(self):
+    def test_param_init(self):
         x = tensor.Tensor((10,2)).gaussian(1, 2)
         li = autograd.Linear(2, out_features=3)
         li.set_params_initializer(
@@ -43,7 +43,7 @@ class TestLinearLayer(unittest.TestCase):
         params = li.get_params()
         pass
 
-    def test_linear_force_in_features(self):
+    def test_init_in_and_out(self):
         li1 = autograd.Linear(2, out_features=3)
         li2 = autograd.Linear(in_features=2,out_features=3)
         li3 = autograd.Linear(2, 3)
@@ -58,7 +58,7 @@ class TestLinearLayer(unittest.TestCase):
             y=li(x)
         pass
 
-    def test_linear_auto_in_features_by_set_params(self):
+    def test_init_by_set_params(self):
         x = tensor.Tensor((10,2)).gaussian(1, 2)
         W = tensor.Tensor((2,3)).gaussian(1, 2)
         b = tensor.Tensor((3,)).gaussian(1, 2)
@@ -69,7 +69,7 @@ class TestLinearLayer(unittest.TestCase):
         y=li1(x)
         pass
 
-    def test_linear_auto_in_features_by_forward(self):
+    def test_init_by_forward(self):
         x = tensor.Tensor((10,2)).gaussian(1, 2)
         W = tensor.Tensor((2,3)).gaussian(1, 2)
         b = tensor.Tensor((3,)).gaussian(1, 2)
@@ -79,14 +79,14 @@ class TestLinearLayer(unittest.TestCase):
         pass
 
 class TestRNNLayer(unittest.TestCase):
-    def test_forward(self):
+    def test_set_param(self):
         batch_size = 2
         feature_size = 3
         sequence_size = 4
         hidden_size = 5
 
 
-        print("gaussian 0", tensor.Tensor((hidden_size, )).gaussian(0, 0))
+        # print("gaussian 0", tensor.Tensor((hidden_size, )).gaussian(0, 0))
 
         rnn1 = autograd.RNN(hidden_size)
         rnn2 = autograd.RNN(feature_size, hidden_size)
@@ -107,10 +107,26 @@ class TestRNNLayer(unittest.TestCase):
             (Wx, Wh, b) = rnn.get_params()
 
             (ys, h) = rnn(xs, h0)
-            for y in ys:
-                print("y shape", y.shape)
+            # for y in ys:
+                # print("y shape", y.shape)
             # logging.debug("h shape", h.shape)
         pass
+
+class TestLSTMLayer(unittest.TestCase):
+    def test_set_param(self):
+        batch_size = 2
+        feature_size = 3
+        sequence_size = 4
+        hidden_size = 5
+        lstm1 = autograd.LSTM(hidden_size)
+        xs = []
+        for i in range(sequence_size):
+            x = tensor.Tensor((batch_size,feature_size)).gaussian(1, 2)
+            xs.append(x)
+            pass
+        h0 = tensor.Tensor((1, hidden_size)).gaussian(1, 2)
+        c0 = tensor.Tensor((1, hidden_size)).gaussian(1, 2)
+        y, h, c = lstm1(xs, (h0,c0))
 
 # logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
