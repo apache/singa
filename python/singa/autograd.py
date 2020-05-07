@@ -1503,7 +1503,11 @@ class Linear(Layer):
             return {"W": self.W}
 
     def set_params_initializer(self, **initializers):
+        # Set the initializer for params.
+        # for exmaple: 
         # self.initializers = {"W": lambda, "b": lambda}
+        # then the weight W will be initialized with lambda given
+        # example initializer lambda: lambda t: t.gaussian(0,1)
         for param in initializers:
             assert param in self.allow_params
         self.initializers = initializers
