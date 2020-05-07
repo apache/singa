@@ -111,9 +111,31 @@ class TestRNNLayer(unittest.TestCase):
                 # print("y shape", y.shape)
             # logging.debug("h shape", h.shape)
         pass
+    def test_set_init(self):
+        batch_size = 2
+        feature_size = 3
+        sequence_size = 4
+        hidden_size = 5
+
+        rnn = autograd.RNN(feature_size, hidden_size)
+        rnn.set_params_initializer(
+                Wx=lambda x: x.set_value(0.0),
+                Wh=lambda x: x.set_value(0.0),
+                b=lambda x: x.gaussian(0,1)
+        )
+
+        xs = []
+        for i in range(sequence_size):
+            x = tensor.Tensor((batch_size,feature_size)).gaussian(1, 2)
+            xs.append(x)
+            pass
+
+        h0 = tensor.Tensor((1, hidden_size)).gaussian(1, 2)
+
+        (ys, h) = rnn(xs, h0)
 
 class TestLSTMLayer(unittest.TestCase):
-    def test_set_param(self):
+    def test_forward(self):
         batch_size = 2
         feature_size = 3
         sequence_size = 4

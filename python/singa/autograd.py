@@ -3248,10 +3248,15 @@ class RNN(RNN_Base):
     #        bidirectional=False,
     #):
     def __init__(self, *args, **kwargs):
-        # self.hidden_size=hidden_size
-        # self.input_size=input_size
-        # self.nonlinearity = nonlinearity
         self.init_param_done = False
+        self.allow_params=["Wx", "Wh", "b"]
+
+        # default initializers
+        self.initializers = {
+            "Wx": lambda x: x.gaussian(0,1),
+            "Wh": lambda x: x.gaussian(0,1),
+            "b": lambda x: x.set_value(0.0)
+        }
 
         allowed_args = [ "input_size", "hidden_size", "num_layers", "nonlinearity", "bias", "batch_first", "dropout", "bidirectional" ]
         assert all([key in allowed_args for key in kwargs])
@@ -3285,11 +3290,16 @@ class RNN(RNN_Base):
         assert self.config_complete(), ("Config not complete, required input_size, hidden_size")
         assert not self.init_param_done
         Wx_shape = (self.input_size, self.hidden_size)
-        self.Wx = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True).gaussian(0.0, 1.0)
+        self.Wx = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
         Wh_shape = (self.hidden_size, self.hidden_size)
-        self.Wh = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True).gaussian(0.0, 1.0)
+        self.Wh = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
         B_shape = (self.hidden_size,)
-        self.b = Tensor(shape=B_shape, requires_grad=True, stores_grad=True).set_value(0.0)
+        self.b = Tensor(shape=B_shape, requires_grad=True, stores_grad=True)
+
+        # init
+        self.initializers["Wx"](self.Wx)
+        self.initializers["Wh"](self.Wh)
+        self.initializers["b"](self.b)
 
         self.params = (self.Wx, self.Wh, self.b)
         self.init_param_done = True
@@ -3336,9 +3346,17 @@ class RNN(RNN_Base):
         assert self.init_param_done, ("Params are not initialized")
         return {"Wx":self.Wx, "Wh":self.Wh, "b": self.b}
 
-    def set_params(self, **parameters):
-        self.allow_params=["Wx", "Wh", "b"]
+    def set_params_initializer(self, **initializers):
+        # Set the initializer for params.
+        # for exmaple: 
+        # self.initializers = {"W": lambda, "b": lambda}
+        # then the weight W will be initialized with lambda given
+        # example initializer lambda: lambda t: t.gaussian(0,1)
+        for param in initializers:
+            assert param in self.allow_params
+        self.initializers = initializers
 
+    def set_params(self, **parameters):
         if not self.config_complete():
             assert "Wx" in parameters, ("input_size is unknown")
             self.input_size = parameters["Wx"].shape[0]
