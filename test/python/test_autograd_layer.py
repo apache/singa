@@ -135,20 +135,39 @@ class TestRNNLayer(unittest.TestCase):
         (ys, h) = rnn(xs, h0)
 
 class TestLSTMLayer(unittest.TestCase):
+    def get_xs(self, sequence_size, batch_size, feature_size):
+        xs = []
+        for i in range(sequence_size):
+            x = tensor.Tensor((batch_size,feature_size)).gaussian(1, 2)
+            xs.append(x)
+        return xs
+
     def test_forward(self):
         batch_size = 2
         feature_size = 3
         sequence_size = 4
         hidden_size = 5
         lstm1 = autograd.LSTM(hidden_size)
-        xs = []
-        for i in range(sequence_size):
-            x = tensor.Tensor((batch_size,feature_size)).gaussian(1, 2)
-            xs.append(x)
-            pass
         h0 = tensor.Tensor((1, hidden_size)).gaussian(1, 2)
         c0 = tensor.Tensor((1, hidden_size)).gaussian(1, 2)
-        y, h, c = lstm1(xs, (h0,c0))
+        y, h, c = lstm1(self.get_xs(sequence_size, batch_size, feature_size), (h0,c0))
+
+    def test_set_init(self):
+        batch_size = 2
+        feature_size = 3
+        sequence_size = 4
+        hidden_size = 5
+        lstm = autograd.LSTM(hidden_size)
+        lstm.set_params_initializer(
+                Wx=lambda x: x.set_value(0.0),
+                Wh=lambda x: x.set_value(0.0),
+                Bx=lambda x: x.gaussian(0,1),
+                Bh=lambda x: x.gaussian(0,1)
+        )
+        h0 = tensor.Tensor((1, hidden_size)).gaussian(1, 2)
+        c0 = tensor.Tensor((1, hidden_size)).gaussian(1, 2)
+        y, h, c = lstm(self.get_xs(sequence_size, batch_size, feature_size), (h0,c0))
+        pass
 
 # logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)

@@ -3409,7 +3409,16 @@ class LSTM(RNN_Base):
         """
         self.init_param_done = False
         allowed_args = [ "input_size", "hidden_size", "num_layers", "nonlinearity", "bias", "batch_first", "dropout", "bidirectional" ]
+        self.allow_params=["Wx", "Wh", "Bx", "Bh"]
         assert all([key in allowed_args for key in kwargs])
+
+        # default initializers
+        self.initializers = {
+            "Wx": lambda x: x.gaussian(0,0.1),
+            "Wh": lambda x: x.gaussian(0,0.1),
+            "Bx": lambda x: x.set_value(0.0),
+            "Bh": lambda x: x.set_value(0.0)
+        }
 
         self.hidden_size = kwargs.get("hidden_size", None)
         self.input_size = kwargs.get("input_size", None)
@@ -3442,27 +3451,27 @@ class LSTM(RNN_Base):
         self.Wx = []
         for i in range(4):
             w = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
-            w.gaussian(0.0, 0.01)
+            self.initializers["Wx"](w)
             self.Wx.append(w)
 
         Wh_shape = (self.hidden_size, self.hidden_size)
         self.Wh = []
         for i in range(4):
             w = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
-            w.gaussian(0.0, 0.01)
+            self.initializers["Wh"](w)
             self.Wh.append(w)
 
         Bx_shape = (self.hidden_size,)
         self.Bx = []
         for i in range(4):
             b = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
-            b.set_value(0.0)
+            self.initializers["Bx"](b)
             self.Bx.append(b)
 
         self.Bh = []
         for i in range(4):
             b = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
-            b.set_value(0.0)
+            self.initializers["Bh"](b)
             self.Bh.append(b)
 
         self.params = self.Wx + self.Wh + self.Bx + self.Bh
@@ -3532,6 +3541,16 @@ class LSTM(RNN_Base):
         hout = tanh(cout)
         hout = mul(o, hout)
         return hout, cout
+
+    def set_params_initializer(self, **initializers):
+        # Set the initializer for params.
+        # for exmaple: 
+        # self.initializers = {"W": lambda, "b": lambda}
+        # then the weight W will be initialized with lambda given
+        # example initializer lambda: lambda t: t.gaussian(0,1)
+        for param in initializers:
+            assert param in self.allow_params
+        self.initializers = initializers
 
 
 class Abs(Operation):
