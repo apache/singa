@@ -3397,7 +3397,7 @@ class CudnnRNN(Layer):
                 hidden_size: hidden feature dim
                 rnn_mode: accepted value: "vanilla", "tanh", "relu",  "lstm", "gru"
         """
-        assert singa.USE_CUDA is True, "Not able to run without CUDA"
+        assert singa.USE_CUDA, "Not able to run without CUDA"
 
         self.rnn_mode = rnn_mode
         self.input_size = input_size
@@ -3419,15 +3419,16 @@ class CudnnRNN(Layer):
         elif self.rnn_mode == "gru":
             self.cudnn_rnn_mode = 3
 
-    def __call__(self, x):
+    def __call__(self, xs):
         if not hasattr(self, "handle"):
-            cpp_x = singa.VecTensor()
-            [cpp_x.append(i.data) for i in x]
+            # xs ctensor vector for handle creation
+            xs_ct = singa.VecTensor()
+            [xs_ct.append(i.data) for i in xs]
 
             # TODO: CPU handle
 
             # GPU handle
-            self.handle = singa.CudnnRNNHandle(cpp_x, self.input_size,
+            self.handle = singa.CudnnRNNHandle(xs_ct, self.input_size,
                                                self.hidden_size,
                                                self.cudnn_rnn_mode,
                                                self.num_layers, 1, self.dropout,
@@ -3435,12 +3436,19 @@ class CudnnRNN(Layer):
 
             self.W = Tensor(shape=(self.handle.weights_size,),
                             requires_grad=True,
-                            stores_grad=True)
+                            stores_grad=True).gaussian(1,0.1)
+
+            pass
+
+        # xs is a list
+        # operation forward accept a list
+        # thus need to concate xs and W into a list
+        xs.append(self.W)
 
         # outputs returned is list
         #   inputs has shape of {sequence length, batch size, feature size}
         #   outputs has shape of {sequence length, batch size, hidden size}
-        return _RNN(self.handle)(x, self.W)
+        return _RNN(self.handle)(*xs)
 
     def get_params(self):
         assert hasattr(self, "W"), ("Should ran forward to generate Weights before getting it.")

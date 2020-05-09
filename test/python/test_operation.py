@@ -3051,8 +3051,30 @@ class TestPythonOperation(unittest.TestCase):
     @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_cudnn_rnn_gpu(self):
         self.cudnn_rnn_test(gpu_dev)
-        pass
 
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_cudnn_rnn_layer_gpu(self):
+        self.cudnn_rnn_layer_test(gpu_dev)
+
+    def cudnn_rnn_layer_test(self, dev):
+        # init params, inputs
+        seq_length = 2
+        batch_size = 3
+        feature_size = 4
+        hidden_size = 2
+
+        xs = []
+        for i in range(seq_length):
+            x = tensor.Tensor((batch_size,feature_size), device=dev).gaussian(1,0.1)
+            xs.append(x)
+
+        # init layer
+        rnn = autograd.CudnnRNN(feature_size,hidden_size)
+
+        # forward
+        rnn(xs)
+
+        pass
 
 if __name__ == '__main__':
     unittest.main()
