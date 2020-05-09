@@ -3334,33 +3334,44 @@ class _RNN(Operation):
     """
 
     def __init__(self, handle):
-        assert singa.USE_CUDA is True, "Not able to run without CUDA"
+        assert singa.USE_CUDA, "Not able to run without CUDA"
         super(_RNN, self).__init__()
         self.handle = handle
 
-    def forward(self, x, W):
-        # TODO: CPU forward
-
-        # GPU forward
+    def forward(self, *in_tensors):
+        W = in_tensors[-1]
+        xs = in_tensors[:-1]
         if training:
-            y = singa.GpuRNNForwardTraining(x, W, self.handle)
-            self.inputs = (x, W, y)
+            ys = singa.GpuRNNForwardTraining(xs, W, self.handle)
+            self.inputs = (xs, W, ys)
         else:
-            y = singa.GpuRNNForwardInference(x, W, self.handle)
+            ys = singa.GpuRNNForwardInference(xs, W, self.handle)
 
-        return y
+        return ys
 
-    def backward(self, dy):
+    def backward(self, dys):
         assert training is True and hasattr(
             self, "inputs"), "Please set training as True before do BP. "
 
-        # TODO: CPU backward
-
         # GPU backward
-        dx = singa.GpuRNNBackwardx(self.inputs[2], dy, self.inputs[1],
-                                   self.handle)
+
+        # python list/tuple to singa c++ tensor vector
+        #   to factor out as helper
+        dys_ct = singa.VecTensor()
+        for dy in dys:
+            dys_ct.append(dy)
+
+        # inputs list order refer to def forward() above
+        #   inputs[2] is dys
+        #   inputs[1] is W
+        #   inputs[0] is xs
+        dxs = singa.GpuRNNBackwardx(self.inputs[2], dys_ct, self.inputs[1], self.handle)
         dW = singa.GpuRNNBackwardW(self.inputs[0], self.inputs[2], self.handle)
-        return dx, dW
+
+        # note: ret list need to match forward(self, *in_tensors)
+        #   *in_tensors: [xs[0],  xs[1],  xs[2],  ..., W]
+        #   dxs:         [dxs[0], dxs[1], dxs[2], ..., dW]
+        return list(dxs).append(dW)
 
 
 class CudnnRNN(Layer):
@@ -3450,7 +3461,7 @@ def RNN(
     dropout=0,
     bidirectional=False,
     mode="vanilla",
-    backend="cudnn",
+    backend="native",
 ):
     if backend == "cudnn":
         return CudnnRNN(

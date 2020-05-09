@@ -3015,6 +3015,44 @@ class TestPythonOperation(unittest.TestCase):
     def test_onehot_gpu(self):
         self.onehot_test(gpu_dev)
 
+    def cudnn_rnn_test(self, dev):
+        # init params, inputs
+        seq_length = 2
+        batch_size = 3
+        feature_size = 4
+        hidden_size = 2
+
+        for mode in [0, 1, 2, 3]: # 0-relu, 1-tanh, 2-lstm, 3-gru
+            xs_ct = singa.VecTensor()
+            dys_ct = []
+            xs = []
+            for i in range(seq_length):
+                x = tensor.Tensor((batch_size,feature_size), device=dev).gaussian(1,0.1)
+                xs.append(x)
+                xs_ct.append(x.data)
+                dy = tensor.Tensor((batch_size,hidden_size), device=dev).gaussian(1,1)
+                dys_ct.append(dy.data)
+
+            # init cudnn rnn op
+            rnn_handle = singa.CudnnRNNHandle(xs_ct, feature_size, hidden_size, mode)
+
+            W = tensor.Tensor((rnn_handle.weights_size, ), device=dev).gaussian(1,0.1)
+
+            # init operator/operation
+            _rnn = autograd._RNN(rnn_handle)
+            xs.append(W)
+
+            # forward
+            ys = _rnn(*xs)
+
+            # backward
+            dxs = _rnn.backward(dys_ct)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_cudnn_rnn_gpu(self):
+        self.cudnn_rnn_test(gpu_dev)
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()

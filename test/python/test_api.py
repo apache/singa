@@ -730,9 +730,8 @@ class TestAPI(unittest.TestCase):
     def test_as_type2_gpu(self):
         self._as_type2_helper(gpu_dev)
 
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_rnn(self):
-        if not singa_api.USE_CUDA:
-            return
 
         dev = gpu_dev
 
