@@ -3022,7 +3022,8 @@ class TestPythonOperation(unittest.TestCase):
         feature_size = 4
         hidden_size = 2
 
-        for mode in [0, 1, 2, 3]: # 0-relu, 1-tanh, 2-lstm, 3-gru
+        # for mode in [0, 1, 2, 3]: # 0-relu, 1-tanh, 2-lstm, 3-gru
+        for mode in [1]: # 0-relu, 1-tanh, 2-lstm, 3-gru
             xs_ct = singa.VecTensor()
             dys_ct = []
             xs = []
@@ -3044,6 +3045,7 @@ class TestPythonOperation(unittest.TestCase):
 
             # forward
             ys = _rnn(*xs)
+            # print(ys)
 
             # backward
             dxs = _rnn.backward(dys_ct)
@@ -3058,10 +3060,10 @@ class TestPythonOperation(unittest.TestCase):
 
     def cudnn_rnn_layer_test(self, dev):
         # init params, inputs
-        seq_length = 2
+        seq_length = 4
         batch_size = 3
-        feature_size = 4
-        hidden_size = 2
+        feature_size = 2
+        hidden_size = 1
 
         xs = []
         for i in range(seq_length):
@@ -3072,7 +3074,12 @@ class TestPythonOperation(unittest.TestCase):
         rnn = autograd.CudnnRNN(feature_size,hidden_size)
 
         # forward
-        rnn(xs)
+        ys = rnn(xs)
+        print(ys) # 5*[(3,1)]
+        for y in ys:
+            assert y.shape == (batch_size, hidden_size)
+        assert len(ys) == seq_length
+        [print(y.shape) for y in ys]
 
         pass
 

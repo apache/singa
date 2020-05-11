@@ -167,6 +167,8 @@ def backward(y, dy=None):
         dxs = op._do_backward(*dys)
         # TODO src and dx must match
 
+        # import pdb; pdb.set_trace()
+
         assert len(op.src) == len(dxs), (
             "the number of src ops (=%d) and dx (=%d) not match" %
             (len(op.src), len(dxs)))
@@ -273,6 +275,7 @@ class Operation(object):
             Tensor instance(s)
         """
         # TODO add the pre hook
+        # import pdb; pdb.set_trace()
         assert all([isinstance(x, Tensor) for x in xs
                    ]), "xs should include only Tensor instances"
 
@@ -311,6 +314,7 @@ class Operation(object):
         return ys
 
     def _do_backward(self, *dys):
+        # import pdb; pdb.set_trace()
         dxs = self.backward(*dys)
         if not isinstance(dxs, tuple):
             dxs = (dxs,)
@@ -3328,6 +3332,11 @@ class LSTM(RNN_Base):
         hout = mul(o, hout)
         return hout, cout
 
+def print_ctensor(t1):
+    d = t1.device()
+    t1.ToHost()
+    print(t1.GetFloatValue(t1.Size()))
+    t1.ToDevice(d)
 
 class _RNN(Operation):
     """ RNN operation with c++ backend
@@ -3339,22 +3348,46 @@ class _RNN(Operation):
         self.handle = handle
 
     def forward(self, *in_tensors):
+
         W = in_tensors[-1]
         xs = in_tensors[:-1]
+
+        # print("_rnn forward W")
+        # print_t(W)
+        # print("_rnn forward xs")
+        # for x in xs:
+        #   print_t(x)
+
+        # TODO
+        return_sequences = True
+
+
+        # import pdb; pdb.set_trace()
+
         if training:
             ys = singa.GpuRNNForwardTraining(xs, W, self.handle)
+            # ys = singa.GpuRNNForwardTraining(xs, W, rnn_handle)
             self.inputs = (xs, W, ys)
+
+            # print("_rnn ys",ys)
+            # print("_rnn ys")
+            # for y in ys:
+                # print_t(y)
         else:
             ys = singa.GpuRNNForwardInference(xs, W, self.handle)
 
-        return ys
 
-    def backward(self, dys):
+        if return_sequences:
+            return ys
+        else:
+            return ys[-1]
+
+    def backward(self, *dys):
         assert training is True and hasattr(
             self, "inputs"), "Please set training as True before do BP. "
 
-        # GPU backward
 
+        # import pdb; pdb.set_trace()
         # python list/tuple to singa c++ tensor vector
         #   to factor out as helper
         dys_ct = singa.VecTensor()
@@ -3371,7 +3404,13 @@ class _RNN(Operation):
         # note: ret list need to match forward(self, *in_tensors)
         #   *in_tensors: [xs[0],  xs[1],  xs[2],  ..., W]
         #   dxs:         [dxs[0], dxs[1], dxs[2], ..., dW]
-        return list(dxs).append(dW)
+        # import pdb; pdb.set_trace()
+        # dxs = list(dxs)
+        # dxs.append(dW)
+        # return tuple(dxs)
+
+        # should return tuple(unpacked) of all operator inputs in order
+        return (*dxs, dW)
 
 
 class CudnnRNN(Layer):
@@ -3390,7 +3429,7 @@ class CudnnRNN(Layer):
                  batch_first=False,
                  dropout=0,
                  bidirectional=False,
-                 rnn_mode="vanilla"):
+                 rnn_mode="tanh"):
         """
             Args:
                 input_size: input feature dim
@@ -3405,8 +3444,6 @@ class CudnnRNN(Layer):
         self.num_layers = num_layers
         self.dropout = dropout
         self.bidirectional = 1 if bidirectional else 0
-
-        # TODO: CPU parameter
 
         # GPU parameter
         # cudnn_rnn_mode: 0 - RNN RELU, 1 - RNN TANH, 2 - LSTM, 3 - GRU
@@ -3424,39 +3461,52 @@ class CudnnRNN(Layer):
             # xs ctensor vector for handle creation
             xs_ct = singa.VecTensor()
             [xs_ct.append(i.data) for i in xs]
-
-            # TODO: CPU handle
+            # print("xs",xs)
 
             # GPU handle
-            self.handle = singa.CudnnRNNHandle(xs_ct, self.input_size,
-                                               self.hidden_size,
-                                               self.cudnn_rnn_mode,
-                                               self.num_layers, 1, self.dropout,
-                                               self.bidirectional)
+            #self.handle = singa.CudnnRNNHandle(xs_ct, self.input_size,
+            #                                   self.hidden_size,
+            #                                   self.cudnn_rnn_mode,
+            #                                   self.num_layers, 1, self.dropout,
+            #                                   self.bidirectional)
 
+            self.handle = singa.CudnnRNNHandle(xs_ct, self.input_size, self.hidden_size, self.cudnn_rnn_mode)
+
+            # print("00")
             self.W = Tensor(shape=(self.handle.weights_size,),
                             requires_grad=True,
-                            stores_grad=True).gaussian(1,0.1)
+                            stores_grad=True, device=xs[0].device)
+            # print("W layer", type(self.W))
 
-            pass
+            # import pdb; pdb.set_trace()
+            self.W.gaussian(1,0.1)
+            # self.W.set_value(0.0)
+            # print("W layer")
+            # print("W layer",self.W)
+            # print("W layer11")
+
 
         # xs is a list
         # operation forward accept a list
         # thus need to concate xs and W into a list
-        xs.append(self.W)
+        # xs.append(self.W)
+        # print("xs+w",xs)
 
         # outputs returned is list
         #   inputs has shape of {sequence length, batch size, feature size}
         #   outputs has shape of {sequence length, batch size, hidden size}
-        return _RNN(self.handle)(*xs)
 
-    def get_params(self):
-        assert hasattr(self, "W"), ("Should ran forward to generate Weights before getting it.")
-        return self.W
+        self.device_check(*xs, self.W)
+        # print("layer", len(xs))
+        return _RNN(self.handle)(*xs, self.W)
 
-    def set_params(self, **parameters):
-        self.allow_params = ["W"]
-        super(CudnnRNN, self).set_params(**parameters)
+    #def get_params(self):
+    #    assert hasattr(self, "W"), ("Should ran forward to generate Weights before getting it.")
+    #    return self.W
+
+    #def set_params(self, **parameters):
+    #    self.allow_params = ["W"]
+    #    super(CudnnRNN, self).set_params(**parameters)
 
 
 def RNN(
