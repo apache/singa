@@ -3023,21 +3023,25 @@ class TestPythonOperation(unittest.TestCase):
         hidden_size = 2
 
         # for mode in [0, 1, 2, 3]: # 0-relu, 1-tanh, 2-lstm, 3-gru
-        for mode in [1]: # 0-relu, 1-tanh, 2-lstm, 3-gru
+        for mode in [1]:  # 0-relu, 1-tanh, 2-lstm, 3-gru
             xs_ct = singa.VecTensor()
             dys_ct = []
             xs = []
             for i in range(seq_length):
-                x = tensor.Tensor((batch_size,feature_size), device=dev).gaussian(1,0.1)
+                x = tensor.Tensor((batch_size, feature_size),
+                                  device=dev).gaussian(1, 0.1)
                 xs.append(x)
                 xs_ct.append(x.data)
-                dy = tensor.Tensor((batch_size,hidden_size), device=dev).gaussian(1,1)
+                dy = tensor.Tensor((batch_size, hidden_size),
+                                   device=dev).gaussian(1, 1)
                 dys_ct.append(dy.data)
 
             # init cudnn rnn op
-            rnn_handle = singa.CudnnRNNHandle(xs_ct, feature_size, hidden_size, mode)
+            rnn_handle = singa.CudnnRNNHandle(xs_ct, feature_size, hidden_size,
+                                              mode)
 
-            W = tensor.Tensor((rnn_handle.weights_size, ), device=dev).gaussian(1,0.1)
+            W = tensor.Tensor((rnn_handle.weights_size,),
+                              device=dev).gaussian(1, 0.1)
 
             # init operator/operation
             _rnn = autograd._RNN(rnn_handle)
@@ -3067,11 +3071,12 @@ class TestPythonOperation(unittest.TestCase):
 
         xs = []
         for i in range(seq_length):
-            x = tensor.Tensor((batch_size,feature_size), device=dev).gaussian(1,0.1)
+            x = tensor.Tensor((batch_size, feature_size),
+                              device=dev).gaussian(1, 0.1)
             xs.append(x)
 
         # init layer
-        rnn = autograd.CudnnRNN(feature_size,hidden_size)
+        rnn = autograd.CudnnRNN(feature_size, hidden_size)
 
         # forward
         ys = rnn(xs)
@@ -3082,6 +3087,7 @@ class TestPythonOperation(unittest.TestCase):
         # [print(y.shape) for y in ys]
 
         pass
+
 
 if __name__ == '__main__':
     unittest.main()

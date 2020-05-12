@@ -3132,15 +3132,15 @@ class VanillaRNN(RNN_Base):
     """
 
     def __init__(
-            self,
-            input_size,
-            hidden_size,
-            num_layers=1,
-            nonlinearity="tanh",
-            bias=True,
-            batch_first=False,
-            dropout=0,
-            bidirectional=False,
+        self,
+        input_size,
+        hidden_size,
+        num_layers=1,
+        nonlinearity="tanh",
+        bias=True,
+        batch_first=False,
+        dropout=0,
+        bidirectional=False,
     ):
         """
         Args:
@@ -3212,15 +3212,15 @@ class LSTM(RNN_Base):
     """
 
     def __init__(
-            self,
-            input_size,
-            hidden_size,
-            nonlinearity="tanh",
-            num_layers=1,
-            bias=True,
-            batch_first=False,
-            dropout=0,
-            bidirectional=False,
+        self,
+        input_size,
+        hidden_size,
+        nonlinearity="tanh",
+        num_layers=1,
+        bias=True,
+        batch_first=False,
+        dropout=0,
+        bidirectional=False,
     ):
         """
         Args:
@@ -3355,11 +3355,11 @@ class _RNN(Operation):
         else:
             ys = singa.GpuRNNForwardInference(xs, W, self.handle)
 
-
         if return_sequences:
             return ys
         else:
-            raise TypeError("Only support return full sequences for cudnn rnn for now")
+            raise TypeError(
+                "Only support return full sequences for cudnn rnn for now")
 
     def backward(self, *dys):
         assert training is True and hasattr(
@@ -3374,7 +3374,8 @@ class _RNN(Operation):
         #   inputs[2] is dys
         #   inputs[1] is W
         #   inputs[0] is xs
-        dxs = singa.GpuRNNBackwardx(self.inputs[2], dys_ct, self.inputs[1], self.handle)
+        dxs = singa.GpuRNNBackwardx(self.inputs[2], dys_ct, self.inputs[1],
+                                    self.handle)
         dW = singa.GpuRNNBackwardW(self.inputs[0], self.inputs[2], self.handle)
 
         # note: ret list need to match forward(self, *in_tensors)
@@ -3443,9 +3444,9 @@ class CudnnRNN(Layer):
 
             self.W = Tensor(shape=(self.handle.weights_size,),
                             requires_grad=True,
-                            stores_grad=True, device=xs[0].device)
-            self.W.gaussian(1,0.1)
-
+                            stores_grad=True,
+                            device=xs[0].device)
+            self.W.gaussian(1, 0.1)
 
         self.device_check(*xs, self.W)
 
