@@ -3075,11 +3075,11 @@ class TestPythonOperation(unittest.TestCase):
 
         # forward
         ys = rnn(xs)
-        print(ys) # 5*[(3,1)]
+        # print(ys) # 5*[(3,1)]
         for y in ys:
             assert y.shape == (batch_size, hidden_size)
         assert len(ys) == seq_length
-        [print(y.shape) for y in ys]
+        # [print(y.shape) for y in ys]
 
         pass
 

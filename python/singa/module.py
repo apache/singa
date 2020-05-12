@@ -186,13 +186,4 @@ class Module(object, metaclass=Graph):
             if self.initialized == True:
                 self._device.RunGraph(self.sequential)
 
-        # print("module __call__")
-        # print("input type", type(input))
-        # print("len input", len(input))
-        #for tx in input[0]:
-        #    print(tx.shape)
-        #    print(tx)
-        #    print("id", id(tx))
-        #import pdb; pdb.set_trace()
-        # print(input)
         return self.forward(*input, **kwargs)

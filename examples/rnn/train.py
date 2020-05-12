@@ -39,9 +39,7 @@ class CharRNN(module.Module):
 
     def __init__(self, vocab_size, hidden_size=32):
         super(CharRNN, self).__init__()
-        # self.rnn = autograd.LSTM(vocab_size, hidden_size)
-        # self.rnn = autograd.VanillaRNN(vocab_size, hidden_size)
-        self.rnn = autograd.CudnnRNN(vocab_size, hidden_size)
+        self.rnn = autograd.LSTM(vocab_size, hidden_size)
         self.dense = autograd.Linear(hidden_size, vocab_size)
         self.optimizer = opt.SGD(0.01)
         self.hidden_size = hidden_size
@@ -55,16 +53,13 @@ class CharRNN(module.Module):
         self.hx.set_value(0.0)
         self.cx.set_value(0.0)
 
-    def forward(self, inputs): # [seq64 * (batch32, 101)]
-        x = self.rnn(inputs)
-        # x, self.hx, self.cx = self.rnn(inputs, (self.hx, self.cx)) # x = [seq64 * (32, 128)
-        x = autograd.cat(x) # x = (2048, 128)
-        x = autograd.reshape(x, (-1, self.hidden_size)) # x = (2048, 128)
-        x = self.dense(x) # (2048, 101)
-        return x
+    def forward(self, inputs):
+        x, self.hx, self.cx = self.rnn(inputs, (self.hx, self.cx))
+        x = autograd.cat(x)
+        x = autograd.reshape(x, (-1, self.hidden_size))
+        return self.dense(x)
 
     def loss(self, out, ty):
-        # import pdb; pdb.set_trace()
         ty = autograd.reshape(ty, (-1, 1))
         return autograd.softmax_cross_entropy(out, ty)
 
@@ -86,7 +81,6 @@ class Data(object):
                              encoding='iso-8859-1').read()  # read text file
         chars = list(set(self.raw_data))
         self.vocab_size = len(chars)
-        print("vocab_size", self.vocab_size)
         self.char_to_idx = {ch: i for i, ch in enumerate(chars)}
         self.idx_to_char = {i: ch for i, ch in enumerate(chars)}
         data = [self.char_to_idx[c] for c in self.raw_data]
@@ -94,7 +88,6 @@ class Data(object):
         nsamples = len(data) // (1 + seq_length)
         data = data[0: nsamples * (1 + seq_length)]
         data = np.asarray(data, dtype=np.int32)
-        print("seq length plus 1 ", seq_length + 1)
         data = np.reshape(data, (-1, seq_length + 1))
         # shuffle all sequences
         np.random.shuffle(data)
@@ -102,7 +95,6 @@ class Data(object):
         self.num_train_batch = self.train_dat.shape[0] // batch_size
         self.val_dat = data[self.train_dat.shape[0]:]
         self.num_test_batch = self.val_dat.shape[0] // batch_size
-        # print(self.train_dat[0])
         print('train dat', self.train_dat.shape)
         print('val dat', self.val_dat.shape)
 
@@ -137,16 +129,12 @@ def convert(batch,
             inputs=None,
             labels=None):
     '''convert a batch of data into a sequence of input tensors'''
-
-    # vertical split
     y = batch[:, 1:]
     x1 = batch[:, :seq_length]
-
-    # copy
     x = np.zeros((batch_size, seq_length, vocab_size), dtype=np.float32)
     for b in range(batch_size):
         for t in range(seq_length):
-            c = x1[b, t] # c is char one hot index
+            c = x1[b, t]
             x[b, t, c] = 1
     return numpy2tensors(x, y, dev, inputs, labels)
 
@@ -209,8 +197,7 @@ def train(data,
     cuda = device.create_cuda_gpu()
     model = CharRNN(data.vocab_size, hidden_size)
     model.on_device(cuda)
-    # model.graph(True, True)
-    model.graph(False, False)
+    model.graph(True, True)
 
     inputs, labels = None, None
 
