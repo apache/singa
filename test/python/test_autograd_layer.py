@@ -85,9 +85,6 @@ class TestRNNLayer(unittest.TestCase):
         sequence_size = 4
         hidden_size = 5
 
-
-        # print("gaussian 0", tensor.Tensor((hidden_size, )).gaussian(0, 0))
-
         rnn1 = autograd.RNN(hidden_size)
         rnn2 = autograd.RNN(feature_size, hidden_size)
 
@@ -169,7 +166,6 @@ class TestLSTMLayer(unittest.TestCase):
         y, h, c = lstm(self.get_xs(sequence_size, batch_size, feature_size), (h0,c0))
         pass
 
-# logging.basicConfig(stream=sys.stderr, level=logging.INFO)
-logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 if __name__ == '__main__':
     unittest.main()

@@ -1448,11 +1448,12 @@ class Linear(Layer):
             elif key == "out_features":
                 self.out_features = value
             elif key == "bias":
-                self.use_bias = bias
+                self.use_bias = use_bias
             else:
                 raise TypeError("Unsupported arguments given: ", key)
 
         # check args
+        args = list(args)
         if len(args) > 1 and (args[-1] in [True, False]):
             assert not self.use_bias
             self.use_bias = args.pop(-1)
