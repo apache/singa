@@ -1384,7 +1384,25 @@ class Linear(Layer):
     Generate a Linear operator
     """
 
-    def __init__(self, in_features, out_features, bias=True):
+    def do_init(self, x):
+        x.device.EnableGraph(False)
+
+        self.in_features = x.shape[1]
+        w_shape = (self.in_features, self.out_features)
+        b_shape = (self.out_features,)
+
+        self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
+        std = math.sqrt(2.0 / (self.in_features + self.out_features))
+        self.W.gaussian(0.0, std)
+
+        if self.bias:
+            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
+            self.b.set_value(0.0)
+
+        x.device.EnableGraph(True)
+
+    def __init__(self, out_features, bias=True):
+    # def __init__(self, in_features, out_features, bias=True):
         """
         Args:
             in_channels: int, the channel of input
@@ -1392,19 +1410,15 @@ class Linear(Layer):
                 filters
             bias: bool
         """
-        w_shape = (in_features, out_features)
-        b_shape = (out_features,)
+        # self.in_features = in_features
+        self.out_features = out_features
         self.bias = bias
-
-        self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
-        std = math.sqrt(2.0 / (in_features + out_features))
-        self.W.gaussian(0.0, std)
-
-        if self.bias:
-            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
-            self.b.set_value(0.0)
+        self.init=False
 
     def __call__(self, x):
+        if not self.init:
+            self.do_init(x)
+            self.init = True
         if self.bias:
             self.device_check(x, self.W, self.b)
         else:
@@ -1412,6 +1426,7 @@ class Linear(Layer):
         assert x.shape[1] == self.W.shape[0], (
             "Linear layer expects input features size %d received %d" %
             (self.W.shape[0], x.shape[1]))
+
         y = matmul(x, self.W)
         if self.bias:
             y = add_bias(y, self.b, axis=0)

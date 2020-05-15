@@ -46,15 +46,14 @@ class Graph(type):
                     self._device.Sync()
                     self._device.EnableGraph(False)
                     # deconstruct Operations before running the entire graph
-                    if name == 'optim':
-                        for fname in self._results:
-                            if isinstance(self._results[fname], list):
-                                for _matrix in self._results[fname]:
-                                    _matrix.creator = None
-                            else:
-                                self._results[fname].creator = None
-                        # make sure all Operations are deallocated
-                        gc.collect()
+                    for fname in self._results:
+                        if isinstance(self._results[fname], list):
+                            for _matrix in self._results[fname]:
+                                _matrix.creator = None
+                        else:
+                            self._results[fname].creator = None
+                    # make sure all Operations are deallocated
+                    gc.collect()
                     # add result tensor
                     self._results[name] = ret
                     # run graph
@@ -62,6 +61,7 @@ class Graph(type):
                     self.initialized = True
                     return ret
 
+                self._device.RunGraph(self,sequential)
                 return self._results[name]
             else:
                 return func(self, *args, **kwargs)
@@ -69,9 +69,7 @@ class Graph(type):
         return wrapper
 
     def __new__(cls, name, bases, attr):
-        attr["forward"] = Graph.buffer_operation(attr["forward"])
-        attr["loss"] = Graph.buffer_operation(attr["loss"])
-        attr["optim"] = Graph.buffer_operation(attr["optim"])
+        attr["train_one_batch"] = Graph.buffer_operation(attr["train_one_batch"])
 
         return super(Graph, cls).__new__(cls, name, bases, attr)
 
@@ -123,6 +121,16 @@ class Module(object, metaclass=Graph):
         self._results = {}
         self._called = set()
 
+    def compile(self, inputs, is_train=True, use_graph=False, sequential=False):
+        self._device.EnableGraph(True)
+        self.forward(*inputs)
+        self._device.EnableGraph(False)
+        self._device.ResetGraph()
+        autograd.training = is_train
+        self.training = is_train
+        self.graph_mode = use_graph
+        self.sequential = sequential
+
     def forward(self, *input):
         """Defines the computation performed at every call.
 
@@ -136,15 +144,8 @@ class Module(object, metaclass=Graph):
         """
         raise NotImplementedError
 
-    def loss(self, *args, **kwargs):
-        """Defines the loss function performed when training the module.
-        """
-        pass
-
-    def optim(self, *args, **kwargs):
-        """Defines the optim function for backward pass.
-        """
-        pass
+    def train_one_batch(self, *input):
+        raise NotImplementedError
 
     def train(self, mode=True):
         """Set the module in evaluation mode.
@@ -153,7 +154,7 @@ class Module(object, metaclass=Graph):
             mode(bool): when mode is True, this module will enter training mode
         """
         self.training = mode
-        autograd.training = True
+        autograd.training = mode
 
     def eval(self):
         """Sets the module in evaluation mode.
@@ -186,8 +187,7 @@ class Module(object, metaclass=Graph):
         return self.__class__.__name__
 
     def __call__(self, *input, **kwargs):
-        if self.graph_mode and self.training:
-            if self.initialized == True:
-                self._device.RunGraph(self.sequential)
-
-        return self.forward(*input, **kwargs)
+        if self.training:
+            return self.train_one_batch(*input, **kwargs)
+        else:
+            return self.forward(*input, **kwargs)
