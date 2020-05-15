@@ -1418,7 +1418,7 @@ class Linear(Layer):
     def config_complete(self):
         return True if all([self.in_features, self.out_features]) else False
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, out_features, *args, bias=True, **kwargs):
         """
         Args:
             in_channels: int, the channel of input
@@ -1441,36 +1441,17 @@ class Linear(Layer):
             "b": lambda x: x.set_value(0.0)
         }
 
-        # update by kwargs
-        for key, value in kwargs.items():
-            if key == "in_features":
-                self.in_features = value
-            elif key == "out_features":
-                self.out_features = value
-            elif key == "bias":
-                self.use_bias = use_bias
-            else:
-                raise TypeError("Unsupported arguments given: ", key)
+        # the following block is for backward compatibility.
+        # the old code will all Linear(2, 3), or (2, 3, False)
+        self.out_features = out_features
 
-        # check args
-        args = list(args)
-        if len(args) > 1 and (args[-1] in [True, False]):
-            assert not self.use_bias
-            self.use_bias = args.pop(-1)
+        if len(args) > 0:
+           self.in_features = out_features
+           self.out_features = args[0]
+        if len(args) > 1:
+           self.bias = args[1]
 
-        if len(args) == 2:
-            assert not self.in_features
-            assert not self.out_features
-            self.in_features = args[0]
-            self.out_features = args[1]
-        elif len(args) == 1:
-            if self.out_features:
-                self.in_features = args[0]
-            else:
-                self.out_features = args[0]
-
-        if not self.out_features:
-            raise TypeError("Illegal args, missing out_features")
+        self.bias = bias
 
         self.init_param_done = False
 

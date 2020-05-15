@@ -34,7 +34,9 @@ from cuda_helper import gpu_dev, cpu_dev
 class TestLinearLayer(unittest.TestCase):
     def test_param_init(self):
         x = tensor.Tensor((10,2)).gaussian(1, 2)
-        li = autograd.Linear(2, out_features=3)
+
+        li = autograd.Linear(2, 3)
+
         li.set_params_initializer(
             b=lambda x: x.gaussian(0,1),
             W=lambda x: x.set_value(0.0)
@@ -44,12 +46,10 @@ class TestLinearLayer(unittest.TestCase):
         pass
 
     def test_init_in_and_out(self):
-        li1 = autograd.Linear(2, out_features=3)
-        li2 = autograd.Linear(in_features=2,out_features=3)
-        li3 = autograd.Linear(2, 3)
-        li4 = autograd.Linear(3)
+        li1 = autograd.Linear(2, 3)
+        li2 = autograd.Linear(3)
 
-        for li in [li1,li2,li3,li4]:
+        for li in [li1,li2]:
             x = tensor.Tensor((10,2)).gaussian(1, 2)
             W = tensor.Tensor((2,3)).gaussian(1, 2)
             b = tensor.Tensor((3,)).gaussian(1, 2)
@@ -62,7 +62,9 @@ class TestLinearLayer(unittest.TestCase):
         x = tensor.Tensor((10,2)).gaussian(1, 2)
         W = tensor.Tensor((2,3)).gaussian(1, 2)
         b = tensor.Tensor((3,)).gaussian(1, 2)
+
         li1 = autograd.Linear(3)
+
         # logging.debug(li1.__dict__)
         li1.set_params(W=W,b=b)
         (W,b) = li1.get_params()
@@ -73,7 +75,9 @@ class TestLinearLayer(unittest.TestCase):
         x = tensor.Tensor((10,2)).gaussian(1, 2)
         W = tensor.Tensor((2,3)).gaussian(1, 2)
         b = tensor.Tensor((3,)).gaussian(1, 2)
+
         li1 = autograd.Linear(3)
+
         y=li1(x)
         (W,b) = li1.get_params()
         pass
