@@ -22,6 +22,7 @@ to use Computational Graph in their model.
 
 from functools import wraps
 
+from singa import tensor
 from singa import autograd
 from . import singa_wrap as singa
 from .device import get_default_device
@@ -37,32 +38,30 @@ class Graph(type):
         def wrapper(self, *args, **kwargs):
             if self.graph_mode and self.training:
                 name = func.__name__
-                if name not in self._called:
-                    # tag this function
-                    self._called.add(name)
+                if self.buffered:
                     # buffer operations
                     self._device.EnableGraph(True)
-                    ret = func(self, *args, **kwargs)
+                    self._results = func(self, *args, **kwargs)
                     self._device.Sync()
                     self._device.EnableGraph(False)
+
                     # deconstruct Operations before running the entire graph
-                    for fname in self._results:
-                        if isinstance(self._results[fname], list):
-                            for _matrix in self._results[fname]:
-                                _matrix.creator = None
-                        else:
-                            self._results[fname].creator = None
+                    if self._results:
+                        if isinstance(self._results, list):
+                            for _matrix in self._results:
+                                if isinstance(_matrix, tensor.Tensor):
+                                    _matrix.creator = None
+                        elif isinstance(_matrix, tensor.Tensor):
+                            self._results.creator = None
+
                     # make sure all Operations are deallocated
                     gc.collect()
-                    # add result tensor
-                    self._results[name] = ret
-                    # run graph
-                    self._device.RunGraph(self.sequential)
-                    self.initialized = True
-                    return ret
 
-                self._device.RunGraph(self,sequential)
-                return self._results[name]
+                    self.buffered = True
+
+                # run graph
+                self._device.RunGraph(self.sequential)
+                return self._results
             else:
                 return func(self, *args, **kwargs)
 
@@ -113,13 +112,13 @@ class Module(object, metaclass=Graph):
         Initializes internal Module state
         """
         self.training = True
+        self.buffered = False
         self.graph_mode = True
         self.sequential = False
         self.initialized = False
         self._device = get_default_device()
 
-        self._results = {}
-        self._called = set()
+        self._results = None
 
     def compile(self, inputs, is_train=True, use_graph=False, sequential=False):
         self._device.EnableGraph(True)
