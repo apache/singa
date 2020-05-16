@@ -16,7 +16,12 @@
 # under the License.
 # =============================================================================
 
-from singa.autograd import *
+import math
+
+from singa import tensor
+from singa import autograd
+from .tensor import Tensor
+from . import singa_wrap as singa
 
 
 class Layer(object):
@@ -127,9 +132,9 @@ class Linear(Layer):
             "Linear layer expects input features size %d received %d" %
             (self.W.shape[0], x.shape[1]))
 
-        y = matmul(x, self.W)
+        y = autograd.matmul(x, self.W)
         if self.bias:
-            y = add_bias(y, self.b, axis=0)
+            y = autograd.add_bias(y, self.b, axis=0)
         return y
 
     def get_params(self):
@@ -320,7 +325,7 @@ class Conv2d(Layer):
                     self.group,
                 )
 
-        y = conv2d(self.handle, x, self.W, self.b, self.odd_padding)
+        y = autograd.conv2d(self.handle, x, self.W, self.b, self.odd_padding)
         return y
 
     def get_params(self):
@@ -444,7 +449,7 @@ class BatchNorm2d(Layer):
             elif x.shape[0] != self.handle.batchsize:
                 self.handle = singa.CudnnBatchNormHandle(self.momentum, x.data)
 
-        y = batchnorm_2d(
+        y = autograd.batchnorm_2d(
             self.handle,
             x,
             self.scale,
@@ -589,7 +594,7 @@ class Pooling2d(Layer):
                     self.is_max,
                 )
 
-        y = pooling_2d(self.handle, x, self.odd_padding)
+        y = autograd.pooling_2d(self.handle, x, self.odd_padding)
         return y
 
 
@@ -801,14 +806,14 @@ class RNN(RNN_Base):
         return out, h
 
     def step_forward(self, x, h, Wx, Wh, b):
-        y2 = matmul(h, Wh)
-        y1 = matmul(x, Wx)
-        y = add(y2, y1)
-        y = add_bias(y, b, axis=0)
+        y2 = autograd.matmul(h, Wh)
+        y1 = autograd.matmul(x, Wx)
+        y = autograd.add(y2, y1)
+        y = autograd.add_bias(y, b, axis=0)
         if self.nonlinearity == "tanh":
-            y = tanh(y)
+            y = autograd.tanh(y)
         elif self.nonlinearity == "relu":
-            y = relu(y)
+            y = autograd.relu(y)
         else:
             raise ValueError
         return y
@@ -900,38 +905,38 @@ class LSTM(RNN_Base):
         return out, h, c
 
     def step_forward(self, x, h, c, Wx, Wh, Bx, Bh):
-        y1 = matmul(x, Wx[0])
-        y1 = add_bias(y1, Bx[0], axis=0)
-        y2 = matmul(h, Wh[0])
-        y2 = add_bias(y2, Bh[0], axis=0)
-        i = add(y1, y2)
-        i = sigmoid(i)
+        y1 = autograd.matmul(x, Wx[0])
+        y1 = autograd.add_bias(y1, Bx[0], axis=0)
+        y2 = autograd.matmul(h, Wh[0])
+        y2 = autograd.add_bias(y2, Bh[0], axis=0)
+        i = autograd.add(y1, y2)
+        i = autograd.sigmoid(i)
 
-        y1 = matmul(x, Wx[1])
-        y1 = add_bias(y1, Bx[1], axis=0)
-        y2 = matmul(h, Wh[1])
-        y2 = add_bias(y2, Bh[1], axis=0)
-        f = add(y1, y2)
-        f = sigmoid(f)
+        y1 = autograd.matmul(x, Wx[1])
+        y1 = autograd.add_bias(y1, Bx[1], axis=0)
+        y2 = autograd.matmul(h, Wh[1])
+        y2 = autograd.add_bias(y2, Bh[1], axis=0)
+        f = autograd.add(y1, y2)
+        f = autograd.sigmoid(f)
 
-        y1 = matmul(x, Wx[2])
-        y1 = add_bias(y1, Bx[2], axis=0)
-        y2 = matmul(h, Wh[2])
-        y2 = add_bias(y2, Bh[2], axis=0)
-        o = add(y1, y2)
-        o = sigmoid(o)
+        y1 = autograd.matmul(x, Wx[2])
+        y1 = autograd.add_bias(y1, Bx[2], axis=0)
+        y2 = autograd.matmul(h, Wh[2])
+        y2 = autograd.add_bias(y2, Bh[2], axis=0)
+        o = autograd.add(y1, y2)
+        o = autograd.sigmoid(o)
 
-        y1 = matmul(x, Wx[3])
-        y1 = add_bias(y1, Bx[3], axis=0)
-        y2 = matmul(h, Wh[3])
-        y2 = add_bias(y2, Bh[3], axis=0)
-        g = add(y1, y2)
-        g = tanh(g)
+        y1 = autograd.matmul(x, Wx[3])
+        y1 = autograd.add_bias(y1, Bx[3], axis=0)
+        y2 = autograd.matmul(h, Wh[3])
+        y2 = autograd.add_bias(y2, Bh[3], axis=0)
+        g = autograd.add(y1, y2)
+        g = autograd.tanh(g)
 
-        cout1 = mul(f, c)
-        cout2 = mul(i, g)
-        cout = add(cout1, cout2)
+        cout1 = autograd.mul(f, c)
+        cout2 = autograd.mul(i, g)
+        cout = autograd.add(cout1, cout2)
 
-        hout = tanh(cout)
-        hout = mul(o, hout)
+        hout = autograd.tanh(cout)
+        hout = autograd.mul(o, hout)
         return hout, cout

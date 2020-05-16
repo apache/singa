@@ -73,10 +73,10 @@ def infer_dependency(op):
     """
     Infer the dependency of all operations with the
     given op as the last operation.
-    Operation A is depending on B if A uses the output(s) of B.
+    Operator A is depending on B if A uses the output(s) of B.
 
     Args:
-        op: an Operation instance, e.g. the loss operation.
+        op: an Operator instance, e.g. the loss operation.
 
     Return:
         a Counter instance with the operation as the key,
@@ -221,12 +221,12 @@ def backward(y, dy=None):
         del op  # delete the operation to free all tensors from this op
 
 
-class Operation(object):
+class Operator(object):
     """
     An operation includes the forward and backward function of
     tensor calculation.
     Steps to add a specific operation Xxxx:
-    1. create a subclass of Operation, name it as Xxxx
+    1. create a subclass of Operator, name it as Xxxx
     2. override the forward() and backward(); The arguments of forward()
        and backward() should only include CTensor;
     """
@@ -236,8 +236,8 @@ class Operation(object):
     def __init__(self, name=None):
         if name is None:
             self.name = "{}#{}".format(self.__class__.__name__,
-                                       Operation.op_count)
-            Operation.op_count += 1
+                                       Operator.op_count)
+            Operator.op_count += 1
         else:
             self.name = name
 
@@ -338,7 +338,7 @@ class Operation(object):
         return []
 
 
-class Dummy(Operation):
+class Dummy(Operator):
     """Dummy operation whice serves as a placehoder for autograd
     Args:
         name(string): set it for debug
@@ -361,7 +361,7 @@ class Dummy(Operation):
         return self.tensor.__getattribute__(name)
 
 
-class Mean(Operation):
+class Mean(Operator):
     """
     Element-wise mean of each of the input CTensors.
     """
@@ -406,7 +406,7 @@ def mean(*l):
     return Mean()(*l)[0]
 
 
-class ReLU(Operation):
+class ReLU(Operator):
     """
     Relu means rectified linear function, i.e, y = max(0, x) is applied to the
     CTensor elementwise.
@@ -448,7 +448,7 @@ def relu(x):
     return ReLU()(x)[0]
 
 
-class Less(Operation):
+class Less(Operator):
     """
     Returns the tensor resulted from performing the less logical operation
     elementwise on the input CTensors x and y.
@@ -483,7 +483,7 @@ def less(x, y):
     return Less()(x, y)[0]
 
 
-class Clip(Operation):
+class Clip(Operator):
     """
     Clip operator limits the given input within an interval. The interval
     is specified by the inputs 'min' and 'max'.
@@ -549,7 +549,7 @@ def clip(x, min=None, max=None):
     return Clip(min, max)(x)[0]
 
 
-class Identity(Operation):
+class Identity(Operator):
     """
     Init a identity operator
     """
@@ -587,7 +587,7 @@ def identity(x):
     return Identity()(x)[0]
 
 
-class Matmul(Operation):
+class Matmul(Operator):
     """
     Init matrix multiplication operator.
     """
@@ -623,7 +623,7 @@ def matmul(x, w):
     return Matmul()(x, w)[0]
 
 
-class Greater(Operation):
+class Greater(Operator):
     """
     Returns the tensor resulted from performing the greater logical
     operation elementwise on the input tensors A and B.
@@ -658,7 +658,7 @@ def greater(x, y):
     return Greater()(x, y)[0]
 
 
-class AddBias(Operation):
+class AddBias(Operator):
     """
     Add Bias to each row / column of the Tensor, depending on the axis arg.
     """
@@ -713,7 +713,7 @@ def add_bias(x, b, axis=0):
     return AddBias(axis)(x, b)[0]
 
 
-class Reshape(Operation):
+class Reshape(Operator):
     """
     Reshape the input tensor similar to np.reshape.
     """
@@ -778,7 +778,7 @@ def reshape(x, shape):
     return Reshape(shape)(x)[0]
 
 
-class PRelu(Operation):
+class PRelu(Operator):
     """
     PRelu applies the function `f(x) = slope * x` for x < 0,
     `f(x) = x` for x >= 0 to the data tensor elementwise.
@@ -840,7 +840,7 @@ def prelu(x, slope):
     return PRelu()(x, slope)[0]
 
 
-class Add(Operation):
+class Add(Operator):
     """
     Performs element-wise binary addition.
     """
@@ -884,7 +884,7 @@ def add(a, b):
     return Add()(a, b)[0]
 
 
-class Elu(Operation):
+class Elu(Operator):
     """
     `f(x) = alpha * (exp(x) - 1.)` for x < 0, `f(x) = x` for x >= 0., is applied to
     the tensor elementwise.
@@ -946,7 +946,7 @@ def elu(x, alpha=1):
     return Elu(alpha)(x)[0]
 
 
-class Equal(Operation):
+class Equal(Operator):
     """
     Returns the tensor resulted from performing the equal logical operation
     elementwise on the input tensors x and y.
@@ -980,7 +980,7 @@ def equal(x, y):
     return Equal()(x, y)[0]
 
 
-class SeLU(Operation):
+class SeLU(Operator):
     """
     `y = gamma * (alpha * e^x - alpha)` for x <= 0, `y = gamma * x` for x > 0
     is applied to the tensor elementwise.
@@ -1048,7 +1048,7 @@ def selu(x, alpha=1.67326, gamma=1.0507):
     return SeLU(alpha, gamma)(x)[0]
 
 
-class SoftMax(Operation):
+class SoftMax(Operator):
     """
     Apply SoftMax for each row of the Tensor or each column of the Tensor
     according to the parameter axis.
@@ -1095,7 +1095,7 @@ def softmax(x, axis=1):
     return SoftMax(axis)(x)[0]
 
 
-class Sum(Operation):
+class Sum(Operator):
     """
     Element-wise sum of each of the input tensors
     """
@@ -1140,7 +1140,7 @@ def sum(*l):
     return Sum()(*l)[0]
 
 
-class CrossEntropy(Operation):
+class CrossEntropy(Operator):
 
     def __init__(self):
         super(CrossEntropy, self).__init__()
@@ -1189,7 +1189,7 @@ def cross_entropy(y, t):
     return CrossEntropy()(y, t)[0]
 
 
-class SoftMaxCrossEntropy(Operation):
+class SoftMaxCrossEntropy(Operator):
 
     def __init__(self, t):
         super(SoftMaxCrossEntropy, self).__init__()
@@ -1213,7 +1213,7 @@ def softmax_cross_entropy(x, t):
     return SoftMaxCrossEntropy(t)(x)[0]
 
 
-class MeanSquareError(Operation):
+class MeanSquareError(Operator):
 
     def __init__(self):
         super(MeanSquareError, self).__init__()
@@ -1238,14 +1238,14 @@ def mse_loss(x, t):
 
 def ctensor2numpy(x):
     """
-    To be used in SoftMax Operation.
+    To be used in SoftMax Operator.
     Convert a singa_tensor to numpy_tensor.
     """
     np_array = x.GetFloatValue(int(x.Size()))
     return np_array.reshape(x.shape())
 
 
-class Flatten(Operation):
+class Flatten(Operator):
     """
     Flattens the input tensor into a 2D matrix. If input tensor has shape
     `(d_0, d_1, ... d_n)` then the output will have shape `(d_0 X d_1 ...
@@ -1319,7 +1319,7 @@ def flatten(x, axis=1):
     return Flatten(axis)(x)[0]
 
 
-class Concat(Operation):
+class Concat(Operator):
     """
     Concatenate a list of tensors into a single tensor. All input tensors must
     have the same shape, except for the dimension size of the axis to
@@ -1388,7 +1388,7 @@ def cat(xs, axis=0):
     return Concat(axis)(*xs)[0]
 
 
-class _Conv2d(Operation):
+class Conv2d(Operator):
     """
     Init a conv 2d operator
     """
@@ -1402,7 +1402,7 @@ class _Conv2d(Operation):
                 we need to firstly handle the input, then use the nomal padding
                 method.
         """
-        super(_Conv2d, self).__init__()
+        super(Conv2d, self).__init__()
         self.handle = handle
         self.odd_padding = odd_padding
         if self.odd_padding != (0, 0, 0, 0):
@@ -1491,12 +1491,12 @@ def conv2d(handle, x, W, b=None, odd_padding=(0, 0, 0, 0)):
             method.
     """
     if b is None:
-        return _Conv2d(handle, odd_padding)(x, W)[0]
+        return Conv2d(handle, odd_padding)(x, W)[0]
     else:
-        return _Conv2d(handle, odd_padding)(x, W, b)[0]
+        return Conv2d(handle, odd_padding)(x, W, b)[0]
 
 
-class _BatchNorm2d(Operation):
+class BatchNorm2d(Operator):
     """
     Carries out batch normalization as described in the paper
     https://arxiv.org/abs/1502.03167.
@@ -1511,7 +1511,7 @@ class _BatchNorm2d(Operation):
             running_var (float): the running_var
             name (string): the name assigned to this operator
         """
-        super(_BatchNorm2d, self).__init__(name)
+        super(BatchNorm2d, self).__init__(name)
         self.handle = handle
         self.running_mean = running_mean.data
         self.running_var = running_var.data
@@ -1600,10 +1600,10 @@ def batchnorm_2d(handle, x, scale, bias, running_mean, running_var):
     Returns:
         the result Tensor
     """
-    return _BatchNorm2d(handle, running_mean, running_var)(x, scale, bias)[0]
+    return BatchNorm2d(handle, running_mean, running_var)(x, scale, bias)[0]
 
 
-class _Pooling2d(Operation):
+class Pooling2d(Operator):
     """
     Init a pool 2d operator
     """
@@ -1618,7 +1618,7 @@ class _Pooling2d(Operation):
                 it needs to firstly handle the input, then use the normal
                 padding method.
         """
-        super(_Pooling2d, self).__init__()
+        super(Pooling2d, self).__init__()
         self.handle = handle
         self.odd_padding = odd_padding
         if self.odd_padding != (0, 0, 0, 0):
@@ -1680,10 +1680,10 @@ def pooling_2d(handle, x, odd_padding=(0, 0, 0, 0)):
     Returns:
         the result Tensor
     """
-    return _Pooling2d(handle, odd_padding)(x)[0]
+    return Pooling2d(handle, odd_padding)(x)[0]
 
 
-class Tanh(Operation):
+class Tanh(Operator):
     """
     Calculates the hyperbolic tangent of the given input tensor element-wise.
     """
@@ -1728,7 +1728,7 @@ def tanh(x):
     return Tanh()(x)[0]
 
 
-class Cos(Operation):
+class Cos(Operator):
     """
     Calculates the cosine of the given input tensor, element-wise.
     """
@@ -1772,7 +1772,7 @@ def cos(x):
     return Cos()(x)[0]
 
 
-class Cosh(Operation):
+class Cosh(Operator):
     """
     Calculates the hyperbolic cosine of the given input tensor element-wise.
     """
@@ -1814,7 +1814,7 @@ def cosh(x):
     return Cosh()(x)[0]
 
 
-class Acos(Operation):
+class Acos(Operator):
     """
     Calculates the arccosine (inverse of cosine) of the given input tensor,
     element-wise.
@@ -1862,7 +1862,7 @@ def acos(x):
     return Acos()(x)[0]
 
 
-class Acosh(Operation):
+class Acosh(Operator):
     """
     Calculates the hyperbolic arccosine of the given input tensor element-wise.
     """
@@ -1909,7 +1909,7 @@ def acosh(x):
     return Acosh()(x)[0]
 
 
-class Sin(Operation):
+class Sin(Operator):
     """
     Calculates the sine of the given input tensor, element-wise.
     """
@@ -1951,7 +1951,7 @@ def sin(x):
     return Sin()(x)[0]
 
 
-class Sinh(Operation):
+class Sinh(Operator):
     """
     Calculates the hyperbolic sine of the given input tensor element-wise.
     """
@@ -1993,7 +1993,7 @@ def sinh(x):
     return Sinh()(x)[0]
 
 
-class Asin(Operation):
+class Asin(Operator):
     """
     Calculates the arcsine (inverse of sine) of the given input tensor, element-wise.
     """
@@ -2039,7 +2039,7 @@ def asin(x):
     return Asin()(x)[0]
 
 
-class Asinh(Operation):
+class Asinh(Operator):
     """
     Calculates the hyperbolic arcsine of the given input tensor element-wise.
     """
@@ -2083,7 +2083,7 @@ def asinh(x):
     return Asinh()(x)[0]
 
 
-class Tan(Operation):
+class Tan(Operator):
     """
     Insert single-dimensional entries to the shape of an input tensor (data).
     """
@@ -2127,7 +2127,7 @@ def tan(x):
     return Tan()(x)[0]
 
 
-class Atan(Operation):
+class Atan(Operator):
     """
     Calculates the arctangent (inverse of tangent) of the given input tensor, element-wise.
     """
@@ -2171,7 +2171,7 @@ def atan(x):
     return Atan()(x)[0]
 
 
-class Atanh(Operation):
+class Atanh(Operator):
     """
     Calculates the hyperbolic arctangent of the given input tensor element-wise.
     """
@@ -2216,7 +2216,7 @@ def atanh(x):
     return Atanh()(x)[0]
 
 
-class Sigmoid(Operation):
+class Sigmoid(Operator):
     """
     `y = 1 / (1 + exp(-x))`, is applied to the tensor elementwise.
     """
@@ -2261,7 +2261,7 @@ def sigmoid(x):
     return Sigmoid()(x)[0]
 
 
-class Mul(Operation):
+class Mul(Operator):
     """
     Performs element-wise binary multiplication (with Numpy-style broadcasting
     support).
@@ -2318,7 +2318,7 @@ def mul(x, y):
     return Mul()(x, y)[0]
 
 
-class Unsqueeze(Operation):
+class Unsqueeze(Operator):
     """
     Insert single-dimensional entries to the shape of an input tensor (data).
     """
@@ -2372,7 +2372,7 @@ def unsqueeze(x, axis=-1):
     return Unsqueeze(axis)(x)[0]
 
 
-class Transpose(Operation):
+class Transpose(Operator):
     """
     Transpose the input tensor similar to numpy.transpose.
     """
@@ -2429,7 +2429,7 @@ def add_all(*xs):
     return
 
 
-class Abs(Operation):
+class Abs(Operator):
     """
     `y = abs(x)`, is applied to the tensor elementwise.
     """
@@ -2461,7 +2461,7 @@ def abs(a):
     return Abs()(a)[0]
 
 
-class Exp(Operation):
+class Exp(Operator):
     """
     `y = exp(x)`, is applied to the tensor elementwise.
     """
@@ -2493,7 +2493,7 @@ def exp(a):
     return Exp()(a)[0]
 
 
-class LeakyRelu(Operation):
+class LeakyRelu(Operator):
     """
     `f(x) = alpha * x` for x < 0, `f(x) = x` for x >= 0, is applied to the tensor elementwise.
     """
@@ -2551,7 +2551,7 @@ def leakyrelu(x, a=0.01):
     return LeakyRelu(a)(x)[0]
 
 
-class Sign(Operation):
+class Sign(Operator):
     """
     Calculate the sign of the given input tensor element-wise. If input > 0,
     output 1. if input < 0, output -1. if input == 0, output 0.
@@ -2594,7 +2594,7 @@ def sign(a):
     return Sign()(a)[0]
 
 
-class Pow(Operation):
+class Pow(Operator):
     """
     `f(x) = a^b`, is applied to the tensor elementwise.
     """
@@ -2645,7 +2645,7 @@ def pow(a, b):
     return Pow()(a, b)[0]
 
 
-class SoftSign(Operation):
+class SoftSign(Operator):
     """
     Calculates the softsign `(x/(1+|x|))` of the given input tensor element-wise.
     """
@@ -2685,7 +2685,7 @@ def softsign(x):
     return SoftSign()(x)[0]
 
 
-class Sqrt(Operation):
+class Sqrt(Operator):
     """
     `y = x^0.5`, is applied to the tensor elementwise.
     """
@@ -2721,7 +2721,7 @@ def sqrt(x):
     return Sqrt()(x)[0]
 
 
-class SoftPlus(Operation):
+class SoftPlus(Operator):
     """
     `y = ln(exp(x) + 1)` is applied to the tensor elementwise.
     """
@@ -2760,7 +2760,7 @@ def softplus(x):
     return SoftPlus()(x)[0]
 
 
-class Sub(Operation):
+class Sub(Operator):
     """
     Performs element-wise binary subtraction (with Numpy-style broadcasting
     support).
@@ -2807,7 +2807,7 @@ def sub(a, b):
 
 
 # optimize min to support multi inputs
-class Min(Operation):
+class Min(Operator):
     """
     Element-wise min of each of the input tensors (with Numpy-style
     broadcasting support).
@@ -2887,7 +2887,7 @@ def min(*l):
     return Min()(*l)[0]
 
 
-class Log(Operation):
+class Log(Operator):
     """
     `y = log(x)`, is applied to the tensor elementwise.
     """
@@ -2922,7 +2922,7 @@ def log(x):
     return Log()(x)[0]
 
 
-class HardSigmoid(Operation):
+class HardSigmoid(Operator):
     """
     `y = max(0, min(1, alpha * x + beta))`, is applied to the tensor elementwise.
     """
@@ -2981,7 +2981,7 @@ def hardsigmoid(x, alpha=0.2, gamma=0.5):
     return HardSigmoid(alpha, gamma)(x)[0]
 
 
-class Squeeze(Operation):
+class Squeeze(Operator):
     """
     Remove single-dimensional entries from the shape of a tensor. Takes a
     parameter axes with a list of axes to squeeze. If axes is not provided,
@@ -3052,7 +3052,7 @@ def squeeze(x, axis=[]):
     return Squeeze(axis)(x)[0]
 
 
-class Div(Operation):
+class Div(Operator):
     """
     Performs element-wise binary division (with Numpy-style broadcasting support).
     """
@@ -3103,7 +3103,7 @@ def div(a, b):
     return Div()(a, b)[0]
 
 
-class Shape(Operation):
+class Shape(Operator):
     """
     Takes a tensor as input and outputs a tensor containing the shape of the
     input tensor.
@@ -3147,7 +3147,7 @@ def shape(x):
 
 
 # optimize max to support multi inputs
-class Max(Operation):
+class Max(Operator):
     """
     Element-wise max of each of the input tensors (with Numpy-style
     broadcasting support).
@@ -3226,7 +3226,7 @@ def max(*l):
     return Max()(*l)[0]
 
 
-class And(Operation):
+class And(Operator):
     """
     Returns the tensor resulted from performing the and logical operation elementwise on the input tensors A and B (with Numpy-style broadcasting support).
     """
@@ -3260,7 +3260,7 @@ def _and(a, b):
     return And()(a, b)[0]
 
 
-class Or(Operation):
+class Or(Operator):
     """
     Returns the tensor resulted from performing the or logical operation elementwise on the input tensors A and B (with Numpy-style broadcasting support).
     """
@@ -3295,7 +3295,7 @@ def _or(a, b):
     return Or()(a, b)[0]
 
 
-class Not(Operation):
+class Not(Operator):
     """
     Returns the negation of the input tensor element-wise.
     """
@@ -3330,7 +3330,7 @@ def _not(x):
     return Not()(x)[0]
 
 
-class Xor(Operation):
+class Xor(Operator):
     """
     Performing the xor logical operation elementwise on the input tensors A and B (with Numpy-style broadcasting support).
     """
@@ -3365,7 +3365,7 @@ def _xor(a, b):
     return Xor()(a, b)[0]
 
 
-class Negative(Operation):
+class Negative(Operator):
     """
     `y = -x`, is applied to the tensor elementwise.
     """
@@ -3397,7 +3397,7 @@ def negative(x):
     return Negative()(x)[0]
 
 
-class Reciprocal(Operation):
+class Reciprocal(Operator):
     """
     `y = 1/x`, is applied to the tensor elementwise.
     """
@@ -3434,7 +3434,7 @@ def reciprocal(x):
     return Reciprocal()(x)[0]
 
 
-class Gemm(Operation):
+class Gemm(Operator):
     """
     Init a General Matrix multiplication(Gemm) operator. Compute `Y = alpha *
     A' * B' + beta * C`, where input tensor A has shape (M, K) or (K, M), input
@@ -3546,7 +3546,7 @@ def gemm(A, B, C=None, alpha=1.0, beta=1.0, transA=0, transB=0):
     return Gemm(alpha, beta, transA, transB)(A, B, C)[0]
 
 
-class GlobalAveragePool(Operation):
+class GlobalAveragePool(Operator):
     """
     Init a GlobalAveragePool operator
     """
@@ -3621,7 +3621,7 @@ def globalaveragepool(x, data_format='channels_first'):
     return GlobalAveragePool(data_format)(x)[0]
 
 
-class ConstantOfShape(Operation):
+class ConstantOfShape(Operator):
     """
     Init a ConstantOfShape, generate a tensor with given value and shape.
     """
@@ -3684,7 +3684,7 @@ def constant_of_shape(x, value=0):
     return ConstantOfShape(value)(x)[0]
 
 
-class Dropout(Operation):
+class Dropout(Operator):
     """
     Init a Dropout, which scales the masked input data by the following equation:
     `output = scale * data * mask`, `scale = 1. / (1. - ratio)`.
@@ -3739,7 +3739,7 @@ def dropout(x, ratio=0.5):
     return Dropout(ratio)(x)[0]
 
 
-class ReduceSum(Operation):
+class ReduceSum(Operator):
     """
     Init a ReduceSum, computes the sum of the input tensor's element along
     the provided axes.
@@ -3817,7 +3817,7 @@ def reduce_sum(x, axes=None, keepdims=1):
     return ReduceSum(axes, keepdims)(x)[0]
 
 
-class ReduceMean(Operation):
+class ReduceMean(Operator):
     """
     Init a ReduceMean, computes the mean of the input tensor's element along
     the provided axes.
@@ -3896,7 +3896,7 @@ def reduce_mean(x, axes=None, keepdims=1):
     return ReduceMean(axes, keepdims)(x)[0]
 
 
-class Slice(Operation):
+class Slice(Operator):
     """
     Init a Slice, Produces a slice of the input tensor along multiple axes.
     Similar to numpy: https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html
@@ -3999,7 +3999,7 @@ def slice(x, starts, ends, axes=None, steps=None):
     return Slice(starts, ends, axes, steps)(x)[0]
 
 
-class Ceil(Operation):
+class Ceil(Operator):
     """
     Ceil takes one input data (Tensor) and produces one output data (Tensor)
     where the ceil is, `y = ceil(x)`, is applied to the tensor elementwise.
@@ -4043,7 +4043,7 @@ def ceil(x):
     return Ceil()(x)[0]
 
 
-class Split(Operation):
+class Split(Operator):
     """
     Init a Split, Split a tensor into a list of tensors, along the specified
     'axis'.
@@ -4121,7 +4121,7 @@ def split(x, axis, parts, num_output=None):
     return Split(axis, parts, num_output)(x)
 
 
-class Gather(Operation):
+class Gather(Operator):
     """
     Init a Gather, Given data tensor of rank r >= 1, and indices tensor of
     rank q, gather entries of the axis dimension of data (by default outer-most
@@ -4238,7 +4238,7 @@ def gather(x, axis, indices):
     return Gather(axis, indices)(x)[0]
 
 
-class Tile(Operation):
+class Tile(Operator):
     """
     Init a Tile, Constructs a tensor by tiling a given tensor. This is the same
     as function tile in Numpy: https://docs.scipy.org/doc/numpy/reference/generated/numpy.tile.html
@@ -4321,7 +4321,7 @@ def tile(x, repeats):
     return Tile(repeats)(x)[0]
 
 
-class NonZero(Operation):
+class NonZero(Operator):
     """
     Init a NonZero, Constructs a tensor by tiling a given tensor. This is the same
     as function tile in Numpy: https://docs.scipy.org/doc/numpy/reference/generated/numpy.tile.html
@@ -4367,7 +4367,7 @@ def nonzero(x):
     return NonZero()(x)[0]
 
 
-class Cast(Operation):
+class Cast(Operator):
     """
     The operator casts the elements of a given input tensor to a data type
     specified by the 'to' argument and returns an output tensor of the same
@@ -4419,7 +4419,7 @@ def cast(x, to):
     return Cast(to)(x)[0]
 
 
-class OneHot(Operation):
+class OneHot(Operator):
     """
     Produces a one-hot tensor based on inputs.
     """

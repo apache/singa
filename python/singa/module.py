@@ -60,7 +60,6 @@ class Graph(type):
                     self.buffered = True
 
                 # run graph
-                print("buffer operations")
                 self._device.RunGraph(self.sequential)
                 return self._results
             else:
