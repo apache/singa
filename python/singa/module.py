@@ -38,7 +38,7 @@ class Graph(type):
         def wrapper(self, *args, **kwargs):
             if self.graph_mode and self.training:
                 name = func.__name__
-                if self.buffered:
+                if not self.buffered:
                     # buffer operations
                     self._device.EnableGraph(True)
                     self._results = func(self, *args, **kwargs)
@@ -51,7 +51,7 @@ class Graph(type):
                             for _matrix in self._results:
                                 if isinstance(_matrix, tensor.Tensor):
                                     _matrix.creator = None
-                        elif isinstance(_matrix, tensor.Tensor):
+                        elif isinstance(self._results, tensor.Tensor):
                             self._results.creator = None
 
                     # make sure all Operations are deallocated
@@ -60,6 +60,7 @@ class Graph(type):
                     self.buffered = True
 
                 # run graph
+                print("buffer operations")
                 self._device.RunGraph(self.sequential)
                 return self._results
             else:

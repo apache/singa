@@ -13,7 +13,7 @@ class MyModel(module.Module):
     def train_one_batch(self, x, y):
         y_ = self.forward(x)
         l = self.loss(y_, y)
-        print("loss",l)
+        # print("loss",l)
         self.optim(l)
         return y_, l
 
@@ -43,5 +43,6 @@ if __name__ == "__main__":
     cx = PlaceHolder((2,4), device=dev).gaussian(1,1)
     cy = PlaceHolder((2,2), device=dev).gaussian(1,1)
 
+    print("start training")
     m.train_one_batch(cx,cy)
     print("train done")
