@@ -1,9 +1,9 @@
-from singa import singa_wrap, autograd, tensor, device, module, opt
+from singa import singa_wrap, autograd, layer, tensor, device, module, opt
 
 class MyModel(module.Module):
     def __init__(self):
         super(MyModel, self).__init__()
-        self.l1 = autograd.Linear(2)
+        self.l1 = layer.Linear(2)
         self.optimizer = opt.SGD()
 
     def forward(self, x):
