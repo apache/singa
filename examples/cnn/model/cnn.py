@@ -18,11 +18,11 @@
 #
 
 from singa import autograd
-from singa import module
 from singa import layer
+from singa import model
 
 
-class CNN(module.Module):
+class CNN(model.Model):
 
     def __init__(self, num_classes=10, num_channels=1):
         super(CNN, self).__init__()

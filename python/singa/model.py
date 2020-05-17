@@ -16,7 +16,7 @@
 # under the License.
 # =============================================================================
 '''
-This script includes Module class for python users
+This script includes Model class for python users
 to use Computational Graph in their model.
 '''
 
@@ -71,8 +71,8 @@ class Graph(type):
         return super(Graph, cls).__new__(cls, name, bases, attr)
 
 
-class Module(object, metaclass=Graph):
-    """ Base class for your neural network modules.
+class Model(object, metaclass=Graph):
+    """ Base class for your neural network models.
 
     Example usage::
 
@@ -81,14 +81,15 @@ class Module(object, metaclass=Graph):
         from singa import tensor
         from singa import device
         from singa import autograd
-        from singa.module import Module
+        from singa import layer
+        from singa import model
 
-        class Model(Module):
+        class MyModel(model.Model):
             def __init__(self):
-                super(Model, self).__init__()
+                super(MyModel, self).__init__()
 
-                self.conv1 = autograd.Conv2d(1, 20, 5, padding=0)
-                self.conv2 = autograd.Conv2d(20, 50, 5, padding=0)
+                self.conv1 = layer.Conv2d(1, 20, 5, padding=0)
+                self.conv2 = layer.Conv2d(20, 50, 5, padding=0)
 
                 self.sgd = opt.SGD(lr=0.01)
 
@@ -97,17 +98,17 @@ class Module(object, metaclass=Graph):
                 y = self.conv2(y)
                 return y
 
-            def loss(self, out, y):
-                return autograd.softmax_cross_entropy(out, y)
-
-            def optim(self, loss):
+            def train_one_batch(self, x, y):
+                out = self.forward(x)
+                loss = autograd.softmax_cross_entropy(out, y)
                 self.sgd.backward_and_update(loss)
+                return out, loss
 
     """
 
     def __init__(self):
         """
-        Initializes internal Module state
+        Initializes internal Model state
         """
         self.training = True
         self.buffered = False
@@ -134,7 +135,7 @@ class Module(object, metaclass=Graph):
         Should be overridden by all subclasses.
 
         Args:
-            *input: the input training data for the module
+            *input: the input training data for the model
 
         Returns:
             out: the outputs of the forward propagation.
@@ -145,16 +146,16 @@ class Module(object, metaclass=Graph):
         raise NotImplementedError
 
     def train(self, mode=True):
-        """Set the module in evaluation mode.
+        """Set the model in evaluation mode.
 
         Args:
-            mode(bool): when mode is True, this module will enter training mode
+            mode(bool): when mode is True, this model will enter training mode
         """
         self.training = mode
         autograd.training = mode
 
     def eval(self):
-        """Sets the module in evaluation mode.
+        """Sets the model in evaluation mode.
         """
         self.train(mode=False)
         autograd.training = False
@@ -163,8 +164,8 @@ class Module(object, metaclass=Graph):
         """ Turn on the computational graph. Specify execution mode.
 
         Args:
-            mode(bool): when mode is True, module will use computational graph
-            sequential(bool): when sequential is True, module will execute ops
+            mode(bool): when mode is True, model will use computational graph
+            sequential(bool): when sequential is True, model will execute ops
             in the graph follow the order of joining the graph
         """
         self.graph_mode = mode

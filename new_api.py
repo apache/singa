@@ -1,7 +1,12 @@
-from singa import autograd, layer, tensor, device, module, opt
+from singa import autograd
+from singa import tensor
+from singa import device
+from singa import layer
+from singa import model
+from singa import opt
 
 
-class MyModel(module.Module):
+class MyModel(model.Model):
 
     def __init__(self):
         super(MyModel, self).__init__()

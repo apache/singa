@@ -31,12 +31,12 @@ from tqdm import tqdm
 from singa import device
 from singa import tensor
 from singa import autograd
-from singa import module
 from singa import layer
+from singa import model
 from singa import opt
 
 
-class CharRNN(module.Module):
+class CharRNN(model.Model):
 
     def __init__(self, vocab_size, hidden_size=32):
         super(CharRNN, self).__init__()

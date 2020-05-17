@@ -17,13 +17,13 @@
 # under the License.
 #
 
-from singa import module
+from singa import model
 from singa import autograd
 from singa import tensor
 from singa.tensor import Tensor
 
 
-class MLP(module.Module):
+class MLP(model.Model):
 
     def __init__(self, data_size=10, perceptron_size=100, num_classes=10):
         super(MLP, self).__init__()
@@ -56,10 +56,9 @@ class MLP(module.Module):
         x = autograd.add_bias(x, self.b1)
         return x
 
-    def loss(self, out, ty):
-        return autograd.softmax_cross_entropy(out, ty)
-
-    def optim(self, loss, dist_option, spars):
+    def train_one_batch(self, x, y, dist_option, spars):
+        out = self.forward(x)
+        loss = autograd.softmax_cross_entropy(out, y)
         if dist_option == 'fp32':
             self.optimizer.backward_and_update(loss)
         elif dist_option == 'fp16':
@@ -74,6 +73,7 @@ class MLP(module.Module):
             self.optimizer.backward_and_sparse_update(loss,
                                                       topK=False,
                                                       spars=spars)
+        return out, loss
 
     def set_optimizer(self, optimizer):
         self.optimizer = optimizer

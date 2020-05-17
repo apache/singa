@@ -19,8 +19,8 @@
 # https://github.com/Cadene/pretrained-models.pytorch/blob/master/pretrainedmodels/models/xception.py
 
 from singa import autograd
-from singa import module
 from singa import layer
+from singa import model
 
 
 class Block(layer.Layer):
@@ -107,7 +107,7 @@ class Block(layer.Layer):
         return y
 
 
-class Xception(module.Module):
+class Xception(model.Model):
     """
     Xception optimized for the ImageNet dataset, as specified in
     https://arxiv.org/pdf/1610.02357.pdf

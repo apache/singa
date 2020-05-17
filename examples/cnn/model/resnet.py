@@ -21,8 +21,8 @@
 # https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
 
 from singa import autograd
-from singa import module
 from singa import layer
+from singa import model
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -119,7 +119,7 @@ __all__ = [
 ]
 
 
-class ResNet(module.Module):
+class ResNet(model.Model):
 
     def __init__(self, block, layers, num_classes=10, num_channels=3):
         self.inplanes = 64
