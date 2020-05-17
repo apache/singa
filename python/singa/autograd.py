@@ -28,7 +28,6 @@ from .tensor import Tensor
 from . import singa_wrap as singa
 
 CTensor = singa.Tensor
-Operation = Operator
 training = False
 
 
@@ -336,11 +335,6 @@ class Operator(object):
 
     def get_params(self):
         return []
-
-
-''' alias Operator to Operation
-'''
-Operation = Operator
 
 
 class Dummy(Operator):
@@ -1393,7 +1387,7 @@ def cat(xs, axis=0):
     return Concat(axis)(*xs)[0]
 
 
-class Conv2d(Operator):
+class _Conv2d(Operator):
     """
     Init a conv 2d operator
     """
@@ -1407,7 +1401,7 @@ class Conv2d(Operator):
                 we need to firstly handle the input, then use the nomal padding
                 method.
         """
-        super(Conv2d, self).__init__()
+        super(_Conv2d, self).__init__()
         self.handle = handle
         self.odd_padding = odd_padding
         if self.odd_padding != (0, 0, 0, 0):
@@ -1496,12 +1490,12 @@ def conv2d(handle, x, W, b=None, odd_padding=(0, 0, 0, 0)):
             method.
     """
     if b is None:
-        return Conv2d(handle, odd_padding)(x, W)[0]
+        return _Conv2d(handle, odd_padding)(x, W)[0]
     else:
-        return Conv2d(handle, odd_padding)(x, W, b)[0]
+        return _Conv2d(handle, odd_padding)(x, W, b)[0]
 
 
-class BatchNorm2d(Operator):
+class _BatchNorm2d(Operator):
     """
     Carries out batch normalization as described in the paper
     https://arxiv.org/abs/1502.03167.
@@ -1516,7 +1510,7 @@ class BatchNorm2d(Operator):
             running_var (float): the running_var
             name (string): the name assigned to this operator
         """
-        super(BatchNorm2d, self).__init__(name)
+        super(_BatchNorm2d, self).__init__(name)
         self.handle = handle
         self.running_mean = running_mean.data
         self.running_var = running_var.data
@@ -1605,10 +1599,10 @@ def batchnorm_2d(handle, x, scale, bias, running_mean, running_var):
     Returns:
         the result Tensor
     """
-    return BatchNorm2d(handle, running_mean, running_var)(x, scale, bias)[0]
+    return _BatchNorm2d(handle, running_mean, running_var)(x, scale, bias)[0]
 
 
-class Pooling2d(Operator):
+class _Pooling2d(Operator):
     """
     Init a pool 2d operator
     """
@@ -1623,7 +1617,7 @@ class Pooling2d(Operator):
                 it needs to firstly handle the input, then use the normal
                 padding method.
         """
-        super(Pooling2d, self).__init__()
+        super(_Pooling2d, self).__init__()
         self.handle = handle
         self.odd_padding = odd_padding
         if self.odd_padding != (0, 0, 0, 0):
@@ -1685,7 +1679,7 @@ def pooling_2d(handle, x, odd_padding=(0, 0, 0, 0)):
     Returns:
         the result Tensor
     """
-    return Pooling2d(handle, odd_padding)(x)[0]
+    return _Pooling2d(handle, odd_padding)(x)[0]
 
 
 class Tanh(Operator):
@@ -4513,3 +4507,25 @@ def onehot(axis, indices, depth, values):
         the output Tensor.
     """
     return OneHot(axis, depth, values)(indices)[0]
+
+
+''' alias for Operator and Layers
+'''
+Operation = Operator
+
+''' import layer at the end to resolve circular import
+'''
+from singa import layer
+Linear = layer.Linear
+Conv2d = layer.Conv2d
+SeparableConv2d = layer.SeparableConv2d
+BatchNorm2d = layer.BatchNorm2d
+Pooling2d = layer.Pooling2d
+MaxPool2d = layer.MaxPool2d
+AvgPool2d = layer.AvgPool2d
+MaxPool1d = layer.MaxPool1d
+AvgPool1d = layer.AvgPool1d
+RNN_Base = layer.RNN_Base
+RNN = layer.RNN
+LSTM = layer.LSTM
+print('autograd out')

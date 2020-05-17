@@ -20,7 +20,6 @@ import math
 import numpy as np
 
 from singa import utils
-from singa import autograd
 from .tensor import Tensor
 from . import singa_wrap as singa
 
@@ -952,3 +951,7 @@ class LSTM(RNN_Base):
         hout = autograd.tanh(cout)
         hout = autograd.mul(o, hout)
         return hout, cout
+
+''' import autograd at the end to resolve circular import
+'''
+from singa import autograd

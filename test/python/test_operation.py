@@ -187,7 +187,7 @@ class TestPythonOperation(unittest.TestCase):
             handle = singa.CudnnConvHandle(x.data, kernel, stride, padding,
                                            in_channels, out_channels, bias,
                                            group)
-        y = autograd.Conv2d(handle, o_p)(x, w)[0]
+        y = autograd._Conv2d(handle, o_p)(x, w)[0]
 
         dy = np.ones((3, 3, x_h, 32), dtype=np.float32)
         dy = tensor.from_numpy(dy)
@@ -248,7 +248,7 @@ class TestPythonOperation(unittest.TestCase):
             handle = singa.CudnnPoolingHandle(x.data, kernel, stride, padding,
                                               True)
 
-        y = autograd.Pooling2d(handle, o_p)(x)[0]
+        y = autograd._Pooling2d(handle, o_p)(x)[0]
 
         dy = np.ones((3, 3, x_h, 32), dtype=np.float32)
         dy = tensor.from_numpy(dy)
