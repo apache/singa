@@ -17,7 +17,9 @@
 # =============================================================================
 
 import math
+import numpy as np
 
+from singa import utils
 from singa import autograd
 from .tensor import Tensor
 from . import singa_wrap as singa
