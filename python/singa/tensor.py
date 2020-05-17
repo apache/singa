@@ -701,6 +701,11 @@ class Tensor(object):
         return np.array2string(to_numpy(self))
 
 
+''' alias Tensor to PlaceHolder
+'''
+PlaceHolder = Tensor
+
+
 ''' python functions for global functions in Tensor.h
 '''
 

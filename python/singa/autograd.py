@@ -28,6 +28,7 @@ from .tensor import Tensor
 from . import singa_wrap as singa
 
 CTensor = singa.Tensor
+Operation = Operator
 training = False
 
 
@@ -335,6 +336,11 @@ class Operator(object):
 
     def get_params(self):
         return []
+
+
+''' alias Operator to Operation
+'''
+Operation = Operator
 
 
 class Dummy(Operator):

@@ -32,9 +32,8 @@ class MyModel(model.Model):
 
 
 if __name__ == "__main__":
-    PlaceHolder = tensor.Tensor
     dev = device.create_cuda_gpu()
-    x = PlaceHolder((2, 4), device=dev)
+    x = tensor.PlaceHolder((2, 4), device=dev)
 
     m = MyModel()
     m.on_device(dev)
@@ -48,8 +47,8 @@ if __name__ == "__main__":
     print(_)
     print("get params done")
 
-    cx = PlaceHolder((2, 4), device=dev).gaussian(1, 1)
-    cy = PlaceHolder((2, 2), device=dev).gaussian(1, 1)
+    cx = tensor.PlaceHolder((2, 4), device=dev).gaussian(1, 1)
+    cy = tensor.PlaceHolder((2, 2), device=dev).gaussian(1, 1)
 
     print("start training")
     m.train_one_batch(cx, cy)
