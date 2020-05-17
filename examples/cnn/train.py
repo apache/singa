@@ -18,9 +18,9 @@
 #
 
 from singa import singa_wrap as singa
-from singa import opt
 from singa import device
 from singa import tensor
+from singa import opt
 import numpy as np
 import time
 import argparse
@@ -217,9 +217,7 @@ def run(global_rank,
             ty.copy_from_numpy(y)
 
             # Train the model
-            out = model(tx)
-            loss = model.loss(out, ty)
-            model.optim(loss, dist_option, spars)
+            out, loss = model(tx, ty, dist_option, spars)
             train_correct += accuracy(tensor.to_numpy(out), y)
             train_loss += tensor.to_numpy(loss)[0]
 

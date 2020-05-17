@@ -19,6 +19,7 @@
 
 from singa import autograd
 from singa import module
+from singa import layer
 
 
 class AlexNet(module.Module):
@@ -28,18 +29,18 @@ class AlexNet(module.Module):
         self.num_classes = num_classes
         self.input_size = 224
         self.dimension = 4
-        self.conv1 = autograd.Conv2d(num_channels, 64, 11, stride=4, padding=2)
-        self.conv2 = autograd.Conv2d(64, 192, 5, padding=2)
-        self.conv3 = autograd.Conv2d(192, 384, 3, padding=1)
-        self.conv4 = autograd.Conv2d(384, 256, 3, padding=1)
-        self.conv5 = autograd.Conv2d(256, 256, 3, padding=1)
-        self.linear1 = autograd.Linear(1024, 4096)
-        self.linear2 = autograd.Linear(4096, 4096)
-        self.linear3 = autograd.Linear(4096, num_classes)
-        self.pooling1 = autograd.MaxPool2d(2, 2, padding=0)
-        self.pooling2 = autograd.MaxPool2d(2, 2, padding=0)
-        self.pooling3 = autograd.MaxPool2d(2, 2, padding=0)
-        self.avg_pooling1 = autograd.AvgPool2d(3, 2, padding=0)
+        self.conv1 = layer.Conv2d(num_channels, 64, 11, stride=4, padding=2)
+        self.conv2 = layer.Conv2d(64, 192, 5, padding=2)
+        self.conv3 = layer.Conv2d(192, 384, 3, padding=1)
+        self.conv4 = layer.Conv2d(384, 256, 3, padding=1)
+        self.conv5 = layer.Conv2d(256, 256, 3, padding=1)
+        self.linear1 = layer.Linear(1024, 4096)
+        self.linear2 = layer.Linear(4096, 4096)
+        self.linear3 = layer.Linear(4096, num_classes)
+        self.pooling1 = layer.MaxPool2d(2, 2, padding=0)
+        self.pooling2 = layer.MaxPool2d(2, 2, padding=0)
+        self.pooling3 = layer.MaxPool2d(2, 2, padding=0)
+        self.avg_pooling1 = layer.AvgPool2d(3, 2, padding=0)
 
     def forward(self, x):
         y = self.conv1(x)
@@ -69,7 +70,9 @@ class AlexNet(module.Module):
     def loss(self, out, ty):
         return autograd.softmax_cross_entropy(out, ty)
 
-    def optim(self, loss, dist_option, spars):
+    def train_one_batch(self, x, y, dist_option, spars):
+        out = self.forward(x)
+        loss = autograd.softmax_cross_entropy(out, y)
         if dist_option == 'fp32':
             self.optimizer.backward_and_update(loss)
         elif dist_option == 'fp16':
@@ -84,6 +87,7 @@ class AlexNet(module.Module):
             self.optimizer.backward_and_sparse_update(loss,
                                                       topK=False,
                                                       spars=spars)
+        return out, loss
 
     def set_optimizer(self, optimizer):
         self.optimizer = optimizer

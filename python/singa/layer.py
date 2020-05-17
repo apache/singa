@@ -18,7 +18,6 @@
 
 import math
 
-from singa import tensor
 from singa import autograd
 from .tensor import Tensor
 from . import singa_wrap as singa
@@ -90,6 +89,7 @@ class Linear(Layer):
     """
 
     def do_init(self, x):
+        prev_state = x.device.graph_enabled()
         x.device.EnableGraph(False)
 
         self.in_features = x.shape[1]
@@ -104,7 +104,7 @@ class Linear(Layer):
             self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
             self.b.set_value(0.0)
 
-        x.device.EnableGraph(True)
+        x.device.EnableGraph(prev_state)
 
     def __init__(self, out_features, bias=True):
         # def __init__(self, in_features, out_features, bias=True):
@@ -115,6 +115,8 @@ class Linear(Layer):
                 filters
             bias: bool
         """
+        super(Linear, self).__init__()
+
         # self.in_features = in_features
         self.out_features = out_features
         self.bias = bias
@@ -194,6 +196,8 @@ class Conv2d(Layer):
                 spatial size match the input. In case of odd number add the extra
                 padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
         """
+        super(Conv2d, self).__init__()
+
         self.in_channels = in_channels
         self.out_channels = out_channels
 
@@ -375,6 +379,8 @@ class SeparableConv2d(Layer):
                 will be computed automatically.
             bias (bool): bias
         """
+        super(SeparableConv2d, self).__init__()
+
         self.depthwise_conv = Conv2d(
             in_channels,
             in_channels,
@@ -405,6 +411,8 @@ class BatchNorm2d(Layer):
             momentum (float): Factor used in computing the running mean and
                 variance.
         """
+        super(BatchNorm2d, self).__init__()
+
         self.channels = num_features
         self.momentum = momentum
 
@@ -501,6 +509,8 @@ class Pooling2d(Layer):
                 spatial size match the input. In case of odd number add the extra
                 padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
         """
+        super(Pooling2d, self).__init__()
+
         if isinstance(kernel_size, int):
             self.kernel_size = (kernel_size, kernel_size)
         elif isinstance(kernel_size, tuple):

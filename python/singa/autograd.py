@@ -21,7 +21,6 @@ from __future__ import division
 
 from collections import Counter, deque
 import numpy as np
-import math
 
 from singa import tensor
 from singa import utils

@@ -21,6 +21,7 @@ from builtins import str
 from singa import tensor
 from singa import singa_wrap as singa
 from singa import autograd
+from singa import layer
 from singa import singa_wrap
 from cuda_helper import gpu_dev, cpu_dev
 
@@ -46,7 +47,7 @@ def axis_helper(y_shape, x_shape):
         y_shape: the shape of result
         x_shape: the shape of x
     Return:
-        a tuple refering the axes 
+        a tuple refering the axes
     """
     res = []
     j = len(x_shape) - 1
@@ -117,8 +118,8 @@ class TestPythonOperation(unittest.TestCase):
 
     def _conv2d_helper(self, dev):
         # (in_channels, out_channels, kernel_size)
-        conv_0 = autograd.Conv2d(3, 1, 2)
-        conv_without_bias_0 = autograd.Conv2d(3, 1, 2, bias=False)
+        conv_0 = layer.Conv2d(3, 1, 2)
+        conv_without_bias_0 = layer.Conv2d(3, 1, 2, bias=False)
 
         cpu_input_tensor = tensor.Tensor(shape=(2, 3, 3, 3), device=dev)
         cpu_input_tensor.gaussian(0.0, 1.0)
@@ -186,7 +187,7 @@ class TestPythonOperation(unittest.TestCase):
             handle = singa.CudnnConvHandle(x.data, kernel, stride, padding,
                                            in_channels, out_channels, bias,
                                            group)
-        y = autograd._Conv2d(handle, o_p)(x, w)[0]
+        y = autograd.Conv2d(handle, o_p)(x, w)[0]
 
         dy = np.ones((3, 3, x_h, 32), dtype=np.float32)
         dy = tensor.from_numpy(dy)
@@ -247,7 +248,7 @@ class TestPythonOperation(unittest.TestCase):
             handle = singa.CudnnPoolingHandle(x.data, kernel, stride, padding,
                                               True)
 
-        y = autograd._Pooling2d(handle, o_p)(x)[0]
+        y = autograd.Pooling2d(handle, o_p)(x)[0]
 
         dy = np.ones((3, 3, x_h, 32), dtype=np.float32)
         dy = tensor.from_numpy(dy)
@@ -319,7 +320,7 @@ class TestPythonOperation(unittest.TestCase):
             in_channels = 1
         else:
             in_channels = 8
-        separ_conv = autograd.SeparableConv2d(in_channels, 16, 3, padding=1)
+        separ_conv = layer.SeparableConv2d(in_channels, 16, 3, padding=1)
 
         x = np.random.random((10, in_channels, 28, 28)).astype(np.float32)
         x = tensor.Tensor(device=dev, data=x)
@@ -349,7 +350,7 @@ class TestPythonOperation(unittest.TestCase):
         self._SeparableConv2d_helper(gpu_dev)
 
     def _batchnorm2d_helper(self, dev):
-        batchnorm_0 = autograd.BatchNorm2d(3)
+        batchnorm_0 = layer.BatchNorm2d(3)
 
         cpu_input_tensor = tensor.Tensor(shape=(2, 3, 3, 3), device=dev)
         cpu_input_tensor.gaussian(0.0, 1.0)
@@ -411,7 +412,7 @@ class TestPythonOperation(unittest.TestCase):
     def _vanillaRNN_gpu_tiny_ops_shape_check_helper(self, dev):
         # gradients shape check.
         inputs, target, h0 = prepare_inputs_targets_for_rnn_test(dev)
-        rnn = autograd.RNN(3, 2)
+        rnn = layer.RNN(3, 2)
 
         hs, _ = rnn(inputs, h0)
 
@@ -437,7 +438,7 @@ class TestPythonOperation(unittest.TestCase):
         c_0 = np.random.random((2, 1)).astype(np.float32)
         c0 = tensor.Tensor(device=dev, data=c_0)
 
-        rnn = autograd.LSTM(3, 2)
+        rnn = layer.LSTM(3, 2)
 
         hs, _, _ = rnn(inputs, (h0, c0))
         loss = autograd.softmax_cross_entropy(hs[0], target[0])
@@ -460,7 +461,7 @@ class TestPythonOperation(unittest.TestCase):
     def _numerical_gradients_check_for_vallina_rnn_helper(self, dev):
         inputs, target, h0 = prepare_inputs_targets_for_rnn_test(dev)
 
-        rnn = autograd.RNN(3, 2)
+        rnn = layer.RNN(3, 2)
 
         def valinna_rnn_forward():
             hs, _ = rnn(inputs, h0)
@@ -492,7 +493,7 @@ class TestPythonOperation(unittest.TestCase):
         c_0 = np.zeros((2, 2)).astype(np.float32)
         c0 = tensor.Tensor(device=dev, data=c_0)
 
-        rnn = autograd.LSTM(3, 2)
+        rnn = layer.LSTM(3, 2)
 
         def lstm_forward():
             hs, _, _ = rnn(inputs, (h0, c0))

@@ -32,6 +32,7 @@ from singa import device
 from singa import tensor
 from singa import autograd
 from singa import module
+from singa import layer
 from singa import opt
 
 
@@ -39,8 +40,8 @@ class CharRNN(module.Module):
 
     def __init__(self, vocab_size, hidden_size=32):
         super(CharRNN, self).__init__()
-        self.rnn = autograd.LSTM(vocab_size, hidden_size)
-        self.dense = autograd.Linear(hidden_size, vocab_size)
+        self.rnn = layer.LSTM(vocab_size, hidden_size)
+        self.dense = layer.Linear(hidden_size, vocab_size)
         self.optimizer = opt.SGD(0.01)
         self.hidden_size = hidden_size
         self.vocab_size = vocab_size
@@ -59,12 +60,12 @@ class CharRNN(module.Module):
         x = autograd.reshape(x, (-1, self.hidden_size))
         return self.dense(x)
 
-    def loss(self, out, ty):
-        ty = autograd.reshape(ty, (-1, 1))
-        return autograd.softmax_cross_entropy(out, ty)
-
-    def optim(self, loss):
+    def train_one_batch(self, x, y):
+        out = self.forward(x)
+        y = autograd.reshape(y, (-1, 1))
+        loss = autograd.softmax_cross_entropy(out, y)
         self.optimizer.backward_and_update(loss)
+        return out, loss
 
 
 class Data(object):
@@ -86,7 +87,7 @@ class Data(object):
         data = [self.char_to_idx[c] for c in self.raw_data]
         # seq_length + 1 for the data + label
         nsamples = len(data) // (1 + seq_length)
-        data = data[0: nsamples * (1 + seq_length)]
+        data = data[0:nsamples * (1 + seq_length)]
         data = np.asarray(data, dtype=np.int32)
         data = np.reshape(data, (-1, seq_length + 1))
         # shuffle all sequences
@@ -209,9 +210,7 @@ def train(data,
             inputs, labels = convert(batch, batch_size, seq_length,
                                      data.vocab_size, cuda, inputs, labels)
             model.reset_states(cuda)
-            y = model(inputs)
-            loss = model.loss(y, labels)
-            model.optim(loss)
+            out, loss = model(inputs, labels)
             train_loss += tensor.to_numpy(loss)[0]
 
         print('\nEpoch %d, train loss is %f' %

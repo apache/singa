@@ -20,9 +20,10 @@
 
 from singa import autograd
 from singa import module
+from singa import layer
 
 
-class Block(autograd.Layer):
+class Block(layer.Layer):
 
     def __init__(self,
                  in_filters,
@@ -35,13 +36,13 @@ class Block(autograd.Layer):
         super(Block, self).__init__()
 
         if out_filters != in_filters or strides != 1:
-            self.skip = autograd.Conv2d(in_filters,
-                                        out_filters,
-                                        1,
-                                        stride=strides,
-                                        padding=padding,
-                                        bias=False)
-            self.skipbn = autograd.BatchNorm2d(out_filters)
+            self.skip = layer.Conv2d(in_filters,
+                                     out_filters,
+                                     1,
+                                     stride=strides,
+                                     padding=padding,
+                                     bias=False)
+            self.skipbn = layer.BatchNorm2d(out_filters)
         else:
             self.skip = None
 
@@ -51,36 +52,36 @@ class Block(autograd.Layer):
         if grow_first:
             self.layers.append(autograd.ReLU())
             self.layers.append(
-                autograd.SeparableConv2d(in_filters,
-                                         out_filters,
-                                         3,
-                                         stride=1,
-                                         padding=1,
-                                         bias=False))
-            self.layers.append(autograd.BatchNorm2d(out_filters))
+                layer.SeparableConv2d(in_filters,
+                                      out_filters,
+                                      3,
+                                      stride=1,
+                                      padding=1,
+                                      bias=False))
+            self.layers.append(layer.BatchNorm2d(out_filters))
             filters = out_filters
 
         for i in range(reps - 1):
             self.layers.append(autograd.ReLU())
             self.layers.append(
-                autograd.SeparableConv2d(filters,
-                                         filters,
-                                         3,
-                                         stride=1,
-                                         padding=1,
-                                         bias=False))
-            self.layers.append(autograd.BatchNorm2d(filters))
+                layer.SeparableConv2d(filters,
+                                      filters,
+                                      3,
+                                      stride=1,
+                                      padding=1,
+                                      bias=False))
+            self.layers.append(layer.BatchNorm2d(filters))
 
         if not grow_first:
             self.layers.append(autograd.ReLU())
             self.layers.append(
-                autograd.SeparableConv2d(in_filters,
-                                         out_filters,
-                                         3,
-                                         stride=1,
-                                         padding=1,
-                                         bias=False))
-            self.layers.append(autograd.BatchNorm2d(out_filters))
+                layer.SeparableConv2d(in_filters,
+                                      out_filters,
+                                      3,
+                                      stride=1,
+                                      padding=1,
+                                      bias=False))
+            self.layers.append(layer.BatchNorm2d(out_filters))
 
         if not start_with_relu:
             self.layers = self.layers[1:]
@@ -88,7 +89,7 @@ class Block(autograd.Layer):
             self.layers[0] = autograd.ReLU()
 
         if strides != 1:
-            self.layers.append(autograd.MaxPool2d(3, strides, padding + 1))
+            self.layers.append(layer.MaxPool2d(3, strides, padding + 1))
 
     def __call__(self, x):
         y = self.layers[0](x)
@@ -122,11 +123,11 @@ class Xception(module.Module):
         self.input_size = 299
         self.dimension = 4
 
-        self.conv1 = autograd.Conv2d(num_channels, 32, 3, 2, 0, bias=False)
-        self.bn1 = autograd.BatchNorm2d(32)
+        self.conv1 = layer.Conv2d(num_channels, 32, 3, 2, 0, bias=False)
+        self.bn1 = layer.BatchNorm2d(32)
 
-        self.conv2 = autograd.Conv2d(32, 64, 3, 1, 1, bias=False)
-        self.bn2 = autograd.BatchNorm2d(64)
+        self.conv2 = layer.Conv2d(32, 64, 3, 1, 1, bias=False)
+        self.bn2 = layer.BatchNorm2d(64)
         # do relu here
 
         self.block1 = Block(64,
@@ -208,15 +209,15 @@ class Xception(module.Module):
                              start_with_relu=True,
                              grow_first=False)
 
-        self.conv3 = autograd.SeparableConv2d(1024, 1536, 3, 1, 1)
-        self.bn3 = autograd.BatchNorm2d(1536)
+        self.conv3 = layer.SeparableConv2d(1024, 1536, 3, 1, 1)
+        self.bn3 = layer.BatchNorm2d(1536)
 
         # do relu here
-        self.conv4 = autograd.SeparableConv2d(1536, 2048, 3, 1, 1)
-        self.bn4 = autograd.BatchNorm2d(2048)
+        self.conv4 = layer.SeparableConv2d(1536, 2048, 3, 1, 1)
+        self.bn4 = layer.BatchNorm2d(2048)
 
-        self.globalpooling = autograd.MaxPool2d(10, 1)
-        self.fc = autograd.Linear(2048, num_classes)
+        self.globalpooling = layer.MaxPool2d(10, 1)
+        self.fc = layer.Linear(2048, num_classes)
 
     def features(self, input):
         x = self.conv1(input)
@@ -255,15 +256,14 @@ class Xception(module.Module):
         x = self.fc(x)
         return x
 
-    def forward(self, input):
-        x = self.features(input)
+    def forward(self, x):
+        x = self.features(x)
         x = self.logits(x)
         return x
 
-    def loss(self, out, ty):
-        return autograd.softmax_cross_entropy(out, ty)
-
-    def optim(self, loss, dist_option, spars):
+    def train_one_batch(self, x, y, dist_option, spars):
+        out = self.forward(x)
+        loss = autograd.softmax_cross_entropy(out, y)
         if dist_option == 'fp32':
             self.optimizer.backward_and_update(loss)
         elif dist_option == 'fp16':
@@ -278,6 +278,7 @@ class Xception(module.Module):
             self.optimizer.backward_and_sparse_update(loss,
                                                       topK=False,
                                                       spars=spars)
+        return out, loss
 
     def set_optimizer(self, optimizer):
         self.optimizer = optimizer

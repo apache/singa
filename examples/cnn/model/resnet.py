@@ -22,11 +22,12 @@
 
 from singa import autograd
 from singa import module
+from singa import layer
 
 
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
-    return autograd.Conv2d(
+    return layer.Conv2d(
         in_planes,
         out_planes,
         kernel_size=3,
@@ -36,15 +37,15 @@ def conv3x3(in_planes, out_planes, stride=1):
     )
 
 
-class BasicBlock(autograd.Layer):
+class BasicBlock(layer.Layer):
     expansion = 1
 
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(BasicBlock, self).__init__()
         self.conv1 = conv3x3(inplanes, planes, stride)
-        self.bn1 = autograd.BatchNorm2d(planes)
+        self.bn1 = layer.BatchNorm2d(planes)
         self.conv2 = conv3x3(planes, planes)
-        self.bn2 = autograd.BatchNorm2d(planes)
+        self.bn2 = layer.BatchNorm2d(planes)
         self.downsample = downsample
         self.stride = stride
 
@@ -67,28 +68,25 @@ class BasicBlock(autograd.Layer):
         return out
 
 
-class Bottleneck(autograd.Layer):
+class Bottleneck(layer.Layer):
     expansion = 4
 
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(Bottleneck, self).__init__()
-        self.conv1 = autograd.Conv2d(inplanes,
-                                     planes,
-                                     kernel_size=1,
-                                     bias=False)
-        self.bn1 = autograd.BatchNorm2d(planes)
-        self.conv2 = autograd.Conv2d(planes,
-                                     planes,
-                                     kernel_size=3,
-                                     stride=stride,
-                                     padding=1,
-                                     bias=False)
-        self.bn2 = autograd.BatchNorm2d(planes)
-        self.conv3 = autograd.Conv2d(planes,
-                                     planes * self.expansion,
-                                     kernel_size=1,
-                                     bias=False)
-        self.bn3 = autograd.BatchNorm2d(planes * self.expansion)
+        self.conv1 = layer.Conv2d(inplanes, planes, kernel_size=1, bias=False)
+        self.bn1 = layer.BatchNorm2d(planes)
+        self.conv2 = layer.Conv2d(planes,
+                                  planes,
+                                  kernel_size=3,
+                                  stride=stride,
+                                  padding=1,
+                                  bias=False)
+        self.bn2 = layer.BatchNorm2d(planes)
+        self.conv3 = layer.Conv2d(planes,
+                                  planes * self.expansion,
+                                  kernel_size=1,
+                                  bias=False)
+        self.bn3 = layer.BatchNorm2d(planes * self.expansion)
 
         self.downsample = downsample
         self.stride = stride
@@ -129,32 +127,32 @@ class ResNet(module.Module):
         self.num_classes = num_classes
         self.input_size = 224
         self.dimension = 4
-        self.conv1 = autograd.Conv2d(num_channels,
-                                     64,
-                                     kernel_size=7,
-                                     stride=2,
-                                     padding=3,
-                                     bias=False)
-        self.bn1 = autograd.BatchNorm2d(64)
-        self.maxpool = autograd.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        self.conv1 = layer.Conv2d(num_channels,
+                                  64,
+                                  kernel_size=7,
+                                  stride=2,
+                                  padding=3,
+                                  bias=False)
+        self.bn1 = layer.BatchNorm2d(64)
+        self.maxpool = layer.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
-        self.avgpool = autograd.AvgPool2d(7, stride=1)
-        self.fc = autograd.Linear(512 * block.expansion, num_classes)
+        self.avgpool = layer.AvgPool2d(7, stride=1)
+        self.fc = layer.Linear(512 * block.expansion, num_classes)
 
     def _make_layer(self, block, planes, blocks, stride=1):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
-            conv = autograd.Conv2d(
+            conv = layer.Conv2d(
                 self.inplanes,
                 planes * block.expansion,
                 kernel_size=1,
                 stride=stride,
                 bias=False,
             )
-            bn = autograd.BatchNorm2d(planes * block.expansion)
+            bn = layer.BatchNorm2d(planes * block.expansion)
 
             def _downsample(x):
                 return bn(conv(x))
@@ -191,10 +189,9 @@ class ResNet(module.Module):
 
         return x
 
-    def loss(self, out, ty):
-        return autograd.softmax_cross_entropy(out, ty)
-
-    def optim(self, loss, dist_option, spars):
+    def train_one_batch(self, x, y, dist_option, spars):
+        out = self.forward(x)
+        loss = autograd.softmax_cross_entropy(out, y)
         if dist_option == 'fp32':
             self.optimizer.backward_and_update(loss)
         elif dist_option == 'fp16':
@@ -209,6 +206,7 @@ class ResNet(module.Module):
             self.optimizer.backward_and_sparse_update(loss,
                                                       topK=False,
                                                       spars=spars)
+        return out, loss
 
     def set_optimizer(self, optimizer):
         self.optimizer = optimizer

@@ -37,13 +37,13 @@ class Graph(type):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             if self.graph_mode and self.training:
-                name = func.__name__
                 if not self.buffered:
                     # buffer operations
                     self._device.EnableGraph(True)
                     self._results = func(self, *args, **kwargs)
                     self._device.Sync()
                     self._device.EnableGraph(False)
+                    self.buffered = True
 
                     # deconstruct Operations before running the entire graph
                     if self._results:
@@ -56,8 +56,6 @@ class Graph(type):
 
                     # make sure all Operations are deallocated
                     gc.collect()
-
-                    self.buffered = True
 
                 # run graph
                 self._device.RunGraph(self.sequential)
