@@ -46,6 +46,38 @@ class Layer(object):
                 sublayers.append((attr, self.__dict__[attr]))
         return sublayers
 
+    def get_states(self):
+        sublayers = self.find_sublayers()
+        states = dict()
+        for sublayer_name, sublayer in sublayers:
+            if sublayer.get_states():
+                states[sublayer_name] = sublayer.get_states()
+        return states
+
+    def set_states(self, **states):
+        for (state_name, state_value) in states.items():
+            assert (state_name in self.__dict__
+                   ), "please input correct states."
+            if isinstance(self.__dict__[state_name], Layer):
+                self.__dict__[state_name].set_states(
+                    **states[state_name])
+            elif isinstance(self.__dict__[state_name], Tensor):
+                self.set_one_attribute(state_name, state_value, self.allow_states)
+            else:
+                raise ValueError("please input correct states.")
+
+    def set_one_attribute(self, attribute_name, attribute_value, allow_attributes):
+        assert (attribute_name in allow_attributes
+               ), "please input allowed attributes."
+        assert (attribute_value.shape == self.__dict__[attribute_name].shape
+               ), "Shape dismatched."
+        if isinstance(attribute_value, Tensor):
+            self.__dict__[attribute_name].reset_like(attribute_value)
+        elif isinstance(attribute_value, np.ndarray):
+            self.__dict__[attribute_name].copy_from_numpy(attribute_value)
+        else:
+            raise ValueError("attributes should be Tensor or Numpy array.")
+
     def get_params(self):
         sublayers = self.find_sublayers()
         params = dict()
@@ -67,21 +99,9 @@ class Layer(object):
                 self.__dict__[parameter_name].set_params(
                     **parameters[parameter_name])
             elif isinstance(self.__dict__[parameter_name], Tensor):
-                self.set_one_param(parameter_name, parameter_value)
+                self.set_one_attribute(parameter_name, parameter_value, self.allow_params)
             else:
                 raise ValueError("please input correct parameters.")
-
-    def set_one_param(self, parameter_name, parameter_value):
-        assert (parameter_name in self.allow_params
-               ), "please input allowed parameters."
-        assert (parameter_value.shape == self.__dict__[parameter_name].shape
-               ), "Shape dismatched."
-        if isinstance(parameter_value, Tensor):
-            self.__dict__[parameter_name].reset_like(parameter_value)
-        elif isinstance(parameter_value, np.ndarray):
-            self.__dict__[parameter_name].copy_from_numpy(parameter_value)
-        else:
-            raise ValueError("parameters should be Tensor or Numpy array.")
 
 
 class Linear(Layer):
@@ -107,8 +127,8 @@ class Linear(Layer):
 
         x.device.EnableGraph(prev_state)
 
-    def __init__(self, out_features, bias=True):
-        # def __init__(self, in_features, out_features, bias=True):
+    # TODO: update to auto derive in_features
+    def __init__(self, in_features, out_features, bias=True):
         """
         Args:
             in_channels: int, the channel of input
@@ -118,7 +138,7 @@ class Linear(Layer):
         """
         super(Linear, self).__init__()
 
-        # self.in_features = in_features
+        self.in_features = in_features
         self.out_features = out_features
         self.bias = bias
         self.init = False
@@ -142,9 +162,10 @@ class Linear(Layer):
 
     def get_params(self):
         if self.bias:
-            return {"W": self.W, "b": self.b}
+            params = {"W": self.W, "b": self.b}
         else:
-            return {"W": self.W}
+            params = {"W": self.W}
+        return params
 
     def set_params(self, **parameters):
         # TODO(wangwei) remove this funciton as Opeation's set_params() enough
@@ -163,6 +184,37 @@ class Conv2d(Layer):
     """
     Generate a Conv 2d operator
     """
+
+    def do_init(self, x):
+        prev_state = x.device.graph_enabled()
+        x.device.EnableGraph(False)
+
+        w_shape = (
+            self.out_channels,
+            int(self.in_channels / self.group),
+            self.kernel_size[0],
+            self.kernel_size[1],
+        )
+
+        self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
+        # std = math.sqrt(
+        # 2.0 / (self.in_channels * self.kernel_size[0] * self.kernel_size[1] +
+        # self.out_channels))
+        std = math.sqrt(
+            2.0 / (w_shape[1] * self.kernel_size[0] * self.kernel_size[1] +
+                   self.out_channels))
+        self.W.gaussian(0.0, std)
+
+        if self.bias:
+            b_shape = (self.out_channels,)
+            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
+            self.b.set_value(0.0)
+        else:
+            # to keep consistency when to do forward.
+            self.b = None
+            # Tensor(data=CTensor([]), requires_grad=False, stores_grad=False)
+
+        x.device.EnableGraph(prev_state)
 
     def __init__(self,
                  in_channels,
@@ -198,6 +250,8 @@ class Conv2d(Layer):
                 padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
         """
         super(Conv2d, self).__init__()
+
+        self.init = False
 
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -261,34 +315,14 @@ class Conv2d(Layer):
             else:
                 self.inner_params[kwarg] = kwargs[kwarg]
 
-        w_shape = (
-            self.out_channels,
-            int(self.in_channels / self.group),
-            self.kernel_size[0],
-            self.kernel_size[1],
-        )
-
-        self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
-        # std = math.sqrt(
-        # 2.0 / (self.in_channels * self.kernel_size[0] * self.kernel_size[1] +
-        # self.out_channels))
-        std = math.sqrt(
-            2.0 / (w_shape[1] * self.kernel_size[0] * self.kernel_size[1] +
-                   self.out_channels))
-        self.W.gaussian(0.0, std)
-
-        if self.bias:
-            b_shape = (self.out_channels,)
-            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
-            self.b.set_value(0.0)
-        else:
-            # to keep consistency when to do forward.
-            self.b = None
-            # Tensor(data=CTensor([]), requires_grad=False, stores_grad=False)
         self.pad_mode = pad_mode
 
     def __call__(self, x):
         assert x.shape[1] == self.in_channels, "in_channels mismatched"
+
+        if not self.init:
+            self.do_init(x)
+            self.init = True
 
         # if same pad mode, re-compute the padding
         if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
@@ -404,18 +438,9 @@ class BatchNorm2d(Layer):
     """
     Generate a BatchNorm 2d operator
     """
-
-    def __init__(self, num_features, momentum=0.9):
-        """
-        Args:
-            num_features (int): int, the channel of input
-            momentum (float): Factor used in computing the running mean and
-                variance.
-        """
-        super(BatchNorm2d, self).__init__()
-
-        self.channels = num_features
-        self.momentum = momentum
+    def do_init(self, x):
+        prev_state = x.device.graph_enabled()
+        x.device.EnableGraph(False)
 
         param_shape = (self.channels,)
 
@@ -439,10 +464,30 @@ class BatchNorm2d(Layer):
                                   stores_grad=False)
         self.running_var.set_value(1.0)
 
+        x.device.EnableGraph(prev_state)
+
+    def __init__(self, num_features, momentum=0.9):
+        """
+        Args:
+            num_features (int): int, the channel of input
+            momentum (float): Factor used in computing the running mean and
+                variance.
+        """
+        super(BatchNorm2d, self).__init__()
+
+        self.init = False
+
+        self.channels = num_features
+        self.momentum = momentum
+
     def __call__(self, x):
         assert x.shape[1] == self.channels, (
             "number of channels dismatched. %d vs %d" %
             (x.shape[1], self.channels))
+
+        if not self.init:
+            self.do_init(x)
+            self.init = True
 
         self.device_check(x, self.scale, self.bias, self.running_mean,
                           self.running_var)
@@ -470,6 +515,14 @@ class BatchNorm2d(Layer):
 
     def get_params(self):
         return {"scale": self.scale, "bias": self.bias}
+
+    def get_states(self):
+        return {"running_mean": self.running_mean,
+                "running_var": self.running_var}
+
+    def set_states(self, **states):
+        self.allow_states = ["running_mean", "running_var"]
+        super(BatchNorm2d, self).set_states(**states)
 
     def set_params(self, **parameters):
         # set parameters for BatchNorm2d Layer
@@ -755,6 +808,26 @@ class RNN(RNN_Base):
     Generate a RNN operator
     """
 
+    def do_init(self, xs):
+        prev_state = xs[0].device.graph_enabled()
+        xs[0].device.EnableGraph(False)
+
+        Wx_shape = (self.input_size, self.hidden_size)
+        self.Wx = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
+        self.Wx.gaussian(0.0, 1.0)
+
+        Wh_shape = (self.hidden_size, self.hidden_size)
+        self.Wh = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
+        self.Wh.gaussian(0.0, 1.0)
+
+        B_shape = (self.hidden_size,)
+        self.b = Tensor(shape=B_shape, requires_grad=True, stores_grad=True)
+        self.b.set_value(0.0)
+
+        self.params = (self.Wx, self.Wh, self.b)
+
+        xs[0].device.EnableGraph(prev_state)
+
     def __init__(
         self,
         input_size,
@@ -782,23 +855,17 @@ class RNN(RNN_Base):
             bidirectional (bool): If True, becomes a bidirectional RNN.
                 Default: False
         """
+        self.init = False
+
         self.nonlinearity = nonlinearity
-
-        Wx_shape = (input_size, hidden_size)
-        self.Wx = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
-        self.Wx.gaussian(0.0, 1.0)
-
-        Wh_shape = (hidden_size, hidden_size)
-        self.Wh = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
-        self.Wh.gaussian(0.0, 1.0)
-
-        B_shape = (hidden_size,)
-        self.b = Tensor(shape=B_shape, requires_grad=True, stores_grad=True)
-        self.b.set_value(0.0)
-
-        self.params = (self.Wx, self.Wh, self.b)
+        self.input_size = input_size
+        self.hidden_size = hidden_size
 
     def __call__(self, xs, h0):
+        if not self.init:
+            self.do_init(xs)
+            self.init = True
+
         # xs: a tuple or list of input tensors
         if not isinstance(xs, tuple):
             xs = tuple(xs)
@@ -834,6 +901,41 @@ class LSTM(RNN_Base):
     """
     Generate a LSTM operator
     """
+    def do_init(self, xs):
+        prev_state = xs[0].device.graph_enabled()
+        xs[0].device.EnableGraph(False)
+
+        Wx_shape = (self.input_size, self.hidden_size)
+        self.Wx = []
+        for i in range(4):
+            w = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
+            w.gaussian(0.0, 0.01)
+            self.Wx.append(w)
+
+        Wh_shape = (self.hidden_size, self.hidden_size)
+        self.Wh = []
+        for i in range(4):
+            w = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
+            w.gaussian(0.0, 0.01)
+            self.Wh.append(w)
+
+        Bx_shape = (self.hidden_size,)
+        self.Bx = []
+        for i in range(4):
+            b = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+            b.set_value(0.0)
+            self.Bx.append(b)
+
+        self.Bh = []
+        for i in range(4):
+            b = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+            b.set_value(0.0)
+            self.Bh.append(b)
+
+        self.params = self.Wx + self.Wh + self.Bx + self.Bh
+
+        xs[0].device.EnableGraph(prev_state)
+
 
     def __init__(
         self,
@@ -862,38 +964,17 @@ class LSTM(RNN_Base):
             bidirectional (bool): If True, becomes a bidirectional RNN.
                 Default: False
         """
+        self.init = False
+
         self.nonlinearity = nonlinearity
-
-        Wx_shape = (input_size, hidden_size)
-        self.Wx = []
-        for i in range(4):
-            w = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
-            w.gaussian(0.0, 0.01)
-            self.Wx.append(w)
-
-        Wh_shape = (hidden_size, hidden_size)
-        self.Wh = []
-        for i in range(4):
-            w = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
-            w.gaussian(0.0, 0.01)
-            self.Wh.append(w)
-
-        Bx_shape = (hidden_size,)
-        self.Bx = []
-        for i in range(4):
-            b = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
-            b.set_value(0.0)
-            self.Bx.append(b)
-
-        self.Bh = []
-        for i in range(4):
-            b = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
-            b.set_value(0.0)
-            self.Bh.append(b)
-
-        self.params = self.Wx + self.Wh + self.Bx + self.Bh
+        self.input_size = input_size
+        self.hidden_size = hidden_size
 
     def __call__(self, xs, h0_c0):
+        if not self.init:
+            self.do_init(xs)
+            self.init = True
+
         # xs: a tuple or list of input tensors
         # h0_c0: a tuple of (h0, c0)
         h0, c0 = h0_c0

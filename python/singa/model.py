@@ -24,6 +24,7 @@ from functools import wraps
 
 from singa import tensor
 from singa import autograd
+from singa import layer
 from . import singa_wrap as singa
 from .device import get_default_device
 
@@ -71,7 +72,7 @@ class Graph(type):
         return super(Graph, cls).__new__(cls, name, bases, attr)
 
 
-class Model(object, metaclass=Graph):
+class Model(layer.Layer, metaclass=Graph):
     """ Base class for your neural network models.
 
     Example usage::
@@ -189,3 +190,49 @@ class Model(object, metaclass=Graph):
             return self.train_one_batch(*input, **kwargs)
         else:
             return self.forward(*input, **kwargs)
+
+    def _flatten_dictionary(self,d, parent_key='', sep=':'):
+        items = []
+        for k, v in d.items():
+            new_key = parent_key + sep + k if parent_key else k
+            if isinstance(v, dict):
+                items.extend(self._flatten_dictionary(v, new_key, sep=sep).items())
+            else:
+                items.append((new_key, v))
+        return dict(items)
+
+    def _de_flatten_dictionary(self,d):
+        def extend_d_tree(leaf, k, v, sep=":"):
+            if sep in k:
+                lead_k, trail_k = k.split(sep,1)
+                new_leaf = leaf.setdefault(lead_k, {})
+                extend_d_tree(new_leaf, trail_k, v)
+            else:
+                leaf[k] = v
+
+        root=dict()
+        for k, v in d.items():
+            extend_d_tree(root, k, v)
+        return root
+
+    def get_params(self):
+        params = super().get_params()
+        # input params are nested {"l1": {"l2": {"l3": {"W": []}}}}
+        # flatten into {"l1:l2:l3:W": []}
+        # recursively flatten params nested dict
+        return self._flatten_dictionary(params)
+
+    def set_params(self, params):
+        # input params are flatten {"l1:l2:l3:W": []}
+        # deflat into {"l1": {"l2": {"l3": {"W": []}}}}
+        root = self._de_flatten_dictionary(params)
+        super().set_params(**root)
+
+    def get_states(self):
+        states = super().get_states()
+        return states
+
+    def set_states(self, states):
+        root = self._de_flatten_dictionary(states)
+        states = super().set_states(**root)
+        return states
