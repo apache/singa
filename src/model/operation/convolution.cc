@@ -185,7 +185,7 @@ Tensor CpuConvForward(const Tensor &x, Tensor &W, Tensor &b,
         // synchronize stream
         s.wait();
       },
-      {x.block(), W.block(), b.block()}, {output.block()});
+      {x.block(), W.block(), b.block()}, {output.block()}, "CpuConvForward");
 
   return output;
 #else   // cpp naive
@@ -279,7 +279,7 @@ Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x,
                       {DNNL_ARG_DIFF_SRC, conv_user_src_memory}});
         ctx->dnnl_stream.wait();
       },
-      {x.block(), dy.block(), W.block()}, {dx.block()});
+      {x.block(), dy.block(), W.block()}, {dx.block()}, "CpuConvBackwardx");
 
   return dx;
 
@@ -372,7 +372,7 @@ Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
                       {DNNL_ARG_DIFF_BIAS, conv_diff_bias_memory}});
         ctx->dnnl_stream.wait();
       },
-      {x.block(), dy.block(), W.block()}, {dW.block(), ch.db->block()});
+      {x.block(), dy.block(), W.block()}, {dW.block(), ch.db->block()}, "CpuConvBackwardW");
 
   return dW;
 #else   // native cpp
@@ -598,7 +598,7 @@ Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b,
                                 cch.workspace_count * sizeof(float), &beta,
                                 cch.y_desc, outblock->mutable_data());
       },
-      {x.block(), W.block()}, {output.block(), cch.workspace.block()});
+      {x.block(), W.block()}, {output.block(), cch.workspace.block()}, "cudnnConvForward");
 
   if (cch.bias_term) {
     Tensor outputFake(output);
@@ -610,7 +610,7 @@ Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b,
                          bblock->data(), &beta, cch.y_desc,
                          outblock->mutable_data());
         },
-        {output.block(), b.block()}, {output.block()});
+        {output.block(), b.block()}, {output.block()}, "cudnnAddTensor");
   }
 
   return output;
@@ -634,7 +634,7 @@ Tensor GpuConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x,
             cch.workspace_count * sizeof(float), &beta, cch.x_desc,
             dxblock->mutable_data());
       },
-      {dy.block(), W.block()}, {dx.block(), cch.workspace.block()});
+      {dy.block(), W.block()}, {dx.block(), cch.workspace.block()}, "cudnnConvolutionBackwardData");
 
   return dx;
 }
@@ -658,7 +658,7 @@ Tensor GpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
             cch.workspace_count * sizeof(float), &beta, cch.filter_desc,
             dwblock->mutable_data());
       },
-      {dy.block(), x.block()}, {dW.block(), cch.workspace.block()});
+      {dy.block(), x.block()}, {dW.block(), cch.workspace.block()}, "cudnnConvolutionBackwardFilter");
 
   return dW;
 }
@@ -679,7 +679,7 @@ Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b,
                                      dyblock->data(), &beta, cch.bias_desc,
                                      dbblock->mutable_data());
       },
-      {dy.block()}, {db.block()});
+      {dy.block()}, {db.block()}, "cudnnConvolutionBackwardBias");
 
   return db;
 }

@@ -99,6 +99,7 @@ def run(global_rank,
         data,
         sgd,
         graph,
+        verbosity,
         dist_option='fp32',
         spars=None):
     dev = device.create_cuda_gpu_on(local_rank)
@@ -185,6 +186,9 @@ def run(global_rank,
     model.on_device(dev)
     model.set_optimizer(sgd)
     model.graph(graph, sequential)
+    
+    dev.SetVerbosity(verbosity)
+    # dev.SetProfilingMode('CHRONO')
 
     # Training and Evaluation Loop
     for epoch in range(max_epoch):
@@ -255,6 +259,8 @@ def run(global_rank,
                   (test_correct / (num_val_batch * batch_size * world_size),
                    time.time() - start_time),
                   flush=True)
+        
+    dev.PrintTimeProfiling()
 
 
 if __name__ == '__main__':
@@ -298,9 +304,15 @@ if __name__ == '__main__':
                         action='store_false',
                         help='disable graph',
                         dest='graph')
+    parser.add_argument('--verbosity',
+                        '--log-verbosity',
+                        default=0,
+                        type=int,
+                        help='logging verbosity',
+                        dest='verbosity')
 
     args = parser.parse_args()
 
     sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5)
     run(0, 1, args.device_id, args.max_epoch, args.batch_size, args.model,
-        args.data, sgd, args.graph)
+        args.data, sgd, args.graph, args.verbosity)

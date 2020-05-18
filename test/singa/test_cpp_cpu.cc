@@ -42,7 +42,7 @@ TEST(CppCPU, Exec) {
   CppCPU dev;
   Block* b = dev.NewBlock(4);
   int x = 1, y = 3, z = 0;
-  dev.Exec([x, y, &z](singa::Context* ctx) { z = x + y; }, {b}, {b}, false);
+  dev.Exec([x, y, &z](singa::Context* ctx) { z = x + y; }, {b}, {b});
   EXPECT_EQ(x + y, z);
   dev.FreeBlock(b);
 }

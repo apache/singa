@@ -25,6 +25,7 @@
 #include <thread>
 #include <unordered_map>
 #include <vector>
+#include <string>
 
 #include "singa/core/common.h"
 #include "singa/utils/safe_queue.h"
@@ -32,6 +33,7 @@
 using std::function;
 using std::unordered_map;
 using std::vector;
+using std::string;
 
 namespace singa {
 
@@ -51,15 +53,21 @@ enum BlockType { kUnknow, kInput, kParam, kInter, kEnd };
 
 class Node {
  public:
-  Node(int id, OpFunc &&op) : id_(id), op_(std::move(op)) {}
+  Node(int id, OpFunc &&op, string op_name) : id_(id), op_(std::move(op)), op_name_(op_name) {}
 
   void AddInEdge(Edge *in_edge);
   void AddOutEdge(Edge *out_edge);
 
   // getters of Node
   int id() const { return id_; }
+  string op_name() const { return op_name_; }
   const EdgeVec &in_edges() const { return in_edges_; }
   const EdgeVec &out_edges() const { return out_edges_; }
+  float time_elapsed() const { return time_elapsed_; }
+  float iteration() const { return iteration_; }
+  
+  // time profiling
+  void time_elapsed_inc(float time) { time_elapsed_ += time; iteration_ ++; }
 
  private:
   friend Graph;
@@ -68,6 +76,11 @@ class Node {
   OpFunc op_;
   EdgeVec in_edges_;
   EdgeVec out_edges_;
+
+  string op_name_;
+  float time_elapsed_ = 0;
+  int iteration_ = 0;
+ 
 };
 
 class Edge {
@@ -136,7 +149,7 @@ class Graph {
   void RunGraph();
   void RunInSerial();
   void AddOperation(OpFunc &&op, const BlockVec &read_blocks,
-                    const BlockVec &write_blocks);
+                    const BlockVec &write_blocks, string op_name = "no_name");
 
   // getters of Graph
   const NodeVec &nodes() const { return nodes_; }
@@ -160,12 +173,15 @@ class Graph {
   const NodeVec &next_nodes(const size_t idx) const;
   const BlockVec &free_blocks(const size_t idx) const;
 
+  void PrintTimeProfiling();
+
  private:
   void Analyze();
   void FreeLoop();
   void AnalyzeNodes();
   void AnalyzeEdges();
-  void AddSyncOp(function<void(Context *)> &&op);
+  void AddSyncOp(function<void(Context *)> &&op, string op_name = "no_name");
+  void TimeProfilingDoExec(Node *curNode);
 
   // static void CUDART_CB Callback(cudaStream_t stream, cudaError_t status,
   //                                void *data);

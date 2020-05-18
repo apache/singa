@@ -173,7 +173,7 @@ Tensor Tensor::AsType(const DataType type) {
               [thisRef, ret](Context *ctx) mutable {
                 CastCopy<LDType, RDType, Lang>(&thisRef, &ret, ctx);
               },
-              {this->block()}, {ret.block()});
+              {this->block()}, {ret.block()}, "AsType");
         });
     return ret;
   } else {
@@ -716,7 +716,7 @@ float Tensor::l1() const {
           Asum<DType, Lang>(*this, &ret, ctx);
           nrm = TypeCast<DType, float>(ret);
         },
-        {this->block()}, {});
+        {this->block()}, {}, "l1");
   });
   return nrm / Size();
 }
@@ -734,7 +734,7 @@ float Tensor::l2() const {
           Nrm2<DType, Lang>(*this, &ret, ctx);
           nrm = TypeCast<DType, float>(ret);
         },
-        {this->block()}, {});
+        {this->block()}, {}, "L1");
   });
   return nrm / Size();
 }
@@ -755,7 +755,7 @@ void Tensor::SetValue(const SType x) {
         [thisRef, x](Context *ctx) mutable {
           Set<DType, Lang>(x, &thisRef, ctx);
         },
-        {}, {ptr});
+        {}, {ptr}, "SetValue");
   });
 }
 template void Tensor::SetValue<float>(const float x);
@@ -789,7 +789,7 @@ template void Tensor::GetValue<int>(int *value, const size_t num);
           [t, retRef](Context *ctx) mutable {                          \
             fn<DType, Lang>(t, &retRef, ctx);                          \
           },                                                           \
-          {t.block()}, {ret->block()});                                \
+          {t.block()}, {ret->block()}, #fn);                                \
     });                                                                \
   } while (0)
 
@@ -899,7 +899,7 @@ void SoftMaxBackward(const Tensor &in, Tensor *out, int axis,
           [in, outRef, fdout](Context *ctx) mutable {
             SoftMaxBackward<DType, Lang>(in, &outRef, fdout, ctx);
           },
-          {in.block(), fdout.block()}, {out->block()});
+          {in.block(), fdout.block()}, {out->block()}, "SoftmaxBackward");
     });
   } while (0);
 
@@ -922,7 +922,7 @@ Tensor SoftMaxBackward(const Tensor &in, int axis, const Tensor &fdout) {
           [lhs, rhs, retRef](Context *ctx) mutable {                       \
             fn<DType, Lang>(lhs, rhs, &retRef, ctx);                       \
           },                                                               \
-          {lhs.block(), rhs.block()}, {ret->block()});                     \
+          {lhs.block(), rhs.block()}, {ret->block()}, #fn);               \
     });                                                                    \
   } while (0)
 
@@ -977,7 +977,7 @@ GenBinaryTensorFn(ReLUBackward, ReLUBackward);
           [t, x, retRef](Context *ctx) mutable {                        \
             fn<DType, Lang>(t, x, &retRef, ctx);                        \
           },                                                            \
-          {t.block()}, {ret->block()});                                 \
+          {t.block()}, {ret->block()}, #fn);                                 \
     });                                                                 \
   } while (0)
 
@@ -1023,7 +1023,7 @@ void Div(const SType alpha, const Tensor &in, Tensor *out) {
         [alpha, in, outRef](Context *ctx) mutable {
           Div<DType, Lang>(alpha, in, &outRef, ctx);
         },
-        {in.block()}, {out->block()});
+        {in.block()}, {out->block()}, "Div");
   });
 }
 template void Div<float>(const float, const Tensor &, Tensor *);
@@ -1065,7 +1065,7 @@ float Sum<float>(const Tensor &in) {
           Dot<DType, Lang>(in, one, &ret, ctx);
           s = ret;
         },
-        {in.block(), one.block()}, {});
+        {in.block(), one.block()}, {}, "Sum");
   });
   return s;
 }
@@ -1092,7 +1092,7 @@ Tensor SumAll(const Tensor &in) {
         [in, one, out](Context *ctx) mutable {
           Dot<DType, Lang>(in, one, &out, ctx);
         },
-        {in.block(), one.block()}, {out.block()});
+        {in.block(), one.block()}, {out.block()}, "SumAll");
   });
   return out;
 }
@@ -1107,7 +1107,7 @@ Tensor RowMax(const Tensor &in) {
           // size_t ncol = in.Size() / nrow;
           RowMax<DType, Lang>(in, &ret, ctx);
         },
-        {in.block()}, {ret.block()});
+        {in.block()}, {ret.block()}, "RowMax");
   });
   return ret;
 }
@@ -1324,7 +1324,7 @@ void MultColumn(const Tensor &v, Tensor *M) {
         [MRef, v](Context *ctx) mutable {
           DGMM<DType, Lang>(false, MRef, v, &MRef, ctx);
         },
-        {M->block(), v.block()}, {M->block()});
+        {M->block(), v.block()}, {M->block()}, "MultColumn");
   });
 }
 
@@ -1341,7 +1341,7 @@ void MultRow(const Tensor &v, Tensor *M) {
         [MRef, v](Context *ctx) mutable {
           DGMM<DType, Lang>(true, MRef, v, &MRef, ctx);
         },
-        {M->block(), v.block()}, {M->block()});
+        {M->block(), v.block()}, {M->block()}, "MultRow");
   });
 }
 
@@ -1390,7 +1390,7 @@ void Bernoulli(const SType p, Tensor *out) {
         [prob, outRef](Context *ctx) mutable {
           Bernoulli<DType, Lang>(prob, &outRef, ctx);
         },
-        {}, {out->block()}, true);
+        {}, {out->block()}, "Bernoulli", true);
   });
 }
 
@@ -1406,7 +1406,7 @@ void Uniform(const SType low, const SType high, Tensor *out) {
         [l, h, outRef](Context *ctx) mutable {
           Uniform<DType, Lang>(l, h, &outRef, ctx);
         },
-        {}, {out->block()}, true);
+        {}, {out->block()}, "Uniform", true);
   });
 }
 
@@ -1422,7 +1422,7 @@ void Gaussian(const SType mean, const SType std, Tensor *out) {
         [m, s, outRef](Context *ctx) mutable {
           Gaussian<DType, Lang>(m, s, &outRef, ctx);
         },
-        {}, {out->block()}, true);
+        {}, {out->block()}, "Gaussian", true);
   });
 }
 template void Gaussian<float>(const float mean, const float std, Tensor *out);
@@ -1439,7 +1439,7 @@ void Axpy(const SType alpha, const Tensor &in, Tensor *out) {
         [a, in, outRef, fake](Context *ctx) mutable {
           Axpy<DType, Lang>(a, in, &outRef, ctx);
         },
-        {in.block(), out->block()}, {out->block()});
+        {in.block(), out->block()}, {out->block()}, "Axpy");
   });
 }
 
@@ -1485,7 +1485,7 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
           [a, A, b, B, CRef, fakeC](Context *ctx) mutable {
             GEMV<DType, Lang>(a, A, B, b, &CRef, ctx);
           },
-          read_blocks, {C->block()});
+          read_blocks, {C->block()}, "GEMV");
     });
   } else if (B.nDim() == 2u) {
     CHECK_EQ(A.shape().size(), 2u);
@@ -1498,7 +1498,7 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
           [a, A, b, B, CRef, fakeC](Context *ctx) mutable {
             GEMM<DType, Lang>(a, A, B, b, &CRef, ctx);
           },
-          read_blocks, {C->block()});
+          read_blocks, {C->block()}, "GEMM");
     });
   } else if (B.nDim() == 3u || B.nDim() == 4u) {
     CHECK_EQ(A.shape().size(), B.shape().size());
@@ -1533,7 +1533,7 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
           [a, A_tmp, b, B_tmp, CRef, fakeC](Context *ctx) mutable {
             GEMMBatched<DType, Lang>(a, A_tmp, B_tmp, b, &CRef, ctx);
           },
-          read_blocks, {C->block()});
+          read_blocks, {C->block()}, "GEMMBatched");
     });
   } else {
     LOG(FATAL) << "Un-supported tensor dimentions " << A.nDim() << "d matmul "
@@ -1571,7 +1571,7 @@ void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss) {
                                            p.block(), t.block(),
                                            lossRef.block(), ctx);
         },
-        {p.block(), t.block()}, {loss->block()});
+        {p.block(), t.block()}, {loss->block()}, "ComputeCrossEntropy");
   });
 }
 
@@ -1591,7 +1591,7 @@ void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p) {
                                               pRef.block(), t.block(),
                                               pRef.block(), ctx);
         },
-        {p->block(), t.block()}, {p->block()});
+        {p->block(), t.block()}, {p->block()}, "SoftmaxCrossEntropyBackward");
   });
 }
 

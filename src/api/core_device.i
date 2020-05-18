@@ -53,6 +53,9 @@ class Device {
   void RunGraph(bool serial = false);
   bool graph_enabled() const;
   void EnableGraph(bool enable);
+  void PrintTimeProfiling();
+  void SetVerbosity(int verbosity);
+  void SetProfilingMode(std::string profiling_mode);
   static void EnableLazyAlloc(bool enbale);
 };
 
