@@ -51,6 +51,17 @@ using std::vector;
 
 namespace singa {
 
+/// Method used by time profiling
+/// ProfilingMode == 0 (default) -> Chrono
+/// ProfilingMode == 1 -> Event (e.g. cudaEvent)
+enum ProfilingMode { useChrono, useEvent };
+
+/// Verbosity of the time profiling function:
+/// Verbosity == 0 (default) -> no logging
+/// Verbosity == 1 -> display forward and backward propagation time
+/// Verbosity == 2 -> display each operation time (OP_ID, op name, time)
+enum Verbosity { disableLog, forwardBackwardTime, eachOperation };
+
 /// Allocate memory and execute Tensor operations.
 /// There are three types of devices distinguished by their programming
 /// languages, namely cpp, cuda and opencl.
@@ -110,17 +121,13 @@ class Device {
 
   bool graph_enabled() const { return graph_enabled_; }
 
-  /// verbosity of the time profiling function:
-  /// verbosity == 0 (default) -> no logging
-  /// verbosity == 1 -> display forward and backward propagation time
-  /// verbosity == 2 -> display each operation time (OP_ID, op name, time)
-  float verbosity() const { return verbosity_; }
+  Verbosity verbosity() const { return verbosity_; }
 
   virtual std::shared_ptr<Device> host() const { return host_; }
 
   void PrintTimeProfiling();
-  void SetVerbosity(int verbosity) { verbosity_ = verbosity; };
-  void SetProfilingMode(string profiling_mode) {
+  void SetVerbosity(Verbosity verbosity) { verbosity_ = verbosity; };
+  void SetProfilingMode(ProfilingMode profiling_mode) {
     profiling_mode_ = profiling_mode;
   };
 
@@ -150,8 +157,8 @@ class Device {
   int num_executors_ = 0;
   unsigned seed_ = 0;
   bool graph_enabled_ = false;
-  string profiling_mode_ = "CHRONO";
-  int verbosity_ = 0;
+  ProfilingMode profiling_mode_ = useChrono;
+  Verbosity verbosity_ = disableLog;
   /// The computational graph
   Graph* graph_ = nullptr;
   /// Programming language type, could be kCpp, kCuda, kOpencl

@@ -104,7 +104,7 @@ void CudaGPU::SyncBeforeCountingTime() {
 }
 
 float CudaGPU::TimeProfilingDoExec(function<void(Context*)>&& fn, int executor) {
-  if (profiling_mode_ == "CHRONO") {
+  if (profiling_mode_ == useChrono) {
     // time profiling using chrono
     SyncBeforeCountingTime();
     auto t_start = std::chrono::high_resolution_clock::now();

@@ -43,6 +43,9 @@ namespace std{
 
 namespace singa{
 
+enum ProfilingMode { useChrono, useEvent };
+enum Verbosity { disableLog, forwardBackwardTime, eachOperation };
+
 class Device {
  public:
   virtual void SetRandSeed(unsigned seed) = 0;
@@ -54,8 +57,8 @@ class Device {
   bool graph_enabled() const;
   void EnableGraph(bool enable);
   void PrintTimeProfiling();
-  void SetVerbosity(int verbosity);
-  void SetProfilingMode(std::string profiling_mode);
+  void SetVerbosity(Verbosity verbosity);
+  void SetProfilingMode(ProfilingMode profiling_mode);
   static void EnableLazyAlloc(bool enbale);
 };
 

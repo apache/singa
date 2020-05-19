@@ -64,10 +64,9 @@ class Node {
   const EdgeVec &in_edges() const { return in_edges_; }
   const EdgeVec &out_edges() const { return out_edges_; }
   float time_elapsed() const { return time_elapsed_; }
-  float iteration() const { return iteration_; }
   
   // time profiling
-  void time_elapsed_inc(float time) { time_elapsed_ += time; iteration_ ++; }
+  void time_elapsed_inc(float time) { time_elapsed_ += time; }
 
  private:
   friend Graph;
@@ -79,7 +78,6 @@ class Node {
 
   string op_name_;
   float time_elapsed_ = 0;
-  int iteration_ = 0;
  
 };
 
@@ -162,6 +160,7 @@ class Graph {
   const NodeVec &begin_nodes() const { return begin_nodes_; }
   const std::vector<NodeVec> &next_nodes() const { return next_nodes_; }
   const std::vector<BlockVec> &free_blocks() const { return free_blocks_; }
+  float iteration() const { return iteration_; }
 
   Node *node(const size_t idx) const;
   Edge *edge(const size_t idx) const;
@@ -182,6 +181,7 @@ class Graph {
   void AnalyzeEdges();
   void AddSyncOp(function<void(Context *)> &&op, string op_name = "no_name");
   void TimeProfilingDoExec(Node *curNode);
+  void step() { iteration_++; }
 
   // static void CUDART_CB Callback(cudaStream_t stream, cudaError_t status,
   //                                void *data);
@@ -203,6 +203,7 @@ class Graph {
   NodeVec begin_nodes_;
   std::vector<NodeVec> next_nodes_;
   std::vector<BlockVec> free_blocks_;
+  int iteration_ = 0;
 
   SafeQueue<int> free_queue_;
 };

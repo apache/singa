@@ -233,7 +233,7 @@ void Graph::PrintTimeProfiling() {
   std::stringstream ss;
 
   // verbosity level: 1 -> forward and backward propagation time
-  if (device_->verbosity() == 1) {
+  if (device_->verbosity() == forwardBackwardTime) {
     bool forward = true;
     float forward_time = 0;
     float backward_time = 0;
@@ -243,11 +243,13 @@ void Graph::PrintTimeProfiling() {
       if (nodes_[i]->time_elapsed() > 0) {
         if (forward == true)
           // check the op of cross entropy backward, after that are backward ops
+          // note that the function is more accurate when either
+          // SoftmaxCrossEntropy or Softmax is used
           if (nodes_[i]->op_name().find("Backward") != std::string::npos)
             forward = false;
         // when forward becomes false, it starts the backward propagation
 
-        time_elapsed = (nodes_[i]->time_elapsed()) / (nodes_[i]->iteration());
+        time_elapsed = (nodes_[i]->time_elapsed()) / (iteration_);
 
         // ss << forward_time << " , " << backward_time << std::endl;
 
@@ -263,12 +265,12 @@ void Graph::PrintTimeProfiling() {
   }
 
   // verbosity level: 2 -> each operation time (OP_ID, operation name, time)
-  if (device_->verbosity() == 2) {
+  if (device_->verbosity() == eachOperation) {
     ss << std::endl << "Time Profiling:" << std::endl;
     for (size_t i = 0; i < nodes_.size(); ++i)
       if (nodes_[i]->time_elapsed() > 0)
         ss << "OP_ID" << nodes_[i]->id_ << ". " << nodes_[i]->op_name() << " : "
-           << (nodes_[i]->time_elapsed()) / (nodes_[i]->iteration()) << " sec"
+           << (nodes_[i]->time_elapsed()) / (iteration_) << " sec"
            << std::endl;
   }
 
@@ -322,6 +324,10 @@ void Graph::RunGraph() {
       node_queue.Push(it);
     }
   }
+
+  // increment iteration counter
+  step();
+
 }
 
 void Graph::RunInSerial() {
@@ -346,6 +352,10 @@ void Graph::RunInSerial() {
     *)(cb_data), 0));
     */
   }
+
+  // increment iteration counter
+  step();
+
 }
 
 void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
