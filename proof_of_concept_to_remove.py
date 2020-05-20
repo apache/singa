@@ -20,7 +20,7 @@ class MyModel(model.Model):
 
     def __init__(self):
         super(MyModel, self).__init__()
-        self.l1 = layer.Linear(4,2)
+        self.l1 = layer.Linear(2)
         self.bn1 = layer.BatchNorm2d(2)
         self.dl1 = DoubleLinear(2,4,2)
         self.optimizer = opt.SGD()

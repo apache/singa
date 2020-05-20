@@ -109,7 +109,7 @@ class Linear(Layer):
     Generate a Linear operator
     """
 
-    def do_init(self, x):
+    def initialize(self, x):
         prev_state = x.device.graph_enabled()
         x.device.EnableGraph(False)
 
@@ -127,8 +127,9 @@ class Linear(Layer):
 
         x.device.EnableGraph(prev_state)
 
-    # TODO: update to auto derive in_features
-    def __init__(self, in_features, out_features, bias=True):
+    # TODO: replace current with
+    #   def __init__(self, out_features, bias=True):
+    def __init__(self, out_features, *args, bias=True, **kwargs):
         """
         Args:
             in_channels: int, the channel of input
@@ -138,15 +139,24 @@ class Linear(Layer):
         """
         super(Linear, self).__init__()
 
-        self.in_features = in_features
         self.out_features = out_features
+
+        # TODO: for backward compatibility, to remove
+        if len(args) > 0:
+            self.in_features = out_features
+            self.out_features = args[0]
+        if len(args) > 1:
+            self.bias = args[1]
+
         self.bias = bias
-        self.init = False
+        self.has_initialized = False
 
     def __call__(self, x):
-        if not self.init:
-            self.do_init(x)
-            self.init = True
+        if not self.has_initialized:
+            self.in_features = x.shape[1]
+            self.initialize(x)
+            self.has_initialized = True
+
         if self.bias:
             self.device_check(x, self.W, self.b)
         else:
@@ -185,7 +195,7 @@ class Conv2d(Layer):
     Generate a Conv 2d operator
     """
 
-    def do_init(self, x):
+    def initialize(self, x):
         prev_state = x.device.graph_enabled()
         x.device.EnableGraph(False)
 
@@ -217,9 +227,9 @@ class Conv2d(Layer):
         x.device.EnableGraph(prev_state)
 
     def __init__(self,
-                 in_channels,
                  out_channels,
                  kernel_size,
+                 *args,
                  stride=1,
                  padding=0,
                  dilation=1,
@@ -251,12 +261,29 @@ class Conv2d(Layer):
         """
         super(Conv2d, self).__init__()
 
-        self.init = False
+        # the old code create the layer like: Conv2d(8, 16, 3)， or Conv2d(8, 16, 3, stride=1)
+        # the following code block is for backward compatibility
+        if len(args) >0:
+            self.in_channels=out_channels
+            self.out_channel = kernel_size
+            self.kernel_size = args[0]
+        if len(args) > 1:
+            self.stride = args[1]
+        if len(args) > 2:
+            self.padding = args[2]
 
-        self.in_channels = in_channels
+
+        self.has_initialized = False
+
         self.out_channels = out_channels
 
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+        self.dilation = dilation
         self.group = group
+        self.bias = bias
+        self.pad_mode = pad_mode
 
         assert (self.group >= 1 and self.in_channels %
                 self.group == 0), "please set reasonable group."
@@ -318,11 +345,13 @@ class Conv2d(Layer):
         self.pad_mode = pad_mode
 
     def __call__(self, x):
-        assert x.shape[1] == self.in_channels, "in_channels mismatched"
+        if self.in_channels:
+            assert x.shape[1] == self.in_channels, "in_channels mismatched"
 
-        if not self.init:
-            self.do_init(x)
-            self.init = True
+        if not self.has_initialized:
+            self.in_channels = x.shape[1]
+            self.initialize(x)
+            self.has_initialized = True
 
         # if same pad mode, re-compute the padding
         if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
@@ -438,7 +467,7 @@ class BatchNorm2d(Layer):
     """
     Generate a BatchNorm 2d operator
     """
-    def do_init(self, x):
+    def initialize(self, x):
         prev_state = x.device.graph_enabled()
         x.device.EnableGraph(False)
 
@@ -475,7 +504,7 @@ class BatchNorm2d(Layer):
         """
         super(BatchNorm2d, self).__init__()
 
-        self.init = False
+        self.has_initialized = False
 
         self.channels = num_features
         self.momentum = momentum
@@ -485,9 +514,9 @@ class BatchNorm2d(Layer):
             "number of channels dismatched. %d vs %d" %
             (x.shape[1], self.channels))
 
-        if not self.init:
-            self.do_init(x)
-            self.init = True
+        if not self.has_initialized:
+            self.initialize(x)
+            self.has_initialized = True
 
         self.device_check(x, self.scale, self.bias, self.running_mean,
                           self.running_var)
@@ -808,7 +837,7 @@ class RNN(RNN_Base):
     Generate a RNN operator
     """
 
-    def do_init(self, xs):
+    def initialize(self, xs):
         prev_state = xs[0].device.graph_enabled()
         xs[0].device.EnableGraph(False)
 
@@ -855,16 +884,21 @@ class RNN(RNN_Base):
             bidirectional (bool): If True, becomes a bidirectional RNN.
                 Default: False
         """
-        self.init = False
+        self.has_initialized = False
 
-        self.nonlinearity = nonlinearity
         self.input_size = input_size
         self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.nonlinearity = nonlinearity
+        self.bias = bias
+        self.batch_first = batch_first
+        self.dropout = dropout
+        self.bidirectional = bidirectional
 
     def __call__(self, xs, h0):
-        if not self.init:
-            self.do_init(xs)
-            self.init = True
+        if not self.has_initialized:
+            self.initialize(xs)
+            self.has_initialized = True
 
         # xs: a tuple or list of input tensors
         if not isinstance(xs, tuple):
@@ -901,7 +935,7 @@ class LSTM(RNN_Base):
     """
     Generate a LSTM operator
     """
-    def do_init(self, xs):
+    def initialize(self, xs):
         prev_state = xs[0].device.graph_enabled()
         xs[0].device.EnableGraph(False)
 
@@ -964,16 +998,21 @@ class LSTM(RNN_Base):
             bidirectional (bool): If True, becomes a bidirectional RNN.
                 Default: False
         """
-        self.init = False
+        self.has_initialized = False
 
-        self.nonlinearity = nonlinearity
         self.input_size = input_size
         self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.nonlinearity = nonlinearity
+        self.bias = bias
+        self.batch_first = batch_first
+        self.dropout = dropout
+        self.bidirectional = bidirectional
 
     def __call__(self, xs, h0_c0):
-        if not self.init:
-            self.do_init(xs)
-            self.init = True
+        if not self.has_initialized:
+            self.initialize(xs)
+            self.has_initialized = True
 
         # xs: a tuple or list of input tensors
         # h0_c0: a tuple of (h0, c0)
