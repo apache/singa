@@ -104,16 +104,7 @@ void CudaGPU::SyncBeforeCountingTime() {
 }
 
 float CudaGPU::TimeProfilingDoExec(function<void(Context*)>&& fn, int executor) {
-  if (profiling_mode_ == useChrono) {
-    // time profiling using chrono
-    SyncBeforeCountingTime();
-    auto t_start = std::chrono::high_resolution_clock::now();
-    fn(&ctx_);
-    SyncBeforeCountingTime();
-    std::chrono::duration<float> duration =
-        std::chrono::high_resolution_clock::now() - t_start;
-    return duration.count();
-  } else {
+
     // time profiling using cudaEvent
     cudaEvent_t start, end;
     cudaEventCreate(&start);
@@ -132,7 +123,7 @@ float CudaGPU::TimeProfilingDoExec(function<void(Context*)>&& fn, int executor) 
     cudaEventDestroy(end);
 
     return totalTime * 0.001;  // convert ms to s
-  }
+
 }
 
 void CudaGPU::CopyToFrom(void* dst, const void* src, size_t nBytes,

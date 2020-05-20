@@ -233,7 +233,7 @@ void Graph::PrintTimeProfiling() {
   std::stringstream ss;
 
   // verbosity level: 1 -> forward and backward propagation time
-  if (device_->verbosity() == forwardBackwardTime) {
+  if (device_->verbosity() == 1) {
     bool forward = true;
     float forward_time = 0;
     float backward_time = 0;
@@ -265,7 +265,7 @@ void Graph::PrintTimeProfiling() {
   }
 
   // verbosity level: 2 -> each operation time (OP_ID, operation name, time)
-  if (device_->verbosity() == eachOperation) {
+  if (device_->verbosity() == 2) {
     ss << std::endl << "Time Profiling:" << std::endl;
     for (size_t i = 0; i < nodes_.size(); ++i)
       if (nodes_[i]->time_elapsed() > 0)

@@ -188,7 +188,6 @@ def run(global_rank,
     model.graph(graph, sequential)
     
     dev.SetVerbosity(verbosity)
-    # dev.SetProfilingMode(singa.useEvent)
 
     # Training and Evaluation Loop
     for epoch in range(max_epoch):
