@@ -197,7 +197,7 @@ const Tensor CudnnConvolution::Forward(int flag, const Tensor &input) {
                             this->workspace_.block()->mutable_data(),
                             this->workspace_count_ * sizeof(float), &beta,
                             this->y_desc_, outblock->mutable_data());
-  }, {input.block(), weight_.block()}, {output.block()}, workspace_.block());
+  }, {input.block(), weight_.block()}, {output.block(), workspace_.block()});
 
   if (bias_term_) {
     output.device()->Exec([output, this](Context * ctx) {

@@ -37,9 +37,10 @@ Device::~Device() {
 
 void Device::Exec(function<void(Context*)>&& fn,
                   const vector<Block*> read_blocks,
-                  const vector<Block*> write_blocks, bool use_rand_generator) {
+                  const vector<Block*> write_blocks, string op_name,
+                  bool use_rand_generator) {
   if (graph_enabled_ == true) {
-    graph_->AddOperation(std::move(fn), read_blocks, write_blocks);
+    graph_->AddOperation(std::move(fn), read_blocks, write_blocks, op_name);
   } else {
     // printf("immediately ops\n");
     DoExec(std::move(fn), 0);
@@ -61,6 +62,10 @@ void Device::RunGraph(bool serial) {
   // graph_->Debug();
 
   graph_enabled_ = previous_state;
+}
+
+void Device::PrintTimeProfiling() {
+   graph_->PrintTimeProfiling();
 }
 
 // Todo(Wangwei) Get Block From The Memory manager
@@ -98,7 +103,7 @@ void Device::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
             reinterpret_cast<const char*>(src->data()) + src_offset, nBytes,
             direct, ctx);
       },
-      {src}, {dst});
+      {src}, {dst}, "CopyDataToFrom");
 }
 
 void Device::CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
@@ -107,7 +112,7 @@ void Device::CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
   void* dstptr = reinterpret_cast<char*>(dst->mutable_data()) + dst_offset;
   Exec([this, dstptr, src, nBytes,
         direct](Context* ctx) { CopyToFrom(dstptr, src, nBytes, direct, ctx); },
-       {}, {dst});
+       {}, {dst}, "CopyDataFromHostPtr");
 }
 void Device::Sync() {}
 }  // namespace singa

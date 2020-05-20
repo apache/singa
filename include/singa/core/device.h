@@ -19,6 +19,7 @@
 #ifndef SINGA_CORE_DEVICE_H_
 #define SINGA_CORE_DEVICE_H_
 
+#include <chrono>
 #include <functional>
 #include <map>
 #include <memory>
@@ -87,7 +88,8 @@ class Device {
   /// Submit the operation to the device, which may execute it right now or
   /// delay it depending on the scheduler.
   void Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
-            const vector<Block*> write_blocks, bool use_rand_generator = false);
+            const vector<Block*> write_blocks, string op_name = "no_name",
+            bool use_rand_generator = false);
 
   void RunGraph(bool serial = false);
 
@@ -108,11 +110,22 @@ class Device {
 
   bool graph_enabled() const { return graph_enabled_; }
 
+  /// Verbosity of the time profiling function:
+  /// verbosity == 0 (default) -> no logging
+  /// verbosity == 1 -> display forward and backward propagation time
+  /// verbosity == 2 -> display each operation time (OP_ID, op name, time)
+  int verbosity() const { return verbosity_; }
+
   virtual std::shared_ptr<Device> host() const { return host_; }
+
+  void PrintTimeProfiling();
+  void SetVerbosity(int verbosity) { verbosity_ = verbosity; };
 
  protected:
   /// Execute one operation on one executor.
   virtual void DoExec(function<void(Context*)>&& fn, int executor) = 0;
+  virtual float TimeProfilingDoExec(function<void(Context*)>&& fn,
+                                    int executor) = 0;
 
   virtual void CopyToFrom(void* dst, const void* src, size_t nBytes,
                           CopyDirection direction, Context* ctx) = 0;
@@ -134,6 +147,7 @@ class Device {
   int num_executors_ = 0;
   unsigned seed_ = 0;
   bool graph_enabled_ = false;
+  int verbosity_ = 0;
   /// The computational graph
   Graph* graph_ = nullptr;
   /// Programming language type, could be kCpp, kCuda, kOpencl
@@ -165,6 +179,8 @@ class CppCPU : public Device {
 
  protected:
   void DoExec(function<void(Context*)>&& fn, int executor) override;
+  float TimeProfilingDoExec(function<void(Context*)>&& fn,
+                            int executor) override;
 
   void CopyToFrom(void* dst, const void* src, size_t nBytes,
                   CopyDirection direction, Context* ctx) override;
@@ -195,6 +211,9 @@ class CudaGPU : public Device {
 
  protected:
   void DoExec(function<void(Context*)>&& fn, int executor) override;
+  float TimeProfilingDoExec(function<void(Context*)>&& fn,
+                            int executor) override;
+  void SyncBeforeCountingTime();
 
   void CopyToFrom(void* dst, const void* src, size_t nBytes,
                   CopyDirection direction, Context* ctx) override;

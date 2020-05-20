@@ -115,7 +115,7 @@ Tensor CpuBatchNormForwardInference(const BatchNormHandle& bnh, const Tensor& x,
         ctx->dnnl_stream.wait();
       },
       {x.block(), w.block(), running_mean.block(), running_var.block()},
-      {y.block(), running_mean.block(), running_var.block()});
+      {y.block(), running_mean.block(), running_var.block()}, "CpuBatchNormForwardInference");
 
   return y;
 }
@@ -173,7 +173,7 @@ const std::vector<Tensor> CpuBatchNormForwardTraining(
       },
       {x.block(), w.block(), running_mean.block(), running_var.block()},
       {y.block(), running_mean.block(), running_var.block(), mean.block(),
-       var.block()});
+       var.block()}, "CpuBatchNormForwardTraining");
 
   return {y, mean, var};
 }
@@ -238,7 +238,7 @@ const std::vector<Tensor> CpuBatchNormBackwardx(
         ctx->dnnl_stream.wait();
       },
       {x.block(), dy.block(), mean.block(), var.block(), w.block(), y.block()},
-      {dx.block(), dw.block()});
+      {dx.block(), dw.block()}, "CpuBatchNormBackwardx");
 
   singa::Tensor dbnScale(bnScale.shape());
   CopyDataToFrom(&dbnScale, dw, bnScale.Size(), 0, 0);
@@ -323,7 +323,7 @@ const std::vector<Tensor> GpuBatchNormForwardTraining(
       {input.block(), bnScale.block(), bnBias.block(), running_mean.block(),
        running_var.block()},
       {output.block(), running_mean.block(), running_var.block(), mean.block(),
-       var.block()});
+       var.block()}, "GpuBatchNormForwardTraining");
   if (cbnh.is_2d) output.Reshape(Shape{shape.at(0), shape.at(1)});
   return {output, mean, var};
 }
@@ -361,7 +361,7 @@ Tensor GpuBatchNormForwardInference(const CudnnBatchNormHandle& cbnh,
       },
       {input.block(), bnScale.block(), bnBias.block(), running_mean.block(),
        running_var.block()},
-      {output.block()});
+      {output.block()}, "GpuBatchNormForwardInference");
   return output;
 }
 
@@ -396,7 +396,7 @@ const std::vector<Tensor> GpuBatchNormBackward(
             epsilon, mean.block()->data(), var.block()->data()));
       },
       {x.block(), dy.block(), bnScale.block(), mean.block(), var.block()},
-      {dx.block(), dbnScale.block(), dbnBias.block()});
+      {dx.block(), dbnScale.block(), dbnBias.block()}, "GpuBatchNormBackward");
 
   if (cbnh.is_2d) dx.Reshape(Shape{dx.shape().at(0), dx.shape().at(1)});
 

@@ -95,6 +95,37 @@ void CudaGPU::SetRandSeed(unsigned seed) {
 
 void CudaGPU::DoExec(function<void(Context*)>&& fn, int executor) { fn(&ctx_); }
 
+void CudaGPU::SyncBeforeCountingTime() {
+  // synchronization before counting time
+  bool previous_state = graph_enabled();
+  graph_enabled_ = false;
+  Sync();
+  graph_enabled_ = previous_state;
+}
+
+float CudaGPU::TimeProfilingDoExec(function<void(Context*)>&& fn, int executor) {
+
+    // time profiling using cudaEvent
+    cudaEvent_t start, end;
+    cudaEventCreate(&start);
+    cudaEventCreate(&end);
+
+    cudaEventRecord(start, ctx_.stream);
+    fn(&ctx_);
+    cudaDeviceSynchronize();
+    cudaEventRecord(end, ctx_.stream);
+
+    cudaEventSynchronize(end);
+    float totalTime;
+    cudaEventElapsedTime(&totalTime, start, end);
+
+    cudaEventDestroy(start);
+    cudaEventDestroy(end);
+
+    return totalTime * 0.001;  // convert ms to s
+
+}
+
 void CudaGPU::CopyToFrom(void* dst, const void* src, size_t nBytes,
                          CopyDirection direction, Context* ctx) {
   // cudaMemcpy(dst, src, nBytes, copyKind[direction]);
@@ -132,7 +163,7 @@ void CudaGPU::Free(void* ptr) {
 
 void CudaGPU::Sync() {
   Exec([this](Context* ctx) { CUDA_CHECK(cudaStreamSynchronize(ctx_.stream)); },
-       {}, {});
+       {}, {}, "Sync");
 }
 
 }  // namespace singa

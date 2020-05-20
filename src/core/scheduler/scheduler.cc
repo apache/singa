@@ -24,6 +24,7 @@
 #include <sstream>
 #include <thread>
 #include <unordered_set>
+//#include <iostream>
 
 #include "singa/core/device.h"
 #include "singa/utils/safe_queue.h"
@@ -228,6 +229,62 @@ void Graph::Debug() {
   printf("%s", ss.str().c_str());
 }
 
+void Graph::PrintTimeProfiling() {
+  std::stringstream ss;
+
+  // verbosity level: 1 -> forward and backward propagation time
+  if (device_->verbosity() == 1) {
+    bool forward = true;
+    float forward_time = 0;
+    float backward_time = 0;
+    float time_elapsed;
+
+    for (size_t i = 0; i < nodes_.size(); ++i)
+      if (nodes_[i]->time_elapsed() > 0) {
+        if (forward == true)
+          // check the op of cross entropy backward, after that are backward ops
+          // note that the function is more accurate when either
+          // SoftmaxCrossEntropy or Softmax is used
+          if (nodes_[i]->op_name().find("Backward") != std::string::npos)
+            forward = false;
+        // when forward becomes false, it starts the backward propagation
+
+        time_elapsed = (nodes_[i]->time_elapsed()) / (iteration_);
+
+        // ss << forward_time << " , " << backward_time << std::endl;
+
+        if (forward == true)
+          forward_time += time_elapsed;
+        else
+          backward_time += time_elapsed;
+      }
+    ss << std::endl << "Time Profiling:" << std::endl;
+    ss << "Forward Propagation Time : " << forward_time << " sec" << std::endl;
+    ss << "Backward Propagation Time : " << backward_time << " sec"
+       << std::endl;
+  }
+
+  // verbosity level: 2 -> each operation time (OP_ID, operation name, time)
+  if (device_->verbosity() == 2) {
+    ss << std::endl << "Time Profiling:" << std::endl;
+    for (size_t i = 0; i < nodes_.size(); ++i)
+      if (nodes_[i]->time_elapsed() > 0)
+        ss << "OP_ID" << nodes_[i]->id_ << ". " << nodes_[i]->op_name() << " : "
+           << (nodes_[i]->time_elapsed()) / (iteration_) << " sec"
+           << std::endl;
+  }
+
+  printf("%s", ss.str().c_str());
+}
+
+void Graph::TimeProfilingDoExec(Node *curNode) {
+  if (device_->verbosity() > 0 && curNode->op_name_ != "Sync")
+    curNode->time_elapsed_inc(
+        device_->TimeProfilingDoExec(std::move(curNode->op_), 0));
+  else
+    device_->DoExec(std::move(curNode->op_), 0);
+}
+
 void Graph::RunGraph() {
   in_serial_ = false;
   if (dirty_) Analyze();
@@ -247,7 +304,7 @@ void Graph::RunGraph() {
     int curIndex = curNode->id_;
 
     // step 2: execute the operation
-    device_->DoExec(std::move(curNode->op_), 0);
+    TimeProfilingDoExec(curNode);
 
     // step 3: release some blocks' data that won't be used later
     for (auto it : free_blocks_[curIndex]) {
@@ -267,6 +324,10 @@ void Graph::RunGraph() {
       node_queue.Push(it);
     }
   }
+
+  // increment iteration counter
+  step();
+
 }
 
 void Graph::RunInSerial() {
@@ -277,7 +338,7 @@ void Graph::RunInSerial() {
     Node *curNode = nodes_[i];
 
     // step 1: execute the operation
-    device_->DoExec(std::move(curNode->op_), 0);
+    TimeProfilingDoExec(curNode);
 
     // step 2: release some blocks' data that won't be used later
     for (auto it : free_blocks_[i]) {
@@ -291,21 +352,25 @@ void Graph::RunInSerial() {
     *)(cb_data), 0));
     */
   }
+
+  // increment iteration counter
+  step();
+
 }
 
 void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
-                         const BlockVec &write_blocks) {
+                         const BlockVec &write_blocks, string op_name) {
   dirty_ = true;
 
   // if the size of both read_blocks and write_blocks is zero,
   // this operation is used for synchronization
   if (read_blocks.size() == 0 && write_blocks.size() == 0) {
-    AddSyncOp(std::move(op));
+    AddSyncOp(std::move(op), op_name);
     return;
   }
 
   // create new node
-  Node *node = new Node(nodes_.size(), std::move(op));
+  Node *node = new Node(nodes_.size(), std::move(op), op_name);
 
   // create edges for read_blocks
   for (size_t i = 0; i < read_blocks.size(); ++i) {
@@ -378,9 +443,9 @@ void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
   nodes_.push_back(node);
 }
 
-void Graph::AddSyncOp(function<void(Context *)> &&op) {
+void Graph::AddSyncOp(function<void(Context *)> &&op, string op_name) {
   // create new node
-  Node *node = new Node(nodes_.size(), std::move(op));
+  Node *node = new Node(nodes_.size(), std::move(op), op_name);
 
   for (size_t i = 0; i < write_blocks_.size(); ++i) {
     Block *blk = write_blocks_[i];

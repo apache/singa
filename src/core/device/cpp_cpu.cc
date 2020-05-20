@@ -40,6 +40,16 @@ void CppCPU::DoExec(function<void(Context*)>&& fn, int executor) {
   fn(&ctx_);
 }
 
+float CppCPU::TimeProfilingDoExec(function<void(Context*)>&& fn, int executor) {
+  CHECK_EQ(executor, 0);
+
+  auto t_start = std::chrono::high_resolution_clock::now();
+  fn(&ctx_);
+  std::chrono::duration<float> duration =
+      std::chrono::high_resolution_clock::now() - t_start;
+  return duration.count();
+}
+
 void* CppCPU::Malloc(int size) {
   if (size > 0) {
     void* ptr = malloc(size);
