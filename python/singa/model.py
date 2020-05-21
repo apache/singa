@@ -31,7 +31,7 @@ from .device import get_default_device
 import gc
 
 
-class Graph(type):
+class Graph(layer.LayerMeta):
 
     def buffer_operation(func):
 
@@ -67,7 +67,8 @@ class Graph(type):
         return wrapper
 
     def __new__(cls, name, bases, attr):
-        attr["train_one_batch"] = Graph.buffer_operation(attr["train_one_batch"])
+        attr["train_one_batch"] = Graph.buffer_operation(
+            attr["train_one_batch"])
 
         return super(Graph, cls).__new__(cls, name, bases, attr)
 
@@ -111,6 +112,8 @@ class Model(layer.Layer, metaclass=Graph):
         """
         Initializes internal Model state
         """
+        super(Model, self).__init__()
+
         self.training = True
         self.buffered = False
         self.graph_mode = True
@@ -191,26 +194,28 @@ class Model(layer.Layer, metaclass=Graph):
         else:
             return self.forward(*input, **kwargs)
 
-    def _flatten_dictionary(self,d, parent_key='', sep=':'):
+    def _flatten_dictionary(self, d, parent_key='', sep=':'):
         items = []
         for k, v in d.items():
             new_key = parent_key + sep + k if parent_key else k
             if isinstance(v, dict):
-                items.extend(self._flatten_dictionary(v, new_key, sep=sep).items())
+                items.extend(
+                    self._flatten_dictionary(v, new_key, sep=sep).items())
             else:
                 items.append((new_key, v))
         return dict(items)
 
-    def _de_flatten_dictionary(self,d):
+    def _de_flatten_dictionary(self, d):
+
         def extend_d_tree(leaf, k, v, sep=":"):
             if sep in k:
-                lead_k, trail_k = k.split(sep,1)
+                lead_k, trail_k = k.split(sep, 1)
                 new_leaf = leaf.setdefault(lead_k, {})
                 extend_d_tree(new_leaf, trail_k, v)
             else:
                 leaf[k] = v
 
-        root=dict()
+        root = dict()
         for k, v in d.items():
             extend_d_tree(root, k, v)
         return root

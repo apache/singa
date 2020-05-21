@@ -18,16 +18,43 @@
 
 import math
 import numpy as np
+from functools import wraps
 
 from singa import utils
 from .tensor import Tensor
 from . import singa_wrap as singa
 
 
-class Layer(object):
+class LayerMeta(type):
+
+    def init_wrapper(func):
+
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            assert len(args) > 0 and isinstance(args[0], Tensor), (
+                'initialize function expects PlaceHolders or Tensors')
+            prev_state = args[0].device.graph_enabled()
+            args[0].device.EnableGraph(False)
+            func(self, *args, **kwargs)
+            self._initialzied = True
+            args[0].device.EnableGraph(prev_state)
+
+        return wrapper
+
+    def __new__(cls, name, bases, attr):
+        if 'initialize' in attr:
+            attr['initialize'] = LayerMeta.init_wrapper(attr['initialize'])
+
+        return super(LayerMeta, cls).__new__(cls, name, bases, attr)
+
+
+class Layer(object, metaclass=LayerMeta):
 
     def __init__(self):
+        self._name = self.__class__.__name__
+        self._initialized = False
         self.allow_params = []
+        self._parent = None
         pass
 
     def device_check(self, *inputs):
@@ -56,17 +83,17 @@ class Layer(object):
 
     def set_states(self, **states):
         for (state_name, state_value) in states.items():
-            assert (state_name in self.__dict__
-                   ), "please input correct states."
+            assert (state_name in self.__dict__), "please input correct states."
             if isinstance(self.__dict__[state_name], Layer):
-                self.__dict__[state_name].set_states(
-                    **states[state_name])
+                self.__dict__[state_name].set_states(**states[state_name])
             elif isinstance(self.__dict__[state_name], Tensor):
-                self.set_one_attribute(state_name, state_value, self.allow_states)
+                self.set_one_attribute(state_name, state_value,
+                                       self.allow_states)
             else:
                 raise ValueError("please input correct states.")
 
-    def set_one_attribute(self, attribute_name, attribute_value, allow_attributes):
+    def set_one_attribute(self, attribute_name, attribute_value,
+                          allow_attributes):
         assert (attribute_name in allow_attributes
                ), "please input allowed attributes."
         assert (attribute_value.shape == self.__dict__[attribute_name].shape
@@ -99,9 +126,45 @@ class Layer(object):
                 self.__dict__[parameter_name].set_params(
                     **parameters[parameter_name])
             elif isinstance(self.__dict__[parameter_name], Tensor):
-                self.set_one_attribute(parameter_name, parameter_value, self.allow_params)
+                self.set_one_attribute(parameter_name, parameter_value,
+                                       self.allow_params)
             else:
                 raise ValueError("please input correct parameters.")
+
+    def _get_unique_name(self):
+        prefix = None
+
+        if not self._parent:
+            prefix = ''
+        else:
+            prefix = self._parent._get_unique_name()
+            if prefix:
+                prefix += ':'
+
+        print('_name', self._name)
+        self.__dict__['_name'] = prefix + self._name
+
+        return self._name
+
+    def __setattr__(self, name, value):
+        if isinstance(value, Layer):
+            value.__dict__['_name'] = name
+            value.__dict__['_parent'] = self
+            value._get_unique_name()
+        object.__setattr__(self, name, value)
+
+    def initialize(self, *input):
+        pass
+
+    def forward(self, *input):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        if not self._initialized:
+            self.initialize(*args, **kwargs)
+            self._initialized = True
+
+        return self.forward(*args, **kwargs)
 
 
 class Linear(Layer):
@@ -110,9 +173,6 @@ class Linear(Layer):
     """
 
     def initialize(self, x):
-        prev_state = x.device.graph_enabled()
-        x.device.EnableGraph(False)
-
         self.in_features = x.shape[1]
         w_shape = (self.in_features, self.out_features)
         b_shape = (self.out_features,)
@@ -124,8 +184,6 @@ class Linear(Layer):
         if self.bias:
             self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
             self.b.set_value(0.0)
-
-        x.device.EnableGraph(prev_state)
 
     # TODO: replace current with
     #   def __init__(self, out_features, bias=True):
@@ -149,14 +207,8 @@ class Linear(Layer):
             self.bias = args[1]
 
         self.bias = bias
-        self.has_initialized = False
 
-    def __call__(self, x):
-        if not self.has_initialized:
-            self.in_features = x.shape[1]
-            self.initialize(x)
-            self.has_initialized = True
-
+    def forward(self, x):
         if self.bias:
             self.device_check(x, self.W, self.b)
         else:
@@ -263,15 +315,14 @@ class Conv2d(Layer):
 
         # the old code create the layer like: Conv2d(8, 16, 3)， or Conv2d(8, 16, 3, stride=1)
         # the following code block is for backward compatibility
-        if len(args) >0:
-            self.in_channels=out_channels
+        if len(args) > 0:
+            self.in_channels = out_channels
             self.out_channel = kernel_size
             self.kernel_size = args[0]
         if len(args) > 1:
             self.stride = args[1]
         if len(args) > 2:
             self.padding = args[2]
-
 
         self.has_initialized = False
 
@@ -467,6 +518,7 @@ class BatchNorm2d(Layer):
     """
     Generate a BatchNorm 2d operator
     """
+
     def initialize(self, x):
         prev_state = x.device.graph_enabled()
         x.device.EnableGraph(False)
@@ -546,8 +598,10 @@ class BatchNorm2d(Layer):
         return {"scale": self.scale, "bias": self.bias}
 
     def get_states(self):
-        return {"running_mean": self.running_mean,
-                "running_var": self.running_var}
+        return {
+            "running_mean": self.running_mean,
+            "running_var": self.running_var
+        }
 
     def set_states(self, **states):
         self.allow_states = ["running_mean", "running_var"]
@@ -935,6 +989,7 @@ class LSTM(RNN_Base):
     """
     Generate a LSTM operator
     """
+
     def initialize(self, xs):
         prev_state = xs[0].device.graph_enabled()
         xs[0].device.EnableGraph(False)
@@ -969,7 +1024,6 @@ class LSTM(RNN_Base):
         self.params = self.Wx + self.Wh + self.Bx + self.Bh
 
         xs[0].device.EnableGraph(prev_state)
-
 
     def __init__(
         self,
@@ -1071,6 +1125,7 @@ class LSTM(RNN_Base):
         hout = autograd.tanh(cout)
         hout = autograd.mul(o, hout)
         return hout, cout
+
 
 ''' import autograd at the end to resolve circular import
 '''
