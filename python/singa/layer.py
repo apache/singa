@@ -52,7 +52,9 @@ class Layer(object, metaclass=LayerMeta):
 
     def __init__(self):
         self._name = self.__class__.__name__
+        self._unique_name = None
         self._initialized = False
+        self.parameter_names = []
         self.allow_params = []
         self._parent = None
         pass
@@ -70,6 +72,8 @@ class Layer(object, metaclass=LayerMeta):
         sublayers = []
         for attr in self.__dict__:
             if isinstance(self.__dict__[attr], Layer):
+                if attr == '_parent':
+                    continue
                 sublayers.append((attr, self.__dict__[attr]))
         return sublayers
 
@@ -100,16 +104,20 @@ class Layer(object, metaclass=LayerMeta):
                ), "Shape dismatched."
         if isinstance(attribute_value, Tensor):
             self.__dict__[attribute_name].reset_like(attribute_value)
+            self.__dict__[attribute_name].copy_data(attribute_value)
         elif isinstance(attribute_value, np.ndarray):
             self.__dict__[attribute_name].copy_from_numpy(attribute_value)
         else:
             raise ValueError("attributes should be Tensor or Numpy array.")
 
     def get_params(self):
-        sublayers = self.find_sublayers()
         params = dict()
+        sublayers = self.find_sublayers()
+        prefix = self._get_unique_name() + '.'
         for sublayer_name, sublayer in sublayers:
-            params[sublayer_name] = sublayer.get_params()
+            params.update(sublayer.get_params())
+        for parameter_name in self.parameter_names:
+            params[prefix + parameter_name] = self.__dict__[parameter_name]
         return params
 
     def set_params(self, **parameters):
@@ -118,33 +126,42 @@ class Layer(object, metaclass=LayerMeta):
         # examples: Layer.set_params(W=np.ones((in, out), dtype=np.float32)),
         # Layer.set_params(**{'block1':{'linear1':{'W':np.ones((in, out),
         # dtype=np.float32)}}})
-        for (parameter_name, parameter_value) in parameters.items():
+        for (parameter_name, parameter_value) in list(parameters.items()):
             # assert isinstance(self.__dict__[parameter_name], Layer)
-            assert (parameter_name in self.__dict__
-                   ), "please input correct parameters."
-            if isinstance(self.__dict__[parameter_name], Layer):
-                self.__dict__[parameter_name].set_params(
-                    **parameters[parameter_name])
-            elif isinstance(self.__dict__[parameter_name], Tensor):
-                self.set_one_attribute(parameter_name, parameter_value,
+            if parameter_name.find('.') < 0:
+                if parameter_name not in self.__dict__:
+                    raise ValueError("please input correct parameters.")
+                if isinstance(self.__dict__[parameter_name], Layer):
+                    self.__dict__[parameter_name].set_params(
+                        **parameters[parameter_name])
+                elif isinstance(self.__dict__[parameter_name], Tensor):
+                    self.set_one_attribute(parameter_name, parameter_value,
+                                           self.allow_params)
+                else:
+                    raise ValueError("please input correct parameters.")
+                del parameters[parameter_name]
+
+        prefix = self._get_unique_name() + '.'
+        sublayers = self.find_sublayers()
+        for allow_param in self.allow_params:
+            key = prefix + allow_param
+            if key in parameters:
+                self.set_one_attribute(allow_param, parameters[key],
                                        self.allow_params)
-            else:
-                raise ValueError("please input correct parameters.")
+        for sublayer_name, sublayer in sublayers:
+            sublayer.set_params(**parameters)
 
     def _get_unique_name(self):
-        prefix = None
-
-        if not self._parent:
+        if not self._unique_name:
             prefix = ''
-        else:
-            prefix = self._parent._get_unique_name()
-            if prefix:
-                prefix += ':'
+            if self._parent:
+                prefix = self._parent._get_unique_name()
+                if prefix:
+                    prefix += '.'
 
-        print('_name', self._name)
-        self.__dict__['_name'] = prefix + self._name
+            self.__dict__['_unique_name'] = prefix + self._name
 
-        return self._name
+        return self._unique_name
 
     def __setattr__(self, name, value):
         if isinstance(value, Layer):
@@ -224,10 +241,10 @@ class Linear(Layer):
 
     def get_params(self):
         if self.bias:
-            params = {"W": self.W, "b": self.b}
+            self.parameter_names = ['W', 'b']
         else:
-            params = {"W": self.W}
-        return params
+            self.parameter_names = ['W']
+        return super(Linear, self).get_params()
 
     def set_params(self, **parameters):
         # TODO(wangwei) remove this funciton as Opeation's set_params() enough

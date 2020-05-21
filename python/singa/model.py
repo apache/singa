@@ -31,7 +31,7 @@ from .device import get_default_device
 import gc
 
 
-class Graph(layer.LayerMeta):
+class ModelMeta(layer.LayerMeta):
 
     def buffer_operation(func):
 
@@ -67,13 +67,14 @@ class Graph(layer.LayerMeta):
         return wrapper
 
     def __new__(cls, name, bases, attr):
-        attr["train_one_batch"] = Graph.buffer_operation(
-            attr["train_one_batch"])
+        if 'train_one_batch' in attr:
+            attr['train_one_batch'] = ModelMeta.buffer_operation(
+                attr['train_one_batch'])
 
-        return super(Graph, cls).__new__(cls, name, bases, attr)
+        return super(ModelMeta, cls).__new__(cls, name, bases, attr)
 
 
-class Model(layer.Layer, metaclass=Graph):
+class Model(layer.Layer, metaclass=ModelMeta):
     """ Base class for your neural network models.
 
     Example usage::
@@ -220,6 +221,7 @@ class Model(layer.Layer, metaclass=Graph):
             extend_d_tree(root, k, v)
         return root
 
+    """
     def get_params(self):
         params = super().get_params()
         # input params are nested {"l1": {"l2": {"l3": {"W": []}}}}
@@ -232,6 +234,7 @@ class Model(layer.Layer, metaclass=Graph):
         # deflat into {"l1": {"l2": {"l3": {"W": []}}}}
         root = self._de_flatten_dictionary(params)
         super().set_params(**root)
+    """
 
     def get_states(self):
         states = super().get_states()
