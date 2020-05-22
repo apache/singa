@@ -59,14 +59,18 @@ void Device::RunGraph(bool serial) {
     graph_->RunGraph();
   }
 
+  //if ((verbosity_ > 0)  && (graph_->iteration() >= graph_->skip_iteration()))
+  //{
+    //printf("here");
+    //graph_->EvaluateTimeElapsed();
+  //}
+
   // graph_->Debug();
 
   graph_enabled_ = previous_state;
 }
 
-void Device::PrintTimeProfiling() {
-   graph_->PrintTimeProfiling();
-}
+void Device::PrintTimeProfiling() { graph_->PrintTimeProfiling(); }
 
 // Todo(Wangwei) Get Block From The Memory manager
 Block* Device::NewBlock(int size) {

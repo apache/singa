@@ -68,6 +68,11 @@ class Node {
   // time profiling
   void time_elapsed_inc(float time) { time_elapsed_ += time; }
 
+#ifdef USE_CUDA
+  cudaEvent_t start_;
+  cudaEvent_t end_;
+#endif  // USE_CUDA
+
  private:
   friend Graph;
 
@@ -78,7 +83,7 @@ class Node {
 
   string op_name_;
   float time_elapsed_ = 0;
- 
+
 };
 
 class Edge {
@@ -160,7 +165,8 @@ class Graph {
   const NodeVec &begin_nodes() const { return begin_nodes_; }
   const std::vector<NodeVec> &next_nodes() const { return next_nodes_; }
   const std::vector<BlockVec> &free_blocks() const { return free_blocks_; }
-  float iteration() const { return iteration_; }
+  int iteration() const { return iteration_; }
+  int skip_iteration() const { return skip_iteration_; }
 
   Node *node(const size_t idx) const;
   Edge *edge(const size_t idx) const;
@@ -173,6 +179,7 @@ class Graph {
   const BlockVec &free_blocks(const size_t idx) const;
 
   void PrintTimeProfiling();
+  void EvaluateTimeElapsed();
 
  private:
   void Analyze();

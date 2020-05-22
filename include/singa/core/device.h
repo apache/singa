@@ -124,8 +124,9 @@ class Device {
  protected:
   /// Execute one operation on one executor.
   virtual void DoExec(function<void(Context*)>&& fn, int executor) = 0;
-  virtual float TimeProfilingDoExec(function<void(Context*)>&& fn,
-                                    int executor) = 0;
+  virtual void TimeProfilingDoExec(function<void(Context*)>&& fn,
+                            int executor, Node *node) = 0;
+  virtual void EvaluateTimeElapsed(Node *node) = 0;
 
   virtual void CopyToFrom(void* dst, const void* src, size_t nBytes,
                           CopyDirection direction, Context* ctx) = 0;
@@ -179,8 +180,9 @@ class CppCPU : public Device {
 
  protected:
   void DoExec(function<void(Context*)>&& fn, int executor) override;
-  float TimeProfilingDoExec(function<void(Context*)>&& fn,
-                            int executor) override;
+  void TimeProfilingDoExec(function<void(Context*)>&& fn,
+                            int executor, Node *node) override;
+  void EvaluateTimeElapsed(Node *node) override;
 
   void CopyToFrom(void* dst, const void* src, size_t nBytes,
                   CopyDirection direction, Context* ctx) override;
@@ -211,8 +213,10 @@ class CudaGPU : public Device {
 
  protected:
   void DoExec(function<void(Context*)>&& fn, int executor) override;
-  float TimeProfilingDoExec(function<void(Context*)>&& fn,
-                            int executor) override;
+  void TimeProfilingDoExec(function<void(Context*)>&& fn,
+                            int executor, Node *node) override;
+  void EvaluateTimeElapsed(Node *node) override;
+
   void SyncBeforeCountingTime();
 
   void CopyToFrom(void* dst, const void* src, size_t nBytes,

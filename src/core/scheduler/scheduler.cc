@@ -249,7 +249,8 @@ void Graph::PrintTimeProfiling() {
             forward = false;
         // when forward becomes false, it starts the backward propagation
 
-        time_elapsed = (nodes_[i]->time_elapsed()) / (iteration_ - skip_iteration_);
+        time_elapsed =
+            (nodes_[i]->time_elapsed()) / (iteration_ - skip_iteration_);
 
         // ss << forward_time << " , " << backward_time << std::endl;
 
@@ -277,12 +278,22 @@ void Graph::PrintTimeProfiling() {
 }
 
 void Graph::TimeProfilingDoExec(Node *curNode) {
-  if (device_->verbosity() > 0 && curNode->op_name_ != "Sync" &&
-      iteration_ >= skip_iteration_)
-    curNode->time_elapsed_inc(
-        device_->TimeProfilingDoExec(std::move(curNode->op_), 0));
+  if ((device_->verbosity() > 0) && (curNode->op_name_ != "Sync") &&
+      (iteration_ >= skip_iteration_))
+    device_->TimeProfilingDoExec(std::move(curNode->op_), 0, curNode);
   else
     device_->DoExec(std::move(curNode->op_), 0);
+}
+
+void Graph::EvaluateTimeElapsed() {
+  if ((device_->verbosity() > 0) && (iteration_ >= skip_iteration_)) {
+    for (size_t i = 0; i < nodes_.size(); ++i) {
+      Node *curNode = nodes_[i];
+      if (curNode->op_name_ != "Sync") {
+        device_->EvaluateTimeElapsed(curNode);
+      }
+    }
+  }
 }
 
 void Graph::RunGraph() {
@@ -325,6 +336,8 @@ void Graph::RunGraph() {
     }
   }
 
+  EvaluateTimeElapsed();
+
   // increment iteration counter
   step();
 }
@@ -351,6 +364,8 @@ void Graph::RunInSerial() {
     *)(cb_data), 0));
     */
   }
+
+  EvaluateTimeElapsed();
 
   // increment iteration counter
   step();
