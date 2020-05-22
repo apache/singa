@@ -62,6 +62,7 @@ def train_resnet(DIST=True, graph=True, sequential=False, verbosity=0):
     ty.copy_from_numpy(y)
 
     dev.SetVerbosity(verbosity)
+    dev.SetSkipIteration(5)
 
     # construct the model
     from model import resnet

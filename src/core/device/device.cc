@@ -59,12 +59,6 @@ void Device::RunGraph(bool serial) {
     graph_->RunGraph();
   }
 
-  // if ((verbosity_ > 0)  && (graph_->iteration() >= graph_->skip_iteration()))
-  //{
-  // printf("here");
-  // graph_->EvaluateTimeElapsed();
-  //}
-
   // graph_->Debug();
 
   graph_enabled_ = previous_state;

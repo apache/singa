@@ -55,6 +55,7 @@ class Device {
   void EnableGraph(bool enable);
   void PrintTimeProfiling();
   void SetVerbosity(int verbosity);
+  void SetSkipIteration(int skip_iteration);
   static void EnableLazyAlloc(bool enbale);
 };
 

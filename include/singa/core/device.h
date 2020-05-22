@@ -115,11 +115,14 @@ class Device {
   /// verbosity == 1 -> display forward and backward propagation time
   /// verbosity == 2 -> display each operation time (OP_ID, op name, time)
   int verbosity() const { return verbosity_; }
+  /// the number of initial iteration that is skipped for time profiling
+  int skip_iteration() const { return skip_iteration_; }
 
   virtual std::shared_ptr<Device> host() const { return host_; }
 
   void PrintTimeProfiling();
   void SetVerbosity(int verbosity) { verbosity_ = verbosity; };
+  void SetSkipIteration(int skip_iteration) { skip_iteration_ = skip_iteration; };
 
  protected:
   /// Execute one operation on one executor.
@@ -149,6 +152,7 @@ class Device {
   unsigned seed_ = 0;
   bool graph_enabled_ = false;
   int verbosity_ = 0;
+  int skip_iteration_ = 5;
   /// The computational graph
   Graph* graph_ = nullptr;
   /// Programming language type, could be kCpp, kCuda, kOpencl

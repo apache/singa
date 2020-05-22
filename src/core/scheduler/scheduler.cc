@@ -250,7 +250,7 @@ void Graph::PrintTimeProfiling() {
         // when forward becomes false, it starts the backward propagation
 
         time_elapsed =
-            (nodes_[i]->time_elapsed()) / (iteration_ - skip_iteration_);
+            (nodes_[i]->time_elapsed()) / (iteration_ - device_->skip_iteration());
 
         // ss << forward_time << " , " << backward_time << std::endl;
 
@@ -279,14 +279,14 @@ void Graph::PrintTimeProfiling() {
 
 void Graph::TimeProfilingDoExec(Node *curNode) {
   if ((device_->verbosity() > 0) && (curNode->op_name_ != "Sync") &&
-      (iteration_ >= skip_iteration_))
+      (iteration_ >= device_->skip_iteration()))
     device_->TimeProfilingDoExec(std::move(curNode->op_), 0, curNode);
   else
     device_->DoExec(std::move(curNode->op_), 0);
 }
 
 void Graph::EvaluateTimeElapsed() {
-  if ((device_->verbosity() > 0) && (iteration_ >= skip_iteration_)) {
+  if ((device_->verbosity() > 0) && (iteration_ >= device_->skip_iteration())) {
     device_->Sync();
     for (size_t i = 0; i < nodes_.size(); ++i) {
       Node *curNode = nodes_[i];
