@@ -40,7 +40,8 @@ void CppCPU::DoExec(function<void(Context*)>&& fn, int executor) {
   fn(&ctx_);
 }
 
-void CppCPU::TimeProfilingDoExec(function<void(Context*)>&& fn, int executor, Node *node) {
+void CppCPU::TimeProfilingDoExec(function<void(Context*)>&& fn, int executor,
+                                 Node* node) {
   CHECK_EQ(executor, 0);
 
   auto t_start = std::chrono::high_resolution_clock::now();
@@ -50,7 +51,7 @@ void CppCPU::TimeProfilingDoExec(function<void(Context*)>&& fn, int executor, No
   node->time_elapsed_inc(duration.count());
 }
 
-void CppCPU::EvaluateTimeElapsed(Node *node) {}
+void CppCPU::EvaluateTimeElapsed(Node* node) {}
 
 void* CppCPU::Malloc(int size) {
   if (size > 0) {

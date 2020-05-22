@@ -287,6 +287,7 @@ void Graph::TimeProfilingDoExec(Node *curNode) {
 
 void Graph::EvaluateTimeElapsed() {
   if ((device_->verbosity() > 0) && (iteration_ >= skip_iteration_)) {
+    device_->Sync();
     for (size_t i = 0; i < nodes_.size(); ++i) {
       Node *curNode = nodes_[i];
       if (curNode->op_name_ != "Sync") {

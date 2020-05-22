@@ -89,8 +89,9 @@ def train_resnet(DIST=True, graph=True, sequential=False, verbosity=0):
         print("Throughput = {} per second".format(throughput), flush=True)
         print("TotalTime={}".format(end - start), flush=True)
         print("Total={}".format(titer), flush=True)
-    
+
     dev.PrintTimeProfiling()
+
 
 if __name__ == "__main__":
 
@@ -117,4 +118,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    train_resnet(DIST=args.DIST, graph=args.graph, sequential=False, verbosity=args.verbosity)
+    train_resnet(DIST=args.DIST,
+                 graph=args.graph,
+                 sequential=False,
+                 verbosity=args.verbosity)
