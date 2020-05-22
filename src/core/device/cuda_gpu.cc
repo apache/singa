@@ -112,7 +112,6 @@ float CudaGPU::TimeProfilingDoExec(function<void(Context*)>&& fn, int executor) 
 
     cudaEventRecord(start, ctx_.stream);
     fn(&ctx_);
-    cudaDeviceSynchronize();
     cudaEventRecord(end, ctx_.stream);
 
     cudaEventSynchronize(end);

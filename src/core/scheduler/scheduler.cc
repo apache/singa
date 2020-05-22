@@ -249,7 +249,7 @@ void Graph::PrintTimeProfiling() {
             forward = false;
         // when forward becomes false, it starts the backward propagation
 
-        time_elapsed = (nodes_[i]->time_elapsed()) / (iteration_);
+        time_elapsed = (nodes_[i]->time_elapsed()) / (iteration_ - skip_iteration_);
 
         // ss << forward_time << " , " << backward_time << std::endl;
 
@@ -270,15 +270,15 @@ void Graph::PrintTimeProfiling() {
     for (size_t i = 0; i < nodes_.size(); ++i)
       if (nodes_[i]->time_elapsed() > 0)
         ss << "OP_ID" << nodes_[i]->id_ << ". " << nodes_[i]->op_name() << " : "
-           << (nodes_[i]->time_elapsed()) / (iteration_) << " sec"
-           << std::endl;
+           << (nodes_[i]->time_elapsed()) / (iteration_) << " sec" << std::endl;
   }
 
   printf("%s", ss.str().c_str());
 }
 
 void Graph::TimeProfilingDoExec(Node *curNode) {
-  if (device_->verbosity() > 0 && curNode->op_name_ != "Sync")
+  if (device_->verbosity() > 0 && curNode->op_name_ != "Sync" &&
+      iteration_ >= skip_iteration_)
     curNode->time_elapsed_inc(
         device_->TimeProfilingDoExec(std::move(curNode->op_), 0));
   else
@@ -327,7 +327,6 @@ void Graph::RunGraph() {
 
   // increment iteration counter
   step();
-
 }
 
 void Graph::RunInSerial() {
@@ -355,7 +354,6 @@ void Graph::RunInSerial() {
 
   // increment iteration counter
   step();
-
 }
 
 void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,

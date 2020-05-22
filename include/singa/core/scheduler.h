@@ -204,6 +204,7 @@ class Graph {
   std::vector<NodeVec> next_nodes_;
   std::vector<BlockVec> free_blocks_;
   int iteration_ = 0;
+  int skip_iteration_ = 5;
 
   SafeQueue<int> free_queue_;
 };
