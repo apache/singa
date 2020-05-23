@@ -21,6 +21,11 @@ to use Computational Graph in their model.
 '''
 
 from functools import wraps
+import time
+import numpy as np
+import json
+import zipfile
+import os
 
 from singa import tensor
 from singa import autograd
@@ -123,6 +128,9 @@ class Model(layer.Layer, metaclass=ModelMeta):
         self._device = get_default_device()
 
         self._results = None
+
+        self.tensor_dict_filename = '/tensor_dict.npz'
+        self.states_attr_filename = '/states_attr.json'
 
     def compile(self, inputs, is_train=True, use_graph=False, sequential=False):
         self._device.EnableGraph(True)
@@ -244,3 +252,93 @@ class Model(layer.Layer, metaclass=ModelMeta):
         root = self._de_flatten_dictionary(states)
         states = super().set_states(**root)
         return states
+
+    def save_states(self, fpath, aux_states={}):
+        """Save states.
+
+        Args:
+            fpath: output file path (without the extension)
+            aux_states(dict): values are standard data types or Tensor,
+                              e.g., epoch ID, learning rate, optimizer states
+        """
+        assert not os.path.isfile(fpath), ("Failed to save states, %s is already existed." % fpath)
+
+        states = dict()
+        states.update(self.get_params())
+        # states.update(self.get_states())
+        # states.update(aux_states)
+
+        # save states data and attr
+        tensor_dict = {}
+        states_attr = {}
+        for k,v in states.items():
+            if isinstance(v, tensor.Tensor):
+                tensor_dict[k] = tensor.to_numpy(v)
+                states_attr[k] = {'shape': v.shape, 'dtype': v.dtype}
+
+        # save to files
+        timestamp = time.time()
+        tmp_dir = '/tmp/singa_%s' % timestamp
+        os.mkdir(tmp_dir)
+        tensor_dict_fp = tmp_dir+self.tensor_dict_filename
+        states_attr_fp = tmp_dir+self.states_attr_filename
+
+        np.savez(tensor_dict_fp, **tensor_dict)
+
+        with open(states_attr_fp, 'w') as fp:
+            json.dump(states_attr, fp)
+
+        compression = zipfile.ZIP_DEFLATED
+        with zipfile.ZipFile(fpath, mode="w") as zf:
+            zf.write(tensor_dict_fp, os.path.basename(tensor_dict_fp), compress_type=compression)
+            zf.write(states_attr_fp, os.path.basename(states_attr_fp), compress_type=compression)
+
+        # clean up tmp files
+        os.remove(tensor_dict_fp)
+        os.remove(states_attr_fp)
+        os.rmdir(tmp_dir)
+
+    def load_states(self, fpath):
+        """Load the model states and auxiliary states from disk.
+
+        Usage:
+            m = MyModel()
+            m.compile(...)
+            aux_states = m.load_states('mymodel.zip')
+
+        Args:
+            path: input file path (without the extension)
+        Returns:
+            dict
+        """
+
+        assert os.path.isfile(fpath), ("Failed to load states, %s is not exist." % fpath)
+
+        timestamp = time.time()
+        tmp_dir = '/tmp/singa_%s' % timestamp
+        os.mkdir(tmp_dir)
+
+        with zipfile.ZipFile(fpath, 'r') as zf:
+            zf.extractall(tmp_dir)
+
+        tensor_dict_fp = tmp_dir+self.tensor_dict_filename
+        states_attr_fp = tmp_dir+self.states_attr_filename
+
+        with open(states_attr_fp) as f:
+            states_attr = json.load(f)
+
+        tensor_dict = np.load(tensor_dict_fp)
+
+        # restore singa tensor from numpy
+        params=dict()
+        for k in tensor_dict.files:
+            params[k] = tensor.from_numpy(tensor_dict[k])
+
+        # restore states
+        self.set_params(**params)
+
+        # clean up tmp files
+        os.remove(tensor_dict_fp)
+        os.remove(states_attr_fp)
+        os.rmdir(tmp_dir)
+        return
