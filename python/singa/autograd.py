@@ -4528,4 +4528,3 @@ AvgPool1d = layer.AvgPool1d
 RNN_Base = layer.RNN_Base
 RNN = layer.RNN
 LSTM = layer.LSTM
-print('autograd out')

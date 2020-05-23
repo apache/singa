@@ -11,7 +11,7 @@ class DoubleLinear(layer.Layer):
         self.l1 = layer.Linear(a,b)
         self.l2 = layer.Linear(b,c)
 
-    def __call__(self, x):
+    def forward(self, x):
         y = self.l1(x)
         y = self.l2(y)
         return y
@@ -48,28 +48,59 @@ class MyModel(model.Model):
 
 
 if __name__ == "__main__":
-    dev = device.create_cuda_gpu_on(7)
+    dev = device.create_cuda_gpu_on(0)
     x = tensor.PlaceHolder((2, 4), device=dev)
 
     m = MyModel()
     m.on_device(dev)
 
-    print("compile")
+    # test function: compile
+    print("function: compile")
     # m.compile([x], is_train=True, use_graph=True, sequential=True)
     m.compile([x], is_train=True, use_graph=True, sequential=False)
     # m.compile([x], is_train=True, use_graph=False, sequential=False)
 
-    # get params
-    _ = m.get_params()
-    print(_)
-    # set params
-    m.set_params(_)
+    # test function get_params
+    print("function: get_params")
+    print(m.get_params())
+    print(m.l1.get_params())
 
-    # get states
-    print("states")
-    _ = m.get_states()
-    print(_)
-    m.set_states(_)
+    # test function set_params
+    print("function: set_params")
+    params = m.get_params()
+    m.set_params(params)
+    params = {'MyModel.l1.W': tensor.Tensor((4, 2), device=dev).set_value(1.0),
+              'MyModel.l1.b': tensor.Tensor((2,  ), device=dev).set_value(2.0),
+              'MyModel.bn1.scale': tensor.Tensor((2,  ), device=dev).set_value(3.0),
+              'MyModel.bn1.bias' : tensor.Tensor((2,  ), device=dev).set_value(4.0),
+              'MyModel.dl1.l1.W':  tensor.Tensor((2, 4), device=dev).set_value(5.0),
+              'MyModel.dl1.l1.b':  tensor.Tensor((4,  ), device=dev).set_value(6.0),
+              'MyModel.dl1.l2.W':  tensor.Tensor((4, 2), device=dev).set_value(7.0),
+              'MyModel.dl1.l2.b':  tensor.Tensor((2,  ), device=dev).set_value(8.0)}
+    m.set_params(params)
+    print(m.get_params())
+
+    # test function get_states
+    print("function: get_states")
+    print(m.get_states())
+    print(m.bn1.get_states())
+
+    # test function set_states
+    print("function: set_states")
+    states = m.get_states()
+    m.set_states(states)
+    states = {'MyModel.l1.W': tensor.Tensor((4, 2), device=dev).set_value(9.0),
+              'MyModel.l1.b': tensor.Tensor((2,  ), device=dev).set_value(10.0),
+              'MyModel.bn1.scale': tensor.Tensor((2,  ), device=dev).set_value(11.0),
+              'MyModel.bn1.bias' : tensor.Tensor((2,  ), device=dev).set_value(12.0),
+              'MyModel.bn1.running_mean':  tensor.Tensor((2,  ), device=dev).set_value(13.0),
+              'MyModel.bn1.running_var' :  tensor.Tensor((2,  ), device=dev).set_value(14.0),
+              'MyModel.dl1.l1.W':  tensor.Tensor((2, 4), device=dev).set_value(15.0),
+              'MyModel.dl1.l1.b':  tensor.Tensor((4,  ), device=dev).set_value(16.0),
+              'MyModel.dl1.l2.W':  tensor.Tensor((4, 2), device=dev).set_value(17.0),
+              'MyModel.dl1.l2.b':  tensor.Tensor((2,  ), device=dev).set_value(18.0)}
+    m.set_states(states)
+    print(m.get_states())
 
     print("training")
     cx = tensor.PlaceHolder((2, 4), device=dev).gaussian(1, 1)

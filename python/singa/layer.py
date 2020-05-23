@@ -50,125 +50,16 @@ class LayerMeta(type):
 
 class Layer(object, metaclass=LayerMeta):
 
+    sep = '.'
     def __init__(self):
         self._name = self.__class__.__name__
         self._unique_name = None
         self._initialized = False
-        self.parameter_names = []
-        self.allow_params = []
         self._parent = None
+        self._layers = dict()
+        self.param_names = []
+        self.state_names = []
         pass
-
-    def device_check(self, *inputs):
-        x_device = inputs[0].device
-        x_dev_id = x_device.id()
-        for var in inputs:
-            if var.device.id() != x_dev_id:
-                var.to_device(x_device)
-
-    def find_sublayers(self):
-        # return a list whose elements are in form of (attribute_name,
-        # sublayer)
-        sublayers = []
-        for attr in self.__dict__:
-            if isinstance(self.__dict__[attr], Layer):
-                if attr == '_parent':
-                    continue
-                sublayers.append((attr, self.__dict__[attr]))
-        return sublayers
-
-    def get_states(self):
-        sublayers = self.find_sublayers()
-        states = dict()
-        for sublayer_name, sublayer in sublayers:
-            if sublayer.get_states():
-                states[sublayer_name] = sublayer.get_states()
-        return states
-
-    def set_states(self, **states):
-        for (state_name, state_value) in states.items():
-            assert (state_name in self.__dict__), "please input correct states."
-            if isinstance(self.__dict__[state_name], Layer):
-                self.__dict__[state_name].set_states(**states[state_name])
-            elif isinstance(self.__dict__[state_name], Tensor):
-                self.set_one_attribute(state_name, state_value,
-                                       self.allow_states)
-            else:
-                raise ValueError("please input correct states.")
-
-    def set_one_attribute(self, attribute_name, attribute_value,
-                          allow_attributes):
-        assert (attribute_name in allow_attributes
-               ), "please input allowed attributes."
-        assert (attribute_value.shape == self.__dict__[attribute_name].shape
-               ), "Shape dismatched."
-        if isinstance(attribute_value, Tensor):
-            self.__dict__[attribute_name].reset_like(attribute_value)
-            self.__dict__[attribute_name].copy_data(attribute_value)
-        elif isinstance(attribute_value, np.ndarray):
-            self.__dict__[attribute_name].copy_from_numpy(attribute_value)
-        else:
-            raise ValueError("attributes should be Tensor or Numpy array.")
-
-    def get_params(self):
-        params = dict()
-        sublayers = self.find_sublayers()
-        prefix = self._get_unique_name() + '.'
-        for sublayer_name, sublayer in sublayers:
-            params.update(sublayer.get_params())
-        for parameter_name in self.parameter_names:
-            params[prefix + parameter_name] = self.__dict__[parameter_name]
-        return params
-
-    def set_params(self, **parameters):
-        # set parameters for Layer
-        # input should be either a PyTensor or numpy ndarray.
-        # examples: Layer.set_params(W=np.ones((in, out), dtype=np.float32)),
-        # Layer.set_params(**{'block1':{'linear1':{'W':np.ones((in, out),
-        # dtype=np.float32)}}})
-        for (parameter_name, parameter_value) in list(parameters.items()):
-            # assert isinstance(self.__dict__[parameter_name], Layer)
-            if parameter_name.find('.') < 0:
-                if parameter_name not in self.__dict__:
-                    raise ValueError("please input correct parameters.")
-                if isinstance(self.__dict__[parameter_name], Layer):
-                    self.__dict__[parameter_name].set_params(
-                        **parameters[parameter_name])
-                elif isinstance(self.__dict__[parameter_name], Tensor):
-                    self.set_one_attribute(parameter_name, parameter_value,
-                                           self.allow_params)
-                else:
-                    raise ValueError("please input correct parameters.")
-                del parameters[parameter_name]
-
-        prefix = self._get_unique_name() + '.'
-        sublayers = self.find_sublayers()
-        for allow_param in self.allow_params:
-            key = prefix + allow_param
-            if key in parameters:
-                self.set_one_attribute(allow_param, parameters[key],
-                                       self.allow_params)
-        for sublayer_name, sublayer in sublayers:
-            sublayer.set_params(**parameters)
-
-    def _get_unique_name(self):
-        if not self._unique_name:
-            prefix = ''
-            if self._parent:
-                prefix = self._parent._get_unique_name()
-                if prefix:
-                    prefix += '.'
-
-            self.__dict__['_unique_name'] = prefix + self._name
-
-        return self._unique_name
-
-    def __setattr__(self, name, value):
-        if isinstance(value, Layer):
-            value.__dict__['_name'] = name
-            value.__dict__['_parent'] = self
-            value._get_unique_name()
-        object.__setattr__(self, name, value)
 
     def initialize(self, *input):
         pass
@@ -183,25 +74,131 @@ class Layer(object, metaclass=LayerMeta):
 
         return self.forward(*args, **kwargs)
 
+    def get_params(self):
+        params = dict()
+        sublayers = self._layers
+        prefix = self._get_unique_name() + Layer.sep
+        for name, sublayer in sublayers.items():
+            params.update(sublayer.get_params())
+        for param_name in self.param_names:
+            params[prefix + param_name] = self.__dict__[param_name]
+        return params
+
+    def set_params(self, **parameters):
+        # set parameters for Layer
+        # input should be either a PyTensor or numpy ndarray.
+        # examples: Layer.set_params(W=np.ones((in, out), dtype=np.float32)),
+        # Layer.set_params(**{'block1':{'linear1':{'W':np.ones((in, out),
+        # dtype=np.float32)}}})
+        for (name, param) in list(parameters.items()):
+            # assert isinstance(self.__dict__[parameter_name], Layer)
+            if name.find(Layer.sep) < 0:
+                if name in self.__dict__:
+                    self.set_attribute(name, param, self.param_names)
+                elif name in self._layers:
+                    self._layers[name].set_params(**param)
+                else:
+                    raise ValueError("please input correct parameters.")
+                del parameters[name]
+
+        sublayers = self._layers
+        prefix = self._get_unique_name() + Layer.sep
+        for name in self.param_names:
+            key = prefix + name
+            if key in parameters:
+                self.set_attribute(name, parameters[key], self.param_names)
+        for name, sublayer in sublayers.items():
+            sublayer.set_params(**parameters)
+
+    def get_states(self):
+        states = dict()
+        sublayers = self._layers
+        prefix = self._get_unique_name() + Layer.sep
+        for name, sublayer in sublayers.items():
+            states.update(sublayer.get_states())
+        for state_name in self.state_names:
+            states[prefix + state_name] = self.__dict__[state_name]
+        return states
+
+    def set_states(self, **states):
+        for (name, state) in list(states.items()):
+            if name.find(Layer.sep) < 0:
+                if name in self.__dict__:
+                    self.set_attribute(name, state, self.state_names)
+                elif name in self._layers:
+                    self._layers[name].set_params(**state)
+                else:
+                    raise ValueError("please input correct states.")
+                del states[name]
+
+        sublayers = self._layers
+        prefix = self._get_unique_name() + Layer.sep
+        for name in self.state_names:
+            key = prefix + name
+            if key in states:
+                self.set_attribute(name, states[key], self.state_names)
+        for name, sublayer in sublayers.items():
+            sublayer.set_states(**states)
+
+    def device_check(self, *inputs):
+        x_device = inputs[0].device
+        x_dev_id = x_device.id()
+        for var in inputs:
+            if var.device.id() != x_dev_id:
+                var.to_device(x_device)
+
+    def set_attribute(self, attribute_name, attribute_value,
+                          allow_attributes):
+        assert (attribute_name in allow_attributes
+               ), "please input allowed attributes."
+        assert (attribute_value.shape == self.__dict__[attribute_name].shape
+               ), "Shape dismatched."
+        if isinstance(attribute_value, Tensor):
+            self.__dict__[attribute_name].reset_like(attribute_value)
+            self.__dict__[attribute_name].copy_data(attribute_value)
+        elif isinstance(attribute_value, np.ndarray):
+            self.__dict__[attribute_name].copy_from_numpy(attribute_value)
+        else:
+            raise ValueError("attributes should be Tensor or Numpy array.")
+
+    def _get_unique_name(self):
+        if not self._unique_name:
+            prefix = ''
+            if self._parent:
+                prefix = self._parent._get_unique_name()
+                if prefix:
+                    prefix += Layer.sep
+
+            self.__dict__['_unique_name'] = prefix + self._name
+
+        return self._unique_name
+
+    def __getattr__(self, name):
+        if '_layers' in self.__dict__:
+            layers = self.__dict__['_layers']
+            if name in layers:
+                return layers[name]
+        object.__getattr__(self, name)
+
+    def __setattr__(self, name, value):
+        if isinstance(value, Layer):
+            # TODO: remove the attr from dict first
+            self.__dict__['_layers'][name] = value
+            value.__dict__['_parent'] = self
+            value.__dict__['_name'] = name
+        else:
+            object.__setattr__(self, name, value)
+
+    def __delattr__(self, name):
+        if name in self._layers:
+            del self._layers[name]
+        else:
+            object.__delattr__(self, name)
 
 class Linear(Layer):
     """
     Generate a Linear operator
     """
-
-    def initialize(self, x):
-        self.in_features = x.shape[1]
-        w_shape = (self.in_features, self.out_features)
-        b_shape = (self.out_features,)
-
-        self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
-        std = math.sqrt(2.0 / (self.in_features + self.out_features))
-        self.W.gaussian(0.0, std)
-
-        if self.bias:
-            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
-            self.b.set_value(0.0)
-
     # TODO: replace current with
     #   def __init__(self, out_features, bias=True):
     def __init__(self, out_features, *args, bias=True, **kwargs):
@@ -222,11 +219,32 @@ class Linear(Layer):
             self.out_features = args[0]
         if len(args) > 1:
             self.bias = args[1]
+        else:
+            self.bias = bias
 
-        self.bias = bias
+        if self.bias:
+            self.param_names = ['W', 'b']
+        else:
+            self.param_names = ['W']
+        self.state_names = self.param_names
+
+    def initialize(self, x):
+        self.in_features = x.shape[1]
+        w_shape = (self.in_features, self.out_features)
+        b_shape = (self.out_features,)
+
+        self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
+        std = math.sqrt(2.0 / (self.in_features + self.out_features))
+        self.W.gaussian(0.0, std)
+
+        if self.bias:
+            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
+            self.b.set_value(0.0)
+        else:
+            self.b = None
 
     def forward(self, x):
-        if self.bias:
+        if self.b:
             self.device_check(x, self.W, self.b)
         else:
             self.device_check(x, self.W)
@@ -239,62 +257,11 @@ class Linear(Layer):
             y = autograd.add_bias(y, self.b, axis=0)
         return y
 
-    def get_params(self):
-        if self.bias:
-            self.parameter_names = ['W', 'b']
-        else:
-            self.parameter_names = ['W']
-        return super(Linear, self).get_params()
-
-    def set_params(self, **parameters):
-        # TODO(wangwei) remove this funciton as Opeation's set_params() enough
-        # set parameters for Linear Layer
-        # input should be either a PyTensor or numpy ndarray.
-        # examples: Linear.set_params(W=np.ones((in, out), dtype=np.float32)),
-        # Linear.set_params(**{'W':np.ones((in, out), dtype=np.float32)})
-        self.allow_params = ["W", "b"]
-        super(Linear, self).set_params(**parameters)
-        for parameter_name in parameters:
-            if parameter_name is "b":
-                self.bias = True
-
 
 class Conv2d(Layer):
     """
     Generate a Conv 2d operator
     """
-
-    def initialize(self, x):
-        prev_state = x.device.graph_enabled()
-        x.device.EnableGraph(False)
-
-        w_shape = (
-            self.out_channels,
-            int(self.in_channels / self.group),
-            self.kernel_size[0],
-            self.kernel_size[1],
-        )
-
-        self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
-        # std = math.sqrt(
-        # 2.0 / (self.in_channels * self.kernel_size[0] * self.kernel_size[1] +
-        # self.out_channels))
-        std = math.sqrt(
-            2.0 / (w_shape[1] * self.kernel_size[0] * self.kernel_size[1] +
-                   self.out_channels))
-        self.W.gaussian(0.0, std)
-
-        if self.bias:
-            b_shape = (self.out_channels,)
-            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
-            self.b.set_value(0.0)
-        else:
-            # to keep consistency when to do forward.
-            self.b = None
-            # Tensor(data=CTensor([]), requires_grad=False, stores_grad=False)
-
-        x.device.EnableGraph(prev_state)
-
     def __init__(self,
                  out_channels,
                  kernel_size,
@@ -340,8 +307,6 @@ class Conv2d(Layer):
             self.stride = args[1]
         if len(args) > 2:
             self.padding = args[2]
-
-        self.has_initialized = False
 
         self.out_channels = out_channels
 
@@ -396,8 +361,6 @@ class Conv2d(Layer):
         if dilation != 1:
             raise ValueError("Not implemented yet")
 
-        self.bias = bias
-
         self.inner_params = {
             "cudnn_prefer": "fastest",
             "workspace_MB_limit": 1024,
@@ -410,16 +373,43 @@ class Conv2d(Layer):
             else:
                 self.inner_params[kwarg] = kwargs[kwarg]
 
+        if self.bias:
+            self.param_names = ['W', 'b']
+        else:
+            self.param_names = ['W']
+        self.state_names = self.param_names
+
         self.pad_mode = pad_mode
 
-    def __call__(self, x):
+    def initialize(self, x):
+        w_shape = (
+            self.out_channels,
+            int(self.in_channels / self.group),
+            self.kernel_size[0],
+            self.kernel_size[1],
+        )
+
+        self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
+        # std = math.sqrt(
+        # 2.0 / (self.in_channels * self.kernel_size[0] * self.kernel_size[1] +
+        # self.out_channels))
+        std = math.sqrt(
+            2.0 / (w_shape[1] * self.kernel_size[0] * self.kernel_size[1] +
+                   self.out_channels))
+        self.W.gaussian(0.0, std)
+
+        if self.bias:
+            b_shape = (self.out_channels,)
+            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
+            self.b.set_value(0.0)
+        else:
+            # to keep consistency when to do forward.
+            self.b = None
+            # Tensor(data=CTensor([]), requires_grad=False, stores_grad=False)
+
+    def forward(self, x):
         if self.in_channels:
             assert x.shape[1] == self.in_channels, "in_channels mismatched"
-
-        if not self.has_initialized:
-            self.in_channels = x.shape[1]
-            self.initialize(x)
-            self.has_initialized = True
 
         # if same pad mode, re-compute the padding
         if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
@@ -463,23 +453,6 @@ class Conv2d(Layer):
 
         y = autograd.conv2d(self.handle, x, self.W, self.b, self.odd_padding)
         return y
-
-    def get_params(self):
-        if self.bias:
-            return {"W": self.W, "b": self.b}
-        else:
-            return {"W": self.W}
-
-    def set_params(self, **parameters):
-        # TODO(wangwei) remove it as Operation's set_params() is enough
-        # input should be either a PyTensor or numpy ndarray.
-        # Conv2d.set_params(W=np.ones((n, c, h, w), dtype=np.float32)),
-        # Conv2d.set_params(**{'W':np.ones((n, c, h, w), dtype=np.float32)})
-        self.allow_params = ["W", "b"]
-        super(Conv2d, self).set_params(**parameters)
-        for parameter_name in parameters:
-            if parameter_name is "b":
-                self.bias = True
 
 
 class SeparableConv2d(Layer):
@@ -525,7 +498,7 @@ class SeparableConv2d(Layer):
 
         self.point_conv = Conv2d(in_channels, out_channels, 1, bias=bias)
 
-    def __call__(self, x):
+    def forward(self, x):
         y = self.depthwise_conv(x)
         y = self.point_conv(y)
         return y
@@ -536,10 +509,22 @@ class BatchNorm2d(Layer):
     Generate a BatchNorm 2d operator
     """
 
-    def initialize(self, x):
-        prev_state = x.device.graph_enabled()
-        x.device.EnableGraph(False)
+    def __init__(self, num_features, momentum=0.9):
+        """
+        Args:
+            num_features (int): int, the channel of input
+            momentum (float): Factor used in computing the running mean and
+                variance.
+        """
+        super(BatchNorm2d, self).__init__()
 
+        self.channels = num_features
+        self.momentum = momentum
+
+        self.param_names = ['scale', 'bias']
+        self.state_names = self.param_names + ['running_mean', 'running_var']
+
+    def initialize(self, x):
         param_shape = (self.channels,)
 
         self.scale = Tensor(shape=param_shape,
@@ -562,30 +547,10 @@ class BatchNorm2d(Layer):
                                   stores_grad=False)
         self.running_var.set_value(1.0)
 
-        x.device.EnableGraph(prev_state)
-
-    def __init__(self, num_features, momentum=0.9):
-        """
-        Args:
-            num_features (int): int, the channel of input
-            momentum (float): Factor used in computing the running mean and
-                variance.
-        """
-        super(BatchNorm2d, self).__init__()
-
-        self.has_initialized = False
-
-        self.channels = num_features
-        self.momentum = momentum
-
-    def __call__(self, x):
+    def forward(self, x):
         assert x.shape[1] == self.channels, (
             "number of channels dismatched. %d vs %d" %
             (x.shape[1], self.channels))
-
-        if not self.has_initialized:
-            self.initialize(x)
-            self.has_initialized = True
 
         self.device_check(x, self.scale, self.bias, self.running_mean,
                           self.running_var)
@@ -610,28 +575,6 @@ class BatchNorm2d(Layer):
             self.running_var,
         )
         return y
-
-    def get_params(self):
-        return {"scale": self.scale, "bias": self.bias}
-
-    def get_states(self):
-        return {
-            "running_mean": self.running_mean,
-            "running_var": self.running_var
-        }
-
-    def set_states(self, **states):
-        self.allow_states = ["running_mean", "running_var"]
-        super(BatchNorm2d, self).set_states(**states)
-
-    def set_params(self, **parameters):
-        # set parameters for BatchNorm2d Layer
-        # input should be either a PyTensor or numpy ndarray.
-        # examples:
-        #   Batchnorm2d.set_params(scale=np.ones((1,), dtype=np.float32)),
-        #   Batchnorm2d.set_params(**{'bias':np.ones((1), dtype=np.float32)})
-        self.allow_params = ["scale", "bias"]
-        super(BatchNorm2d, self).set_params(**parameters)
 
 
 class Pooling2d(Layer):
@@ -707,7 +650,7 @@ class Pooling2d(Layer):
         self.is_max = is_max
         self.pad_mode = pad_mode
 
-    def __call__(self, x):
+    def forward(self, x):
         # if same pad mode, re-compute the padding
         if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
             self.padding, self.odd_padding = utils.get_padding_shape(
@@ -908,26 +851,6 @@ class RNN(RNN_Base):
     Generate a RNN operator
     """
 
-    def initialize(self, xs):
-        prev_state = xs[0].device.graph_enabled()
-        xs[0].device.EnableGraph(False)
-
-        Wx_shape = (self.input_size, self.hidden_size)
-        self.Wx = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
-        self.Wx.gaussian(0.0, 1.0)
-
-        Wh_shape = (self.hidden_size, self.hidden_size)
-        self.Wh = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
-        self.Wh.gaussian(0.0, 1.0)
-
-        B_shape = (self.hidden_size,)
-        self.b = Tensor(shape=B_shape, requires_grad=True, stores_grad=True)
-        self.b.set_value(0.0)
-
-        self.params = (self.Wx, self.Wh, self.b)
-
-        xs[0].device.EnableGraph(prev_state)
-
     def __init__(
         self,
         input_size,
@@ -955,8 +878,6 @@ class RNN(RNN_Base):
             bidirectional (bool): If True, becomes a bidirectional RNN.
                 Default: False
         """
-        self.has_initialized = False
-
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.num_layers = num_layers
@@ -966,11 +887,22 @@ class RNN(RNN_Base):
         self.dropout = dropout
         self.bidirectional = bidirectional
 
-    def __call__(self, xs, h0):
-        if not self.has_initialized:
-            self.initialize(xs)
-            self.has_initialized = True
+    def initialize(self, xs):
+        Wx_shape = (self.input_size, self.hidden_size)
+        self.Wx = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
+        self.Wx.gaussian(0.0, 1.0)
 
+        Wh_shape = (self.hidden_size, self.hidden_size)
+        self.Wh = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
+        self.Wh.gaussian(0.0, 1.0)
+
+        B_shape = (self.hidden_size,)
+        self.b = Tensor(shape=B_shape, requires_grad=True, stores_grad=True)
+        self.b.set_value(0.0)
+
+        self.params = (self.Wx, self.Wh, self.b)
+
+    def forward(self, xs, h0):
         # xs: a tuple or list of input tensors
         if not isinstance(xs, tuple):
             xs = tuple(xs)
@@ -1007,10 +939,43 @@ class LSTM(RNN_Base):
     Generate a LSTM operator
     """
 
-    def initialize(self, xs):
-        prev_state = xs[0].device.graph_enabled()
-        xs[0].device.EnableGraph(False)
+    def __init__(
+        self,
+        input_size,
+        hidden_size,
+        nonlinearity="tanh",
+        num_layers=1,
+        bias=True,
+        batch_first=False,
+        dropout=0,
+        bidirectional=False,
+    ):
+        """
+        Args:
+            input_size (int):  The number of expected features in the input x
+            hidden_size (int): The number of features in the hidden state h
+            num_layers (int):  Number of recurrent layers. Default: 1
+            nonlinearity (string): The non-linearity to use. Default: 'tanh'
+            bias (bool):  If False, then the layer does not use bias weights.
+                Default: True
+            batch_first (bool):  If True, then the input and output tensors
+                are provided as (batch, seq, feature). Default: False
+            dropout (float): If non-zero, introduces a Dropout layer on the
+                outputs of each RNN layer except the last layer, with dropout
+                probability equal to dropout. Default: 0
+            bidirectional (bool): If True, becomes a bidirectional RNN.
+                Default: False
+        """
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.nonlinearity = nonlinearity
+        self.bias = bias
+        self.batch_first = batch_first
+        self.dropout = dropout
+        self.bidirectional = bidirectional
 
+    def initialize(self, xs):
         Wx_shape = (self.input_size, self.hidden_size)
         self.Wx = []
         for i in range(4):
@@ -1040,51 +1005,7 @@ class LSTM(RNN_Base):
 
         self.params = self.Wx + self.Wh + self.Bx + self.Bh
 
-        xs[0].device.EnableGraph(prev_state)
-
-    def __init__(
-        self,
-        input_size,
-        hidden_size,
-        nonlinearity="tanh",
-        num_layers=1,
-        bias=True,
-        batch_first=False,
-        dropout=0,
-        bidirectional=False,
-    ):
-        """
-        Args:
-            input_size (int):  The number of expected features in the input x
-            hidden_size (int): The number of features in the hidden state h
-            num_layers (int):  Number of recurrent layers. Default: 1
-            nonlinearity (string): The non-linearity to use. Default: 'tanh'
-            bias (bool):  If False, then the layer does not use bias weights.
-                Default: True
-            batch_first (bool):  If True, then the input and output tensors
-                are provided as (batch, seq, feature). Default: False
-            dropout (float): If non-zero, introduces a Dropout layer on the
-                outputs of each RNN layer except the last layer, with dropout
-                probability equal to dropout. Default: 0
-            bidirectional (bool): If True, becomes a bidirectional RNN.
-                Default: False
-        """
-        self.has_initialized = False
-
-        self.input_size = input_size
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
-        self.nonlinearity = nonlinearity
-        self.bias = bias
-        self.batch_first = batch_first
-        self.dropout = dropout
-        self.bidirectional = bidirectional
-
-    def __call__(self, xs, h0_c0):
-        if not self.has_initialized:
-            self.initialize(xs)
-            self.has_initialized = True
-
+    def forward(self, xs, h0_c0):
         # xs: a tuple or list of input tensors
         # h0_c0: a tuple of (h0, c0)
         h0, c0 = h0_c0
