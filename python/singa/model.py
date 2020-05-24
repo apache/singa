@@ -217,27 +217,30 @@ class Model(layer.Layer, metaclass=ModelMeta):
             aux_states(dict): values are standard data types or Tensor,
                               e.g., epoch ID, learning rate, optimizer states
         """
-        assert not os.path.isfile(fpath), ("Failed to save states, %s is already existed." % fpath)
+        assert not os.path.isfile(fpath), (
+            "Failed to save states, %s is already existed." % fpath)
 
         states = dict()
-        states.update(self.get_params())
-        # states.update(self.get_states())
-        # states.update(aux_states)
+        states.update(self.get_states())
+        # TODO: need to add aux states loading handler in load_states()
+        #   for example, if aux states include optimizer states, then
+        #   need to load opt states in load_states also
+        states.update(aux_states)
 
         # save states data and attr
         tensor_dict = {}
         states_attr = {}
-        for k,v in states.items():
+        for k, v in states.items():
             if isinstance(v, tensor.Tensor):
                 tensor_dict[k] = tensor.to_numpy(v)
                 states_attr[k] = {'shape': v.shape, 'dtype': v.dtype}
 
         # save to files
         timestamp = time.time()
-        tmp_dir = '/tmp/singa_%s' % timestamp
+        tmp_dir = '/tmp/singa_save_states_%s' % timestamp
         os.mkdir(tmp_dir)
-        tensor_dict_fp = tmp_dir+self.tensor_dict_filename
-        states_attr_fp = tmp_dir+self.states_attr_filename
+        tensor_dict_fp = tmp_dir + self.tensor_dict_filename
+        states_attr_fp = tmp_dir + self.states_attr_filename
 
         np.savez(tensor_dict_fp, **tensor_dict)
 
@@ -246,8 +249,12 @@ class Model(layer.Layer, metaclass=ModelMeta):
 
         compression = zipfile.ZIP_DEFLATED
         with zipfile.ZipFile(fpath, mode="w") as zf:
-            zf.write(tensor_dict_fp, os.path.basename(tensor_dict_fp), compress_type=compression)
-            zf.write(states_attr_fp, os.path.basename(states_attr_fp), compress_type=compression)
+            zf.write(tensor_dict_fp,
+                     os.path.basename(tensor_dict_fp),
+                     compress_type=compression)
+            zf.write(states_attr_fp,
+                     os.path.basename(states_attr_fp),
+                     compress_type=compression)
 
         # clean up tmp files
         os.remove(tensor_dict_fp)
@@ -268,17 +275,18 @@ class Model(layer.Layer, metaclass=ModelMeta):
             dict
         """
 
-        assert os.path.isfile(fpath), ("Failed to load states, %s is not exist." % fpath)
+        assert os.path.isfile(fpath), (
+            "Failed to load states, %s is not exist." % fpath)
 
         timestamp = time.time()
-        tmp_dir = '/tmp/singa_%s' % timestamp
+        tmp_dir = '/tmp/singa_load_states_%s' % timestamp
         os.mkdir(tmp_dir)
 
         with zipfile.ZipFile(fpath, 'r') as zf:
             zf.extractall(tmp_dir)
 
-        tensor_dict_fp = tmp_dir+self.tensor_dict_filename
-        states_attr_fp = tmp_dir+self.states_attr_filename
+        tensor_dict_fp = tmp_dir + self.tensor_dict_filename
+        states_attr_fp = tmp_dir + self.states_attr_filename
 
         with open(states_attr_fp) as f:
             states_attr = json.load(f)
@@ -286,12 +294,12 @@ class Model(layer.Layer, metaclass=ModelMeta):
         tensor_dict = np.load(tensor_dict_fp)
 
         # restore singa tensor from numpy
-        params=dict()
+        states = dict()
         for k in tensor_dict.files:
-            params[k] = tensor.from_numpy(tensor_dict[k])
+            states[k] = tensor.from_numpy(tensor_dict[k])
 
         # restore states
-        self.set_params(**params)
+        self.set_states(states)
 
         # clean up tmp files
         os.remove(tensor_dict_fp)

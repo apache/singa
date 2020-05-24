@@ -31,13 +31,19 @@ class LayerMeta(type):
 
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            assert len(args) > 0 and isinstance(args[0], Tensor), (
-                'initialize function expects PlaceHolders or Tensors')
-            prev_state = args[0].device.graph_enabled()
-            args[0].device.EnableGraph(False)
+            if (args[0], list):
+                assert len(args) > 0 and isinstance(args[0][0], Tensor), (
+                    'initialize function expects PlaceHolders or Tensors')
+                dev = args[0][0].device
+            else:
+                assert len(args) > 0 and isinstance(args[0], Tensor), (
+                    'initialize function expects PlaceHolders or Tensors')
+                dev = args[0].device
+            prev_state = dev.graph_enabled()
+            dev.EnableGraph(False)
             func(self, *args, **kwargs)
             self._initialzied = True
-            args[0].device.EnableGraph(prev_state)
+            dev.EnableGraph(prev_state)
 
         return wrapper
 
@@ -195,10 +201,12 @@ class Layer(object, metaclass=LayerMeta):
         else:
             object.__delattr__(self, name)
 
+
 class Linear(Layer):
     """
     Generate a Linear operator
     """
+
     # TODO: replace current with
     #   def __init__(self, out_features, bias=True):
     def __init__(self, out_features, *args, bias=True, **kwargs):
@@ -262,6 +270,7 @@ class Conv2d(Layer):
     """
     Generate a Conv 2d operator
     """
+
     def __init__(self,
                  out_channels,
                  kernel_size,
@@ -318,11 +327,9 @@ class Conv2d(Layer):
         self.bias = bias
         self.pad_mode = pad_mode
 
-        assert (self.group >= 1 and self.in_channels %
-                self.group == 0), "please set reasonable group."
-
-        assert (self.out_channels >= self.group and self.out_channels %
-                self.group == 0), "out_channels and group dismatched."
+        assert (self.out_channels >= self.group and
+                self.out_channels % self.group
+                == 0), "out_channels and group dismatched."
 
         if isinstance(kernel_size, int):
             self.kernel_size = (kernel_size, kernel_size)
@@ -382,6 +389,11 @@ class Conv2d(Layer):
         self.pad_mode = pad_mode
 
     def initialize(self, x):
+        self.in_channels = x.shape[1]
+
+        assert (self.group >= 1 and self.in_channels % self.group
+                == 0), "please set reasonable group."
+
         w_shape = (
             self.out_channels,
             int(self.in_channels / self.group),
@@ -828,12 +840,6 @@ class AvgPool1d(Pooling2d):
 
 class RNN_Base(Layer):
 
-    def __init__(self):
-        raise NotImplementedError
-
-    def __call__(self):
-        raise NotImplementedError
-
     def step_forward(self,
                      x=None,
                      h=None,
@@ -878,6 +884,8 @@ class RNN(RNN_Base):
             bidirectional (bool): If True, becomes a bidirectional RNN.
                 Default: False
         """
+        super(RNN, self).__init__()
+
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.num_layers = num_layers
@@ -887,7 +895,7 @@ class RNN(RNN_Base):
         self.dropout = dropout
         self.bidirectional = bidirectional
 
-    def initialize(self, xs):
+    def initialize(self, xs, h0):
         Wx_shape = (self.input_size, self.hidden_size)
         self.Wx = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
         self.Wx.gaussian(0.0, 1.0)
@@ -900,7 +908,8 @@ class RNN(RNN_Base):
         self.b = Tensor(shape=B_shape, requires_grad=True, stores_grad=True)
         self.b.set_value(0.0)
 
-        self.params = (self.Wx, self.Wh, self.b)
+        self.param_names = ['Wx', 'Wh', 'b']
+        self.state_names = self.param_names
 
     def forward(self, xs, h0):
         # xs: a tuple or list of input tensors
@@ -966,6 +975,8 @@ class LSTM(RNN_Base):
             bidirectional (bool): If True, becomes a bidirectional RNN.
                 Default: False
         """
+        super(LSTM, self).__init__()
+
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.num_layers = num_layers
@@ -975,35 +986,50 @@ class LSTM(RNN_Base):
         self.dropout = dropout
         self.bidirectional = bidirectional
 
-    def initialize(self, xs):
+    def initialize(self, xs, h0_c0):
+        # 1. Wx_i input,  Bx_i
+        # 2. Wx_f forget, Bx_f
+        # 3. Wx_o output, Bx_o
+        # 4. Wx_g candidate, Bx_g
         Wx_shape = (self.input_size, self.hidden_size)
-        self.Wx = []
-        for i in range(4):
-            w = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
-            w.gaussian(0.0, 0.01)
-            self.Wx.append(w)
+        self.Wx_i = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
+        self.Wx_f = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
+        self.Wx_o = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
+        self.Wx_g = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
 
         Wh_shape = (self.hidden_size, self.hidden_size)
-        self.Wh = []
-        for i in range(4):
-            w = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
-            w.gaussian(0.0, 0.01)
-            self.Wh.append(w)
+        self.Wh_i = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
+        self.Wh_f = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
+        self.Wh_o = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
+        self.Wh_g = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
+        [
+            w.gaussian(0.0, 0.01) for w in [
+                self.Wx_i, self.Wx_f, self.Wx_o, self.Wx_g, self.Wh_i,
+                self.Wh_f, self.Wh_o, self.Wh_g
+            ]
+        ]
 
         Bx_shape = (self.hidden_size,)
-        self.Bx = []
-        for i in range(4):
-            b = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
-            b.set_value(0.0)
-            self.Bx.append(b)
+        self.Bx_i = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+        self.Bx_f = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+        self.Bx_o = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+        self.Bx_g = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+        self.Bh_i = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+        self.Bh_f = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+        self.Bh_o = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+        self.Bh_g = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+        [
+            b.set_value(0.0) for b in [
+                self.Bx_i, self.Bx_f, self.Bx_o, self.Bx_g, self.Bh_i,
+                self.Bh_f, self.Bh_o, self.Bh_g
+            ]
+        ]
 
-        self.Bh = []
-        for i in range(4):
-            b = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
-            b.set_value(0.0)
-            self.Bh.append(b)
-
-        self.params = self.Wx + self.Wh + self.Bx + self.Bh
+        self.param_names = [
+            'Wx_i', 'Wx_f', 'Wx_o', 'Wx_g', 'Wh_i', 'Wh_f', 'Wh_o', 'Wh_g',
+            'Bx_i', 'Bx_f', 'Bx_o', 'Bx_g', 'Bh_i', 'Bh_f', 'Bh_o', 'Bh_g'
+        ]
+        self.state_names = self.param_names
 
     def forward(self, xs, h0_c0):
         # xs: a tuple or list of input tensors
@@ -1013,46 +1039,48 @@ class LSTM(RNN_Base):
             xs = list(xs)
         inputs = xs + list((h0, c0))
         self.device_check(*inputs)
-        # self.device_check(inputs[0], *self.params)
-        self.device_check(inputs[0], *(self.Wx + self.Wh + self.Bx + self.Bh))
+        self.device_check(
+            inputs[0],
+            *[self.__dict__[param_name] for param_name in self.param_names])
         batchsize = xs[0].shape[0]
         out = []
-        h, c = self.step_forward(xs[0], h0, c0, self.Wx, self.Wh, self.Bx,
-                                 self.Bh)
+        h, c = self.step_forward(xs[0], h0, c0)
         out.append(h)
         for x in xs[1:]:
             assert x.shape[0] == batchsize
-            h, c = self.step_forward(x, h, c, self.Wx, self.Wh, self.Bx,
-                                     self.Bh)
+            h, c = self.step_forward(x, h, c)
             out.append(h)
         return out, h, c
 
-    def step_forward(self, x, h, c, Wx, Wh, Bx, Bh):
-        y1 = autograd.matmul(x, Wx[0])
-        y1 = autograd.add_bias(y1, Bx[0], axis=0)
-        y2 = autograd.matmul(h, Wh[0])
-        y2 = autograd.add_bias(y2, Bh[0], axis=0)
+    def step_forward(self, x, h, c):
+        # input
+        y1 = autograd.matmul(x, self.Wx_i)
+        y1 = autograd.add_bias(y1, self.Bx_i, axis=0)
+        y2 = autograd.matmul(h, self.Wh_i)
+        y2 = autograd.add_bias(y2, self.Bh_i, axis=0)
         i = autograd.add(y1, y2)
         i = autograd.sigmoid(i)
 
-        y1 = autograd.matmul(x, Wx[1])
-        y1 = autograd.add_bias(y1, Bx[1], axis=0)
-        y2 = autograd.matmul(h, Wh[1])
-        y2 = autograd.add_bias(y2, Bh[1], axis=0)
+        # forget
+        y1 = autograd.matmul(x, self.Wx_f)
+        y1 = autograd.add_bias(y1, self.Bx_f, axis=0)
+        y2 = autograd.matmul(h, self.Wh_f)
+        y2 = autograd.add_bias(y2, self.Bh_f, axis=0)
         f = autograd.add(y1, y2)
         f = autograd.sigmoid(f)
 
-        y1 = autograd.matmul(x, Wx[2])
-        y1 = autograd.add_bias(y1, Bx[2], axis=0)
-        y2 = autograd.matmul(h, Wh[2])
-        y2 = autograd.add_bias(y2, Bh[2], axis=0)
+        # output
+        y1 = autograd.matmul(x, self.Wx_o)
+        y1 = autograd.add_bias(y1, self.Bx_o, axis=0)
+        y2 = autograd.matmul(h, self.Wh_o)
+        y2 = autograd.add_bias(y2, self.Bh_o, axis=0)
         o = autograd.add(y1, y2)
         o = autograd.sigmoid(o)
 
-        y1 = autograd.matmul(x, Wx[3])
-        y1 = autograd.add_bias(y1, Bx[3], axis=0)
-        y2 = autograd.matmul(h, Wh[3])
-        y2 = autograd.add_bias(y2, Bh[3], axis=0)
+        y1 = autograd.matmul(x, self.Wx_g)
+        y1 = autograd.add_bias(y1, self.Bx_g, axis=0)
+        y2 = autograd.matmul(h, self.Wh_g)
+        y2 = autograd.add_bias(y2, self.Bh_g, axis=0)
         g = autograd.add(y1, y2)
         g = autograd.tanh(g)
 
