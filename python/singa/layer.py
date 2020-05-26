@@ -216,7 +216,6 @@ class Linear(Layer):
     def __init__(self, out_features, *args, bias=True, **kwargs):
         """
         Args:
-            in_channels: int, the channel of input
             out_channels: int, the channel of output, also is the number of
                 filters
             bias: bool
@@ -270,6 +269,82 @@ class Linear(Layer):
             y = autograd.add_bias(y, self.b, axis=0)
         return y
 
+class Gemm(Layer):
+    """
+    Generate a Gemm operator
+    Y = alpha * A' * B' + beta * C
+    B is weight, C is bias
+    """
+
+    def __init__(self, out_features, alpha=1.0, beta=1.0, transA=False, transB=True, bias=True):
+        """
+        Args:
+            out_channels: int, the channel of output, also is the number of
+                filters
+            alpha (float): Scalar multiplier for the product of input tensors A * B.
+            beta (float): Scalar multiplier for input tensor C.
+            ransA (bool): Whether A should be transposed
+            transB (bool): Whether B should be transposed
+            bias: bool
+        """
+        super(Gemm, self).__init__()
+        self.out_features = out_features
+        self.alpha = alpha
+        self.beta = beta
+        self.transA = 1 if transA else 0
+        self.transB = 1 if transB else 0
+        self.bias = bias
+        
+        if self.bias:
+            self.param_names = ['W', 'b']
+        else:
+            self.param_names = ['W']
+        self.state_names = self.param_names
+
+    def initialize(self, x):
+        if self.transA == 0:
+            self.in_features = x.shape[1]
+        else:
+            self.in_features = x.shape[0]
+
+        if self.transB == 0:
+            w_shape = (self.in_features, self.out_features)
+        else:
+            w_shape = (self.out_features, self.in_features)
+        b_shape = (1, self.out_features)
+
+        self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True, device=x.device)
+        std = math.sqrt(2.0 / (self.in_features + self.out_features))
+        self.W.gaussian(0.0, std)
+
+        if self.bias:
+            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True, device=x.device)
+            self.b.set_value(0.0)
+        else:
+            self.b = None
+
+    def forward(self, x):
+        if self.b:
+            self.device_check(x, self.W, self.b)
+        else:
+            self.device_check(x, self.W)
+
+        if self.transA == 0:
+            in_features = x.shape[1]
+        else:
+            in_features = x.shape[0]
+
+        if self.transB == 0:
+            in_features_w =  self.W.shape[0]
+        else:
+            in_features_w =  self.W.shape[1]
+
+        assert in_features == in_features_w, (
+            "Gemm layer expects input features size %d received %d" %
+            (in_features_w, in_features))
+        y = autograd.gemm(x, self.W, self.b, self.alpha, self.beta, self.transA, self.transB)
+
+        return y
 
 class Conv2d(Layer):
     """
@@ -417,6 +492,10 @@ class Conv2d(Layer):
             self.padding, self.odd_padding = utils.get_padding_shape(
                 self.pad_mode, x.shape[2:], self.kernel_size, self.stride)
 
+        if self.odd_padding != (0, 0, 0, 0):
+            x = x.clone()
+            x.data = utils.handle_odd_pad_fwd(x.data, self.odd_padding)
+
         if x.device.id() == -1:
             if self.group != 1:
                 raise ValueError("Not implemented yet")
@@ -499,19 +578,16 @@ class SeparableConv2d(Layer):
 
     def initialize(self, x):
         self.in_channels = x.shape[1]
-
         self.depthwise_conv = Conv2d(
             self.in_channels,
-            self.in_channels,
             self.kernel_size,
-            self.stride,
-            self.padding,
+            stride=self.stride,
+            padding=self.padding,
             group=self.in_channels,
             bias=self.bias,
         )
 
-        self.point_conv = Conv2d(self.in_channels,
-                                 self.nb_kernels,
+        self.point_conv = Conv2d(self.nb_kernels,
                                  1,
                                  bias=self.bias)
 
@@ -706,7 +782,7 @@ class MaxPool2d(Pooling2d):
                  kernel_size,
                  stride=None,
                  padding=0,
-                 odd_padding=(0, 0, 0, 0)):
+                 pad_mode="NOTSET"):
         """
         Args:
             kernel_size (int or tuple): kernel size for two direction of each
@@ -718,13 +794,14 @@ class MaxPool2d(Pooling2d):
                 as kernel size. However, if you set pad_mode as "SAME_UPPER" or
                 "SAME_LOWER" mode, you can set padding as None, and the padding
                 will be computed automatically.
-            odd_padding (tuple of four int): the odd paddding is the value
-                that cannot be handled by the tuple padding (w, h) mode so
-                it needs to firstly handle the input, then use the normal
-                padding method.
+            pad_mode (string): can be NOTSET, SAME_UPPER, or SAME_LOWER, where
+                default value is NOTSET, which means explicit padding is used.
+                SAME_UPPER or SAME_LOWER mean pad the input so that the output
+                spatial size match the input. In case of odd number add the extra
+                padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
         """
         super(MaxPool2d, self).__init__(kernel_size, stride, padding, True,
-                                        odd_padding)
+                                        pad_mode)
 
 
 class AvgPool2d(Pooling2d):
@@ -733,7 +810,7 @@ class AvgPool2d(Pooling2d):
                  kernel_size,
                  stride=None,
                  padding=0,
-                 odd_padding=(0, 0, 0, 0)):
+                 pad_mode="NOTSET"):
         """
         Args:
             kernel_size (int or tuple): kernel size for two direction of each
@@ -745,13 +822,14 @@ class AvgPool2d(Pooling2d):
                 as kernel size. However, if you set pad_mode as "SAME_UPPER" or
                 "SAME_LOWER" mode, you can set padding as None, and the padding
                 will be computed automatically.
-            odd_padding (tuple of four int): the odd paddding is the value
-                that cannot be handled by the tuple padding (w, h) mode so
-                it needs to firstly handle the input, then use the normal
-                padding method.
+            pad_mode (string): can be NOTSET, SAME_UPPER, or SAME_LOWER, where
+                default value is NOTSET, which means explicit padding is used.
+                SAME_UPPER or SAME_LOWER mean pad the input so that the output
+                spatial size match the input. In case of odd number add the extra
+                padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
         """
         super(AvgPool2d, self).__init__(kernel_size, stride, padding, False,
-                                        odd_padding)
+                                        pad_mode)
 
 
 class MaxPool1d(Pooling2d):
@@ -763,7 +841,7 @@ class MaxPool1d(Pooling2d):
                  kernel_size,
                  stride=None,
                  padding=0,
-                 odd_padding=(0, 0, 0, 0)):
+                 pad_mode="NOTSET"):
         """
         Args:
             kernel_size (int or tuple): kernel size for two direction of each
@@ -775,15 +853,16 @@ class MaxPool1d(Pooling2d):
                 as kernel size. However, if you set pad_mode as "SAME_UPPER" or
                 "SAME_LOWER" mode, you can set padding as None, and the padding
                 will be computed automatically.
-            odd_padding (tuple of four int): the odd paddding is the value
-                that cannot be handled by the tuple padding (w, h) mode so
-                it needs to firstly handle the input, then use the normal
-                padding method.
+            pad_mode (string): can be NOTSET, SAME_UPPER, or SAME_LOWER, where
+                default value is NOTSET, which means explicit padding is used.
+                SAME_UPPER or SAME_LOWER mean pad the input so that the output
+                spatial size match the input. In case of odd number add the extra
+                padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
         """
         if stride is None:
             stride = kernel_size
         super(MaxPool1d, self).__init__((1, kernel_size), (1, stride),
-                                        (0, padding), True, odd_padding)
+                                        (0, padding), True, pad_mode)
 
 
 class AvgPool1d(Pooling2d):
@@ -795,7 +874,7 @@ class AvgPool1d(Pooling2d):
                  kernel_size,
                  stride=None,
                  padding=0,
-                 odd_padding=(0, 0, 0, 0)):
+                 pad_mode="NOTSET"):
         """
         Args:
             kernel_size (int or tuple): kernel size for two direction of each
@@ -807,15 +886,16 @@ class AvgPool1d(Pooling2d):
                 as kernel size. However, if you set pad_mode as "SAME_UPPER" or
                 "SAME_LOWER" mode, you can set padding as None, and the padding
                 will be computed automatically.
-            odd_padding (tuple of four int): the odd paddding is the value
-                that cannot be handled by the tuple padding (w, h) mode so
-                it needs to firstly handle the input, then use the normal
-                padding method.
+            pad_mode (string): can be NOTSET, SAME_UPPER, or SAME_LOWER, where
+                default value is NOTSET, which means explicit padding is used.
+                SAME_UPPER or SAME_LOWER mean pad the input so that the output
+                spatial size match the input. In case of odd number add the extra
+                padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
         """
         if stride is None:
             stride = kernel_size
         super(AvgPool1d, self).__init__((1, kernel_size), (1, stride),
-                                        (0, padding), False, odd_padding)
+                                        (0, padding), False, pad_mode)
 
 
 class RNN_Base(Layer):
