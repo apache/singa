@@ -272,7 +272,7 @@ class Conv2d(Layer):
     """
 
     def __init__(self,
-                 out_channels,
+                 nb_kernels,
                  kernel_size,
                  *args,
                  stride=1,
@@ -284,8 +284,7 @@ class Conv2d(Layer):
                  **kwargs):
         """
         Args:
-            in_channels (int): the channel of input
-            out_channels (int): the channel of output, also is the number of filters
+            nb_kernels (int): the channel of output, also is the number of filters
             kernel_size (int or tuple): kernel size for two direction of each
                 axis. For example, (2, 3), the first 2 means will add 2 at the
                 beginning and also 2 at the end for its axis.and if a int is
@@ -309,15 +308,16 @@ class Conv2d(Layer):
         # the old code create the layer like: Conv2d(8, 16, 3)， or Conv2d(8, 16, 3, stride=1)
         # the following code block is for backward compatibility
         if len(args) > 0:
-            self.in_channels = out_channels
-            self.out_channel = kernel_size
+            self.nb_kernels = kernel_size
             self.kernel_size = args[0]
         if len(args) > 1:
             self.stride = args[1]
         if len(args) > 2:
             self.padding = args[2]
 
-        self.out_channels = out_channels
+        self.has_initialized = False
+
+        self.nb_kernels = nb_kernels
 
         self.kernel_size = kernel_size
         self.stride = stride
@@ -327,9 +327,8 @@ class Conv2d(Layer):
         self.bias = bias
         self.pad_mode = pad_mode
 
-        assert (self.out_channels >= self.group and
-                self.out_channels % self.group
-                == 0), "out_channels and group dismatched."
+        assert (self.nb_kernels >= self.group and self.nb_kernels %
+                self.group == 0), "nb_kernels and group dismatched."
 
         if isinstance(kernel_size, int):
             self.kernel_size = (kernel_size, kernel_size)
@@ -368,6 +367,8 @@ class Conv2d(Layer):
         if dilation != 1:
             raise ValueError("Not implemented yet")
 
+        self.bias = bias
+
         self.inner_params = {
             "cudnn_prefer": "fastest",
             "workspace_MB_limit": 1024,
@@ -380,22 +381,14 @@ class Conv2d(Layer):
             else:
                 self.inner_params[kwarg] = kwargs[kwarg]
 
-        if self.bias:
-            self.param_names = ['W', 'b']
-        else:
-            self.param_names = ['W']
-        self.state_names = self.param_names
-
-        self.pad_mode = pad_mode
-
     def initialize(self, x):
         self.in_channels = x.shape[1]
 
-        assert (self.group >= 1 and self.in_channels % self.group
-                == 0), "please set reasonable group."
+        assert (self.group >= 1 and self.in_channels %
+                self.group == 0), "please set reasonable group."
 
         w_shape = (
-            self.out_channels,
+            self.nb_kernels,
             int(self.in_channels / self.group),
             self.kernel_size[0],
             self.kernel_size[1],
@@ -404,14 +397,14 @@ class Conv2d(Layer):
         self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
         # std = math.sqrt(
         # 2.0 / (self.in_channels * self.kernel_size[0] * self.kernel_size[1] +
-        # self.out_channels))
+        # self.nb_kernels))
         std = math.sqrt(
             2.0 / (w_shape[1] * self.kernel_size[0] * self.kernel_size[1] +
-                   self.out_channels))
+                   self.nb_kernels))
         self.W.gaussian(0.0, std)
 
         if self.bias:
-            b_shape = (self.out_channels,)
+            b_shape = (self.nb_kernels,)
             self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
             self.b.set_value(0.0)
         else:
@@ -419,19 +412,10 @@ class Conv2d(Layer):
             self.b = None
             # Tensor(data=CTensor([]), requires_grad=False, stores_grad=False)
 
-    def forward(self, x):
-        if self.in_channels:
-            assert x.shape[1] == self.in_channels, "in_channels mismatched"
-
         # if same pad mode, re-compute the padding
         if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
             self.padding, self.odd_padding = utils.get_padding_shape(
                 self.pad_mode, x.shape[2:], self.kernel_size, self.stride)
-
-        if self.bias:
-            self.device_check(x, self.W, self.b)
-        else:
-            self.device_check(x, self.W)
 
         if x.device.id() == -1:
             if self.group != 1:
@@ -445,7 +429,7 @@ class Conv2d(Layer):
                         self.stride,
                         self.padding,
                         self.in_channels,
-                        self.out_channels,
+                        self.nb_kernels,
                         self.bias,
                         self.group,
                     )
@@ -458,11 +442,12 @@ class Conv2d(Layer):
                     self.stride,
                     self.padding,
                     self.in_channels,
-                    self.out_channels,
+                    self.nb_kernels,
                     self.bias,
                     self.group,
                 )
 
+    def forward(self, x):
         y = autograd.conv2d(self.handle, x, self.W, self.b, self.odd_padding)
         return y
 
@@ -474,8 +459,7 @@ class SeparableConv2d(Layer):
 
     def __init__(
         self,
-        in_channels,
-        out_channels,
+        nb_kernels,
         kernel_size,
         stride=1,
         padding=0,
@@ -483,8 +467,7 @@ class SeparableConv2d(Layer):
     ):
         """
         Args:
-            in_channels (int): the channel of input
-            out_channels (int): the channel of output, also is the number of filters
+            nb_kernels (int): the channel of output, also is the number of filters
             kernel_size (int or tuple): kernel size for two direction of each
                 axis. For example, (2, 3), the first 2 means will add 2 at the
                 beginning and also 2 at the end for its axis.and if a int is
@@ -498,17 +481,30 @@ class SeparableConv2d(Layer):
         """
         super(SeparableConv2d, self).__init__()
 
+        self.nb_kernels = nb_kernels
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+        self.bias = bias
+        self.initialize = False
+
+    def initialize(self, x):
+        self.in_channels = x.shape[1]
+
         self.depthwise_conv = Conv2d(
-            in_channels,
-            in_channels,
-            kernel_size,
-            stride,
-            padding,
-            group=in_channels,
-            bias=bias,
+            self.in_channels,
+            self.in_channels,
+            self.kernel_size,
+            self.stride,
+            self.padding,
+            group=self.in_channels,
+            bias=self.bias,
         )
 
-        self.point_conv = Conv2d(in_channels, out_channels, 1, bias=bias)
+        self.point_conv = Conv2d(self.in_channels,
+                                 self.nb_kernels,
+                                 1,
+                                 bias=self.bias)
 
     def forward(self, x):
         y = self.depthwise_conv(x)
@@ -559,6 +555,12 @@ class BatchNorm2d(Layer):
                                   stores_grad=False)
         self.running_var.set_value(1.0)
 
+        if not hasattr(self, "handle"):
+            if x.device.id() == -1:
+                self.handle = singa.BatchNormHandle(self.momentum, x.data)
+            else:
+                self.handle = singa.CudnnBatchNormHandle(self.momentum, x.data)
+
     def forward(self, x):
         assert x.shape[1] == self.channels, (
             "number of channels dismatched. %d vs %d" %
@@ -566,17 +568,6 @@ class BatchNorm2d(Layer):
 
         self.device_check(x, self.scale, self.bias, self.running_mean,
                           self.running_var)
-
-        if x.device.id() == -1:
-            if not hasattr(self, "handle"):
-                self.handle = singa.BatchNormHandle(self.momentum, x.data)
-            elif x.shape[0] != self.handle.batchsize:
-                self.handle = singa.BatchNormHandle(self.momentum, x.data)
-        else:
-            if not hasattr(self, "handle"):
-                self.handle = singa.CudnnBatchNormHandle(self.momentum, x.data)
-            elif x.shape[0] != self.handle.batchsize:
-                self.handle = singa.CudnnBatchNormHandle(self.momentum, x.data)
 
         y = autograd.batchnorm_2d(
             self.handle,
@@ -662,7 +653,7 @@ class Pooling2d(Layer):
         self.is_max = is_max
         self.pad_mode = pad_mode
 
-    def forward(self, x):
+    def initialize(self, x):
         # if same pad mode, re-compute the padding
         if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
             self.padding, self.odd_padding = utils.get_padding_shape(
@@ -674,45 +665,25 @@ class Pooling2d(Layer):
         out_shape_w = (int(
             (x.shape[3] + 2 * self.padding[1] - self.kernel_size[1]) //
             self.stride[1]) + 1)
-        if x.device.id() == -1:
-            if not hasattr(self, "handle"):
-                self.handle = singa.PoolingHandle(
-                    x.data,
-                    self.kernel_size,
-                    self.stride,
-                    self.padding,
-                    self.is_max,
-                )
-            elif (x.shape[0] != self.handle.batchsize or
-                  out_shape_h != self.handle.pooled_height or
-                  out_shape_w != self.handle.pooled_width):
-                self.handle = singa.PoolingHandle(
-                    x.data,
-                    self.kernel_size,
-                    self.stride,
-                    self.padding,
-                    self.is_max,
-                )
-        else:
-            if not hasattr(self, "handle"):
-                self.handle = singa.CudnnPoolingHandle(
-                    x.data,
-                    self.kernel_size,
-                    self.stride,
-                    self.padding,
-                    self.is_max,
-                )
-            elif (x.shape[0] != self.handle.batchsize or
-                  out_shape_h != self.handle.pooled_height or
-                  out_shape_w != self.handle.pooled_width):
-                self.handle = singa.CudnnPoolingHandle(
-                    x.data,
-                    self.kernel_size,
-                    self.stride,
-                    self.padding,
-                    self.is_max,
-                )
 
+        if x.device.id() == -1:
+            self.handle = singa.PoolingHandle(
+                x.data,
+                self.kernel_size,
+                self.stride,
+                self.padding,
+                self.is_max,
+            )
+        else:
+            self.handle = singa.CudnnPoolingHandle(
+                x.data,
+                self.kernel_size,
+                self.stride,
+                self.padding,
+                self.is_max,
+            )
+
+    def forward(self, x):
         y = autograd.pooling_2d(self.handle, x, self.odd_padding)
         return y
 
