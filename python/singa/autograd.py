@@ -295,10 +295,9 @@ class Operator(object):
         if not isinstance(ys, tuple):
             ys = (ys,)
         # if not training, backward pass is not required, thus creator should not be set
+        creator = None
         if training:
             creator = self
-        else:
-            creator = None
         # create Tensor based on CTensor(data);
         # assume outputs are all Tensor instances
         ys = tuple(

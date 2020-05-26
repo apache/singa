@@ -30,7 +30,7 @@ def conv3x3(in_planes, out_planes, stride=1):
     return layer.Conv2d(
         in_planes,
         out_planes,
-        kernel_size=3,
+        3,
         stride=stride,
         padding=1,
         bias=False,
@@ -73,18 +73,18 @@ class Bottleneck(layer.Layer):
 
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(Bottleneck, self).__init__()
-        self.conv1 = layer.Conv2d(inplanes, planes, kernel_size=1, bias=False)
+        self.conv1 = layer.Conv2d(inplanes, planes, 1, bias=False)
         self.bn1 = layer.BatchNorm2d(planes)
         self.conv2 = layer.Conv2d(planes,
                                   planes,
-                                  kernel_size=3,
+                                  3,
                                   stride=stride,
                                   padding=1,
                                   bias=False)
         self.bn2 = layer.BatchNorm2d(planes)
         self.conv3 = layer.Conv2d(planes,
                                   planes * self.expansion,
-                                  kernel_size=1,
+                                  1,
                                   bias=False)
         self.bn3 = layer.BatchNorm2d(planes * self.expansion)
 
@@ -129,7 +129,7 @@ class ResNet(model.Model):
         self.dimension = 4
         self.conv1 = layer.Conv2d(num_channels,
                                   64,
-                                  kernel_size=7,
+                                  7,
                                   stride=2,
                                   padding=3,
                                   bias=False)
@@ -148,7 +148,7 @@ class ResNet(model.Model):
             conv = layer.Conv2d(
                 self.inplanes,
                 planes * block.expansion,
-                kernel_size=1,
+                1,
                 stride=stride,
                 bias=False,
             )

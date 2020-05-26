@@ -31,7 +31,10 @@ class LayerMeta(type):
 
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            if (args[0], list):
+            if len(args) == 0:
+                return
+
+            if isinstance(args[0], list):
                 assert len(args) > 0 and isinstance(args[0][0], Tensor), (
                     'initialize function expects PlaceHolders or Tensors')
                 dev = args[0][0].device
@@ -39,6 +42,7 @@ class LayerMeta(type):
                 assert len(args) > 0 and isinstance(args[0], Tensor), (
                     'initialize function expects PlaceHolders or Tensors')
                 dev = args[0].device
+
             prev_state = dev.graph_enabled()
             dev.EnableGraph(False)
             func(self, *args, **kwargs)
@@ -57,6 +61,7 @@ class LayerMeta(type):
 class Layer(object, metaclass=LayerMeta):
 
     sep = '.'
+
     def __init__(self):
         self._name = self.__class__.__name__
         self._unique_name = None
@@ -65,7 +70,6 @@ class Layer(object, metaclass=LayerMeta):
         self._layers = dict()
         self.param_names = []
         self.state_names = []
-        pass
 
     def initialize(self, *input):
         pass
@@ -256,6 +260,7 @@ class Linear(Layer):
             self.device_check(x, self.W, self.b)
         else:
             self.device_check(x, self.W)
+
         assert x.shape[1] == self.W.shape[0], (
             "Linear layer expects input features size %d received %d" %
             (self.W.shape[0], x.shape[1]))
@@ -308,17 +313,14 @@ class Conv2d(Layer):
         # the old code create the layer like: Conv2d(8, 16, 3)， or Conv2d(8, 16, 3, stride=1)
         # the following code block is for backward compatibility
         if len(args) > 0:
-            self.nb_kernels = kernel_size
-            self.kernel_size = args[0]
+            nb_kernels = kernel_size
+            kernel_size = args[0]
         if len(args) > 1:
-            self.stride = args[1]
+            stride = args[1]
         if len(args) > 2:
-            self.padding = args[2]
-
-        self.has_initialized = False
+            padding = args[2]
 
         self.nb_kernels = nb_kernels
-
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
@@ -366,8 +368,6 @@ class Conv2d(Layer):
 
         if dilation != 1:
             raise ValueError("Not implemented yet")
-
-        self.bias = bias
 
         self.inner_params = {
             "cudnn_prefer": "fastest",
@@ -461,6 +461,7 @@ class SeparableConv2d(Layer):
         self,
         nb_kernels,
         kernel_size,
+        *args,
         stride=1,
         padding=0,
         bias=False,
@@ -481,12 +482,20 @@ class SeparableConv2d(Layer):
         """
         super(SeparableConv2d, self).__init__()
 
+        # the following code block is for backward compatibility
+        if len(args) > 0:
+            nb_kernels = kernel_size
+            kernel_size = args[0]
+        if len(args) > 1:
+            stride = args[1]
+        if len(args) > 2:
+            padding = args[2]
+
         self.nb_kernels = nb_kernels
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
         self.bias = bias
-        self.initialize = False
 
     def initialize(self, x):
         self.in_channels = x.shape[1]

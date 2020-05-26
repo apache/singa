@@ -43,13 +43,13 @@ class ModelMeta(layer.LayerMeta):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             if self.graph_mode and self.training:
-                if not self.buffered:
+                if not self._buffered:
                     # buffer operations
                     self._device.EnableGraph(True)
                     self._results = func(self, *args, **kwargs)
                     self._device.Sync()
                     self._device.EnableGraph(False)
-                    self.buffered = True
+                    self._buffered = True
 
                     # deconstruct Operations before running the entire graph
                     if self._results:
@@ -121,10 +121,9 @@ class Model(layer.Layer, metaclass=ModelMeta):
         super(Model, self).__init__()
 
         self.training = True
-        self.buffered = False
         self.graph_mode = True
         self.sequential = False
-        self.initialized = False
+        self._buffered = False
         self._device = get_default_device()
 
         self._results = None
@@ -171,7 +170,6 @@ class Model(layer.Layer, metaclass=ModelMeta):
         """Sets the model in evaluation mode.
         """
         self.train(mode=False)
-        autograd.training = False
 
     def graph(self, mode=True, sequential=False):
         """ Turn on the computational graph. Specify execution mode.

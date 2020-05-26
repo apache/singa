@@ -124,7 +124,7 @@ def run(global_rank,
 
     if model == 'resnet':
         from model import resnet
-        model = resnet.resnet18(num_channels=num_channels,
+        model = resnet.resnet50(num_channels=num_channels,
                                 num_classes=num_classes)
     elif model == 'xceptionnet':
         from model import xceptionnet
@@ -185,8 +185,7 @@ def run(global_rank,
     # attached model to graph
     model.on_device(dev)
     model.set_optimizer(sgd)
-    model.graph(graph, sequential)
-    
+    model.compile([tx], is_train=True, use_graph=graph, sequential=sequential)
     dev.SetVerbosity(verbosity)
 
     # Training and Evaluation Loop
@@ -256,7 +255,7 @@ def run(global_rank,
                   (test_correct / (num_val_batch * batch_size * world_size),
                    time.time() - start_time),
                   flush=True)
-        
+
     dev.PrintTimeProfiling()
 
 
