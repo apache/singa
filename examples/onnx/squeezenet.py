@@ -43,7 +43,7 @@ def preprocess(img):
     img = np.expand_dims(img, axis=0)
     return img
 
-def get_image_labe():
+def get_image_label():
     # download label
     label_url = 'https://s3.amazonaws.com/onnx-model-zoo/synset.txt'
     with open(check_exist_or_download(label_url), 'r') as f:
@@ -83,7 +83,7 @@ if __name__ == "__main__":
 
     # prepare the model
     logging.info("prepare model...")
-    dev = device.get_default_device()
+    dev = device.create_cuda_gpu()
     sg_ir = sonnx.prepare(onnx_model, device=dev)
     autograd.training = False
     model = Infer(sg_ir)
@@ -98,7 +98,7 @@ if __name__ == "__main__":
 
     # inference
     logging.info("preprocessing...")
-    img, labels = get_image_labe()
+    img, labels = get_image_label()
     img = preprocess(img)
 
     logging.info("model running...")
