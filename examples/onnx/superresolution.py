@@ -26,7 +26,7 @@ from singa import tensor
 from singa import autograd
 from singa import sonnx
 import onnx
-from utils import download_model, update_batch_size, check_exist_or_download
+from utils import download_model, update_batch_size
 
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(message)s')
