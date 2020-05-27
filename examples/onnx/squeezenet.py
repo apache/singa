@@ -110,8 +110,8 @@ if __name__ == "__main__":
     scores = tensor.to_numpy(y)
     scores = np.squeeze(scores)
     a = np.argsort(scores)[::-1]
-    # The output needs to be [1,1000,1,1]
-    #a = np.expand_dims(a, axis=0)
-    #print(a.shape)
+    # The guide stated the output needs to be [1,1000,1,1], but here it is [1000,1,1]
+    # The dimension can be expanded if [1,1000,1,1] is desired
+    # a = np.expand_dims(a, axis=0)
     for i in a[0:5]:
         logging.info('class=%s ; probability=%f' % (labels[i], scores[i]))
