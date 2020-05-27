@@ -64,9 +64,7 @@ void Device::RunGraph(bool serial) {
   graph_enabled_ = previous_state;
 }
 
-void Device::PrintTimeProfiling() {
-   graph_->PrintTimeProfiling();
-}
+void Device::PrintTimeProfiling() { graph_->PrintTimeProfiling(); }
 
 // Todo(Wangwei) Get Block From The Memory manager
 Block* Device::NewBlock(int size) {

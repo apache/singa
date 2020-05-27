@@ -104,6 +104,8 @@ void Graph::Reset() {
 
   write_blocks_.clear();
 
+  iteration_ = 0;
+
   dirty_ = false;
 }
 
@@ -249,7 +251,8 @@ void Graph::PrintTimeProfiling() {
             forward = false;
         // when forward becomes false, it starts the backward propagation
 
-        time_elapsed = (nodes_[i]->time_elapsed()) / (iteration_);
+        time_elapsed = (nodes_[i]->time_elapsed()) /
+                       (iteration_ - device_->skip_iteration());
 
         // ss << forward_time << " , " << backward_time << std::endl;
 
@@ -270,19 +273,30 @@ void Graph::PrintTimeProfiling() {
     for (size_t i = 0; i < nodes_.size(); ++i)
       if (nodes_[i]->time_elapsed() > 0)
         ss << "OP_ID" << nodes_[i]->id_ << ". " << nodes_[i]->op_name() << " : "
-           << (nodes_[i]->time_elapsed()) / (iteration_) << " sec"
-           << std::endl;
+           << (nodes_[i]->time_elapsed()) / (iteration_) << " sec" << std::endl;
   }
 
   printf("%s", ss.str().c_str());
 }
 
 void Graph::TimeProfilingDoExec(Node *curNode) {
-  if (device_->verbosity() > 0 && curNode->op_name_ != "Sync")
-    curNode->time_elapsed_inc(
-        device_->TimeProfilingDoExec(std::move(curNode->op_), 0));
+  if ((device_->verbosity() > 0) && (curNode->op_name_ != "Sync") &&
+      (iteration_ >= device_->skip_iteration()))
+    device_->TimeProfilingDoExec(std::move(curNode->op_), 0, curNode);
   else
     device_->DoExec(std::move(curNode->op_), 0);
+}
+
+void Graph::EvaluateTimeElapsed() {
+  if ((device_->verbosity() > 0) && (iteration_ > device_->skip_iteration())) {
+    device_->Sync();
+    for (size_t i = 0; i < nodes_.size(); ++i) {
+      Node *curNode = nodes_[i];
+      if (curNode->op_name_ != "Sync") {
+        device_->EvaluateTimeElapsed(curNode);
+      }
+    }
+  }
 }
 
 void Graph::RunGraph() {
@@ -327,7 +341,7 @@ void Graph::RunGraph() {
 
   // increment iteration counter
   step();
-
+  EvaluateTimeElapsed();
 }
 
 void Graph::RunInSerial() {
@@ -355,7 +369,7 @@ void Graph::RunInSerial() {
 
   // increment iteration counter
   step();
-
+  EvaluateTimeElapsed();
 }
 
 void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,

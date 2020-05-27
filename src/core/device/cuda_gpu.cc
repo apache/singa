@@ -103,27 +103,26 @@ void CudaGPU::SyncBeforeCountingTime() {
   graph_enabled_ = previous_state;
 }
 
-float CudaGPU::TimeProfilingDoExec(function<void(Context*)>&& fn, int executor) {
+void CudaGPU::EvaluateTimeElapsed(Node* node) {
+  float totalTime;
 
-    // time profiling using cudaEvent
-    cudaEvent_t start, end;
-    cudaEventCreate(&start);
-    cudaEventCreate(&end);
+  cudaEventElapsedTime(&totalTime, node->start_, node->end_);
 
-    cudaEventRecord(start, ctx_.stream);
-    fn(&ctx_);
-    cudaDeviceSynchronize();
-    cudaEventRecord(end, ctx_.stream);
+  cudaEventDestroy(node->start_);
+  cudaEventDestroy(node->end_);
 
-    cudaEventSynchronize(end);
-    float totalTime;
-    cudaEventElapsedTime(&totalTime, start, end);
+  node->time_elapsed_inc(totalTime * 0.001);
+}
 
-    cudaEventDestroy(start);
-    cudaEventDestroy(end);
+void CudaGPU::TimeProfilingDoExec(function<void(Context*)>&& fn, int executor,
+                                  Node* node) {
+  // time profiling using cudaEvent
+  cudaEventCreate(&(node->start_));
+  cudaEventCreate(&(node->end_));
 
-    return totalTime * 0.001;  // convert ms to s
-
+  cudaEventRecord(node->start_, ctx_.stream);
+  fn(&ctx_);
+  cudaEventRecord(node->end_, ctx_.stream);
 }
 
 void CudaGPU::CopyToFrom(void* dst, const void* src, size_t nBytes,
