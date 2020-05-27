@@ -157,8 +157,7 @@ class Layer(object, metaclass=LayerMeta):
             if var.device.id() != x_dev_id:
                 var.to_device(x_device)
 
-    def set_attribute(self, attribute_name, attribute_value,
-                          allow_attributes):
+    def set_attribute(self, attribute_name, attribute_value, allow_attributes):
         assert (attribute_name in allow_attributes
                ), "please input allowed attributes."
         assert (attribute_value.shape == self.__dict__[attribute_name].shape
@@ -269,6 +268,7 @@ class Linear(Layer):
             y = autograd.add_bias(y, self.b, axis=0)
         return y
 
+
 class Gemm(Layer):
     """
     Generate a Gemm operator
@@ -276,7 +276,13 @@ class Gemm(Layer):
     B is weight, C is bias
     """
 
-    def __init__(self, out_features, alpha=1.0, beta=1.0, transA=False, transB=True, bias=True):
+    def __init__(self,
+                 out_features,
+                 alpha=1.0,
+                 beta=1.0,
+                 transA=False,
+                 transB=True,
+                 bias=True):
         """
         Args:
             out_channels: int, the channel of output, also is the number of
@@ -294,7 +300,7 @@ class Gemm(Layer):
         self.transA = 1 if transA else 0
         self.transB = 1 if transB else 0
         self.bias = bias
-        
+
         if self.bias:
             self.param_names = ['W', 'b']
         else:
@@ -313,12 +319,18 @@ class Gemm(Layer):
             w_shape = (self.out_features, self.in_features)
         b_shape = (1, self.out_features)
 
-        self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True, device=x.device)
+        self.W = Tensor(shape=w_shape,
+                        requires_grad=True,
+                        stores_grad=True,
+                        device=x.device)
         std = math.sqrt(2.0 / (self.in_features + self.out_features))
         self.W.gaussian(0.0, std)
 
         if self.bias:
-            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True, device=x.device)
+            self.b = Tensor(shape=b_shape,
+                            requires_grad=True,
+                            stores_grad=True,
+                            device=x.device)
             self.b.set_value(0.0)
         else:
             self.b = None
@@ -335,16 +347,18 @@ class Gemm(Layer):
             in_features = x.shape[0]
 
         if self.transB == 0:
-            in_features_w =  self.W.shape[0]
+            in_features_w = self.W.shape[0]
         else:
-            in_features_w =  self.W.shape[1]
+            in_features_w = self.W.shape[1]
 
         assert in_features == in_features_w, (
             "Gemm layer expects input features size %d received %d" %
             (in_features_w, in_features))
-        y = autograd.gemm(x, self.W, self.b, self.alpha, self.beta, self.transA, self.transB)
+        y = autograd.gemm(x, self.W, self.b, self.alpha, self.beta, self.transA,
+                          self.transB)
 
         return y
+
 
 class Conv2d(Layer):
     """
@@ -404,9 +418,6 @@ class Conv2d(Layer):
         self.bias = bias
         self.pad_mode = pad_mode
 
-        assert (self.nb_kernels >= self.group and self.nb_kernels %
-                self.group == 0), "nb_kernels and group dismatched."
-
         if isinstance(kernel_size, int):
             self.kernel_size = (kernel_size, kernel_size)
         elif isinstance(kernel_size, tuple):
@@ -456,12 +467,14 @@ class Conv2d(Layer):
             else:
                 self.inner_params[kwarg] = kwargs[kwarg]
 
+        if self.bias:
+            self.param_names = ['W', 'b']
+        else:
+            self.param_names = ['W']
+        self.state_names = self.param_names
+
     def initialize(self, x):
         self.in_channels = x.shape[1]
-
-        assert (self.group >= 1 and self.in_channels %
-                self.group == 0), "please set reasonable group."
-
         w_shape = (
             self.nb_kernels,
             int(self.in_channels / self.group),
@@ -526,7 +539,14 @@ class Conv2d(Layer):
                     self.group,
                 )
 
+
     def forward(self, x):
+        assert (self.group >= 1 and self.in_channels %
+                self.group == 0), "please set reasonable group."
+
+        assert (self.nb_kernels >= self.group and self.nb_kernels %
+                self.group == 0), "nb_kernels and group dismatched."
+
         y = autograd.conv2d(self.handle, x, self.W, self.b, self.odd_padding)
         return y
 
@@ -536,15 +556,13 @@ class SeparableConv2d(Layer):
     Generate a Conv 2d operator
     """
 
-    def __init__(
-        self,
-        nb_kernels,
-        kernel_size,
-        *args,
-        stride=1,
-        padding=0,
-        bias=False,
-    ):
+    def __init__(self,
+                 nb_kernels,
+                 kernel_size,
+                 *args,
+                 stride=1,
+                 padding=0,
+                 bias=False):
         """
         Args:
             nb_kernels (int): the channel of output, also is the number of filters
@@ -587,9 +605,7 @@ class SeparableConv2d(Layer):
             bias=self.bias,
         )
 
-        self.point_conv = Conv2d(self.nb_kernels,
-                                 1,
-                                 bias=self.bias)
+        self.point_conv = Conv2d(self.nb_kernels, 1, bias=self.bias)
 
     def forward(self, x):
         y = self.depthwise_conv(x)
@@ -602,22 +618,21 @@ class BatchNorm2d(Layer):
     Generate a BatchNorm 2d operator
     """
 
-    def __init__(self, num_features, momentum=0.9):
+    def __init__(self, momentum=0.9):
         """
         Args:
-            num_features (int): int, the channel of input
             momentum (float): Factor used in computing the running mean and
                 variance.
         """
         super(BatchNorm2d, self).__init__()
 
-        self.channels = num_features
         self.momentum = momentum
 
         self.param_names = ['scale', 'bias']
         self.state_names = self.param_names + ['running_mean', 'running_var']
 
     def initialize(self, x):
+        self.channels = x.shape[1]
         param_shape = (self.channels,)
 
         self.scale = Tensor(shape=param_shape,
@@ -778,11 +793,7 @@ class MaxPool2d(Pooling2d):
     Generate a Max Pooling 2d operator
     """
 
-    def __init__(self,
-                 kernel_size,
-                 stride=None,
-                 padding=0,
-                 pad_mode="NOTSET"):
+    def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
         """
         Args:
             kernel_size (int or tuple): kernel size for two direction of each
@@ -806,11 +817,7 @@ class MaxPool2d(Pooling2d):
 
 class AvgPool2d(Pooling2d):
 
-    def __init__(self,
-                 kernel_size,
-                 stride=None,
-                 padding=0,
-                 pad_mode="NOTSET"):
+    def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
         """
         Args:
             kernel_size (int or tuple): kernel size for two direction of each
@@ -837,11 +844,7 @@ class MaxPool1d(Pooling2d):
     Generate a Max Pooling 1d operator
     """
 
-    def __init__(self,
-                 kernel_size,
-                 stride=None,
-                 padding=0,
-                 pad_mode="NOTSET"):
+    def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
         """
         Args:
             kernel_size (int or tuple): kernel size for two direction of each
@@ -870,11 +873,7 @@ class AvgPool1d(Pooling2d):
     Generate a Avg Pooling 1d operator
     """
 
-    def __init__(self,
-                 kernel_size,
-                 stride=None,
-                 padding=0,
-                 pad_mode="NOTSET"):
+    def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
         """
         Args:
             kernel_size (int or tuple): kernel size for two direction of each
