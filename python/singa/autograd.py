@@ -513,6 +513,7 @@ class Clip(Operator):
         self.mask.SetFloatValue(1.0)
 
         if self.min is not None:
+            self.min = float(self.min)
             mask0 = singa.LTFloat(x, self.min)
             mask1 = singa.GEFloat(x, self.min)
             self.mask = singa.__mul__(mask1, self.mask)
@@ -520,6 +521,7 @@ class Clip(Operator):
                               singa.__mul__(mask1, x))
 
         if self.max is not None:
+            self.max = float(self.max)
             mask0 = singa.GTFloat(x, self.max)
             mask1 = singa.LEFloat(x, self.max)
             self.mask = singa.__mul__(mask1, self.mask)
@@ -732,7 +734,7 @@ class Reshape(Operator):
                 (i.e. taken from the input tensor).
         """
         super(Reshape, self).__init__()
-        self.shape = list(shape)
+        self.shape = shape
 
     def forward(self, x):
         """
@@ -742,7 +744,7 @@ class Reshape(Operator):
             the result CTensor
         """
         self._shape = x.shape()
-        shape = self.shape
+        shape = list(self.shape)
         # handle the shape with 0
         shape = [
             self._shape[i]
@@ -751,7 +753,7 @@ class Reshape(Operator):
         ]
         # handle the shape with -1
         hidden_shape = int(np.prod(self._shape) // np.abs(np.prod(shape)))
-        self.cache = [s if s != -1 else hidden_shape for s in shape]
+        self.cache = [int(s) if s != -1 else hidden_shape for s in shape]
         return singa.Reshape(x, self.cache)
 
     def backward(self, dy):
@@ -1348,6 +1350,8 @@ class Concat(Operator):
         Returns:
             a CTensor for the result
         """
+        if self.axis < 0:
+            self.axis = self.axis % len(xs[0].shape())
         if training:
             offset = 0
             self.slice_point = []
@@ -1408,8 +1412,6 @@ class _Conv2d(Operator):
         super(_Conv2d, self).__init__()
         self.handle = handle
         self.odd_padding = odd_padding
-        if self.odd_padding != (0, 0, 0, 0):
-            self.re_new_handle = True
 
     def forward(self, x, W, b=None):
         """
@@ -1620,8 +1622,6 @@ class _Pooling2d(Operator):
         super(_Pooling2d, self).__init__()
         self.handle = handle
         self.odd_padding = odd_padding
-        if self.odd_padding != (0, 0, 0, 0):
-            self.re_new_handle = True
 
     def forward(self, x):
         """
@@ -3538,7 +3538,10 @@ def gemm(A, B, C=None, alpha=1.0, beta=1.0, transA=0, transB=0):
     Returns:
         Tensor, the output
     """
-    return Gemm(alpha, beta, transA, transB)(A, B, C)[0]
+    if C:
+        return Gemm(alpha, beta, transA, transB)(A, B, C)[0]
+    else:
+        return Gemm(alpha, beta, transA, transB)(A, B)[0]
 
 
 class GlobalAveragePool(Operator):
@@ -3935,6 +3938,7 @@ class Slice(Operator):
         if self.steps is None:
             self.steps = [1] * len(x_shape)  # steps = None
         for idx, axis in enumerate(self.axes):
+            axis = int(axis)
             start, end, step = self.starts[idx], self.ends[idx], self.steps[idx]
             if end > x_shape[axis]:
                 end = x_shape[axis]
@@ -4161,7 +4165,7 @@ class Gather(Operator):
                 _slice_shape.insert(self.axis, 1)  # add a new axis to concat
                 tmp_tensor = singa.Reshape(tmp_tensor, _slice_shape)
             else:
-                indice = indice % _shape
+                indice = int(indice % _shape)
                 tmp_tensor = singa.SliceOn(x, indice, indice + 1, self.axis)
             xs.append(tmp_tensor)
         xs = singa.VecTensor(xs)

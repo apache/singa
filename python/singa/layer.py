@@ -285,15 +285,16 @@ class Gemm(Layer):
     """
 
     def __init__(self,
-                 out_features,
+                 nb_kernels,
                  alpha=1.0,
                  beta=1.0,
                  transA=False,
                  transB=True,
-                 bias=True):
+                 bias=True,
+                 bias_shape=None):
         """
         Args:
-            out_channels: int, the channel of output, also is the number of
+            nb_kernels: int, the channel of output, also is the number of
                 filters
             alpha (float): Scalar multiplier for the product of input tensors A * B.
             beta (float): Scalar multiplier for input tensor C.
@@ -302,12 +303,13 @@ class Gemm(Layer):
             bias: bool
         """
         super(Gemm, self).__init__()
-        self.out_features = out_features
+        self.nb_kernels = nb_kernels
         self.alpha = alpha
         self.beta = beta
         self.transA = 1 if transA else 0
         self.transB = 1 if transB else 0
         self.bias = bias
+        self.bias_shape = bias_shape
 
         if self.bias:
             self.param_names = ['W', 'b']
@@ -322,16 +324,20 @@ class Gemm(Layer):
             self.in_features = x.shape[0]
 
         if self.transB == 0:
-            w_shape = (self.in_features, self.out_features)
+            w_shape = (self.in_features, self.nb_kernels)
         else:
-            w_shape = (self.out_features, self.in_features)
-        b_shape = (1, self.out_features)
+            w_shape = (self.nb_kernels, self.in_features)
+
+        if self.bias_shape:
+            b_shape = self.bias_shape
+        else:
+            b_shape = (1, self.nb_kernels)
 
         self.W = Tensor(shape=w_shape,
                         requires_grad=True,
                         stores_grad=True,
                         device=x.device)
-        std = math.sqrt(2.0 / (self.in_features + self.out_features))
+        std = math.sqrt(2.0 / (self.in_features + self.nb_kernels))
         self.W.gaussian(0.0, std)
 
         if self.bias:
