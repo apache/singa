@@ -114,6 +114,12 @@ class Model(layer.Layer, metaclass=ModelMeta):
 
     """
 
+    # save load states constant
+    TENSOR_DICT_FILENAME = '/tensor_dict.npz'
+    STATES_ATTR_FILENAME = '/states_attr.json'
+    MODEL_STATE_TYPE = 0
+    AUX_STATE_TYPE = 1
+
     def __init__(self):
         """
         Initializes internal Model state
@@ -127,9 +133,6 @@ class Model(layer.Layer, metaclass=ModelMeta):
         self._device = get_default_device()
 
         self._results = None
-
-        self.tensor_dict_filename = '/tensor_dict.npz'
-        self.states_attr_filename = '/states_attr.json'
 
     def compile(self, inputs, is_train=True, use_graph=False, sequential=False):
         self._device.EnableGraph(True)
@@ -218,27 +221,27 @@ class Model(layer.Layer, metaclass=ModelMeta):
         assert not os.path.isfile(fpath), (
             "Failed to save states, %s is already existed." % fpath)
 
-        states = dict()
-        states.update(self.get_states())
-        # TODO: need to add aux states loading handler in load_states()
-        #   for example, if aux states include optimizer states, then
-        #   need to load opt states in load_states also
-        states.update(aux_states)
+        states = self.get_states()
 
         # save states data and attr
         tensor_dict = {}
         states_attr = {}
         for k, v in states.items():
-            if isinstance(v, tensor.Tensor):
-                tensor_dict[k] = tensor.to_numpy(v)
-                states_attr[k] = {'shape': v.shape, 'dtype': v.dtype}
+            assert isinstance(v, tensor.Tensor), "Only tensor state is allowed"
+            tensor_dict[k] = tensor.to_numpy(v)
+            states_attr[k] = {'state_type':self.MODEL_STATE_TYPE, 'shape': v.shape, 'dtype': v.dtype}
+
+        for k, v in aux_states.items():
+            assert isinstance(v, tensor.Tensor), "Only tensor aux state is allowed"
+            tensor_dict[k] = tensor.to_numpy(v)
+            states_attr[k] = {'state_type':self.AUX_STATE_TYPE, 'shape': v.shape, 'dtype': v.dtype}
 
         # save to files
         timestamp = time.time()
         tmp_dir = '/tmp/singa_save_states_%s' % timestamp
         os.mkdir(tmp_dir)
-        tensor_dict_fp = tmp_dir + self.tensor_dict_filename
-        states_attr_fp = tmp_dir + self.states_attr_filename
+        tensor_dict_fp = tmp_dir + self.TENSOR_DICT_FILENAME
+        states_attr_fp = tmp_dir + self.STATES_ATTR_FILENAME
 
         np.savez(tensor_dict_fp, **tensor_dict)
 
@@ -283,8 +286,8 @@ class Model(layer.Layer, metaclass=ModelMeta):
         with zipfile.ZipFile(fpath, 'r') as zf:
             zf.extractall(tmp_dir)
 
-        tensor_dict_fp = tmp_dir + self.tensor_dict_filename
-        states_attr_fp = tmp_dir + self.states_attr_filename
+        tensor_dict_fp = tmp_dir + self.TENSOR_DICT_FILENAME
+        states_attr_fp = tmp_dir + self.STATES_ATTR_FILENAME
 
         with open(states_attr_fp) as f:
             states_attr = json.load(f)
@@ -292,15 +295,20 @@ class Model(layer.Layer, metaclass=ModelMeta):
         tensor_dict = np.load(tensor_dict_fp)
 
         # restore singa tensor from numpy
-        states = dict()
-        for k in tensor_dict.files:
-            states[k] = tensor.from_numpy(tensor_dict[k])
+        model_states = dict()
+        aux_states = dict()
 
-        # restore states
-        self.set_states(states)
+        for k in tensor_dict.files:
+            if states_attr[k]['state_type'] == self.MODEL_STATE_TYPE:
+                model_states[k] = tensor.from_numpy(tensor_dict[k])
+            elif states_attr[k]['state_type'] == self.AUX_STATE_TYPE:
+                aux_states[k] = tensor.from_numpy(tensor_dict[k])
+
+        # restore model_states
+        self.set_states(model_states)
 
         # clean up tmp files
         os.remove(tensor_dict_fp)
         os.remove(states_attr_fp)
         os.rmdir(tmp_dir)
-        return
+        return aux_states
