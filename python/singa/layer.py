@@ -512,19 +512,23 @@ class Conv2d(Layer):
         if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
             self.padding, self.odd_padding = utils.get_padding_shape(
                 self.pad_mode, x.shape[2:], self.kernel_size, self.stride)
+            self.padding = [self.padding[0], self.padding[2]]
 
+        _x = x
         if self.odd_padding != (0, 0, 0, 0):
-            x = x.clone()
-            x.data = utils.handle_odd_pad_fwd(x.data, self.odd_padding)
+            x_shape = list(x.data.shape())
+            x_shape[2] += (self.odd_padding[0] + self.odd_padding[1])
+            x_shape[3] += (self.odd_padding[2] + self.odd_padding[3])
+            _x = Tensor(shape=x_shape, device=x.device)
+            _x.set_value(0.0)
 
-        if x.device.id() == -1:
+        if _x.device.id() == -1:
             if self.group != 1:
                 raise ValueError("Not implemented yet")
             else:
-                if (not hasattr(self, "handle")) or (x.shape[0] !=
-                                                     self.handle.batchsize):
+                if not hasattr(self, "handle"):
                     self.handle = singa.ConvHandle(
-                        x.data,
+                        _x.data,
                         self.kernel_size,
                         self.stride,
                         self.padding,
@@ -534,10 +538,9 @@ class Conv2d(Layer):
                         self.group,
                     )
         else:
-            if (not hasattr(self,
-                            "handle")) or (x.shape[0] != self.handle.batchsize):
+            if not hasattr(self, "handle"):
                 self.handle = singa.CudnnConvHandle(
-                    x.data,
+                    _x.data,
                     self.kernel_size,
                     self.stride,
                     self.padding,
@@ -546,7 +549,6 @@ class Conv2d(Layer):
                     self.bias,
                     self.group,
                 )
-
 
     def forward(self, x):
         assert (self.group >= 1 and self.in_channels %
@@ -767,16 +769,23 @@ class Pooling2d(Layer):
             self.padding, self.odd_padding = utils.get_padding_shape(
                 self.pad_mode, x.shape[2:], self.kernel_size, self.stride)
 
-        out_shape_h = (int(
-            (x.shape[2] + 2 * self.padding[0] - self.kernel_size[0]) //
-            self.stride[0]) + 1)
-        out_shape_w = (int(
-            (x.shape[3] + 2 * self.padding[1] - self.kernel_size[1]) //
-            self.stride[1]) + 1)
+        # if same pad mode, re-compute the padding
+        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
+            self.padding, self.odd_padding = utils.get_padding_shape(
+                self.pad_mode, x.shape[2:], self.kernel_size, self.stride)
+            self.padding = [self.padding[0], self.padding[2]]
 
-        if x.device.id() == -1:
+        _x = x
+        if self.odd_padding != (0, 0, 0, 0):
+            x_shape = list(x.data.shape())
+            x_shape[2] += (self.odd_padding[0] + self.odd_padding[1])
+            x_shape[3] += (self.odd_padding[2] + self.odd_padding[3])
+            _x = Tensor(shape=x_shape, device=x.device)
+            _x.set_value(0.0)
+
+        if _x.device.id() == -1:
             self.handle = singa.PoolingHandle(
-                x.data,
+                _x.data,
                 self.kernel_size,
                 self.stride,
                 self.padding,
@@ -784,7 +793,7 @@ class Pooling2d(Layer):
             )
         else:
             self.handle = singa.CudnnPoolingHandle(
-                x.data,
+                _x.data,
                 self.kernel_size,
                 self.stride,
                 self.padding,

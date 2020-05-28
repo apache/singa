@@ -192,14 +192,14 @@ class TestPythonOperation(unittest.TestCase):
         self._conv_same_pad(gpu_dev, "SAME_LOWER", True)
         self._conv_same_pad(gpu_dev, "SAME_UPPER", True)
 
-    # def test_conv1d_same_pad_cpu(self):
-    #     self._conv_same_pad(cpu_dev, "SAME_LOWER", False)
-    #     self._conv_same_pad(cpu_dev, "SAME_UPPER", False)
+    def test_conv1d_same_pad_cpu(self):
+        self._conv_same_pad(cpu_dev, "SAME_LOWER", False)
+        self._conv_same_pad(cpu_dev, "SAME_UPPER", False)
 
-    # @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
-    # def test_conv1d_same_pad_gpu(self):
-    #     self._conv_same_pad(gpu_dev, "SAME_LOWER", False)
-    #     self._conv_same_pad(gpu_dev, "SAME_UPPER", False)
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_conv1d_same_pad_gpu(self):
+        self._conv_same_pad(gpu_dev, "SAME_LOWER", False)
+        self._conv_same_pad(gpu_dev, "SAME_UPPER", False)
 
     def _pooling_same_pad(self, dev, pad_mode, is_2d):
         if is_2d:
@@ -240,14 +240,14 @@ class TestPythonOperation(unittest.TestCase):
         self._pooling_same_pad(gpu_dev, "SAME_LOWER", True)
         self._pooling_same_pad(gpu_dev, "SAME_UPPER", True)
 
-    # def test_pooling1d_same_pad_cpu(self):
-    #     self._pooling_same_pad(cpu_dev, "SAME_LOWER", False)
-    #     self._pooling_same_pad(cpu_dev, "SAME_UPPER", False)
+    def test_pooling1d_same_pad_cpu(self):
+        self._pooling_same_pad(cpu_dev, "SAME_LOWER", False)
+        self._pooling_same_pad(cpu_dev, "SAME_UPPER", False)
 
-    # @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
-    # def test_pooling1d_same_pad_gpu(self):
-    #    self._pooling_same_pad(gpu_dev, "SAME_LOWER", False)
-    #    self._pooling_same_pad(gpu_dev, "SAME_UPPER", False)
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_pooling1d_same_pad_gpu(self):
+        self._pooling_same_pad(gpu_dev, "SAME_LOWER", False)
+        self._pooling_same_pad(gpu_dev, "SAME_UPPER", False)
 
     def _sum_helper(self, dev):
         x = np.array([0.1, -1.0, 0.4, 4.0, -0.9,

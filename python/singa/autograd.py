@@ -1633,10 +1633,6 @@ class _Pooling2d(Operator):
         assert x.nDim() == 4, "The dimensions of input should be 4D."
         if self.odd_padding != (0, 0, 0, 0):
             x = utils.handle_odd_pad_fwd(x, self.odd_padding)
-            # re-new a handle with updated x
-            if self.re_new_handle:
-                self.re_new_handle = False
-                self.handle = utils.re_new_handle(self.handle, x, True)
 
         if (type(self.handle) != singa.PoolingHandle):
             y = singa.GpuPoolingForward(self.handle, x)
@@ -4512,7 +4508,6 @@ def onehot(axis, indices, depth, values):
 ''' alias for Operator and Layers
 '''
 Operation = Operator
-
 ''' import layer at the end to resolve circular import
 '''
 from singa import layer
