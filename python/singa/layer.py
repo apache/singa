@@ -46,6 +46,14 @@ class LayerMeta(type):
             prev_state = dev.graph_enabled()
             dev.EnableGraph(False)
             func(self, *args, **kwargs)
+
+            # sanitize the dev of params/states init-ed
+            for s in self.state_names:
+                if isinstance(args[0], list):
+                    self.device_check(args[0][0], self.__dict__[s])
+                else:
+                    self.device_check(args[0], self.__dict__[s])
+
             self._initialzied = True
             dev.EnableGraph(prev_state)
 
