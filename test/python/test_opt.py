@@ -73,9 +73,9 @@ class TestOpt(unittest.TestCase):
         w_shape=(2,3)
         w = tensor.Tensor(w_shape, device=dev).set_value(0.1)
         g = tensor.Tensor(w_shape, device=dev).set_value(0.01)
-        sgd1.apply(w, g)
+        sgd1.apply(w, w, g)
         sgd1.step()
-        sgd1.apply(w, g)
+        sgd1.apply(w, w, g)
         sgd1.step()
 
         _ = sgd1.get_states()

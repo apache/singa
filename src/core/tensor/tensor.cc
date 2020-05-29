@@ -205,7 +205,7 @@ Tensor &Tensor::ToHost() {
 
 template <typename DType>
 void Tensor::CopyDataFromHostPtr(const DType *src, const size_t num,
-                                 const size_t offset) {
+                                 const size_t offset) const {
   CHECK_EQ(sizeof(DType), SizeOf(data_type_))
       << "data_type is " << DataType_Name(data_type_)
       << " user given type is of size " << sizeof(DType);
@@ -218,11 +218,11 @@ void Tensor::CopyDataFromHostPtr(const DType *src, const size_t num,
 }
 template void Tensor::CopyDataFromHostPtr(const unsigned char *src,
                                           const size_t num,
-                                          const size_t offset);
+                                          const size_t offset) const;
 template void Tensor::CopyDataFromHostPtr(const float *src, const size_t num,
-                                          const size_t offset);
+                                          const size_t offset) const;
 template void Tensor::CopyDataFromHostPtr(const int *src, const size_t num,
-                                          const size_t offset);
+                                          const size_t offset) const;
 
 void Tensor::CopyData(const Tensor &src) {
   CHECK_EQ(Size(), src.Size());
@@ -762,7 +762,7 @@ template void Tensor::SetValue<float>(const float x);
 template void Tensor::SetValue<int>(const int x);
 
 template <typename SType>
-void Tensor::get_value(SType *value, const size_t num) {
+void Tensor::get_value(SType *value, const size_t num) const {
   CHECK(device_ == defaultDevice);
   Tensor t(shape_, device_, data_type_);
   // transform function arrange data in memory considering stride
@@ -770,16 +770,16 @@ void Tensor::get_value(SType *value, const size_t num) {
   auto ptr = static_cast<const SType *>(t.block()->data());
   for (size_t i = 0; i < num; i++) value[i] = ptr[i];
 }
-template void Tensor::get_value<float>(float *value, const size_t num);
-template void Tensor::get_value<int>(int *value, const size_t num);
+template void Tensor::get_value<float>(float *value, const size_t num) const;
+template void Tensor::get_value<int>(int *value, const size_t num) const;
 
 // DEPRECATED
 template <typename SType>
-void Tensor::GetValue(SType *value, const size_t num) {
+void Tensor::GetValue(SType *value, const size_t num) const {
   get_value(value, num);
 }
-template void Tensor::GetValue<float>(float *value, const size_t num);
-template void Tensor::GetValue<int>(int *value, const size_t num);
+template void Tensor::GetValue<float>(float *value, const size_t num) const;
+template void Tensor::GetValue<int>(int *value, const size_t num) const;
 
 #define EltwiseUnaryTensorFn(fn, t, ret)                               \
   do {                                                                 \
@@ -789,7 +789,7 @@ template void Tensor::GetValue<int>(int *value, const size_t num);
           [t, retRef](Context *ctx) mutable {                          \
             fn<DType, Lang>(t, &retRef, ctx);                          \
           },                                                           \
-          {t.block()}, {ret->block()}, #fn);                                \
+          {t.block()}, {ret->block()}, #fn);                           \
     });                                                                \
   } while (0)
 
@@ -922,7 +922,7 @@ Tensor SoftMaxBackward(const Tensor &in, int axis, const Tensor &fdout) {
           [lhs, rhs, retRef](Context *ctx) mutable {                       \
             fn<DType, Lang>(lhs, rhs, &retRef, ctx);                       \
           },                                                               \
-          {lhs.block(), rhs.block()}, {ret->block()}, #fn);               \
+          {lhs.block(), rhs.block()}, {ret->block()}, #fn);                \
     });                                                                    \
   } while (0)
 
@@ -977,7 +977,7 @@ GenBinaryTensorFn(ReLUBackward, ReLUBackward);
           [t, x, retRef](Context *ctx) mutable {                        \
             fn<DType, Lang>(t, x, &retRef, ctx);                        \
           },                                                            \
-          {t.block()}, {ret->block()}, #fn);                                 \
+          {t.block()}, {ret->block()}, #fn);                            \
     });                                                                 \
   } while (0)
 
@@ -1444,6 +1444,23 @@ void Axpy(const SType alpha, const Tensor &in, Tensor *out) {
 }
 
 template void Axpy<float>(const float alpha, const Tensor &in, Tensor *out);
+
+void Axpy(const Tensor &alpha, const Tensor &in, Tensor *out) {
+  TYPE_SWITCH(alpha.data_type(), SType, {
+    TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
+      Tensor &outRef = *out;
+      Tensor fake(*out);
+      out->device()->Exec(
+          [alpha, in, outRef, fake](Context *ctx) mutable {
+            SType value;
+            alpha.CopyDataFromHostPtr(&value, 1, 0);
+            auto a = TypeCast<SType, DType>(value);
+            Axpy<DType, Lang>(a, in, &outRef, ctx);
+          },
+          {alpha.block(), in.block(), out->block()}, {out->block()}, "Axpy");
+    });
+  });
+}
 
 Tensor Mult(const Tensor &A, const Tensor &B) {
   Shape s;
