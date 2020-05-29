@@ -32,8 +32,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(message)s')
 
 
 def preprocess(img):
-    img = img.resize((224, 224))
-    img = img.crop((0, 0, 224, 224))
+    img = img.resize((256, 256))
+    img = img.crop((16, 16, 240, 240))
     img = np.array(img).astype(np.float32) / 255.
     img = np.rollaxis(img, 2, 0)
     for channel, mean, std in zip(range(3), [0.485, 0.456, 0.406],
@@ -43,8 +43,7 @@ def preprocess(img):
     img = np.expand_dims(img, axis=0)
     return img
 
-
-def get_image_label():
+def get_image_labe():
     # download label
     label_url = 'https://s3.amazonaws.com/onnx-model-zoo/synset.txt'
     with open(check_exist_or_download(label_url), 'r') as f:
@@ -54,7 +53,6 @@ def get_image_label():
     image_url = 'https://s3.amazonaws.com/model-server/inputs/kitten.jpg'
     img = Image.open(check_exist_or_download(image_url))
     return img, labels
-
 
 class Infer:
 
@@ -72,13 +70,13 @@ class Infer:
 
 if __name__ == "__main__":
 
-    url = 'https://github.com/onnx/models/raw/master/vision/classification/squeezenet/model/squeezenet1.1-7.tar.gz'
+    url = 'https://github.com/onnx/models/raw/master/vision/classification/shufflenet/model/shufflenet-v2-10.tar.gz'
     download_dir = '/tmp/'
-    model_path = os.path.join(download_dir, 'squeezenet1.1',
-                              'squeezenet1.1.onnx')
+    model_path = os.path.join(download_dir, 'model', 'test_shufflenetv2', 'model.onnx')
 
     logging.info("onnx load model...")
     download_model(url)
+    '''
     onnx_model = onnx.load(model_path)
 
     # set batch size
@@ -86,23 +84,22 @@ if __name__ == "__main__":
 
     # prepare the model
     logging.info("prepare model...")
-    dev = device.create_cuda_gpu()
+    dev = device.get_default_device()
     sg_ir = sonnx.prepare(onnx_model, device=dev)
     autograd.training = False
     model = Infer(sg_ir)
 
-    # verify the test
-    from utils import load_dataset
-    inputs, ref_outputs = load_dataset(
-        os.path.join('/tmp', 'squeezenet1.1', 'test_data_set_0'))
-    x_batch = tensor.Tensor(device=dev, data=inputs[0])
-    outputs = model.forward(x_batch)
-    for ref_o, o in zip(ref_outputs, outputs):
-        np.testing.assert_almost_equal(ref_o, tensor.to_numpy(o), 4)
+    # verifty the test
+    # from utils import load_dataset
+    # inputs, ref_outputs = load_dataset(os.path.join('/tmp', 'resnet18v1', 'test_data_set_0'))
+    # x_batch = tensor.Tensor(device=dev, data=inputs[0])
+    # outputs = model.forward(x_batch)
+    # for ref_o, o in zip(ref_outputs, outputs):
+    #     np.testing.assert_almost_equal(ref_o, tensor.to_numpy(o), 4)
 
     # inference
     logging.info("preprocessing...")
-    img, labels = get_image_label()
+    img, labels = get_image_labe()
     img = preprocess(img)
 
     logging.info("model running...")
@@ -116,3 +113,4 @@ if __name__ == "__main__":
     a = np.argsort(scores)[::-1]
     for i in a[0:5]:
         logging.info('class=%s ; probability=%f' % (labels[i], scores[i]))
+    '''
