@@ -465,8 +465,8 @@ class Conv2d(Layer):
                 )
             else:
                 raise TypeError("Wrong padding value.")
-
-        if dilation != 1:
+        
+        if dilation != 1 and list(dilation) != [1, 1]:
             raise ValueError("Not implemented yet")
 
         self.inner_params = {
