@@ -18,9 +18,33 @@
 It replaces the old optimizers from optimizer.py'''
 
 from singa import tensor
+from singa.tensor import Tensor
 from singa import autograd
 from . import singa_wrap as singa
 
+from deprecated import deprecated
+
+class DecayScheduler:
+    # to be used for decaying learning rate or regularization coefficient or momentum, etc.
+    def __init__(self, init_value):
+        self.init_value = init_value
+
+    def __call__(self, step):
+        assert isinstance(step, Tensor)
+        return self.call(step)
+
+    def call(self, step) -> Tensor:
+        # step is a Tensor with a single scalar value
+        # return the current value as a Tensor
+        raise NotImplementedError
+
+class Constant(DecayScheduler):
+    def call(self, step: Tensor) -> Tensor:
+        return Tensor((1,), step.device).set_value(self.init_value)
+
+
+class ExponentialDecay(DecayScheduler):
+    pass
 
 class Optimizer(object):
     """Base optimizer.
@@ -28,13 +52,48 @@ class Optimizer(object):
     Args:
         config (Dict): specify the default values of configurable variables.
     """
+    def __init__(self, lr):
+        """lr could be a constant scalar or a learning rate scheduler"""
+        if type(lr) == float:
+            self.lr = Constant(lr)
+        # TODO
+        # elif lr is a DecayScheduler:
+            # self.lr = lr
 
-    def __init__(self, config):
-        self.default_config = config
-        self.iter = 0
-        self.param2config = {}
-        self.param2state = {}
+        self.step_counter = Tensor((1, ))
+        self.step_counter.set_value(0)
+        self.lr_value = self.lr(self.step_counter)
 
+    def get_states(self):
+        # skip DecayScheduler as it does not have persistent states
+        return {'step_counter': tensor.to_numpy(self.step_counter)[0]}
+
+    def set_states(self, states):
+        self.step_counter = Tensor((1, ))
+        self.step_counter.set_value(states['step_counter'])
+        self.lr_value = self.lr(self.step_counter)
+
+    def __call__(loss):
+        self.call(loss)
+        self.step()
+
+    def call(self, loss):
+        for p, g in autograd.backward(loss):
+            if p.name is None:
+                p.name = id(p)
+            self.apply(p.name, p, g)
+
+    def step(self):
+        """To increment the step counter, update lr"""
+        self.step_counter += 1
+        self.lr_value = self.lr(self.step_counter)
+
+    def apply(self, param_name, param_value, param_grad):
+        """ update the pvalue inplace using pgrad, lr_value and mom_value
+        """
+        raise NotImplementedError
+
+    @deprecated(reason="Update is deprecated, use __call__() to do update, refer to __call__ for more details.")
     def update(self, param, grad):
         """Update the param values with given gradients.
 
@@ -45,28 +104,10 @@ class Optimizer(object):
         """
         pass
 
-    def step(self):
-        """To increment the step counter"""
-        self.iter += 1
-
-    def register(self, param_group, config):
-        for param in param_group:
-            assert param not in self.param2config, 'param is already registered'
-
-            self.param2config[param] = config
-
-    def load(self):
-        pass
-
-    def save(self):
-        pass
-
-
 class SGD(Optimizer):
     """Implements stochastic gradient descent (optionally with momentum).
 
-    Nesterov momentum is based on the formula from
-    `On the importance of initialization and momentum in deep learning`__.
+    Nesterov momentum is based on the formula from `On the importance of initialization and momentum in deep learning`__.
 
     Args:
         lr(float): learning rate
@@ -104,30 +145,29 @@ class SGD(Optimizer):
 
         The Nesterov version is analogously modified.
     """
-
     def __init__(self,
-                 lr=0.1,
-                 momentum=0,
-                 dampening=0,
-                 weight_decay=0,
-                 nesterov=False):
-        if momentum < 0.0:
-            raise ValueError("Invalid momentum value: {}".format(momentum))
-        if weight_decay < 0.0:
-            raise ValueError(
-                "Invalid weight_decay value: {}".format(weight_decay))
+         lr=0.1,
+         momentum=0,
+         dampening=0,
+         weight_decay=0,
+         nesterov=False):
+        super(SGD, self).__init__(lr)
 
-        defaults = dict(lr=lr,
-                        momentum=momentum,
-                        dampening=dampening,
-                        weight_decay=weight_decay,
-                        nesterov=nesterov)
-        if nesterov and (momentum <= 0 or dampening != 0):
-            raise ValueError(
-                "Nesterov momentum requires a momentum and zero dampening")
-        super(SGD, self).__init__(defaults)
+        # momentum decay scheduler
+        self.momentum = None
+        if momentum > 0 or isinstance(momentum, DecayScheduler):
+            if type(momentum) == float:
+                self.momentum = Constant(momentum)
+            # momentum value tensor
+            self.mom_value = self.momentum(self.step_counter)
+            # buffer moment for each param
+            self.moments = dict()
 
-    def update(self, param, grad):
+            self.dampening = Constant(dampening)
+            self.dam_value = self.dampening(self.step_counter)
+
+
+    def apply(self, param, grad):
         """Performs a single optimization step.
 
         Args:
@@ -137,38 +177,58 @@ class SGD(Optimizer):
         """
         assert param.shape == grad.shape, ("shape mismatch", param.shape,
                                            grad.shape)
-        group = self.default_config
-        if param in self.param2config:
-            group = self.param2config[param]
-        weight_decay = group['weight_decay']
-        momentum = group['momentum']
-        dampening = group['dampening']
-        nesterov = group['nesterov']
 
-        if weight_decay != 0:
-            singa.Axpy(weight_decay, param.data, grad.data)
-        if momentum != 0:
-            if param not in self.param2state:
-                self.param2state[param] = {}
-            param_state = self.param2state[param]
-            if 'momentum_buffer' not in param_state:
+        # TODO
+        # if weight_decay != 0:
+        #     singa.Axpy(weight_decay, param.data, grad.data)
+
+        if self.momentum:
+            # not buffered
+            mom_value = float(self.mom_value.data.GetFloatValue(1)[0])
+            if param not in self.moments:
                 flag = param.device.graph_enabled()
                 param.device.EnableGraph(False)
-                buf = param_state['momentum_buffer'] = tensor.zeros_like(param)
+
+                buf = self.moments[param] = tensor.zeros_like(param)
+
                 param.device.EnableGraph(flag)
 
-                buf *= momentum
+                buf *= mom_value
                 singa.Axpy(1.0, grad.data, buf.data)
             else:
-                buf = param_state['momentum_buffer']
-                buf *= momentum
-                singa.Axpy(1.0 - dampening, grad.data, buf.data)
-            if nesterov:
-                singa.Axpy(momentum, buf.data, grad.data)
-            else:
-                grad = buf
-        singa.Axpy(-group['lr'], grad.data, param.data)
+                dam_value = float(self.dam_value.data.GetFloatValue(1)[0])
+                buf = self.moments[param]
+                buf *= mom_value
+                singa.Axpy(1.0 - dam_value, grad.data, buf.data)
 
+            # TODO
+            # if nesterov:
+            #     singa.Axpy(self.mom_value, buf.data, grad.data)
+            # else:
+            #     grad = buf
+
+        lr_value = float(self.lr_value.data.GetFloatValue(1)[0])
+        singa.Axpy(-lr_value, grad.data, param.data)
+
+    def step(self):
+        """ increment step counter, lr and moment"""
+        super().step()
+        self.mom_value = self.momentum(self.step_counter)
+
+
+    def get_states(self):
+        states = super().get_states()
+        if self.mom_value > 0:
+            states['moments'] = self.moments # a dict for 1st order moments tensors
+        return states
+
+    def set_states(self, states):
+        super().set_states(states)
+        if 'moments' in states:
+            self.moments = states['moments']
+            self.mom_value = self.momentum(self.step_counter)
+
+    @deprecated(reason="Update is deprecated, use __call__() to do update, refer to __call__ for more details.")
     def backward_and_update(self, loss):
         """Performs backward propagation from the loss and parameter update.
 
@@ -181,7 +241,7 @@ class SGD(Optimizer):
                 softmax_cross_entropy function.
         """
         for p, g in autograd.backward(loss):
-            self.update(p, g)
+            self.apply(p, g)
 
 
 class DistOpt(object):
