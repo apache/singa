@@ -92,13 +92,13 @@ if __name__ == "__main__":
     model = Infer(sg_ir)
 
     # verify the test
-    from utils import load_dataset
-    inputs, ref_outputs = load_dataset(
-        os.path.join('/tmp', 'squeezenet1.1', 'test_data_set_0'))
-    x_batch = tensor.Tensor(device=dev, data=inputs[0])
-    outputs = model.forward(x_batch)
-    for ref_o, o in zip(ref_outputs, outputs):
-        np.testing.assert_almost_equal(ref_o, tensor.to_numpy(o), 4)
+    # from utils import load_dataset
+    # inputs, ref_outputs = load_dataset(
+    #     os.path.join('/tmp', 'squeezenet1.1', 'test_data_set_0'))
+    # x_batch = tensor.Tensor(device=dev, data=inputs[0])
+    # outputs = model.forward(x_batch)
+    # for ref_o, o in zip(ref_outputs, outputs):
+    #     np.testing.assert_almost_equal(ref_o, tensor.to_numpy(o), 4)
 
     # inference
     logging.info("preprocessing...")
