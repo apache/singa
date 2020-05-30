@@ -25,20 +25,25 @@ cxx_compiler_version:       # [linux]
 CONDA_BUILD_SYSROOT:
     - "/tmp/MacOSX10.9.sdk" # [osx]
 cudnn:                      # [linux]
-    - "7.3.1 cuda10.0_0"    # [environ.get("CUDA")=="10.0"]
-    - "7.3.1 cuda9.0_0"     # [environ.get("CUDA")=="9.0"]
+    - "7.6.5 cuda10.2_0"    # [environ.get("CUDA")=="10.2"]
+    - "7.6.5 cuda10.0_0"    # [environ.get("CUDA")=="10.0"]
+    - "7.6.5 cuda9.0_0"     # [environ.get("CUDA")=="9.0"]
 dnnl:
     - 1.1
 python:
     - 3.6
     - 3.7
 nccl:
-    - 2.4.8.1
+    - 2.6.4.1               # [environ.get("CUDA")=="10.2"]
+    - 2.4.8.1               # [environ.get("CUDA")=="10.0"]
+    - 2.4.8.1               # [environ.get("CUDA")=="9.0"]
 mpich:
     - 3.3.2
 build_str:
-    - "cudnn7.3.1_cuda10.0"   # [environ.get("CUDA")=="10.0"] && [environ.get("DIST")=="OFF"]
-    - "cudnn7.3.1_cuda9.0"    # [environ.get("CUDA")=="9.0"] && [environ.get("DIST")=="OFF"]
-    - "cpu"              # [environ.get("CUDA", "")== ""]
-    - "cudnn7.3.1_cuda10.0_nccl2.4.8.1_mpich3.3.2"     # [environ.get("CUDA")=="10.0"] && [environ.get("DIST")=="ON"]
-    - "cudnn7.3.1_cuda9.0_nccl2.4.8.1_mpich3.3.2"     # [environ.get("CUDA")=="9.0"] && [environ.get("DIST")=="ON"]
+    - "cudnn7.6.5_cuda10.2"   # [environ.get("CUDA")=="10.2"] && [environ.get("DIST")=="OFF"]
+    - "cudnn7.6.5_cuda10.0"   # [environ.get("CUDA")=="10.0"] && [environ.get("DIST")=="OFF"]
+    - "cudnn7.6.5_cuda9.0"    # [environ.get("CUDA")=="9.0"] && [environ.get("DIST")=="OFF"]
+    - "cpu"                   # [environ.get("CUDA", "")== ""]
+    - "cudnn7.6.5_cuda10.2_nccl2.6.4.1_mpich3.3.2"     # [environ.get("CUDA")=="10.2"] && [environ.get("DIST")=="ON"]
+    - "cudnn7.6.5_cuda10.0_nccl2.4.8.1_mpich3.3.2"     # [environ.get("CUDA")=="10.0"] && [environ.get("DIST")=="ON"]
+    - "cudnn7.6.5_cuda9.0_nccl2.4.8.1_mpich3.3.2"      # [environ.get("CUDA")=="9.0"] && [environ.get("DIST")=="ON"]
