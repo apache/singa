@@ -17,12 +17,14 @@
 '''This module includes a set of optimizers for updating model parameters.
 It replaces the old optimizers from optimizer.py'''
 
+from singa import device
 from singa import tensor
 from singa.tensor import Tensor
 from singa import autograd
 from . import singa_wrap as singa
 
 from deprecated import deprecated
+
 
 class DecayScheduler:
     # to be used for decaying learning rate or regularization coefficient or momentum, etc.
@@ -38,16 +40,20 @@ class DecayScheduler:
         # return the current value as a Tensor
         raise NotImplementedError
 
+
 class Constant(DecayScheduler):
 
     def call(self, step: Tensor) -> Tensor:
-        return Tensor((1,), step.device).set_value(self.init_value)
+        # TODO should be an in-place operator
+        ret = Tensor((1,), device.create_cpu_device())
+        ret.set_value(self.init_value)
+        return ret
 
 
 class ExponentialDecay(DecayScheduler):
 
     def __init__(self, init_value, decay_steps, decay_rate, staircase=False):
-        super(ExponentialDecay, self ).__init__(init_value)
+        super(ExponentialDecay, self).__init__(init_value)
 
         self.decay_steps = decay_steps
         self.decay_rate = decay_rate
@@ -62,12 +68,14 @@ class ExponentialDecay(DecayScheduler):
         ret.set_value(self.decay_rate)
         return self.init_value * tensor.pow(ret, s)
 
+
 class Optimizer(object):
     """Base optimizer.
 
     Args:
         config (Dict): specify the default values of configurable variables.
     """
+
     def __init__(self, lr):
         # init lr(could be a constant scalar or a learning rate scheduler)
         if type(lr) == float or type(lr) == int:
@@ -79,7 +87,9 @@ class Optimizer(object):
 
         # init step counter
         # TODO change type to int32
-        self.step_counter = Tensor((1, ), dtype=tensor.float32)
+        self.step_counter = Tensor((1,),
+                                   dtype=tensor.float32,
+                                   device=device.create_cpu_device())
         self.step_counter.set_value(0)
         self.lr_value = self.lr(self.step_counter)
 
@@ -88,7 +98,7 @@ class Optimizer(object):
         return {'step_counter': tensor.to_numpy(self.step_counter)[0]}
 
     def set_states(self, states):
-        self.step_counter = Tensor((1, ))
+        self.step_counter = Tensor((1,))
         self.step_counter.set_value(states['step_counter'])
         self.lr_value = self.lr(self.step_counter)
 
@@ -112,7 +122,10 @@ class Optimizer(object):
         """
         raise NotImplementedError
 
-    @deprecated(reason="Update is deprecated, use __call__() to do update, refer to __call__ for more details.")
+    @deprecated(
+        reason=
+        "Update is deprecated, use __call__() to do update, refer to __call__ for more details."
+    )
     def update(self, param, grad):
         """Update the param values with given gradients.
 
@@ -167,12 +180,13 @@ class SGD(Optimizer):
 
         The Nesterov version is analogously modified.
     """
+
     def __init__(self,
-         lr=0.1,
-         momentum=0,
-         dampening=0,
-         weight_decay=0,
-         nesterov=False):
+                 lr=0.1,
+                 momentum=0,
+                 dampening=0,
+                 weight_decay=0,
+                 nesterov=False):
         super(SGD, self).__init__(lr)
 
         # init momentum
@@ -227,8 +241,10 @@ class SGD(Optimizer):
                 grad(Tensor): param gradients; the values may be updated
                         in this function; cannot use it anymore
         """
-        assert param_value.shape == param_grad.shape, ("shape mismatch", param_value.shape, param_grad.shape)
-        self.device_check(param_value, param_grad, self.step_counter, self.lr_value, self.mom_value, self.dam_value, self.decay_value)
+        assert param_value.shape == param_grad.shape, ("shape mismatch",
+                                                       param_value.shape,
+                                                       param_grad.shape)
+        self.device_check(param_value, self.mom_value)
 
         # TODO add branch operator
         # if self.decay_value != 0:
@@ -249,10 +265,12 @@ class SGD(Optimizer):
                 alpha = 1.0 - self.dam_value
                 singa.Axpy(alpha.data, param_grad.data, buf.data)
             if self.nesterov:
+                # TODO: fix Axpy
                 singa.Axpy(self.mom_value.data, buf.data, param_grad.data)
             else:
                 param_grad = buf
-        singa.Axpy(self.lr_value.data, param_grad.data, param_value.data)
+        minus_lr = 0.0 - self.lr_value
+        singa.Axpy(minus_lr.data, param_grad.data, param_value.data)
 
     def step(self):
         """ increment step counter, lr and moment"""
@@ -264,7 +282,8 @@ class SGD(Optimizer):
     def get_states(self):
         states = super().get_states()
         if self.mom_value > 0:
-            states['moments'] = self.moments # a dict for 1st order moments tensors
+            states[
+                'moments'] = self.moments  # a dict for 1st order moments tensors
         return states
 
     def set_states(self, states):
@@ -274,13 +293,19 @@ class SGD(Optimizer):
             self.mom_value = self.momentum(self.step_counter)
 
     def device_check(self, *inputs):
+        flag = inputs[0].device.graph_enabled()
+        inputs[0].device.EnableGraph(False)
         x_device = inputs[0].device
         x_dev_id = x_device.id()
         for var in inputs:
             if var.device.id() != x_dev_id:
                 var.to_device(x_device)
+        inputs[0].device.EnableGraph(flag)
 
-    @deprecated(reason="Update is deprecated, use __call__() to do update, refer to __call__ for more details.")
+    @deprecated(
+        reason=
+        "Update is deprecated, use __call__() to do update, refer to __call__ for more details."
+    )
     def backward_and_update(self, loss):
         """Performs backward propagation from the loss and parameter update.
 
@@ -337,8 +362,8 @@ class DistOpt(object):
             self.communicator = singa.Communicator(buffSize)
         else:
             # constructor for application using python multi-process module
-            self.communicator = singa.Communicator(local_rank, world_size, nccl_id,
-                                                   buffSize)
+            self.communicator = singa.Communicator(local_rank, world_size,
+                                                   nccl_id, buffSize)
 
         self.world_size = self.communicator.world_size
         self.local_rank = self.communicator.local_rank

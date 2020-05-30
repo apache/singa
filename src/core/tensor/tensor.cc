@@ -1447,15 +1447,17 @@ void Axpy(const SType alpha, const Tensor &in, Tensor *out) {
 template void Axpy<float>(const float alpha, const Tensor &in, Tensor *out);
 
 void Axpy(const Tensor &alpha, const Tensor &in, Tensor *out) {
+  CHECK(alpha.device() == defaultDevice);
   TYPE_SWITCH(alpha.data_type(), SType, {
     TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
-      Tensor &outRef = *out;
       Tensor fake(*out);
+      Tensor &outRef = *out;
       out->device()->Exec(
           [alpha, in, outRef, fake](Context *ctx) mutable {
-            SType value;
-            alpha.CopyDataFromHostPtr(&value, 1, 0);
+            const SType value =
+                static_cast<const SType *>(alpha.block()->data())[0];
             auto a = TypeCast<SType, DType>(value);
+            // printf("a: %f\n", a);
             Axpy<DType, Lang>(a, in, &outRef, ctx);
           },
           {alpha.block(), in.block(), out->block()}, {out->block()}, "Axpy");
