@@ -54,13 +54,13 @@ class ExponentialDecay(DecayScheduler):
         self.staircase = staircase
 
     def call(self, step):
-        if staircase:
-            s = step // decay_steps
+        if self.staircase:
+            s = step // self.decay_steps
         else:
-            s = step / decay_steps
+            s = step / self.decay_steps
         ret = Tensor((1, ), s.device)
-        ret.set_value(self.init_value * self.decay_rate)
-        return tenosr.pow(res, s)
+        ret.set_value(self.decay_rate)
+        return self.init_value * tensor.pow(ret, s)
 
 class Optimizer(object):
     """Base optimizer.

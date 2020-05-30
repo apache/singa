@@ -804,6 +804,7 @@ template void Tensor::GetValue<int>(int *value, const size_t num) const;
 
 GenUnaryTensorFn(Abs);
 GenUnaryTensorFn(Ceil);
+GenUnaryTensorFn(Floor);
 GenUnaryTensorFn(Exp);
 GenUnaryTensorFn(Log);
 GenUnaryTensorFn(ReLU);

@@ -172,6 +172,7 @@ namespace singa{
 
   Tensor Abs(const Tensor &t);
   Tensor Ceil(const Tensor &t);
+  Tensor Floor(const Tensor &t);
   Tensor Exp(const Tensor &t);
   Tensor Log(const Tensor &t);
   Tensor ReLU(const Tensor &t);
