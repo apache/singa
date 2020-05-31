@@ -43,6 +43,13 @@ CudaGPU::~CudaGPU() {
     CHECK_EQ(status, CUDNN_STATUS_SUCCESS) << cudnnGetErrorString(status);
   }
 #endif
+
+#ifdef USE_DIST
+  CUDA_CHECK(cudaStreamDestroy(ctx_.s));
+  CUDA_CHECK(cudaStreamDestroy(ctx_.c1));
+  CUDA_CHECK(cudaStreamDestroy(ctx_.c2));
+#endif  // USE_DIST
+
 }
 const int kNumCudaStream = 1;
 
@@ -67,6 +74,12 @@ void CudaGPU::Setup() {
   // TODO(wangwei) create one handle for each steam?
   // Preserse for future use instead of default sync stream, for concurrency
   // cudaStreamCreate(&ctx_.stream);
+
+#ifdef USE_DIST
+  CUDA_CHECK(cudaStreamCreateWithFlags(&ctx_.s, cudaStreamNonBlocking));
+  CUDA_CHECK(cudaStreamCreateWithFlags(&ctx_.c1, cudaStreamNonBlocking));
+  CUDA_CHECK(cudaStreamCreateWithFlags(&ctx_.c2, cudaStreamNonBlocking));
+#endif  // USE_DIST
 
   CUDA_CHECK(cudaSetDevice(id_));
   // use curandCreateGeneratorHost for CudaHost device
