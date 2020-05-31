@@ -204,12 +204,6 @@ class Model(layer.Layer, metaclass=ModelMeta):
         else:
             return self.forward(*input, **kwargs)
 
-    def set_params(self, params):
-        super().set_params(**params)
-
-    def set_states(self, states):
-        super().set_states(**states)
-
     def save_states(self, fpath, aux_states={}):
         """Save states.
 
