@@ -182,7 +182,7 @@ void Communicator::wait() {
         CUDA_CHECK(cudaEventRecord(event, ctx->c2));
         CUDA_CHECK(cudaStreamWaitEvent(ctx->stream, event, 0));
       },
-      blocks_, blocks_, "wait");
+      blocks_, blocks_, "Sync");
 }
 
 Communicator::~Communicator() {
@@ -232,7 +232,7 @@ void Communicator::fusedSynch(vector<Tensor> &t, bool send) {
             sendBuffOffset += t[i].Size();
           }
         },
-        prev_blocks_, blocks_, "fusedSynch_Filling");
+        prev_blocks_, blocks_, "Dist_c1c1:fusedSynch_Filling");
   } else {
     // send the tensors in the buffer
     device_->Exec(
@@ -260,7 +260,7 @@ void Communicator::fusedSynch(vector<Tensor> &t, bool send) {
             offset += t[i].Size();
           }
         },
-        blocks_, blocks_, "fusedSynch_Transfer");
+        blocks_, blocks_, "Dist_sc1:fusedSynch_Transfer");
   }
 }
 
@@ -307,7 +307,7 @@ void Communicator::fusedSynchHalf(vector<Tensor> &t, bool send) {
             offset += t[i].Size();
           }
         },
-        prev_blocks_, blocks_, "fusedSynchHalf_filling");
+        prev_blocks_, blocks_, "Dist_c1c1:fusedSynchHalf_filling");
   } else {
     // send the tensors in the buffer
     device_->Exec(
@@ -341,7 +341,7 @@ void Communicator::fusedSynchHalf(vector<Tensor> &t, bool send) {
             offset += t[i].Size();
           }
         },
-        blocks_, blocks_, "fusedSynchHalf_transfer");
+        blocks_, blocks_, "Dist_sc2:fusedSynchHalf_transfer");
   }
 }
 
@@ -373,7 +373,7 @@ void Communicator::synchHalf(Tensor &t) {
 
         cuda::half2float(t.Size(), fusedRecvBuffHalf, addr, ctx->c2);
       },
-      blocks_, blocks_, "synchHalf");
+      blocks_, blocks_, "Dist_c1c2:synchHalf");
 }
 
 void Communicator::sparsification(Tensor &t, Tensor &accumulation,
@@ -385,7 +385,7 @@ void Communicator::sparsification(Tensor &t, Tensor &accumulation,
       [=](Context *ctx) mutable {
         _sparsification(t, &accumulation, sparsThreshold, topK, ctx);
       },
-      blocks_, blocks_, "sparsification");
+      blocks_, blocks_, "Dist_c1c2:sparsification");
 }
 
 void Communicator::sparsification(Tensor &t, float sparsThreshold, bool topK) {
@@ -395,7 +395,7 @@ void Communicator::sparsification(Tensor &t, float sparsThreshold, bool topK) {
       [=](Context *ctx) mutable {
         _sparsification(t, (Tensor *)NULL, sparsThreshold, topK, ctx);
       },
-      blocks_, blocks_, "sparsification");
+      blocks_, blocks_, "Dist_c1c2:sparsification");
 }
 
 void Communicator::_sparsification(Tensor &t, Tensor *accumulation,
@@ -442,7 +442,7 @@ void Communicator::fusedSparsification(vector<Tensor> &t, Tensor &accumulation,
       [=](Context *ctx) mutable {
         _fusedSparsification(t, &accumulation, sparsThreshold, topK, ctx);
       },
-      blocks_, blocks_, "fusedSparsification");
+      blocks_, blocks_, "Dist_c1c2:fusedSparsification");
 }
 
 void Communicator::fusedSparsification(vector<Tensor> &t, float sparsThreshold,
@@ -455,7 +455,7 @@ void Communicator::fusedSparsification(vector<Tensor> &t, float sparsThreshold,
       [=](Context *ctx) mutable {
         _fusedSparsification(t, (Tensor *)NULL, sparsThreshold, topK, ctx);
       },
-      blocks_, blocks_, "fusedSparsification");
+      blocks_, blocks_, "Dist_c1c2:fusedSparsification");
 }
 
 void Communicator::_fusedSparsification(vector<Tensor> &t, Tensor *accumulation,

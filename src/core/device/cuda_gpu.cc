@@ -49,7 +49,6 @@ CudaGPU::~CudaGPU() {
   CUDA_CHECK(cudaStreamDestroy(ctx_.c1));
   CUDA_CHECK(cudaStreamDestroy(ctx_.c2));
 #endif  // USE_DIST
-
 }
 const int kNumCudaStream = 1;
 
@@ -133,9 +132,41 @@ void CudaGPU::TimeProfilingDoExec(function<void(Context*)>&& fn, int executor,
   cudaEventCreate(&(node->start_));
   cudaEventCreate(&(node->end_));
 
+#ifdef USE_DIST
+  if (node->op_name().find("Dist") != std::string::npos) {
+    if (node->op_name().find("Dist_c1c1") != std::string::npos)
+      cudaEventRecord(node->start_, ctx_.c1);
+    else if (node->op_name().find("Dist_sc1") != std::string::npos)
+      cudaEventRecord(node->start_, ctx_.s);
+    else if (node->op_name().find("Dist_sc2") != std::string::npos)
+      cudaEventRecord(node->start_, ctx_.s);
+    else if (node->op_name().find("Dist_c1c2") != std::string::npos)
+      cudaEventRecord(node->start_, ctx_.c1);
+  } else {
+    cudaEventRecord(node->start_, ctx_.stream);
+  }
+#else
   cudaEventRecord(node->start_, ctx_.stream);
+#endif  // USE_DIST
+
   fn(&ctx_);
+
+#ifdef USE_DIST
+  if (node->op_name().find("Dist") != std::string::npos) {
+    if (node->op_name().find("Dist_c1c1") != std::string::npos)
+      cudaEventRecord(node->end_, ctx_.c1);
+    else if (node->op_name().find("Dist_sc1") != std::string::npos)
+      cudaEventRecord(node->end_, ctx_.c1);
+    else if (node->op_name().find("Dist_sc2") != std::string::npos)
+      cudaEventRecord(node->end_, ctx_.c2);
+    else if (node->op_name().find("Dist_c1c2") != std::string::npos)
+      cudaEventRecord(node->end_, ctx_.c2);
+  } else {
+    cudaEventRecord(node->end_, ctx_.stream);
+  }
+#else
   cudaEventRecord(node->end_, ctx_.stream);
+#endif  // USE_DIST
 }
 
 void CudaGPU::CopyToFrom(void* dst, const void* src, size_t nBytes,
@@ -174,8 +205,8 @@ void CudaGPU::Free(void* ptr) {
 }
 
 void CudaGPU::Sync() {
-  Exec([this](Context* ctx) { CUDA_CHECK(cudaStreamSynchronize(ctx_.stream)); },
-       {}, {}, "Sync");
+  Exec([this](Context* ctx) { CUDA_CHECK(cudaDeviceSynchronize()); }, {}, {},
+       "Sync");
 }
 
 }  // namespace singa
