@@ -58,6 +58,13 @@ class TestDecayScheduler(unittest.TestCase):
             np.testing.assert_array_almost_equal(tensor.to_numpy(sgd1.lr_value), [0.1*0.5**(i//2)])
             sgd1.step()
 
+    def test_exponential_decay_no_staircase_cpu(self):
+        lr = opt.ExponentialDecay(0.1, 2, 0.5, False)
+        sgd1 = opt.SGD(lr=lr)
+        for i in range(5):
+            np.testing.assert_array_almost_equal(tensor.to_numpy(sgd1.lr_value), [0.1*0.5**(i/2)])
+            sgd1.step()
+
     @on_cpu_gpu
     def test_const_decay_scheduler(self, dev):
         c1 = opt.Constant(0.2)
@@ -86,16 +93,17 @@ class TestOptimizer(unittest.TestCase):
         np.testing.assert_array_almost_equal( tensor.to_numpy(o1.step_counter), [5])
 
     @on_cpu_gpu
-    def test_sgd_const_lr(self, dev):
+    def test_sgd_const_lr(self, dev=cpu_dev):
+        cpu_dev.EnableGraph(False)
         sgd1 = opt.SGD(lr=0.1)
         w_shape=(2,3)
         w = tensor.Tensor(w_shape, device=dev).set_value(0.1)
-        g = tensor.Tensor(w_shape, device=dev).set_value(0.01)
+        g = tensor.Tensor(w_shape, device=dev).set_value(0.1)
 
+        w_step1 = w-0.1*g
         sgd1.apply(w, w, g)
-        sgd1.step()
 
-        assertTensorEqual(w, w-0.1*g)
+        assertTensorEqual(w, w_step1)
 
     @on_cpu_gpu
     def test_sgd_const_lr_momentum(self, dev=cpu_dev):
@@ -104,44 +112,46 @@ class TestOptimizer(unittest.TestCase):
         w = tensor.Tensor(w_shape, device=dev).set_value(0.1)
         g = tensor.Tensor(w_shape, device=dev).set_value(0.01)
 
-        sgd1.apply(w, w, g)
-        sgd1.step()
-
         w_step1 = w-0.1*g
         buf = g
-        assertTensorEqual(w,w_step1)
 
         sgd1.apply(w, w, g)
         sgd1.step()
+
+        assertTensorEqual(w,w_step1)
 
         buf = g + buf*0.9
         w_step2 = w-0.1*buf
+
+        sgd1.apply(w, w, g)
+
         assertTensorEqual(w, w_step2)
 
     @on_cpu_gpu
-    def test_sgd_const_lr_momentum_weight_decay(self, dev):
+    def test_sgd_const_lr_momentum_weight_decay(self, dev=cpu_dev):
         sgd1 = opt.SGD(lr=0.1, weight_decay=0.2)
         w_shape=(2,3)
         w = tensor.Tensor(w_shape, device=dev).set_value(0.1)
         g = tensor.Tensor(w_shape, device=dev).set_value(0.01)
 
-        sgd1.apply(w, w, g)
-        sgd1.step()
-
         w_step1 = w-0.1*(g+0.2*w)
+
+        sgd1.apply(w, w, g)
+
         assertTensorEqual(w,w_step1)
 
-    @on_cpu_gpu
-    def test_sgd_const_lr_momentum_nesterov(self, dev):
+    # @on_cpu_gpu
+    def test_sgd_const_lr_momentum_nesterov(self, dev=cpu_dev):
         sgd1 = opt.SGD(lr=0.1, momentum=0.9, nesterov=True)
         w_shape=(2,3)
         w = tensor.Tensor(w_shape, device=dev).set_value(0.1)
-        g = tensor.Tensor(w_shape, device=dev).set_value(0.01)
+        g = tensor.Tensor(w_shape, device=dev).set_value(0.1)
+
+        buf = g
+        w_step1 = w-0.1*(g+0.9*buf)
 
         sgd1.apply(w, w, g)
-        sgd1.step()
 
-        w_step1 = w-0.1*(g*0.9)
         assertTensorEqual(w,w_step1)
 
 if __name__ == '__main__':
