@@ -118,15 +118,13 @@ if __name__ == "__main__":
     # attached model to graph
     model.on_device(dev)
     model.set_optimizer(sgd)
-    model.graph(True, False)
+    model.compile([tx], is_train=True, use_graph=True, sequential=False)
     model.train()
 
     for i in range(1001):
         tx.copy_from_numpy(data)
         ty.copy_from_numpy(label)
-        out = model(tx)
-        loss = model.loss(out, ty)
-        model.optim(loss, 'fp32', spars=None)
+        out, loss = model(tx, ty, 'fp32', spars=None)
 
         if i % 100 == 0:
             print("training loss = ", tensor.to_numpy(loss)[0])

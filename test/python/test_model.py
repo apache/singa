@@ -40,7 +40,7 @@ class DoubleLinear(layer.Layer):
         self.l1 = layer.Linear(a,b)
         self.l2 = layer.Linear(b,c)
 
-    def __call__(self, x):
+    def forward(self, x):
         y = self.l1(x)
         y = self.l2(y)
         return y
@@ -90,10 +90,10 @@ class TestTensorMethods(unittest.TestCase):
                 "MyModel.bn1.bias": tensor.Tensor((2,), device=dev).set_value(0.4),
                 "MyModel.bn1.running_mean": tensor.Tensor((2,), device=dev).set_value(0.5),
                 "MyModel.bn1.running_var": tensor.Tensor((2,), device=dev).set_value(0.6),
-                "doublelinear1.l1.W": tensor.Tensor((2, 4), device=dev).set_value(0.7),
-                "doublelinear1.l1.b": tensor.Tensor((4,), device=dev).set_value(0.8),
-                "doublelinear1.l2.W": tensor.Tensor((4, 2), device=dev).set_value(0.9),
-                "doublelinear1.l2.b": tensor.Tensor((2,), device=dev).set_value(1.0)}
+                "MyModel.doublelinear1.l1.W": tensor.Tensor((2, 4), device=dev).set_value(0.7),
+                "MyModel.doublelinear1.l1.b": tensor.Tensor((4,), device=dev).set_value(0.8),
+                "MyModel.doublelinear1.l2.W": tensor.Tensor((4, 2), device=dev).set_value(0.9),
+                "MyModel.doublelinear1.l2.b": tensor.Tensor((2,), device=dev).set_value(1.0)}
 
         m.set_states(states)
         states2 = m.get_states()

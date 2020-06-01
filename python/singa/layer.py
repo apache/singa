@@ -47,7 +47,7 @@ class LayerMeta(type):
             prev_state = dev.graph_enabled()
             dev.EnableGraph(False)
             func(self, *args, **kwargs)
-            self._initialzied = True
+            self._initialized = True
             dev.EnableGraph(prev_state)
 
         return wrapper
@@ -145,7 +145,8 @@ class Layer(object, metaclass=LayerMeta):
             layers = self.__dict__['_layers']
             if name in layers:
                 return layers[name]
-        object.__getattr__(self, name)
+        raise AttributeError("'{}' object has no attribute '{}'".format(
+            type(self).__name__, name))
 
     def __setattr__(self, name, value):
         if isinstance(value, Layer):
