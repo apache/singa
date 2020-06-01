@@ -47,15 +47,6 @@ class LayerMeta(type):
             prev_state = dev.graph_enabled()
             dev.EnableGraph(False)
             func(self, *args, **kwargs)
-            """
-            # sanitize the dev of params/states init-ed
-            for s in self.state_names:
-                if isinstance(args[0], list):
-                    self.device_check(args[0][0], self.__dict__[s])
-                else:
-                    self.device_check(args[0], self.__dict__[s])
-            """
-
             self._initialzied = True
             dev.EnableGraph(prev_state)
 
@@ -476,7 +467,8 @@ class Conv2d(Layer):
         self.W = Tensor(shape=w_shape,
                         requires_grad=True,
                         stores_grad=True,
-                        name=w_name)
+                        name=w_name,
+                        device=x.device)
         # std = math.sqrt(
         # 2.0 / (self.in_channels * self.kernel_size[0] * self.kernel_size[1] +
         # self.nb_kernels))
@@ -491,7 +483,8 @@ class Conv2d(Layer):
             self.b = Tensor(shape=b_shape,
                             requires_grad=True,
                             stores_grad=True,
-                            name=b_name)
+                            name=b_name,
+                            device=x.device)
             self.b.set_value(0.0)
         else:
             # to keep consistency when to do forward.
@@ -541,6 +534,9 @@ class Conv2d(Layer):
                 )
 
     def forward(self, x):
+        # sanitize the device of params/states, TODO: better to decorate forward()
+        self.device_check(x, *[s for k, s in self.get_states().items()])
+
         assert (self.group >= 1 and self.in_channels %
                 self.group == 0), "please set reasonable group."
 
@@ -1205,7 +1201,7 @@ class LSTM(RNN_Base):
         self.device_check(*inputs)
         self.device_check(
             inputs[0],
-            *[self.__dict__[param_name] for param_name in self.param_names])
+            *[s for k,s in self.get_states().items()])
         batchsize = xs[0].shape[0]
         out = []
         h, c = self.step_forward(xs[0], h0, c0)
@@ -1283,7 +1279,6 @@ class LSTM(RNN_Base):
                 self.Bh_f, self.Bh_o, self.Bh_g
         ]:
             self.set_attribute(b, parameters[b.name])
-            ret[b.name] = b
 
 
 ''' import autograd at the end to resolve circular import

@@ -90,10 +90,10 @@ class TestTensorMethods(unittest.TestCase):
                 "MyModel.bn1.bias": tensor.Tensor((2,), device=dev).set_value(0.4),
                 "MyModel.bn1.running_mean": tensor.Tensor((2,), device=dev).set_value(0.5),
                 "MyModel.bn1.running_var": tensor.Tensor((2,), device=dev).set_value(0.6),
-                "MyModel.doublelinear1.l1.W": tensor.Tensor((2, 4), device=dev).set_value(0.7),
-                "MyModel.doublelinear1.l1.b": tensor.Tensor((4,), device=dev).set_value(0.8),
-                "MyModel.doublelinear1.l2.W": tensor.Tensor((4, 2), device=dev).set_value(0.9),
-                "MyModel.doublelinear1.l2.b": tensor.Tensor((2,), device=dev).set_value(1.0)}
+                "doublelinear1.l1.W": tensor.Tensor((2, 4), device=dev).set_value(0.7),
+                "doublelinear1.l1.b": tensor.Tensor((4,), device=dev).set_value(0.8),
+                "doublelinear1.l2.W": tensor.Tensor((4, 2), device=dev).set_value(0.9),
+                "doublelinear1.l2.b": tensor.Tensor((2,), device=dev).set_value(1.0)}
 
         m.set_states(states)
         states2 = m.get_states()
@@ -131,12 +131,12 @@ class TestTensorMethods(unittest.TestCase):
 
     @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
     def test_save_states_load_states_gpu(self):
-        self._save_states_load_states_helper(gpu_dev, False)
-        self._save_states_load_states_helper(gpu_dev, True)
+        self._save_states_load_states_helper(gpu_dev, graph_flag=False)
+        self._save_states_load_states_helper(gpu_dev, graph_flag=True)
 
     def test_save_states_load_states_cpu(self):
-        self._save_states_load_states_helper(cpu_dev, False)
-        self._save_states_load_states_helper(cpu_dev, True)
+        self._save_states_load_states_helper(cpu_dev, graph_flag=False)
+        self._save_states_load_states_helper(cpu_dev, graph_flag=True)
 
 if __name__ == '__main__':
     unittest.main()

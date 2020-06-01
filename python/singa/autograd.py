@@ -294,10 +294,6 @@ class Operator(object):
         ys = self.forward(*xs)
         if not isinstance(ys, tuple):
             ys = (ys,)
-        # if not training, backward pass is not required, thus creator should not be set
-        creator = None
-        if training:
-            creator = self
         # create Tensor based on CTensor(data);
         # assume outputs are all Tensor instances
         ys = tuple(
@@ -305,7 +301,7 @@ class Operator(object):
                 device=y.device(),
                 data=y,
                 requires_grad=self.requires_grad,
-                creator=creator,
+                creator=self,
                 name=self.output_name(idx),
             ) for idx, y in enumerate(ys))
         # map from python id to output index
