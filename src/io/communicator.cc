@@ -236,7 +236,7 @@ void Communicator::fusedSynch(vector<Tensor> &t, bool send) {
             sendBuffOffset += t[i].Size();
           }
         },
-        prev_blocks_, blocks_, "Dist_c1_fusedSynch_Filling");
+        prev_blocks_, blocks_, "Dist_c1_fusedSynch_filling");
 
   } else {
     // send the tensors in the buffer
@@ -273,7 +273,7 @@ void Communicator::fusedSynch(vector<Tensor> &t, bool send) {
             offset += t[i].Size();
           }
         },
-        blocks_, blocks_, "Dist_c1_fusedSynch_CopyBackToTensor");
+        blocks_, blocks_, "Dist_c1_fusedSynch_copyBackToTensor");
   }
 }
 

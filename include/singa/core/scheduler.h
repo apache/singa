@@ -188,7 +188,9 @@ class Graph {
   void AnalyzeEdges();
   void AddSyncOp(function<void(Context *)> &&op, string op_name = "no_name");
   void TimeProfilingDoExec(Node *curNode);
+  void TakeStartTime();
   void step() { iteration_++; }
+  void time_elapsed_inc(float time) { time_elapsed_ += time; }
 
   // static void CUDART_CB Callback(cudaStream_t stream, cudaError_t status,
   //                                void *data);
@@ -211,8 +213,11 @@ class Graph {
   std::vector<NodeVec> next_nodes_;
   std::vector<BlockVec> free_blocks_;
   int iteration_ = 0;
+  float time_elapsed_ = 0;
+  std::chrono::high_resolution_clock::time_point t_start_;
 
   SafeQueue<int> free_queue_;
+
 };
 
 /// Scheduling Tensor operations with dependency detection.
