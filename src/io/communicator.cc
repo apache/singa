@@ -286,11 +286,15 @@ void Communicator::synch(Tensor &t) {
         // record the event of the default cuda stream and follow it
         CUDA_CHECK(cudaEventRecord(event, ctx->stream));
         CUDA_CHECK(cudaStreamWaitEvent(ctx->s, event, 0));
+      },
+      {t.block()}, {t.block()}, "Waiting");
 
+  device_->Exec(
+      [this, t](Context *ctx) mutable {
         void *addr = t.block()->mutable_data();
         allReduce(t.Size(), addr, addr, ncclFloat, ctx);
       },
-      {t.block()}, {t.block()}, "Dist_s_synch");
+      {t.block()}, {t.block()}, "Dist_s_synch_allreduce");
 }
 
 void Communicator::fusedSynchHalf(vector<Tensor> &t, bool send) {
