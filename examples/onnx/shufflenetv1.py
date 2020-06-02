@@ -84,6 +84,7 @@ if __name__ == '__main__':
     sg_ir = sonnx.prepare(onnx_model, device=dev)
     autograd.training = False
     model = Infer(sg_ir)
+	
     # verifying the test dataset
     #from utils import load_dataset
     #inputs,ref_outputs = load_dataset(os.path.join('/tmp','shufflenet','test_data_set_0'))
@@ -92,6 +93,7 @@ if __name__ == '__main__':
     # for ref_o,o in zip(ref_outputs,outputs):
     #    np.testing.assert_almost_equal(ref_o,tensor.to_numpy(o),4)
     # inference
+    
     logging.info("preprocessing...")
     img, labels = get_image_label()
     img = preprocess(img)
