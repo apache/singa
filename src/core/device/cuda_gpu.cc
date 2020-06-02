@@ -134,12 +134,12 @@ void CudaGPU::TimeProfilingDoExec(function<void(Context*)>&& fn, int executor,
 
 #ifdef USE_DIST
   if (node->op_name().find("Dist") != std::string::npos) {
-    if (node->op_name().find("Dist_c1c1") != std::string::npos)
+    if (node->op_name().find("Dist_s") != std::string::npos)
+      cudaEventRecord(node->start_, ctx_.s);
+    else if (node->op_name().find("Dist_c1") != std::string::npos)
       cudaEventRecord(node->start_, ctx_.c1);
-    else if (node->op_name().find("Dist_sc1") != std::string::npos)
-      cudaEventRecord(node->start_, ctx_.s);
-    else if (node->op_name().find("Dist_sc2") != std::string::npos)
-      cudaEventRecord(node->start_, ctx_.s);
+    else if (node->op_name().find("Dist_c2") != std::string::npos)
+      cudaEventRecord(node->start_, ctx_.c2);
     else if (node->op_name().find("Dist_c1c2") != std::string::npos)
       cudaEventRecord(node->start_, ctx_.c1);
   } else {
@@ -153,11 +153,11 @@ void CudaGPU::TimeProfilingDoExec(function<void(Context*)>&& fn, int executor,
 
 #ifdef USE_DIST
   if (node->op_name().find("Dist") != std::string::npos) {
-    if (node->op_name().find("Dist_c1c1") != std::string::npos)
+    if (node->op_name().find("Dist_s") != std::string::npos)
+      cudaEventRecord(node->end_, ctx_.s);
+    else if (node->op_name().find("Dist_c1") != std::string::npos)
       cudaEventRecord(node->end_, ctx_.c1);
-    else if (node->op_name().find("Dist_sc1") != std::string::npos)
-      cudaEventRecord(node->end_, ctx_.c1);
-    else if (node->op_name().find("Dist_sc2") != std::string::npos)
+    else if (node->op_name().find("Dist_c2") != std::string::npos)
       cudaEventRecord(node->end_, ctx_.c2);
     else if (node->op_name().find("Dist_c1c2") != std::string::npos)
       cudaEventRecord(node->end_, ctx_.c2);
@@ -206,7 +206,7 @@ void CudaGPU::Free(void* ptr) {
 
 void CudaGPU::Sync() {
   Exec([this](Context* ctx) { CUDA_CHECK(cudaDeviceSynchronize()); }, {}, {},
-       "Sync");
+       "Waiting");
 }
 
 }  // namespace singa

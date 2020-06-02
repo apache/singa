@@ -276,11 +276,20 @@ void Graph::PrintTimeProfiling() {
            << (nodes_[i]->time_elapsed()) / (iteration_) << " sec" << std::endl;
   }
 
+  // verbosity level: 3 -> Distributed training operations
+  if (device_->verbosity() == 3) {
+    ss << std::endl << "Time Profiling:" << std::endl;
+    for (size_t i = 0; i < nodes_.size(); ++i)
+      if ((nodes_[i]->op_name().find("Dist") != std::string::npos) && (nodes_[i]->time_elapsed() > 0))
+        ss << "OP_ID" << nodes_[i]->id_ << ". " << nodes_[i]->op_name() << " : "
+           << (nodes_[i]->time_elapsed()) / (iteration_) << " sec" << std::endl;
+  }
+
   printf("%s", ss.str().c_str());
 }
 
 void Graph::TimeProfilingDoExec(Node *curNode) {
-  if ((device_->verbosity() > 0) && (curNode->op_name_ != "Sync") &&
+  if ((device_->verbosity() > 0) && (curNode->op_name_ != "Waiting") &&
       (iteration_ >= device_->skip_iteration()))
     device_->TimeProfilingDoExec(std::move(curNode->op_), 0, curNode);
   else
@@ -292,7 +301,7 @@ void Graph::EvaluateTimeElapsed() {
     device_->Sync();
     for (size_t i = 0; i < nodes_.size(); ++i) {
       Node *curNode = nodes_[i];
-      if (curNode->op_name_ != "Sync") {
+      if (curNode->op_name_ != "Waiting") {
         device_->EvaluateTimeElapsed(curNode);
       }
     }

@@ -221,7 +221,11 @@ void Communicator::fusedSynch(vector<Tensor> &t, bool send) {
           // record the event of the default cuda stream and follow it
           CUDA_CHECK(cudaEventRecord(event, ctx->stream));
           CUDA_CHECK(cudaStreamWaitEvent(ctx->c1, event, 0));
+        },
+        prev_blocks_, prev_blocks_, "Waiting");
 
+    device_->Exec(
+        [this, t](Context *ctx) mutable {
           // memory copy to fusedBuff
           for (size_t i = 0; i < t.size(); i++) {
             CUDA_CHECK(
@@ -232,24 +236,33 @@ void Communicator::fusedSynch(vector<Tensor> &t, bool send) {
             sendBuffOffset += t[i].Size();
           }
         },
-        prev_blocks_, blocks_, "Dist_c1c1:fusedSynch_Filling");
+        prev_blocks_, blocks_, "Dist_c1_fusedSynch_Filling");
+
   } else {
     // send the tensors in the buffer
     device_->Exec(
-        [this, t](Context *ctx) mutable {
+        [this](Context *ctx) mutable {
           // wait for the memcpy to complete
           CUDA_CHECK(cudaEventRecord(event, ctx->c1));
           CUDA_CHECK(cudaStreamWaitEvent(ctx->s, event, 0));
-
+        },
+        prev_blocks_, prev_blocks_, "Waiting");
+    device_->Exec(
+        [this](Context *ctx) mutable {
           allReduce((int)sendBuffOffset, (void *)fusedSendBuff,
                     (void *)fusedRecvBuff, ncclFloat, ctx);
-
           sendBuffOffset = 0;
-
+        },
+        prev_blocks_, blocks_, "Dist_s_fusedSynch_allreduce");
+    device_->Exec(
+        [this](Context *ctx) mutable {
           // wait for the allreduce to complete
           CUDA_CHECK(cudaEventRecord(event, ctx->s));
           CUDA_CHECK(cudaStreamWaitEvent(ctx->c1, event, 0));
-
+        },
+        blocks_, blocks_, "Waiting");
+    device_->Exec(
+        [this, t](Context *ctx) mutable {
           // copy data back to tensors after allreduce
           size_t offset = 0;
           for (size_t i = 0; i < t.size(); i++) {
@@ -260,7 +273,7 @@ void Communicator::fusedSynch(vector<Tensor> &t, bool send) {
             offset += t[i].Size();
           }
         },
-        blocks_, blocks_, "Dist_sc1:fusedSynch_Transfer");
+        blocks_, blocks_, "Dist_c1_fusedSynch_CopyBackToTensor");
   }
 }
 
@@ -277,7 +290,7 @@ void Communicator::synch(Tensor &t) {
         void *addr = t.block()->mutable_data();
         allReduce(t.Size(), addr, addr, ncclFloat, ctx);
       },
-      {t.block()}, {t.block()}, "synch");
+      {t.block()}, {t.block()}, "Dist_s_synch");
 }
 
 void Communicator::fusedSynchHalf(vector<Tensor> &t, bool send) {
@@ -290,11 +303,14 @@ void Communicator::fusedSynchHalf(vector<Tensor> &t, bool send) {
   if (!send) {
     // buffer the tensors and convert them into half
     device_->Exec(
-        [this, t](Context *ctx) mutable {
+        [this](Context *ctx) mutable {
           // record the event of the default cuda stream and follow it
           CUDA_CHECK(cudaEventRecord(event, ctx->stream));
           CUDA_CHECK(cudaStreamWaitEvent(ctx->c1, event, 0));
-
+        },
+        prev_blocks_, prev_blocks_, "Waiting");
+    device_->Exec(
+        [this, t](Context *ctx) mutable {
           size_t offset = 0;
           // memory copy to fusedBuff
           for (size_t i = 0; i < t.size(); i++) {
@@ -307,25 +323,37 @@ void Communicator::fusedSynchHalf(vector<Tensor> &t, bool send) {
             offset += t[i].Size();
           }
         },
-        prev_blocks_, blocks_, "Dist_c1c1:fusedSynchHalf_filling");
+        prev_blocks_, blocks_, "Dist_c1_fusedSynchHalf_filling");
   } else {
     // send the tensors in the buffer
     device_->Exec(
-        [this, t](Context *ctx) mutable {
+        [this](Context *ctx) mutable {
           cuda::float2half(sendBuffOffset, fusedSendBuff, fusedSendBuffHalf,
                            ctx->c1);
-
+        },
+        prev_blocks_, blocks_, "Dist_c1_fusedSynchHalf_float2half");
+    device_->Exec(
+        [this](Context *ctx) mutable {
           // wait for the memcpy to complete
           CUDA_CHECK(cudaEventRecord(event, ctx->c1));
           CUDA_CHECK(cudaStreamWaitEvent(ctx->s, event, 0));
-
+        },
+        blocks_, blocks_, "Waiting");
+    device_->Exec(
+        [this](Context *ctx) mutable {
           allReduce((int)sendBuffOffset, (void *)fusedSendBuffHalf,
                     (void *)fusedRecvBuffHalf, ncclHalf, ctx);
-
+        },
+        blocks_, blocks_, "Dist_s_fusedSynchHalf_allreduce");
+    device_->Exec(
+        [this](Context *ctx) mutable {
           // wait for the allreduce to complete
           CUDA_CHECK(cudaEventRecord(event, ctx->s));
-          CUDA_CHECK(cudaStreamWaitEvent(ctx->c2, event, 0));
-
+          CUDA_CHECK(cudaStreamWaitEvent(ctx->c2, event, 0));          
+        },
+        blocks_, blocks_, "Waiting");
+    device_->Exec(
+        [this, t](Context *ctx) mutable {
           cuda::half2float(sendBuffOffset, fusedRecvBuffHalf, fusedRecvBuff,
                            ctx->c2);
 
@@ -341,7 +369,7 @@ void Communicator::fusedSynchHalf(vector<Tensor> &t, bool send) {
             offset += t[i].Size();
           }
         },
-        blocks_, blocks_, "Dist_sc2:fusedSynchHalf_transfer");
+        blocks_, blocks_, "Dist_c2_fusedSynchHalf_half2floatcopy");
   }
 }
 
@@ -352,28 +380,44 @@ void Communicator::synchHalf(Tensor &t) {
 
   device_->Exec(
       [this, t](Context *ctx) mutable {
-        float *addr = static_cast<float *>(t.block()->mutable_data());
-
         // record the event of the default cuda stream and follow it
         CUDA_CHECK(cudaEventRecord(event, ctx->stream));
         CUDA_CHECK(cudaStreamWaitEvent(ctx->c1, event, 0));
-
+      },
+      blocks_, blocks_, "Waiting");
+  device_->Exec(
+      [this, t](Context *ctx) mutable {
+        float *addr = static_cast<float *>(t.block()->mutable_data());
         cuda::float2half(t.Size(), addr, fusedSendBuffHalf, ctx->c1);
-
+      },
+      blocks_, blocks_, "Dist_c1_synchHalf_float2half");
+  device_->Exec(
+      [this, t](Context *ctx) mutable {
         // wait for conversion to half precision complete
         CUDA_CHECK(cudaEventRecord(event, ctx->c1));
         CUDA_CHECK(cudaStreamWaitEvent(ctx->s, event, 0));
-
+      },
+      blocks_, blocks_, "Waiting");
+  device_->Exec(
+      [this, t](Context *ctx) mutable {
         allReduce(t.Size(), (void *)fusedSendBuffHalf,
                   (void *)fusedRecvBuffHalf, ncclHalf, ctx);
-
+      },
+      blocks_, blocks_, "Dist_s_synchHalf_allreduce");
+  device_->Exec(
+      [this, t](Context *ctx) mutable {
         // wait for the allreduce to complete
         CUDA_CHECK(cudaEventRecord(event, ctx->s));
         CUDA_CHECK(cudaStreamWaitEvent(ctx->c2, event, 0));
-
+      },
+      blocks_, blocks_, "Waiting");
+  device_->Exec(
+      [this, t](Context *ctx) mutable {
+        float *addr = static_cast<float *>(t.block()->mutable_data());
         cuda::half2float(t.Size(), fusedRecvBuffHalf, addr, ctx->c2);
       },
-      blocks_, blocks_, "Dist_c1c2:synchHalf");
+      blocks_, blocks_, "Dist_c2_synchHalf_half2float");
+
 }
 
 void Communicator::sparsification(Tensor &t, Tensor &accumulation,
@@ -385,7 +429,7 @@ void Communicator::sparsification(Tensor &t, Tensor &accumulation,
       [=](Context *ctx) mutable {
         _sparsification(t, &accumulation, sparsThreshold, topK, ctx);
       },
-      blocks_, blocks_, "Dist_c1c2:sparsification");
+      blocks_, blocks_, "Dist_c1c2_sparsification");
 }
 
 void Communicator::sparsification(Tensor &t, float sparsThreshold, bool topK) {
@@ -395,7 +439,7 @@ void Communicator::sparsification(Tensor &t, float sparsThreshold, bool topK) {
       [=](Context *ctx) mutable {
         _sparsification(t, (Tensor *)NULL, sparsThreshold, topK, ctx);
       },
-      blocks_, blocks_, "Dist_c1c2:sparsification");
+      blocks_, blocks_, "Dist_c1c2_sparsification");
 }
 
 void Communicator::_sparsification(Tensor &t, Tensor *accumulation,
@@ -442,7 +486,7 @@ void Communicator::fusedSparsification(vector<Tensor> &t, Tensor &accumulation,
       [=](Context *ctx) mutable {
         _fusedSparsification(t, &accumulation, sparsThreshold, topK, ctx);
       },
-      blocks_, blocks_, "Dist_c1c2:fusedSparsification");
+      blocks_, blocks_, "Dist_c1c2_fusedSparsification");
 }
 
 void Communicator::fusedSparsification(vector<Tensor> &t, float sparsThreshold,
@@ -455,7 +499,7 @@ void Communicator::fusedSparsification(vector<Tensor> &t, float sparsThreshold,
       [=](Context *ctx) mutable {
         _fusedSparsification(t, (Tensor *)NULL, sparsThreshold, topK, ctx);
       },
-      blocks_, blocks_, "Dist_c1c2:fusedSparsification");
+      blocks_, blocks_, "Dist_c1c2_fusedSparsification");
 }
 
 void Communicator::_fusedSparsification(vector<Tensor> &t, Tensor *accumulation,
