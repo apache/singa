@@ -626,7 +626,7 @@ class BatchNorm2d(Layer):
     Generate a BatchNorm 2d operator
     """
 
-    def __init__(self, momentum=0.9):
+    def __init__(self, *args, momentum=0.9):
         """
         Args:
             momentum (float): Factor used in computing the running mean and
@@ -634,7 +634,12 @@ class BatchNorm2d(Layer):
         """
         super(BatchNorm2d, self).__init__()
 
+        if len(args) > 0:
+            self.channels = args[0]
+        if len(args) > 1:
+            self.momentum = args[1]
         self.momentum = momentum
+        assert 0 <= momentum <= 1.0, ("Illegal momentum")
 
     def initialize(self, x):
         self.channels = x.shape[1]
