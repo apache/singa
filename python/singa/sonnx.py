@@ -1632,10 +1632,10 @@ class SingaBackend(Backend):
                     auto_pad, inputs[0].shape[2:], kernel, stride)
 
         # not support count_include_pad and auto_pad
-        if "count_include_pad" in onnx_node.attrs or "ceil_mode" in onnx_node.attrs:
-            raise ValueError(
-                "Not implemented yet for count_include_pad or ceil_mode")
-
+        ceil_mode = onnx_node.getattr("ceil_mode",0)
+        count_include_pad = onnx_node.getattr("count_include_pad",0)
+        if ceil_mode!=0 or count_include_pad!=0:
+            raise ValueError("Not implemented yet for count_include_pad or ceil_mode")
         # only support 2d
         if len(kernel) != 2:
             raise ValueError("Not implemented yet")
