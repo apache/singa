@@ -49,7 +49,7 @@ class BasicBlock(layer.Layer):
         self.downsample = downsample
         self.stride = stride
 
-    def __call__(self, x):
+    def forward(self, x):
         residual = x
 
         out = self.conv1(x)
@@ -91,7 +91,7 @@ class Bottleneck(layer.Layer):
         self.downsample = downsample
         self.stride = stride
 
-    def __call__(self, x):
+    def forward(self, x):
         residual = x
 
         out = self.conv1(x)
@@ -164,6 +164,8 @@ class ResNet(model.Model):
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
             layers.append(block(self.inplanes, planes))
+
+        self.register_layers(*layers)
 
         def forward(x):
             for layer in layers:

@@ -19,6 +19,7 @@
 import math
 import numpy as np
 from functools import wraps
+from collections import OrderedDict
 
 from singa import utils
 from .tensor import Tensor
@@ -162,6 +163,19 @@ class Layer(object, metaclass=LayerMeta):
             del self._layers[name]
         else:
             object.__delattr__(self, name)
+
+    def register_layers(self, *args):
+        if len(args) == 1 and isinstance(args[0], OrderedDict):
+            items = agrs[0].itmes()
+        else:
+            items = [(v.__class__.__name__ + '_' + str(idx), v)
+                     for idx, v in enumerate(args)]
+
+        for name, value in items:
+            if isinstance(value, Layer):
+                self._layers[name] = value
+                value.__dict__['_parent'] = self
+                value.name = name
 
 
 class Linear(Layer):
@@ -1205,9 +1219,7 @@ class LSTM(RNN_Base):
             xs = list(xs)
         inputs = xs + list((h0, c0))
         self.device_check(*inputs)
-        self.device_check(
-            inputs[0],
-            *[s for k,s in self.get_states().items()])
+        self.device_check(inputs[0], *[s for k, s in self.get_states().items()])
         batchsize = xs[0].shape[0]
         out = []
         h, c = self.step_forward(xs[0], h0, c0)

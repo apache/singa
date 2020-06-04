@@ -96,7 +96,9 @@ class Block(layer.Layer):
         if strides != 1:
             self.layers.append(layer.MaxPool2d(3, strides, padding + 1))
 
-    def __call__(self, x):
+        self.register_layers(*self.layers)
+
+    def forward(self, x):
         y = self.layers[0](x)
         for layer in self.layers[1:]:
             if isinstance(y, tuple):
@@ -262,7 +264,7 @@ class Xception(layer.Layer):
         x = self.fc(x)
         return x
 
-    def __call__(self, input):
+    def forward(self, input):
         x = self.features(input)
         x = self.logits(x)
         return x

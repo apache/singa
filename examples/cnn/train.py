@@ -189,7 +189,7 @@ def run(global_rank,
     dev.SetVerbosity(verbosity)
 
     # Training and Evaluation Loop
-    for epoch in range(max_epoch):
+    for epoch in range(1):
         start_time = time.time()
         np.random.shuffle(idx)
 
@@ -202,7 +202,7 @@ def run(global_rank,
         train_loss = np.zeros(shape=[1], dtype=np.float32)
 
         model.train()
-        for b in range(num_train_batch):
+        for b in range(3):
             # Generate the patch data in this iteration
             x = train_x[idx[b * batch_size:(b + 1) * batch_size]]
             if model.dimension == 4:
@@ -234,7 +234,7 @@ def run(global_rank,
 
         # Evaluation Phase
         model.eval()
-        for b in range(num_val_batch):
+        for b in range(1):
             x = val_x[b * batch_size:(b + 1) * batch_size]
             if model.dimension == 4:
                 if (image_size != model.input_size):
