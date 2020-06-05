@@ -72,7 +72,8 @@ class Infer:
 if __name__ == '__main__':
     url = 'https://github.com/onnx/models/raw/master/vision/classification/shufflenet/model/shufflenet-v2-10.tar.gz'
     download_dir = "/tmp/"
-    model_path = os.path.join(download_dir, 'model','test_shufflenetv2', 'model.onnx')
+    model_path = os.path.join(download_dir, 'model', 'test_shufflenetv2',
+                              'model.onnx')
     logging.info("onnx load model....")
     download_model(url)
     onnx_model = onnx.load(model_path)
@@ -84,11 +85,11 @@ if __name__ == '__main__':
     sg_ir = sonnx.prepare(onnx_model, device=dev)
     autograd.training = False
     model = Infer(sg_ir)
-	
+
     # verifying the test dataset
     #from utils import load_dataset
     #inputs,ref_outputs = load_dataset(os.path.join('/tmp','model','test_shufflenetv2','test_data_set_0'))
-    #Single image used as an input for testing 
+    #Single image used as an input for testing
     #inputs = np.array(inputs)
     #x_batch = tensor.Tensor(device = dev,data=inputs)
     #outputs = model.forward(x_batch)
@@ -96,7 +97,7 @@ if __name__ == '__main__':
     #for ref_o,o in zip(ref_outputs,outputs):
     #    np.testing.assert_almost_equal(np.squeeze(ref_o),np.squeeze(tensor.to_numpy(o)),4)
     # inference
-    
+
     logging.info("preprocessing...")
     img, labels = get_image_label()
     img = preprocess(img)
