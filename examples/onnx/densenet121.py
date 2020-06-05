@@ -84,7 +84,7 @@ if __name__ == "__main__":
 
     # prepare the model
     logging.info("prepare model...")
-    dev = device.get_default_device()
+    dev = device.create_cuda_gpu()
     sg_ir = sonnx.prepare(onnx_model, device=dev)
     autograd.training = False
     model = Infer(sg_ir)
