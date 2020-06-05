@@ -29,29 +29,30 @@ class CNN(model.Model):
         self.num_classes = num_classes
         self.input_size = 28
         self.dimension = 4
-        self.conv1 = layer.Conv2d(num_channels, 20, 5, padding=0)
-        self.conv2 = layer.Conv2d(20, 50, 5, padding=0)
+        self.conv1 = layer.Conv2d(num_channels, 20, 5, padding=0, activation="RELU")
+        self.conv2 = layer.Conv2d(20, 50, 5, padding=0, activation="RELU")
         self.linear1 = layer.Linear(4 * 4 * 50, 500)
         self.linear2 = layer.Linear(500, num_classes)
         self.pooling1 = layer.MaxPool2d(2, 2, padding=0)
         self.pooling2 = layer.MaxPool2d(2, 2, padding=0)
+        self.relu = layer.ReLU()
+        self.flatten = layer.Flatten()
+        self.softmax_cross_entropy = layer.SoftMaxCrossEntropy()
 
     def forward(self, x):
         y = self.conv1(x)
-        y = autograd.relu(y)
         y = self.pooling1(y)
         y = self.conv2(y)
-        y = autograd.relu(y)
         y = self.pooling2(y)
-        y = autograd.flatten(y)
+        y = self.flatten(y)
         y = self.linear1(y)
-        y = autograd.relu(y)
+        y = self.relu(y)
         y = self.linear2(y)
         return y
 
     def train_one_batch(self, x, y, dist_option, spars):
         out = self.forward(x)
-        loss = autograd.softmax_cross_entropy(out, y)
+        loss = self.softmax_cross_entropy(out, y)
 
         if dist_option == 'fp32':
             self.optimizer.backward_and_update(loss)

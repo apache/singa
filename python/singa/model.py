@@ -30,6 +30,7 @@ import os
 from singa import tensor
 from singa import autograd
 from singa import layer
+from .tensor import Tensor
 from . import singa_wrap as singa
 from .device import get_default_device
 
@@ -43,12 +44,27 @@ class ModelMeta(layer.LayerMeta):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             if self.graph_mode and self.training:
+                if len(args) == 0:
+                    raise ValueError('expect at least one input tensor')
+                    return
+
+                if isinstance(args[0], list):
+                    assert isinstance(
+                        args[0][0],
+                        Tensor), ('function expects PlaceHolders or Tensors')
+                    dev = args[0][0].device
+                else:
+                    assert isinstance(
+                        args[0],
+                        Tensor), ('function expects PlaceHolders or Tensors')
+                    dev = args[0].device
+
                 if not self._buffered:
                     # buffer operations
-                    self._device.EnableGraph(True)
+                    dev.EnableGraph(True)
                     self._results = func(self, *args, **kwargs)
-                    self._device.Sync()
-                    self._device.EnableGraph(False)
+                    dev.Sync()
+                    dev.EnableGraph(False)
                     self._buffered = True
 
                     # deconstruct Operations before running the entire graph
@@ -64,7 +80,7 @@ class ModelMeta(layer.LayerMeta):
                     gc.collect()
 
                 # run graph
-                self._device.RunGraph(self.sequential)
+                dev.RunGraph(self.sequential)
                 return self._results
             else:
                 return func(self, *args, **kwargs)
@@ -130,15 +146,18 @@ class Model(layer.Layer, metaclass=ModelMeta):
         self.graph_mode = True
         self.sequential = False
         self._buffered = False
-        self._device = get_default_device()
-
         self._results = None
 
     def compile(self, inputs, is_train=True, use_graph=False, sequential=False):
-        self._device.EnableGraph(True)
+        assert len(inputs) > 0 and isinstance(inputs[0], Tensor), (
+            'compile function expects PlaceHolders or Tensors')
+
+        dev = inputs[0].device
+        dev.EnableGraph(True)
         self.forward(*inputs)
-        self._device.EnableGraph(False)
-        self._device.ResetGraph()
+        dev.EnableGraph(False)
+        dev.ResetGraph()
+
         autograd.training = is_train
         self.training = is_train
         self.graph_mode = use_graph
@@ -185,16 +204,6 @@ class Model(layer.Layer, metaclass=ModelMeta):
         self.graph_mode = mode
         self.sequential = sequential
 
-    def on_device(self, device):
-        """Sets the target device.
-
-        The following training will be performed on that device.
-
-        Args:
-            device(Device): the target device
-        """
-        self._device = device
-
     def __get_name__(self):
         return self.__class__.__name__
 
@@ -223,12 +232,21 @@ class Model(layer.Layer, metaclass=ModelMeta):
         for k, v in states.items():
             assert isinstance(v, tensor.Tensor), "Only tensor state is allowed"
             tensor_dict[k] = tensor.to_numpy(v)
-            states_attr[k] = {'state_type':self.MODEL_STATE_TYPE, 'shape': v.shape, 'dtype': v.dtype}
+            states_attr[k] = {
+                'state_type': self.MODEL_STATE_TYPE,
+                'shape': v.shape,
+                'dtype': v.dtype
+            }
 
         for k, v in aux_states.items():
-            assert isinstance(v, tensor.Tensor), "Only tensor aux state is allowed"
+            assert isinstance(v,
+                              tensor.Tensor), "Only tensor aux state is allowed"
             tensor_dict[k] = tensor.to_numpy(v)
-            states_attr[k] = {'state_type':self.AUX_STATE_TYPE, 'shape': v.shape, 'dtype': v.dtype}
+            states_attr[k] = {
+                'state_type': self.AUX_STATE_TYPE,
+                'shape': v.shape,
+                'dtype': v.dtype
+            }
 
         # save to files
         timestamp = time.time()

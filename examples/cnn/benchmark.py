@@ -66,7 +66,6 @@ def train_resnet(DIST=True, graph=True, sequential=False):
     model = resnet.resnet50(num_channels=3, num_classes=1000)
 
     model.train()
-    model.on_device(dev)
     model.set_optimizer(sgd)
     model.compile([tx], is_train=True, use_graph=graph, sequential=sequential)
 

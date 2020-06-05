@@ -40,17 +40,21 @@ class CNN:
         self.linear2 = layer.Linear(500, 10)
         self.pooling1 = layer.MaxPool2d(2, 2, padding=0)
         self.pooling2 = layer.MaxPool2d(2, 2, padding=0)
+        self.relu1 = layer.ReLU()
+        self.relu2 = layer.ReLU()
+        self.relu3 = layer.ReLU()
+        self.flatten = layer.Flatten()
 
     def forward(self, x):
         y = self.conv1(x)
-        y = autograd.relu(y)
+        y = self.relu1(y)
         y = self.pooling1(y)
         y = self.conv2(y)
-        y = autograd.relu(y)
+        y = self.relu2(y)
         y = self.pooling2(y)
-        y = autograd.flatten(y)
+        y = self.flatten(y)
         y = self.linear1(y)
-        y = autograd.relu(y)
+        y = self.relu3(y)
         y = self.linear2(y)
         return y
 

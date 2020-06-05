@@ -53,9 +53,22 @@ class LayerMeta(type):
 
         return wrapper
 
+    def forward_wrapper(func):
+
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            if not self._initialized:
+                self.initialize(*args, **kwargs)
+                self._initialized = True
+            return func(self, *args, **kwargs)
+
+        return wrapper
+
     def __new__(cls, name, bases, attr):
         if 'initialize' in attr:
             attr['initialize'] = LayerMeta.init_wrapper(attr['initialize'])
+        if 'forward' in attr:
+            attr['forward'] = LayerMeta.forward_wrapper(attr['forward'])
 
         return super(LayerMeta, cls).__new__(cls, name, bases, attr)
 
@@ -77,10 +90,6 @@ class Layer(object, metaclass=LayerMeta):
         pass
 
     def __call__(self, *args, **kwargs):
-        if not self._initialized:
-            self.initialize(*args, **kwargs)
-            self._initialized = True
-
         return self.forward(*args, **kwargs)
 
     def get_params(self):
@@ -115,21 +124,15 @@ class Layer(object, metaclass=LayerMeta):
         self.set_params(states)
 
     def device_check(self, *inputs):
+        # disabled the graph to prevent buffering data transfer operator
         x_device = inputs[0].device
+        prev_state = x_device.graph_enabled()
+        x_device.EnableGraph(False)
         x_dev_id = x_device.id()
         for var in inputs:
             if var.device.id() != x_dev_id:
                 var.to_device(x_device)
-
-    def set_attribute(self, attribute, attribute_value):
-        assert (attribute_value.shape == attribute.shape), "Shape dismatched."
-        if isinstance(attribute_value, Tensor):
-            attribute.reset_like(attribute_value)
-            attribute.copy_data(attribute_value)
-        elif isinstance(attribute_value, np.ndarray):
-            attribute.copy_from_numpy(attribute_value)
-        else:
-            raise ValueError("attributes should be Tensor or Numpy array.")
+        x_device.EnableGraph(prev_state)
 
     def _get_unique_name(self):
         prefix = ''
@@ -250,9 +253,9 @@ class Linear(Layer):
             return {self.W.name: self.W}
 
     def set_params(self, parameters):
-        self.set_attribute(self.W, parameters[self.W.name])
-        if self.b:
-            self.set_attribute(self.b, parameters[self.b.name])
+        self.W.copy_from(parameters[self.W.name])
+        if self.bias:
+            self.b.copy_from(parameters[self.b.name])
 
 
 class Gemm(Layer):
@@ -357,9 +360,9 @@ class Gemm(Layer):
             return {self.W.name: self.W}
 
     def set_params(self, parameters):
-        self.set_attribute(self.W, parameters[self.W.name])
-        if self.b:
-            self.set_attribute(self.b, parameters[self.b.name])
+        self.W.copy_from(parameters[self.W.name])
+        if self.bias:
+            self.b.copy_from(parameters[self.b.name])
 
 
 class Conv2d(Layer):
@@ -377,6 +380,7 @@ class Conv2d(Layer):
                  group=1,
                  bias=True,
                  pad_mode="NOTSET",
+                 activation="NOTSET",
                  **kwargs):
         """
         Args:
@@ -398,6 +402,9 @@ class Conv2d(Layer):
                 SAME_UPPER or SAME_LOWER mean pad the input so that the output
                 spatial size match the input. In case of odd number add the extra
                 padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
+            activation (string): can be NOTSET, RELU, where default value is NOTSET,
+                which means there is no activation behind the conv2d layer.
+                RELU means there is a ReLU behind current conv2d layer.
         """
         super(Conv2d, self).__init__()
 
@@ -419,6 +426,7 @@ class Conv2d(Layer):
         self.group = group
         self.bias = bias
         self.pad_mode = pad_mode
+        self.activation = activation
 
         if isinstance(kernel_size, int):
             self.kernel_size = (kernel_size, kernel_size)
@@ -559,6 +567,11 @@ class Conv2d(Layer):
                 self.group == 0), "nb_kernels and group dismatched."
 
         y = autograd.conv2d(self.handle, x, self.W, self.b, self.odd_padding)
+
+        if self.activation != "NOTSET":
+            if self.activation == "RELU":
+                y = autograd.relu(y)
+
         return y
 
     def get_params(self):
@@ -568,9 +581,9 @@ class Conv2d(Layer):
             return {self.W.name: self.W}
 
     def set_params(self, parameters):
-        self.set_attribute(self.W, parameters[self.W.name])
-        if self.b:
-            self.set_attribute(self.b, parameters[self.b.name])
+        self.W.copy_from(parameters[self.W.name])
+        if self.bias:
+            self.b.copy_from(parameters[self.b.name])
 
 
 class SeparableConv2d(Layer):
@@ -715,8 +728,8 @@ class BatchNorm2d(Layer):
         return {self.scale.name: self.scale, self.bias.name: self.bias}
 
     def set_params(self, parameters):
-        self.set_attribute(self.scale, parameters[self.scale.name])
-        self.set_attribute(self.bias, parameters[self.bias.name])
+        self.scale.copy_from(parameters[self.scale.name])
+        self.bias.copy_from(parameters[self.bias.name])
 
     def get_states(self):
         ret = self.get_params()
@@ -726,8 +739,8 @@ class BatchNorm2d(Layer):
 
     def set_states(self, states):
         self.set_params(states)
-        self.set_attribute(self.running_mean, states[self.running_mean.name])
-        self.set_attribute(self.running_var, states[self.running_var.name])
+        self.running_mean.copy_from(states[self.running_mean.name])
+        self.running_var.copy_from(states[self.running_var.name])
 
 
 class Pooling2d(Layer):
@@ -1075,9 +1088,9 @@ class RNN(RNN_Base):
         }
 
     def set_params(self, parameters):
-        self.set_attribute(self.Wx, parameters[self.Wx.name])
-        self.set_attribute(self.Wh, parameters[self.Wh.name])
-        self.set_attribute(self.b, parameters[self.b.name])
+        self.Wx.copy_from(parameters[self.Wx.name])
+        self.Wh.copy_from(parameters[self.Wh.name])
+        self.b.copy_from(parameters[self.b.name])
 
 
 class LSTM(RNN_Base):
@@ -1290,13 +1303,104 @@ class LSTM(RNN_Base):
                 self.Wx_i, self.Wx_f, self.Wx_o, self.Wx_g, self.Wh_i,
                 self.Wh_f, self.Wh_o, self.Wh_g
         ]:
-            self.set_attribute(w, parameters[w.name])
+            w.copy_from(parameters[w.name])
 
         for b in [
                 self.Bx_i, self.Bx_f, self.Bx_o, self.Bx_g, self.Bh_i,
                 self.Bh_f, self.Bh_o, self.Bh_g
         ]:
-            self.set_attribute(b, parameters[b.name])
+            b.copy_from(parameters[b.name])
+
+
+''' layers without params or states
+'''
+
+
+class ReLU(Layer):
+    """
+    Generate a ReLU operator
+    """
+
+    def __init__(self):
+        super(ReLU, self).__init__()
+
+    def forward(self, x):
+        return autograd.relu(x)
+
+
+class Add(Layer):
+    """
+    Generate a Add operator
+    """
+
+    def __init__(self):
+        super(Add, self).__init__()
+
+    def forward(self, a, b):
+        return autograd.add(a, b)
+
+
+class Flatten(Layer):
+    """
+    Generate a Flatten operator
+    """
+
+    def __init__(self, axis=1):
+        super(Flatten, self).__init__()
+        self.axis = axis
+
+    def forward(self, x):
+        return autograd.flatten(x, self.axis)
+
+
+class SoftMaxCrossEntropy(Layer):
+    """
+    Generate a SoftMaxCrossEntropy operator
+    """
+
+    def __init__(self):
+        super(SoftMaxCrossEntropy, self).__init__()
+
+    def forward(self, x, t):
+        return autograd.softmax_cross_entropy(x, t)
+
+
+class Dropout(Layer):
+    """
+    Generate a Dropout operator
+    """
+
+    def __init__(self, ratio=0.5):
+        super(Dropout, self).__init__()
+        self.ratio = ratio
+
+    def forward(self, x):
+        return autograd.dropout(x, self.ratio)
+
+
+class Cat(Layer):
+    """
+    Generate a Cat Operator
+    """
+
+    def __init__(self, axis=0):
+        super(Cat, self).__init__()
+        self.axis = axis
+
+    def forward(self, xs):
+        return autograd.cat(xs, self.axis)
+
+
+class Reshape(Layer):
+    """
+    Generate a Reshape Operator
+    """
+
+    def __init__(self):
+        super(Reshape, self).__init__()
+
+    def forward(self, x, shape):
+        return autograd.reshape(x, shape)
 
 
 ''' import autograd at the end to resolve circular import

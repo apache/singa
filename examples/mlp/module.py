@@ -17,8 +17,9 @@
 # under the License.
 #
 
-from singa import model
 from singa import autograd
+from singa import layer
+from singa import model
 from singa import tensor
 from singa.tensor import Tensor
 
@@ -30,35 +31,21 @@ class MLP(model.Model):
         self.num_classes = num_classes
         self.dimension = 2
 
-        self.w0 = Tensor(shape=(data_size, perceptron_size),
-                         requires_grad=True,
-                         stores_grad=True)
-        self.w0.gaussian(0.0, 0.1)
-        self.b0 = Tensor(shape=(perceptron_size,),
-                         requires_grad=True,
-                         stores_grad=True)
-        self.b0.set_value(0.0)
-
-        self.w1 = Tensor(shape=(perceptron_size, num_classes),
-                         requires_grad=True,
-                         stores_grad=True)
-        self.w1.gaussian(0.0, 0.1)
-        self.b1 = Tensor(shape=(num_classes,),
-                         requires_grad=True,
-                         stores_grad=True)
-        self.b1.set_value(0.0)
+        self.relu = layer.ReLU()
+        self.linear1 = layer.Linear(perceptron_size)
+        self.linear2 = layer.Linear(num_classes)
+        self.softmax_cross_entropy = layer.SoftMaxCrossEntropy()
 
     def forward(self, inputs):
-        x = autograd.matmul(inputs, self.w0)
-        x = autograd.add_bias(x, self.b0)
-        x = autograd.relu(x)
-        x = autograd.matmul(x, self.w1)
-        x = autograd.add_bias(x, self.b1)
-        return x
+        y = self.linear1(inputs)
+        y = self.relu(y)
+        y = self.linear2(y)
+        return y
 
     def train_one_batch(self, x, y, dist_option, spars):
         out = self.forward(x)
-        loss = autograd.softmax_cross_entropy(out, y)
+        loss = self.softmax_cross_entropy(out, y)
+
         if dist_option == 'fp32':
             self.optimizer.backward_and_update(loss)
         elif dist_option == 'fp16':
@@ -116,7 +103,6 @@ if __name__ == "__main__":
     model = MLP(data_size=2, perceptron_size=3, num_classes=2)
 
     # attached model to graph
-    model.on_device(dev)
     model.set_optimizer(sgd)
     model.compile([tx], is_train=True, use_graph=True, sequential=False)
     model.train()

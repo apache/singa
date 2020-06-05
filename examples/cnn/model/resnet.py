@@ -46,6 +46,9 @@ class BasicBlock(layer.Layer):
         self.bn1 = layer.BatchNorm2d(planes)
         self.conv2 = conv3x3(planes, planes)
         self.bn2 = layer.BatchNorm2d(planes)
+        self.relu1 = layer.ReLU()
+        self.add = layer.Add()
+        self.relu2 = layer.ReLU()
         self.downsample = downsample
         self.stride = stride
 
@@ -54,7 +57,7 @@ class BasicBlock(layer.Layer):
 
         out = self.conv1(x)
         out = self.bn1(out)
-        out = autograd.relu(out)
+        out = self.relu1(out)
 
         out = self.conv2(out)
         out = self.bn2(out)
@@ -62,8 +65,8 @@ class BasicBlock(layer.Layer):
         if self.downsample is not None:
             residual = self.downsample(x)
 
-        out = autograd.add(out, residual)
-        out = autograd.relu(out)
+        out = self.add(out, residual)
+        out = self.relu2(out)
 
         return out
 
@@ -75,6 +78,7 @@ class Bottleneck(layer.Layer):
         super(Bottleneck, self).__init__()
         self.conv1 = layer.Conv2d(inplanes, planes, 1, bias=False)
         self.bn1 = layer.BatchNorm2d(planes)
+        self.relu1 = layer.ReLU()
         self.conv2 = layer.Conv2d(planes,
                                   planes,
                                   3,
@@ -82,11 +86,15 @@ class Bottleneck(layer.Layer):
                                   padding=1,
                                   bias=False)
         self.bn2 = layer.BatchNorm2d(planes)
+        self.relu2 = layer.ReLU()
         self.conv3 = layer.Conv2d(planes,
                                   planes * self.expansion,
                                   1,
                                   bias=False)
         self.bn3 = layer.BatchNorm2d(planes * self.expansion)
+
+        self.add = layer.Add()
+        self.relu3 = layer.ReLU()
 
         self.downsample = downsample
         self.stride = stride
@@ -96,11 +104,11 @@ class Bottleneck(layer.Layer):
 
         out = self.conv1(x)
         out = self.bn1(out)
-        out = autograd.relu(out)
+        out = self.relu1(out)
 
         out = self.conv2(out)
         out = self.bn2(out)
-        out = autograd.relu(out)
+        out = self.relu2(out)
 
         out = self.conv3(out)
         out = self.bn3(out)
@@ -108,8 +116,8 @@ class Bottleneck(layer.Layer):
         if self.downsample is not None:
             residual = self.downsample(x)
 
-        out = autograd.add(out, residual)
-        out = autograd.relu(out)
+        out = self.add(out, residual)
+        out = self.relu3(out)
 
         return out
 
@@ -134,13 +142,18 @@ class ResNet(model.Model):
                                   padding=3,
                                   bias=False)
         self.bn1 = layer.BatchNorm2d(64)
+        self.relu = layer.ReLU()
         self.maxpool = layer.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
+        self.layer1, layers1 = self._make_layer(block, 64, layers[0])
+        self.layer2, layers2 = self._make_layer(block, 128, layers[1], stride=2)
+        self.layer3, layers3 = self._make_layer(block, 256, layers[2], stride=2)
+        self.layer4, layers4 = self._make_layer(block, 512, layers[3], stride=2)
         self.avgpool = layer.AvgPool2d(7, stride=1)
+        self.flatten = layer.Flatten()
         self.fc = layer.Linear(512 * block.expansion, num_classes)
+        self.softmax_cross_entropy = layer.SoftMaxCrossEntropy()
+
+        self.register_layers(*layers1, *layers2, *layers3, *layers4)
 
     def _make_layer(self, block, planes, blocks, stride=1):
         downsample = None
@@ -165,19 +178,17 @@ class ResNet(model.Model):
         for i in range(1, blocks):
             layers.append(block(self.inplanes, planes))
 
-        self.register_layers(*layers)
-
         def forward(x):
             for layer in layers:
                 x = layer(x)
             return x
 
-        return forward
+        return forward, layers
 
     def forward(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
-        x = autograd.relu(x)
+        x = self.relu(x)
         x = self.maxpool(x)
 
         x = self.layer1(x)
@@ -186,14 +197,15 @@ class ResNet(model.Model):
         x = self.layer4(x)
 
         x = self.avgpool(x)
-        x = autograd.flatten(x)
+        x = self.flatten(x)
         x = self.fc(x)
 
         return x
 
     def train_one_batch(self, x, y, dist_option, spars):
         out = self.forward(x)
-        loss = autograd.softmax_cross_entropy(out, y)
+        loss = self.softmax_cross_entropy(out, y)
+
         if dist_option == 'fp32':
             self.optimizer.backward_and_update(loss)
         elif dist_option == 'fp16':

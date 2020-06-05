@@ -41,12 +41,14 @@ class CharRNN(model.Model):
     def __init__(self, vocab_size, hidden_size=32):
         super(CharRNN, self).__init__()
         self.rnn = layer.LSTM(vocab_size, hidden_size)
+        self.cat = layer.Cat()
+        self.reshape1 = layer.Reshape()
         self.dense = layer.Linear(hidden_size, vocab_size)
+        self.reshape2 = layer.Reshape()
+        self.softmax_cross_entropy = layer.SoftMaxCrossEntropy()
         self.optimizer = opt.SGD(0.01)
         self.hidden_size = hidden_size
         self.vocab_size = vocab_size
-        self.hx = tensor.Tensor((1, self.hidden_size))
-        self.cx = tensor.Tensor((1, self.hidden_size))
 
     def reset_states(self, dev):
         self.hx.to_device(dev)
@@ -54,18 +56,39 @@ class CharRNN(model.Model):
         self.hx.set_value(0.0)
         self.cx.set_value(0.0)
 
+    def initialize(self, inputs):
+        batchsize = inputs[0].shape[0]
+        hx_name = self.name + CharRNN.sep + 'hx'
+        cx_name = self.name + CharRNN.sep + 'cx'
+        self.hx = tensor.Tensor((batchsize, self.hidden_size), name=hx_name)
+        self.cx = tensor.Tensor((batchsize, self.hidden_size), name=cx_name)
+        self.reset_states(inputs[0].device)
+
     def forward(self, inputs):
-        x, self.hx, self.cx = self.rnn(inputs, (self.hx, self.cx))
-        x = autograd.cat(x)
-        x = autograd.reshape(x, (-1, self.hidden_size))
+        x, hx, cx = self.rnn(inputs, (self.hx, self.cx))
+        self.hx.copy_data(hx)
+        self.cx.copy_data(cx)
+        x = self.cat(x)
+        x = self.reshape1(x, (-1, self.hidden_size))
         return self.dense(x)
 
     def train_one_batch(self, x, y):
         out = self.forward(x)
-        y = autograd.reshape(y, (-1, 1))
-        loss = autograd.softmax_cross_entropy(out, y)
+        y = self.reshape2(y, (-1, 1))
+        loss = self.softmax_cross_entropy(out, y)
         self.optimizer.backward_and_update(loss)
         return out, loss
+
+    def get_states(self):
+        ret = super().get_states()
+        ret[self.hx.name] = self.hx
+        ret[self.cx.name] = self.cx
+        return ret
+
+    def set_states(self, states):
+        self.hx.copy_from(states[self.hx.name])
+        self.hx.copy_from(states[self.hx.name])
+        super().set_states(states)
 
 
 class Data(object):
@@ -182,7 +205,7 @@ def evaluate(model, data, batch_size, seq_length, dev, inputs, labels):
                                  dev, inputs, labels)
         model.reset_states(dev)
         y = model(inputs)
-        loss = model.loss(y, labels)[0]
+        loss = autograd.softmax_cross_entropy(y, labels)[0]
         val_loss += tensor.to_numpy(loss)[0]
     print('            validation loss is %f' %
           (val_loss / data.num_test_batch / seq_length))
@@ -197,7 +220,6 @@ def train(data,
     # SGD with L2 gradient normalization
     cuda = device.create_cuda_gpu()
     model = CharRNN(data.vocab_size, hidden_size)
-    model.on_device(cuda)
     model.graph(True, False)
 
     inputs, labels = None, None
@@ -209,8 +231,8 @@ def train(data,
             batch = data.train_dat[b * batch_size:(b + 1) * batch_size]
             inputs, labels = convert(batch, batch_size, seq_length,
                                      data.vocab_size, cuda, inputs, labels)
-            model.reset_states(cuda)
             out, loss = model(inputs, labels)
+            model.reset_states(cuda)
             train_loss += tensor.to_numpy(loss)[0]
 
         print('\nEpoch %d, train loss is %f' %

@@ -55,7 +55,7 @@ class Block(layer.Layer):
 
         filters = in_filters
         if grow_first:
-            self.layers.append(autograd.ReLU())
+            self.layers.append(layer.ReLU())
             self.layers.append(
                 layer.SeparableConv2d(in_filters,
                                       out_filters,
@@ -67,7 +67,7 @@ class Block(layer.Layer):
             filters = out_filters
 
         for i in range(reps - 1):
-            self.layers.append(autograd.ReLU())
+            self.layers.append(layer.ReLU())
             self.layers.append(
                 layer.SeparableConv2d(filters,
                                       filters,
@@ -78,7 +78,7 @@ class Block(layer.Layer):
             self.layers.append(layer.BatchNorm2d(filters))
 
         if not grow_first:
-            self.layers.append(autograd.ReLU())
+            self.layers.append(layer.ReLU())
             self.layers.append(
                 layer.SeparableConv2d(in_filters,
                                       out_filters,
@@ -91,12 +91,14 @@ class Block(layer.Layer):
         if not start_with_relu:
             self.layers = self.layers[1:]
         else:
-            self.layers[0] = autograd.ReLU()
+            self.layers[0] = layer.ReLU()
 
         if strides != 1:
             self.layers.append(layer.MaxPool2d(3, strides, padding + 1))
 
         self.register_layers(*self.layers)
+
+        self.add = layer.Add()
 
     def forward(self, x):
         y = self.layers[0](x)
@@ -110,7 +112,7 @@ class Block(layer.Layer):
             skip = self.skipbn(skip)
         else:
             skip = x
-        y = autograd.add(y, skip)
+        y = self.add(y, skip)
         return y
 
 
@@ -133,9 +135,11 @@ class Xception(layer.Layer):
 
         self.conv1 = layer.Conv2d(3, 32, 3, 2, 0, bias=False)
         self.bn1 = layer.BatchNorm2d(32)
+        self.relu1 = layer.ReLU()
 
         self.conv2 = layer.Conv2d(32, 64, 3, 1, 1, bias=False)
         self.bn2 = layer.BatchNorm2d(64)
+        self.relu2 = layer.ReLU()
         # do relu here
 
         self.block1 = Block(64,
@@ -219,22 +223,25 @@ class Xception(layer.Layer):
 
         self.conv3 = layer.SeparableConv2d(1024, 1536, 3, 1, 1)
         self.bn3 = layer.BatchNorm2d(1536)
+        self.relu3 = layer.ReLU()
 
         # do relu here
         self.conv4 = layer.SeparableConv2d(1536, 2048, 3, 1, 1)
         self.bn4 = layer.BatchNorm2d(2048)
 
+        self.relu4 = layer.ReLU()
         self.globalpooling = layer.MaxPool2d(10, 1)
+        self.flatten = layer.Flatten()
         self.fc = layer.Linear(2048, num_classes)
 
     def features(self, input):
         x = self.conv1(input)
         x = self.bn1(x)
-        x = autograd.relu(x)
+        x = self.relu1(x)
 
         x = self.conv2(x)
         x = self.bn2(x)
-        x = autograd.relu(x)
+        x = self.relu2(x)
 
         x = self.block1(x)
         x = self.block2(x)
@@ -251,16 +258,16 @@ class Xception(layer.Layer):
 
         x = self.conv3(x)
         x = self.bn3(x)
-        x = autograd.relu(x)
+        x = self.relu3(x)
 
         x = self.conv4(x)
         x = self.bn4(x)
         return x
 
     def logits(self, features):
-        x = autograd.relu(features)
+        x = self.relu4(features)
         x = self.globalpooling(x)
-        x = autograd.flatten(x)
+        x = self.flatten(x)
         x = self.fc(x)
         return x
 
