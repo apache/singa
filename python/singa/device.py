@@ -97,7 +97,7 @@ def create_cuda_gpus(num):
     return singa.Platform.CreateCudaGPUs(num)
 
 
-def create_cuda_gpu(set_default=True):
+def create_cuda_gpu(set_default=False):
     '''Create a single CudaGPU device.
 
     Returns:
@@ -105,7 +105,7 @@ def create_cuda_gpu(set_default=True):
     '''
     assert singa.USE_CUDA, 'SINGA has not been compiled with CUDA enabled.'
     devices = singa.Platform.CreateCudaGPUs(1)
-    if set_default is True:
+    if set_default:
         set_default_device(devices[0])
     return devices[0]
 
@@ -123,7 +123,7 @@ def create_cuda_gpus_on(device_ids):
     return singa.Platform.CreateCudaGPUsOn(device_ids)
 
 
-def create_cuda_gpu_on(device_id, set_default=True):
+def create_cuda_gpu_on(device_id, set_default=False):
     '''Create a CudaGPU device on the given device ID.
 
     Args:
@@ -134,7 +134,7 @@ def create_cuda_gpu_on(device_id, set_default=True):
     '''
     assert singa.USE_CUDA, 'SINGA has not been compiled with CUDA enabled.'
     devices = create_cuda_gpus_on([device_id])
-    if set_default is True:
+    if set_default:
         set_default_device(devices[0])
     return devices[0]
 

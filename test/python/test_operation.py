@@ -21,6 +21,7 @@ from builtins import str
 from singa import tensor
 from singa import singa_wrap as singa
 from singa import autograd
+from singa import layer
 from singa import singa_wrap
 from cuda_helper import gpu_dev, cpu_dev
 
@@ -46,7 +47,7 @@ def axis_helper(y_shape, x_shape):
         y_shape: the shape of result
         x_shape: the shape of x
     Return:
-        a tuple refering the axes 
+        a tuple refering the axes
     """
     res = []
     j = len(x_shape) - 1
@@ -116,9 +117,9 @@ class TestPythonOperation(unittest.TestCase):
         self._greater_helper(gpu_dev)
 
     def _conv2d_helper(self, dev):
-        # (in_channels, out_channels, kernel_size)
-        conv_0 = autograd.Conv2d(3, 1, 2)
-        conv_without_bias_0 = autograd.Conv2d(3, 1, 2, bias=False)
+        # (out_channels, kernel_size)
+        conv_0 = layer.Conv2d(1, 2)
+        conv_without_bias_0 = layer.Conv2d(1, 2, bias=False)
 
         cpu_input_tensor = tensor.Tensor(shape=(2, 3, 3, 3), device=dev)
         cpu_input_tensor.gaussian(0.0, 1.0)
@@ -148,46 +149,31 @@ class TestPythonOperation(unittest.TestCase):
     def _conv_same_pad(self, dev, pad_mode, is_2d):
         if is_2d:
             x_h, w_h, k_h, p_h = 32, 4, 4, 1
-            if pad_mode == "SAME_LOWER":
-                o_p = (0, 1, 0, 1)
-            else:
-                o_p = (1, 0, 1, 0)
         else:
             x_h, w_h, k_h, p_h = 1, 1, 1, 0
-            if pad_mode == "SAME_LOWER":
-                o_p = (0, 0, 0, 1)
-            else:
-                o_p = (0, 0, 1, 0)
+
         x = tensor.Tensor(shape=(3, 3, x_h, 32), device=dev)
         x.gaussian(0.0, 1.0)
-
-        w = tensor.Tensor(shape=(3, 3, w_h, 4), device=dev)
-        w.gaussian(0.0, 1.0)
 
         # with the same padding, the padding should be 3
         # for SAME_UPPER, is (1, 1) + (0, 1)
         # for SAME_LOWER, is (1, 1) + (1, 0)
 
-        x_shape = x.shape
         kernel = (k_h, 4)
         padding = (p_h, 1)
         stride = (1, 1)
         group = 1
         bias = False
-        in_channels = x_shape[1]
-        w_shape = w.shape
-        out_channels = w_shape[0]
-        assert w_shape[1] == in_channels // group
+        out_channels = 3
 
-        if dev == cpu_dev:
-            handle = singa.ConvHandle(x.data, kernel, stride, padding,
-                                      in_channels, out_channels, bias, group)
-        else:
-            handle = singa.CudnnConvHandle(x.data, kernel, stride, padding,
-                                           in_channels, out_channels, bias,
-                                           group)
-        y = autograd._Conv2d(handle, o_p)(x, w)[0]
+        conv_0 = layer.Conv2d(out_channels,
+                              kernel,
+                              stride=stride,
+                              group=group,
+                              bias=bias,
+                              pad_mode=pad_mode)
 
+        y = conv_0(x)
         dy = np.ones((3, 3, x_h, 32), dtype=np.float32)
         dy = tensor.from_numpy(dy)
         dy.to_device(dev)
@@ -218,16 +204,9 @@ class TestPythonOperation(unittest.TestCase):
     def _pooling_same_pad(self, dev, pad_mode, is_2d):
         if is_2d:
             x_h, k_h, p_h = 32, 4, 1
-            if pad_mode == "SAME_LOWER":
-                o_p = (0, 1, 0, 1)
-            else:
-                o_p = (1, 0, 1, 0)
         else:
             x_h, k_h, p_h = 1, 1, 0
-            if pad_mode == "SAME_LOWER":
-                o_p = (0, 0, 0, 1)
-            else:
-                o_p = (0, 0, 1, 0)
+
         x = tensor.Tensor(shape=(3, 3, x_h, 32), device=dev)
         x.gaussian(0.0, 1.0)
 
@@ -235,19 +214,14 @@ class TestPythonOperation(unittest.TestCase):
         # for SAME_UPPER, is (1, 1) + (0, 1)
         # for SAME_LOWER, is (1, 1) + (1, 0)
 
-        x_shape = x.shape
         kernel = (k_h, 4)
         # we add 4 padding here and hope the conv and trim one padding then
         padding = (p_h, 1)
         stride = (1, 1)
 
-        if dev == cpu_dev:
-            handle = singa.PoolingHandle(x.data, kernel, stride, padding, True)
-        else:
-            handle = singa.CudnnPoolingHandle(x.data, kernel, stride, padding,
-                                              True)
+        pooling = layer.Pooling2d(kernel, stride=stride, pad_mode=pad_mode)
 
-        y = autograd._Pooling2d(handle, o_p)(x)[0]
+        y = pooling(x)
 
         dy = np.ones((3, 3, x_h, 32), dtype=np.float32)
         dy = tensor.from_numpy(dy)
@@ -319,10 +293,13 @@ class TestPythonOperation(unittest.TestCase):
             in_channels = 1
         else:
             in_channels = 8
-        separ_conv = autograd.SeparableConv2d(in_channels, 16, 3, padding=1)
+        separ_conv = layer.SeparableConv2d(16, 3, padding=1)
 
         x = np.random.random((10, in_channels, 28, 28)).astype(np.float32)
         x = tensor.Tensor(device=dev, data=x)
+
+        y = separ_conv(x)
+        self.check_shape(y.shape, (10, 16, 28, 28))
 
         y1 = separ_conv.depthwise_conv(x)
         y2 = separ_conv.point_conv(y1)
@@ -338,9 +315,6 @@ class TestPythonOperation(unittest.TestCase):
         self.check_shape(dx.shape(), (10, in_channels, 28, 28))
         self.check_shape(dW_spacial.shape(), (in_channels, 1, 3, 3))
 
-        y = separ_conv(x)
-        self.check_shape(y.shape, (10, 16, 28, 28))
-
     def test_SeparableConv2d_cpu(self):
         self._SeparableConv2d_helper(cpu_dev)
 
@@ -349,7 +323,7 @@ class TestPythonOperation(unittest.TestCase):
         self._SeparableConv2d_helper(gpu_dev)
 
     def _batchnorm2d_helper(self, dev):
-        batchnorm_0 = autograd.BatchNorm2d(3)
+        batchnorm_0 = layer.BatchNorm2d(3)
 
         cpu_input_tensor = tensor.Tensor(shape=(2, 3, 3, 3), device=dev)
         cpu_input_tensor.gaussian(0.0, 1.0)
@@ -411,7 +385,7 @@ class TestPythonOperation(unittest.TestCase):
     def _vanillaRNN_gpu_tiny_ops_shape_check_helper(self, dev):
         # gradients shape check.
         inputs, target, h0 = prepare_inputs_targets_for_rnn_test(dev)
-        rnn = autograd.RNN(3, 2)
+        rnn = layer.RNN(3, 2)
 
         hs, _ = rnn(inputs, h0)
 
@@ -437,7 +411,7 @@ class TestPythonOperation(unittest.TestCase):
         c_0 = np.random.random((2, 1)).astype(np.float32)
         c0 = tensor.Tensor(device=dev, data=c_0)
 
-        rnn = autograd.LSTM(3, 2)
+        rnn = layer.LSTM(3, 2)
 
         hs, _, _ = rnn(inputs, (h0, c0))
         loss = autograd.softmax_cross_entropy(hs[0], target[0])
@@ -460,7 +434,7 @@ class TestPythonOperation(unittest.TestCase):
     def _numerical_gradients_check_for_vallina_rnn_helper(self, dev):
         inputs, target, h0 = prepare_inputs_targets_for_rnn_test(dev)
 
-        rnn = autograd.RNN(3, 2)
+        rnn = layer.RNN(3, 2)
 
         def valinna_rnn_forward():
             hs, _ = rnn(inputs, h0)
@@ -475,7 +449,8 @@ class TestPythonOperation(unittest.TestCase):
         loss1 = valinna_rnn_forward()
         auto_grads = autograd.gradients(loss1)
 
-        for param in rnn.params:
+        params = rnn.get_params()
+        for key, param in params.items():
             auto_grad = tensor.to_numpy(auto_grads[param])
 
             self.gradients_check(valinna_rnn_forward, param, auto_grad, dev=dev)
@@ -492,7 +467,7 @@ class TestPythonOperation(unittest.TestCase):
         c_0 = np.zeros((2, 2)).astype(np.float32)
         c0 = tensor.Tensor(device=dev, data=c_0)
 
-        rnn = autograd.LSTM(3, 2)
+        rnn = layer.LSTM(3, 2)
 
         def lstm_forward():
             hs, _, _ = rnn(inputs, (h0, c0))
@@ -506,7 +481,8 @@ class TestPythonOperation(unittest.TestCase):
         loss1 = lstm_forward()
         auto_grads = autograd.gradients(loss1)
 
-        for param in rnn.params:
+        params = rnn.get_params()
+        for key, param in params.items():
             auto_grad = tensor.to_numpy(auto_grads[param])
 
             self.gradients_check(lstm_forward, param, auto_grad, dev=dev)
@@ -2525,21 +2501,28 @@ class TestPythonOperation(unittest.TestCase):
             shapeB = config[5]
             shapeC = config[6]
             shapeY = config[7]
+
             A = np.random.randn(*shapeA).astype(np.float32)
-            B = np.random.randn(*shapeB).astype(np.float32)
-            C = np.random.randn(*shapeC).astype(np.float32)
             DY = np.ones(shapeY, dtype=np.float32)
+
+            if transB == 0:
+                out_features = shapeB[1]
+            else:
+                out_features = shapeB[0]
 
             a = tensor.from_numpy(A)
             a.to_device(dev)
-            b = tensor.from_numpy(B)
-            b.to_device(dev)
-            c = tensor.from_numpy(C)
-            c.to_device(dev)
             dy = tensor.from_numpy(DY)
             dy.to_device(dev)
 
-            result = autograd.gemm(a, b, c, alpha, beta, transA, transB)
+            gemm = layer.Gemm(out_features, alpha, beta, transA == 1,
+                              transB == 1)
+            result = gemm(a)
+
+            params = gemm.get_params()
+            B = tensor.to_numpy(params['Gemm.W'])
+            C = tensor.to_numpy(params['Gemm.b'])
+
             da, db, dc = result.creator.backward(dy.data)
 
             # Y = alpha * A' * B' + beta * C

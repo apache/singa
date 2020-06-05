@@ -25,6 +25,7 @@ from singa import device
 from singa import tensor
 from singa import opt
 from singa import autograd
+from singa import layer
 from singa import sonnx
 import onnx
 from utils import check_exist_or_download
@@ -86,12 +87,12 @@ def to_categorical(y, num_classes):
 class CNN:
 
     def __init__(self):
-        self.conv1 = autograd.Conv2d(1, 20, 5, padding=0)
-        self.conv2 = autograd.Conv2d(20, 50, 5, padding=0)
-        self.linear1 = autograd.Linear(4 * 4 * 50, 500, bias=False)
-        self.linear2 = autograd.Linear(500, 10, bias=False)
-        self.pooling1 = autograd.MaxPool2d(2, 2, padding=0)
-        self.pooling2 = autograd.MaxPool2d(2, 2, padding=0)
+        self.conv1 = layer.Conv2d(1, 20, 5, padding=0)
+        self.conv2 = layer.Conv2d(20, 50, 5, padding=0)
+        self.linear1 = layer.Linear(4 * 4 * 50, 500, bias=False)
+        self.linear2 = layer.Linear(500, 10, bias=False)
+        self.pooling1 = layer.MaxPool2d(2, 2, padding=0)
+        self.pooling2 = layer.MaxPool2d(2, 2, padding=0)
 
     def forward(self, x):
         y = self.conv1(x)

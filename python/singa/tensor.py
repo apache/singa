@@ -336,8 +336,23 @@ class Tensor(object):
         Args:
             t (Tensor): source Tensor.
         '''
+        assert (t.size() == self.size()), "tensor shape should be the same"
         assert isinstance(t, Tensor), 't must be a singa Tensor instance'
         self.data.CopyData(t.data)
+
+    def copy_from(self, t, offset=0):
+        ''' Copy the data from the numpy array or other Tensor instance
+
+        Args:
+            t (Tensor or np array): source Tensor or numpy array
+            offset (int): destination offset
+        '''
+        if isinstance(t, Tensor):
+            self.copy_data(t)
+        elif isinstance(t, np.ndarray):
+            self.copy_from_numpy(t)
+        else:
+            raise ValueError("t should be Tensor or numpy array.")
 
     def clone(self):
         '''
@@ -701,6 +716,9 @@ class Tensor(object):
         return np.array2string(to_numpy(self))
 
 
+''' alias Tensor to PlaceHolder
+'''
+PlaceHolder = Tensor
 ''' python functions for global functions in Tensor.h
 '''
 

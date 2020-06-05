@@ -18,9 +18,9 @@
 #
 
 from singa import singa_wrap as singa
-from singa import opt
 from singa import device
 from singa import tensor
+from singa import opt
 import numpy as np
 import time
 import argparse
@@ -124,7 +124,7 @@ def run(global_rank,
 
     if model == 'resnet':
         from model import resnet
-        model = resnet.resnet18(num_channels=num_channels,
+        model = resnet.resnet50(num_channels=num_channels,
                                 num_classes=num_classes)
     elif model == 'xceptionnet':
         from model import xceptionnet
@@ -183,10 +183,8 @@ def run(global_rank,
     idx = np.arange(train_x.shape[0], dtype=np.int32)
 
     # attached model to graph
-    model.on_device(dev)
     model.set_optimizer(sgd)
-    model.graph(graph, sequential)
-    
+    model.compile([tx], is_train=True, use_graph=graph, sequential=sequential)
     dev.SetVerbosity(verbosity)
 
     # Training and Evaluation Loop
@@ -217,9 +215,7 @@ def run(global_rank,
             ty.copy_from_numpy(y)
 
             # Train the model
-            out = model(tx)
-            loss = model.loss(out, ty)
-            model.optim(loss, dist_option, spars)
+            out, loss = model(tx, ty, dist_option, spars)
             train_correct += accuracy(tensor.to_numpy(out), y)
             train_loss += tensor.to_numpy(loss)[0]
 
@@ -258,7 +254,7 @@ def run(global_rank,
                   (test_correct / (num_val_batch * batch_size * world_size),
                    time.time() - start_time),
                   flush=True)
-        
+
     dev.PrintTimeProfiling()
 
 

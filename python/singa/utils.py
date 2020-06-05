@@ -58,10 +58,9 @@ def update_progress(progress, info):
 def handle_odd_pad_fwd(x, odd_padding):
     """
     handle odd padding mode forward
-    Args:x
-        the input tensor
-    Args:odd_padding
-        the odd_padding
+    Args:
+        x, the input tensor
+        odd_padding, the odd_padding
     Returns: 
         tensor, the output
     """
@@ -85,10 +84,9 @@ def handle_odd_pad_fwd(x, odd_padding):
 def handle_odd_pad_bwd(dx, odd_padding):
     """
     handle odd padding mode backward
-    Args:dx
-        the backward tensor
-    Args:odd_padding
-        the odd_padding
+    Args:
+        dx, the backward tensor
+        odd_padding, the odd_padding
     Returns: 
         tensor, the output
     """
@@ -108,12 +106,10 @@ def handle_odd_pad_bwd(dx, odd_padding):
 def same_pad_shape_check(handle, pad_mode, x):
     """
     check the shape is correct for same padding mode
-    Args:handle
-        the handle
-    Args:pad_mode
-        pad_mode
-    Args:x
-        input tensor
+    Args:
+        handle, the handle
+        pad_mode, pad_mode
+        x: input tensor
     Returns: 
         tuple, the correct padding(before divide 2)
     """
@@ -132,10 +128,9 @@ def same_pad_shape_check(handle, pad_mode, x):
 def re_new_handle(handle, x, is_pool=False):
     """
     re-new a handle by useing the new input tensor
-    Args:handle
-        the handle
-    Args:x
-        input tensor
+    Args:
+        handle, the handle
+        x, input tensor
     Returns: 
         handle, a new handle
     """
@@ -163,9 +158,7 @@ def get_padding_shape(pad_mode, input_spatial_shape, kernel_spatial_shape,
     return padding shape of conv2d or pooling,
     Args:
         pad_mode: string
-    Args:
         kernel_spatial_shape: list[int]
-    Args:
         strides_spatial: list[int]
     Returns: 
         list[int]
@@ -196,11 +189,9 @@ def get_output_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
     ! borrow from onnx
     Args:
         auto_pad: string
-    Args:
+        input_spatial_shape: list[int]
         kernel_spatial_shape: list[int]
-    Args:
         strides_spatial: list[int]
-    Args:
         output_spatial_shape: list[int]
     Returns: 
         list[int
@@ -241,7 +232,6 @@ def post_order_recursive(root, root_t):
     return a list by the topological ordering (postorder of Depth-first search)
     Args:
         root: singa operator
-    Args:
         root_t: tensor
     Returns: 
         deque[int]

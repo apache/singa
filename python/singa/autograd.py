@@ -21,7 +21,6 @@ from __future__ import division
 
 from collections import Counter, deque
 import numpy as np
-import math
 
 from singa import tensor
 from singa import utils
@@ -39,7 +38,7 @@ def axis_helper(y_shape, x_shape):
         y_shape: the shape of result
         x_shape: the shape of x
     Return:
-        a tuple refering the axes 
+        a tuple refering the axes
     """
     res = []
     j = len(x_shape) - 1
@@ -73,15 +72,15 @@ def infer_dependency(op):
     """
     Infer the dependency of all operations with the
     given op as the last operation.
-    Operation A is depending on B if A uses the output(s) of B.
+    Operator A is depending on B if A uses the output(s) of B.
 
     Args:
-        op: an Operation instance, e.g. the loss operation.
+        op: an Operator instance, e.g. the loss operation.
 
     Return:
         a Counter instance with the operation as the key,
         and the number of operations that are depending on it as the value;
-        and a Counter instance with the id of the output tensor as the key, and 
+        and a Counter instance with the id of the output tensor as the key, and
         the number of operations that are depending on it as the value.
     """
 
@@ -221,12 +220,12 @@ def backward(y, dy=None):
         del op  # delete the operation to free all tensors from this op
 
 
-class Operation(object):
+class Operator(object):
     """
     An operation includes the forward and backward function of
     tensor calculation.
     Steps to add a specific operation Xxxx:
-    1. create a subclass of Operation, name it as Xxxx
+    1. create a subclass of Operator, name it as Xxxx
     2. override the forward() and backward(); The arguments of forward()
        and backward() should only include CTensor;
     """
@@ -236,8 +235,8 @@ class Operation(object):
     def __init__(self, name=None):
         if name is None:
             self.name = "{}#{}".format(self.__class__.__name__,
-                                       Operation.op_count)
-            Operation.op_count += 1
+                                       Operator.op_count)
+            Operator.op_count += 1
         else:
             self.name = name
 
@@ -338,7 +337,7 @@ class Operation(object):
         return []
 
 
-class Dummy(Operation):
+class Dummy(Operator):
     """Dummy operation whice serves as a placehoder for autograd
     Args:
         name(string): set it for debug
@@ -361,7 +360,7 @@ class Dummy(Operation):
         return self.tensor.__getattribute__(name)
 
 
-class Mean(Operation):
+class Mean(Operator):
     """
     Element-wise mean of each of the input CTensors.
     """
@@ -406,9 +405,9 @@ def mean(*l):
     return Mean()(*l)[0]
 
 
-class ReLU(Operation):
+class ReLU(Operator):
     """
-    Relu means rectified linear function, i.e, y = max(0, x) is applied to the 
+    Relu means rectified linear function, i.e, y = max(0, x) is applied to the
     CTensor elementwise.
     """
 
@@ -438,7 +437,7 @@ class ReLU(Operation):
 
 def relu(x):
     """
-    Relu means rectified linear function, i.e, y = max(0, x) is applied to the 
+    Relu means rectified linear function, i.e, y = max(0, x) is applied to the
     CTensors elementwise.
     Args:
         x (Tensor): input tensor.
@@ -448,9 +447,9 @@ def relu(x):
     return ReLU()(x)[0]
 
 
-class Less(Operation):
+class Less(Operator):
     """
-    Returns the tensor resulted from performing the less logical operation 
+    Returns the tensor resulted from performing the less logical operation
     elementwise on the input CTensors x and y.
     """
 
@@ -483,9 +482,9 @@ def less(x, y):
     return Less()(x, y)[0]
 
 
-class Clip(Operation):
+class Clip(Operator):
     """
-    Clip operator limits the given input within an interval. The interval 
+    Clip operator limits the given input within an interval. The interval
     is specified by the inputs 'min' and 'max'.
     """
 
@@ -510,6 +509,7 @@ class Clip(Operation):
         self.mask.SetFloatValue(1.0)
 
         if self.min is not None:
+            self.min = float(self.min)
             mask0 = singa.LTFloat(x, self.min)
             mask1 = singa.GEFloat(x, self.min)
             self.mask = singa.__mul__(mask1, self.mask)
@@ -517,6 +517,7 @@ class Clip(Operation):
                               singa.__mul__(mask1, x))
 
         if self.max is not None:
+            self.max = float(self.max)
             mask0 = singa.GTFloat(x, self.max)
             mask1 = singa.LEFloat(x, self.max)
             self.mask = singa.__mul__(mask1, self.mask)
@@ -537,7 +538,7 @@ class Clip(Operation):
 
 def clip(x, min=None, max=None):
     """
-    Clip operator limits the given input within an interval. The interval 
+    Clip operator limits the given input within an interval. The interval
     is specified by the inputs 'min' and 'max'.
     Args:
         x (Tensor): input tensor
@@ -549,7 +550,7 @@ def clip(x, min=None, max=None):
     return Clip(min, max)(x)[0]
 
 
-class Identity(Operation):
+class Identity(Operator):
     """
     Init a identity operator
     """
@@ -587,7 +588,7 @@ def identity(x):
     return Identity()(x)[0]
 
 
-class Matmul(Operation):
+class Matmul(Operator):
     """
     Init matrix multiplication operator.
     """
@@ -623,9 +624,9 @@ def matmul(x, w):
     return Matmul()(x, w)[0]
 
 
-class Greater(Operation):
+class Greater(Operator):
     """
-    Returns the tensor resulted from performing the greater logical 
+    Returns the tensor resulted from performing the greater logical
     operation elementwise on the input tensors A and B.
     """
 
@@ -658,7 +659,7 @@ def greater(x, y):
     return Greater()(x, y)[0]
 
 
-class AddBias(Operation):
+class AddBias(Operator):
     """
     Add Bias to each row / column of the Tensor, depending on the axis arg.
     """
@@ -713,23 +714,23 @@ def add_bias(x, b, axis=0):
     return AddBias(axis)(x, b)[0]
 
 
-class Reshape(Operation):
+class Reshape(Operator):
     """
-    Reshape the input tensor similar to np.reshape. 
+    Reshape the input tensor similar to np.reshape.
     """
 
     def __init__(self, shape):
         """
         Args:
             shape (list of int): Specified shape for output. At most one
-                dimension of the new shape can be -1. In this case, the 
-                value is inferred from the size of the tensor and the 
-                remaining dimensions. A dimension could also be 0, 
-                in which case the actual dimension value is unchanged 
+                dimension of the new shape can be -1. In this case, the
+                value is inferred from the size of the tensor and the
+                remaining dimensions. A dimension could also be 0,
+                in which case the actual dimension value is unchanged
                 (i.e. taken from the input tensor).
         """
         super(Reshape, self).__init__()
-        self.shape = list(shape)
+        self.shape = shape
 
     def forward(self, x):
         """
@@ -739,7 +740,7 @@ class Reshape(Operation):
             the result CTensor
         """
         self._shape = x.shape()
-        shape = self.shape
+        shape = list(self.shape)
         # handle the shape with 0
         shape = [
             self._shape[i]
@@ -748,7 +749,7 @@ class Reshape(Operation):
         ]
         # handle the shape with -1
         hidden_shape = int(np.prod(self._shape) // np.abs(np.prod(shape)))
-        self.cache = [s if s != -1 else hidden_shape for s in shape]
+        self.cache = [int(s) if s != -1 else hidden_shape for s in shape]
         return singa.Reshape(x, self.cache)
 
     def backward(self, dy):
@@ -763,14 +764,14 @@ class Reshape(Operation):
 
 def reshape(x, shape):
     """
-    Reshape the input tensor similar to mp.reshape. 
+    Reshape the input tensor similar to mp.reshape.
     Args:
         x (Tensor): matrix.
         shape (list of int): Specified shape for output. At most one
-            dimension of the new shape can be -1. In this case, the 
-            value is inferred from the size of the tensor and the 
-            remaining dimensions. A dimension could also be 0, 
-            in which case the actual dimension value is unchanged 
+            dimension of the new shape can be -1. In this case, the
+            value is inferred from the size of the tensor and the
+            remaining dimensions. A dimension could also be 0,
+            in which case the actual dimension value is unchanged
             (i.e. taken from the input tensor).
     Return:
         the result Tensor
@@ -778,9 +779,9 @@ def reshape(x, shape):
     return Reshape(shape)(x)[0]
 
 
-class PRelu(Operation):
+class PRelu(Operator):
     """
-    PRelu applies the function `f(x) = slope * x` for x < 0, 
+    PRelu applies the function `f(x) = slope * x` for x < 0,
     `f(x) = x` for x >= 0 to the data tensor elementwise.
     """
 
@@ -830,7 +831,7 @@ class PRelu(Operation):
 
 def prelu(x, slope):
     """
-    PRelu applies the function `f(x) = slope * x` for x < 0, 
+    PRelu applies the function `f(x) = slope * x` for x < 0,
     `f(x) = x` for x >= 0 to the data tensor elementwise.
     Args:
         x (Tensor): matrix.
@@ -840,7 +841,7 @@ def prelu(x, slope):
     return PRelu()(x, slope)[0]
 
 
-class Add(Operation):
+class Add(Operator):
     """
     Performs element-wise binary addition.
     """
@@ -884,9 +885,9 @@ def add(a, b):
     return Add()(a, b)[0]
 
 
-class Elu(Operation):
+class Elu(Operator):
     """
-    `f(x) = alpha * (exp(x) - 1.)` for x < 0, `f(x) = x` for x >= 0., is applied to 
+    `f(x) = alpha * (exp(x) - 1.)` for x < 0, `f(x) = x` for x >= 0., is applied to
     the tensor elementwise.
     """
 
@@ -935,7 +936,7 @@ class Elu(Operation):
 
 def elu(x, alpha=1):
     """
-    `f(x) = alpha * (exp(x) - 1.)` for x < 0, `f(x) = x` for x >= 0., is applied to 
+    `f(x) = alpha * (exp(x) - 1.)` for x < 0, `f(x) = x` for x >= 0., is applied to
     the tensor elementwise.
     Args:
         x (Tensor): matrix
@@ -946,9 +947,9 @@ def elu(x, alpha=1):
     return Elu(alpha)(x)[0]
 
 
-class Equal(Operation):
+class Equal(Operator):
     """
-    Returns the tensor resulted from performing the equal logical operation 
+    Returns the tensor resulted from performing the equal logical operation
     elementwise on the input tensors x and y.
     """
 
@@ -980,9 +981,9 @@ def equal(x, y):
     return Equal()(x, y)[0]
 
 
-class SeLU(Operation):
+class SeLU(Operator):
     """
-    `y = gamma * (alpha * e^x - alpha)` for x <= 0, `y = gamma * x` for x > 0 
+    `y = gamma * (alpha * e^x - alpha)` for x <= 0, `y = gamma * x` for x > 0
     is applied to the tensor elementwise.
     """
 
@@ -1036,7 +1037,7 @@ class SeLU(Operation):
 
 def selu(x, alpha=1.67326, gamma=1.0507):
     """
-    `y = gamma * (alpha * e^x - alpha)` for x <= 0, `y = gamma * x` for x > 0 
+    `y = gamma * (alpha * e^x - alpha)` for x <= 0, `y = gamma * x` for x > 0
     is applied to the tensor elementwise.
     Args:
         x (Tensor): matrix
@@ -1048,7 +1049,7 @@ def selu(x, alpha=1.67326, gamma=1.0507):
     return SeLU(alpha, gamma)(x)[0]
 
 
-class SoftMax(Operation):
+class SoftMax(Operator):
     """
     Apply SoftMax for each row of the Tensor or each column of the Tensor
     according to the parameter axis.
@@ -1095,7 +1096,7 @@ def softmax(x, axis=1):
     return SoftMax(axis)(x)[0]
 
 
-class Sum(Operation):
+class Sum(Operator):
     """
     Element-wise sum of each of the input tensors
     """
@@ -1140,7 +1141,7 @@ def sum(*l):
     return Sum()(*l)[0]
 
 
-class CrossEntropy(Operation):
+class CrossEntropy(Operator):
 
     def __init__(self):
         super(CrossEntropy, self).__init__()
@@ -1189,7 +1190,7 @@ def cross_entropy(y, t):
     return CrossEntropy()(y, t)[0]
 
 
-class SoftMaxCrossEntropy(Operation):
+class SoftMaxCrossEntropy(Operator):
 
     def __init__(self, t):
         super(SoftMaxCrossEntropy, self).__init__()
@@ -1213,7 +1214,7 @@ def softmax_cross_entropy(x, t):
     return SoftMaxCrossEntropy(t)(x)[0]
 
 
-class MeanSquareError(Operation):
+class MeanSquareError(Operator):
 
     def __init__(self):
         super(MeanSquareError, self).__init__()
@@ -1238,29 +1239,29 @@ def mse_loss(x, t):
 
 def ctensor2numpy(x):
     """
-    To be used in SoftMax Operation.
+    To be used in SoftMax Operator.
     Convert a singa_tensor to numpy_tensor.
     """
     np_array = x.GetFloatValue(int(x.Size()))
     return np_array.reshape(x.shape())
 
 
-class Flatten(Operation):
+class Flatten(Operator):
     """
-    Flattens the input tensor into a 2D matrix. If input tensor has shape 
-    `(d_0, d_1, ... d_n)` then the output will have shape `(d_0 X d_1 ... 
+    Flattens the input tensor into a 2D matrix. If input tensor has shape
+    `(d_0, d_1, ... d_n)` then the output will have shape `(d_0 X d_1 ...
     d_(axis-1), d_axis X d_(axis+1) ... X dn)`.
     """
 
     def __init__(self, axis=1):
         """
         Args:
-            axis (int): Indicate up to which input dimensions (exclusive) 
-                should be flattened to the outer dimension of the output. The 
-                value for axis must be in the range [-r, r], where r is the 
-                rank of the input tensor. Negative value means counting 
-                dimensions from the back. When axis = 0, the shape of the 
-                output tensor is `(1, (d_0 X d_1 ... d_n)`, where the shape 
+            axis (int): Indicate up to which input dimensions (exclusive)
+                should be flattened to the outer dimension of the output. The
+                value for axis must be in the range [-r, r], where r is the
+                rank of the input tensor. Negative value means counting
+                dimensions from the back. When axis = 0, the shape of the
+                output tensor is `(1, (d_0 X d_1 ... d_n)`, where the shape
                 of the input tensor is `(d_0, d_1, ... d_n)`.
         Returns:
             the result CTensor
@@ -1301,17 +1302,17 @@ class Flatten(Operation):
 
 def flatten(x, axis=1):
     """
-    Flattens the input tensor into a 2D matrix. If input tensor has shape 
-    `(d_0, d_1, ... d_n)` then the output will have shape `(d_0 X d_1 ... 
+    Flattens the input tensor into a 2D matrix. If input tensor has shape
+    `(d_0, d_1, ... d_n)` then the output will have shape `(d_0 X d_1 ...
     d_(axis-1), d_axis X d_(axis+1) ... X dn)`.
     Args:
         x (Tensor): the input tensor
-        axis (int): Indicate up to which input dimensions (exclusive) 
-            should be flattened to the outer dimension of the output. The 
-            value for axis must be in the range [-r, r], where r is the 
-            rank of the input tensor. Negative value means counting 
-            dimensions from the back. When axis = 0, the shape of the 
-            output tensor is `(1, (d_0 X d_1 ... d_n)`, where the shape 
+        axis (int): Indicate up to which input dimensions (exclusive)
+            should be flattened to the outer dimension of the output. The
+            value for axis must be in the range [-r, r], where r is the
+            rank of the input tensor. Negative value means counting
+            dimensions from the back. When axis = 0, the shape of the
+            output tensor is `(1, (d_0 X d_1 ... d_n)`, where the shape
             of the input tensor is `(d_0, d_1, ... d_n)`.
     Returns:
         the result Tensor
@@ -1319,135 +1320,18 @@ def flatten(x, axis=1):
     return Flatten(axis)(x)[0]
 
 
-class Layer(object):
-
-    def __init__(self):
-        self.allow_params = []
-        pass
-
-    def device_check(self, *inputs):
-        x_device = inputs[0].device
-        x_dev_id = x_device.id()
-        for var in inputs:
-            if var.device.id() != x_dev_id:
-                var.to_device(x_device)
-
-    def find_sublayers(self):
-        # return a list whose elements are in form of (attribute_name,
-        # sublayer)
-        sublayers = []
-        for attr in self.__dict__:
-            if isinstance(self.__dict__[attr], Layer):
-                sublayers.append((attr, self.__dict__[attr]))
-        return sublayers
-
-    def get_params(self):
-        sublayers = self.find_sublayers()
-        params = dict()
-        for sublayer_name, sublayer in sublayers:
-            params[sublayer_name] = sublayer.get_params()
-        return params
-
-    def set_params(self, **parameters):
-        # set parameters for Layer
-        # input should be either a PyTensor or numpy ndarray.
-        # examples: Layer.set_params(W=np.ones((in, out), dtype=np.float32)),
-        # Layer.set_params(**{'block1':{'linear1':{'W':np.ones((in, out),
-        # dtype=np.float32)}}})
-        for (parameter_name, parameter_value) in parameters.items():
-            # assert isinstance(self.__dict__[parameter_name], Layer)
-            assert (parameter_name in self.__dict__
-                   ), "please input correct parameters."
-            if isinstance(self.__dict__[parameter_name], Layer):
-                self.__dict__[parameter_name].set_params(
-                    **parameters[parameter_name])
-            elif isinstance(self.__dict__[parameter_name], Tensor):
-                self.set_one_param(parameter_name, parameter_value)
-            else:
-                raise ValueError("please input correct parameters.")
-
-    def set_one_param(self, parameter_name, parameter_value):
-        assert (parameter_name in self.allow_params
-               ), "please input allowed parameters."
-        assert (parameter_value.shape == self.__dict__[parameter_name].shape
-               ), "Shape dismatched."
-        if isinstance(parameter_value, Tensor):
-            self.__dict__[parameter_name].reset_like(parameter_value)
-        elif isinstance(parameter_value, np.ndarray):
-            self.__dict__[parameter_name].copy_from_numpy(parameter_value)
-        else:
-            raise ValueError("parameters should be Tensor or Numpy array.")
-
-
-class Linear(Layer):
+class Concat(Operator):
     """
-    Generate a Linear operator
-    """
-
-    def __init__(self, in_features, out_features, bias=True):
-        """
-        Args:
-            in_channels: int, the channel of input
-            out_channels: int, the channel of output, also is the number of 
-                filters
-            bias: bool
-        """
-        w_shape = (in_features, out_features)
-        b_shape = (out_features,)
-        self.bias = bias
-
-        self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
-        std = math.sqrt(2.0 / (in_features + out_features))
-        self.W.gaussian(0.0, std)
-
-        if self.bias:
-            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
-            self.b.set_value(0.0)
-
-    def __call__(self, x):
-        if self.bias:
-            self.device_check(x, self.W, self.b)
-        else:
-            self.device_check(x, self.W)
-        assert x.shape[1] == self.W.shape[0], (
-            "Linear layer expects input features size %d received %d" %
-            (self.W.shape[0], x.shape[1]))
-        y = matmul(x, self.W)
-        if self.bias:
-            y = add_bias(y, self.b, axis=0)
-        return y
-
-    def get_params(self):
-        if self.bias:
-            return {"W": self.W, "b": self.b}
-        else:
-            return {"W": self.W}
-
-    def set_params(self, **parameters):
-        # TODO(wangwei) remove this funciton as Opeation's set_params() enough
-        # set parameters for Linear Layer
-        # input should be either a PyTensor or numpy ndarray.
-        # examples: Linear.set_params(W=np.ones((in, out), dtype=np.float32)),
-        # Linear.set_params(**{'W':np.ones((in, out), dtype=np.float32)})
-        self.allow_params = ["W", "b"]
-        super(Linear, self).set_params(**parameters)
-        for parameter_name in parameters:
-            if parameter_name is "b":
-                self.bias = True
-
-
-class Concat(Operation):
-    """
-    Concatenate a list of tensors into a single tensor. All input tensors must 
-    have the same shape, except for the dimension size of the axis to 
+    Concatenate a list of tensors into a single tensor. All input tensors must
+    have the same shape, except for the dimension size of the axis to
     concatenate on.
     """
 
     def __init__(self, axis=0):
         """
         Args:
-            axis (int): Which axis to concat on. A negative value means 
-                counting dimensions from the back. Accepted range is [-r, r-1] 
+            axis (int): Which axis to concat on. A negative value means
+                counting dimensions from the back. Accepted range is [-r, r-1]
                 where r = rank(inputs).
         Returns:
             the result CTensor
@@ -1462,6 +1346,8 @@ class Concat(Operation):
         Returns:
             a CTensor for the result
         """
+        if self.axis < 0:
+            self.axis = self.axis % len(xs[0].shape())
         if training:
             offset = 0
             self.slice_point = []
@@ -1491,13 +1377,13 @@ class Concat(Operation):
 
 def cat(xs, axis=0):
     """
-    Concatenate a list of tensors into a single tensor. All input tensors must 
-    have the same shape, except for the dimension size of the axis to 
+    Concatenate a list of tensors into a single tensor. All input tensors must
+    have the same shape, except for the dimension size of the axis to
     concatenate on.
     Args:
         xs (a list of Tensor): List of tensors for concatenation
-        axis (int): Which axis to concat on. A negative value means 
-            counting dimensions from the back. Accepted range is [-r, r-1] 
+        axis (int): Which axis to concat on. A negative value means
+            counting dimensions from the back. Accepted range is [-r, r-1]
             where r = rank(inputs).
     Returns:
         a Tensor for the result
@@ -1505,7 +1391,7 @@ def cat(xs, axis=0):
     return Concat(axis)(*xs)[0]
 
 
-class _Conv2d(Operation):
+class _Conv2d(Operator):
     """
     Init a conv 2d operator
     """
@@ -1514,16 +1400,14 @@ class _Conv2d(Operation):
         """
         Args:
             handle (object): ConvHandle for cpu or CudnnConvHandle for gpu
-            odd_padding (tuple of four ints):, the odd paddding is the value 
-                that cannot be handled by the tuple padding (w, h) mode so 
-                we need to firstly handle the input, then use the nomal padding 
+            odd_padding (tuple of four ints):, the odd paddding is the value
+                that cannot be handled by the tuple padding (w, h) mode so
+                we need to firstly handle the input, then use the nomal padding
                 method.
         """
         super(_Conv2d, self).__init__()
         self.handle = handle
         self.odd_padding = odd_padding
-        if self.odd_padding != (0, 0, 0, 0):
-            self.re_new_handle = True
 
     def forward(self, x, W, b=None):
         """
@@ -1532,15 +1416,11 @@ class _Conv2d(Operation):
             W (CTensor): weight
             b (CTensor): bias
         Returns:
-            CTensor 
+            CTensor
         """
         assert x.nDim() == 4, "The dimensions of input should be 4D."
         if self.odd_padding != (0, 0, 0, 0):
             x = utils.handle_odd_pad_fwd(x, self.odd_padding)
-            # re-new a handle with updated x
-            if self.re_new_handle:
-                self.re_new_handle = False
-                self.handle = utils.re_new_handle(self.handle, x)
 
         if training:
             if self.handle.bias_term:
@@ -1602,9 +1482,9 @@ def conv2d(handle, x, W, b=None, odd_padding=(0, 0, 0, 0)):
         x (Tensor): input
         W (Tensor): weight
         b (Tensor): bias
-        odd_padding (tuple of four ints):, the odd paddding is the value 
-            that cannot be handled by the tuple padding (w, h) mode so 
-            we need to firstly handle the input, then use the nomal padding 
+        odd_padding (tuple of four ints):, the odd paddding is the value
+            that cannot be handled by the tuple padding (w, h) mode so
+            we need to firstly handle the input, then use the nomal padding
             method.
     """
     if b is None:
@@ -1613,332 +1493,16 @@ def conv2d(handle, x, W, b=None, odd_padding=(0, 0, 0, 0)):
         return _Conv2d(handle, odd_padding)(x, W, b)[0]
 
 
-class Conv2d(Layer):
+class _BatchNorm2d(Operator):
     """
-    Generate a Conv 2d operator
-    """
-
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 kernel_size,
-                 stride=1,
-                 padding=0,
-                 dilation=1,
-                 group=1,
-                 bias=True,
-                 pad_mode="NOTSET",
-                 **kwargs):
-        """
-        Args:
-            in_channels (int): the channel of input
-            out_channels (int): the channel of output, also is the number of filters
-            kernel_size (int or tuple): kernel size for two direction of each 
-                axis. For example, (2, 3), the first 2 means will add 2 at the 
-                beginning and also 2 at the end for its axis.and if a int is 
-                accepted, the kernel size will be initiated as (int, int)
-            stride (int or tuple): stride, the logic is the same as kernel size.
-            padding (int): tuple, list or None, padding, the logic is the same 
-                as kernel size. However, if you set pad_mode as "SAME_UPPER" or 
-                "SAME_LOWER" mode, you can set padding as None, and the padding 
-                will be computed automatically.
-            dilation (int): only support 1
-            group (int): group
-            bias (bool): bias
-            pad_mode (string): can be NOTSET, SAME_UPPER, or SAME_LOWER, where 
-                default value is NOTSET, which means explicit padding is used. 
-                SAME_UPPER or SAME_LOWER mean pad the input so that the output 
-                spatial size match the input. In case of odd number add the extra 
-                padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
-        """
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-
-        self.group = group
-
-        assert (self.group >= 1 and self.in_channels %
-                self.group == 0), "please set reasonable group."
-
-        assert (self.out_channels >= self.group and self.out_channels %
-                self.group == 0), "out_channels and group dismatched."
-
-        if isinstance(kernel_size, int):
-            self.kernel_size = (kernel_size, kernel_size)
-        elif isinstance(kernel_size, tuple):
-            self.kernel_size = kernel_size
-        else:
-            raise TypeError("Wrong kernel_size type.")
-
-        if isinstance(stride, int):
-            self.stride = (stride, stride)
-        elif isinstance(stride, tuple):
-            self.stride = stride
-        else:
-            raise TypeError("Wrong stride type.")
-
-        self.odd_padding = (0, 0, 0, 0)
-        if isinstance(padding, int):
-            self.padding = (padding, padding)
-        elif isinstance(padding, tuple) or isinstance(padding, list):
-            if len(padding) == 2:
-                self.padding = padding
-            elif len(padding) == 4:
-                _h_mask = padding[0] - padding[1]
-                _w_mask = padding[2] - padding[3]
-                # the odd paddding is the value that cannot be handled by the tuple padding (w, h) mode
-                # so we need to firstly handle the input, then use the nomal padding method.
-                self.odd_padding = (max(_h_mask, 0), max(-_h_mask, 0),
-                                    max(_w_mask, 0), max(-_w_mask, 0))
-                self.padding = (
-                    padding[0] - self.odd_padding[0],
-                    padding[2] - self.odd_padding[2],
-                )
-            else:
-                raise TypeError("Wrong padding value.")
-
-        if dilation != 1:
-            raise ValueError("Not implemented yet")
-
-        self.bias = bias
-
-        self.inner_params = {
-            "cudnn_prefer": "fastest",
-            "workspace_MB_limit": 1024,
-        }
-        # TODO valid value of inner_params check
-
-        for kwarg in kwargs:
-            if kwarg not in self.inner_params:
-                raise TypeError("Keyword argument not understood:", kwarg)
-            else:
-                self.inner_params[kwarg] = kwargs[kwarg]
-
-        w_shape = (
-            self.out_channels,
-            int(self.in_channels / self.group),
-            self.kernel_size[0],
-            self.kernel_size[1],
-        )
-
-        self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
-        # std = math.sqrt(
-        # 2.0 / (self.in_channels * self.kernel_size[0] * self.kernel_size[1] +
-        # self.out_channels))
-        std = math.sqrt(
-            2.0 / (w_shape[1] * self.kernel_size[0] * self.kernel_size[1] +
-                   self.out_channels))
-        self.W.gaussian(0.0, std)
-
-        if self.bias:
-            b_shape = (self.out_channels,)
-            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
-            self.b.set_value(0.0)
-        else:
-            # to keep consistency when to do forward.
-            self.b = None
-            # Tensor(data=CTensor([]), requires_grad=False, stores_grad=False)
-        self.pad_mode = pad_mode
-
-    def __call__(self, x):
-        assert x.shape[1] == self.in_channels, "in_channels mismatched"
-
-        # if same pad mode, re-compute the padding
-        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
-            self.padding, self.odd_padding = utils.get_padding_shape(
-                self.pad_mode, x.shape[2:], self.kernel_size, self.stride)
-
-        if self.bias:
-            self.device_check(x, self.W, self.b)
-        else:
-            self.device_check(x, self.W)
-
-        if x.device.id() == -1:
-            if self.group != 1:
-                raise ValueError("Not implemented yet")
-            else:
-                if (not hasattr(self, "handle")) or (x.shape[0] !=
-                                                     self.handle.batchsize):
-                    self.handle = singa.ConvHandle(
-                        x.data,
-                        self.kernel_size,
-                        self.stride,
-                        self.padding,
-                        self.in_channels,
-                        self.out_channels,
-                        self.bias,
-                        self.group,
-                    )
-        else:
-            if (not hasattr(self,
-                            "handle")) or (x.shape[0] != self.handle.batchsize):
-                self.handle = singa.CudnnConvHandle(
-                    x.data,
-                    self.kernel_size,
-                    self.stride,
-                    self.padding,
-                    self.in_channels,
-                    self.out_channels,
-                    self.bias,
-                    self.group,
-                )
-
-        y = conv2d(self.handle, x, self.W, self.b, self.odd_padding)
-        return y
-
-    def get_params(self):
-        if self.bias:
-            return {"W": self.W, "b": self.b}
-        else:
-            return {"W": self.W}
-
-    def set_params(self, **parameters):
-        # TODO(wangwei) remove it as Operation's set_params() is enough
-        # input should be either a PyTensor or numpy ndarray.
-        # Conv2d.set_params(W=np.ones((n, c, h, w), dtype=np.float32)),
-        # Conv2d.set_params(**{'W':np.ones((n, c, h, w), dtype=np.float32)})
-        self.allow_params = ["W", "b"]
-        super(Conv2d, self).set_params(**parameters)
-        for parameter_name in parameters:
-            if parameter_name is "b":
-                self.bias = True
-
-
-class SeparableConv2d(Layer):
-    """
-    Generate a Conv 2d operator
-    """
-
-    def __init__(
-            self,
-            in_channels,
-            out_channels,
-            kernel_size,
-            stride=1,
-            padding=0,
-            bias=False,
-    ):
-        """
-        Args:
-            in_channels (int): the channel of input
-            out_channels (int): the channel of output, also is the number of filters
-            kernel_size (int or tuple): kernel size for two direction of each 
-                axis. For example, (2, 3), the first 2 means will add 2 at the 
-                beginning and also 2 at the end for its axis.and if a int is 
-                accepted, the kernel size will be initiated as (int, int)
-            stride (int or tuple): stride, the logic is the same as kernel size.
-            padding (int): tuple, list or None, padding, the logic is the same 
-                as kernel size. However, if you set pad_mode as "SAME_UPPER" or 
-                "SAME_LOWER" mode, you can set padding as None, and the padding 
-                will be computed automatically.
-            bias (bool): bias
-        """
-        self.depthwise_conv = Conv2d(
-            in_channels,
-            in_channels,
-            kernel_size,
-            stride,
-            padding,
-            group=in_channels,
-            bias=bias,
-        )
-
-        self.point_conv = Conv2d(in_channels, out_channels, 1, bias=bias)
-
-    def __call__(self, x):
-        y = self.depthwise_conv(x)
-        y = self.point_conv(y)
-        return y
-
-
-class BatchNorm2d(Layer):
-    """
-    Generate a BatchNorm 2d operator
-    """
-
-    def __init__(self, num_features, momentum=0.9):
-        """
-        Args:
-            num_features (int): int, the channel of input
-            momentum (float): Factor used in computing the running mean and 
-                variance.
-        """
-        self.channels = num_features
-        self.momentum = momentum
-
-        param_shape = (self.channels,)
-
-        self.scale = Tensor(shape=param_shape,
-                            requires_grad=True,
-                            stores_grad=True)
-        self.scale.set_value(1.0)
-
-        self.bias = Tensor(shape=param_shape,
-                           requires_grad=True,
-                           stores_grad=True)
-        self.bias.set_value(0.0)
-
-        self.running_mean = Tensor(shape=param_shape,
-                                   requires_grad=False,
-                                   stores_grad=False)
-        self.running_mean.set_value(0.0)
-
-        self.running_var = Tensor(shape=param_shape,
-                                  requires_grad=False,
-                                  stores_grad=False)
-        self.running_var.set_value(1.0)
-
-    def __call__(self, x):
-        assert x.shape[1] == self.channels, (
-            "number of channels dismatched. %d vs %d" %
-            (x.shape[1], self.channels))
-
-        self.device_check(x, self.scale, self.bias, self.running_mean,
-                          self.running_var)
-
-        if x.device.id() == -1:
-            if not hasattr(self, "handle"):
-                self.handle = singa.BatchNormHandle(self.momentum, x.data)
-            elif x.shape[0] != self.handle.batchsize:
-                self.handle = singa.BatchNormHandle(self.momentum, x.data)
-        else:
-            if not hasattr(self, "handle"):
-                self.handle = singa.CudnnBatchNormHandle(self.momentum, x.data)
-            elif x.shape[0] != self.handle.batchsize:
-                self.handle = singa.CudnnBatchNormHandle(self.momentum, x.data)
-
-        y = batchnorm_2d(
-            self.handle,
-            x,
-            self.scale,
-            self.bias,
-            self.running_mean,
-            self.running_var,
-        )
-        return y
-
-    def get_params(self):
-        return {"scale": self.scale, "bias": self.bias}
-
-    def set_params(self, **parameters):
-        # set parameters for BatchNorm2d Layer
-        # input should be either a PyTensor or numpy ndarray.
-        # examples:
-        #   Batchnorm2d.set_params(scale=np.ones((1,), dtype=np.float32)),
-        #   Batchnorm2d.set_params(**{'bias':np.ones((1), dtype=np.float32)})
-        self.allow_params = ["scale", "bias"]
-        super(BatchNorm2d, self).set_params(**parameters)
-
-
-class _BatchNorm2d(Operation):
-    """
-    Carries out batch normalization as described in the paper 
-    https://arxiv.org/abs/1502.03167. 
+    Carries out batch normalization as described in the paper
+    https://arxiv.org/abs/1502.03167.
     """
 
     def __init__(self, handle, running_mean, running_var, name=None):
         """
         Args:
-            handle (object): BatchNormHandle for cpu and CudnnBatchNormHandle 
+            handle (object): BatchNormHandle for cpu and CudnnBatchNormHandle
                 for gpu
             running_mean (float): the running_mean
             running_var (float): the running_var
@@ -2020,10 +1584,10 @@ class _BatchNorm2d(Operation):
 
 def batchnorm_2d(handle, x, scale, bias, running_mean, running_var):
     """
-    Carries out batch normalization as described in the paper 
-    https://arxiv.org/abs/1502.03167. 
+    Carries out batch normalization as described in the paper
+    https://arxiv.org/abs/1502.03167.
     Args:
-        handle (object): BatchNormHandle for cpu and CudnnBatchNormHandle 
+        handle (object): BatchNormHandle for cpu and CudnnBatchNormHandle
             for gpu
         x (Tensor): the input tensor
         scale (Tensor): the bias tensor
@@ -2036,7 +1600,7 @@ def batchnorm_2d(handle, x, scale, bias, running_mean, running_var):
     return _BatchNorm2d(handle, running_mean, running_var)(x, scale, bias)[0]
 
 
-class _Pooling2d(Operation):
+class _Pooling2d(Operator):
     """
     Init a pool 2d operator
     """
@@ -2044,18 +1608,16 @@ class _Pooling2d(Operation):
     def __init__(self, handle, odd_padding=(0, 0, 0, 0)):
         """
         Args:
-            handle (object): PoolingHandle for cpu or CudnnPoolingHandle for 
+            handle (object): PoolingHandle for cpu or CudnnPoolingHandle for
                 gpu
-            odd_padding (tuple of four int): the odd paddding is the value 
-                that cannot be handled by the tuple padding (w, h) mode so 
-                it needs to firstly handle the input, then use the normal 
+            odd_padding (tuple of four int): the odd paddding is the value
+                that cannot be handled by the tuple padding (w, h) mode so
+                it needs to firstly handle the input, then use the normal
                 padding method.
         """
         super(_Pooling2d, self).__init__()
         self.handle = handle
         self.odd_padding = odd_padding
-        if self.odd_padding != (0, 0, 0, 0):
-            self.re_new_handle = True
 
     def forward(self, x):
         """
@@ -2067,10 +1629,6 @@ class _Pooling2d(Operation):
         assert x.nDim() == 4, "The dimensions of input should be 4D."
         if self.odd_padding != (0, 0, 0, 0):
             x = utils.handle_odd_pad_fwd(x, self.odd_padding)
-            # re-new a handle with updated x
-            if self.re_new_handle:
-                self.re_new_handle = False
-                self.handle = utils.re_new_handle(self.handle, x, True)
 
         if (type(self.handle) != singa.PoolingHandle):
             y = singa.GpuPoolingForward(self.handle, x)
@@ -2103,12 +1661,12 @@ def pooling_2d(handle, x, odd_padding=(0, 0, 0, 0)):
     """
     Pooling 2d operator
     Args:
-        handle (object): PoolingHandle for cpu or CudnnPoolingHandle for 
+        handle (object): PoolingHandle for cpu or CudnnPoolingHandle for
             gpu
         x (Tensor): input
-        odd_padding (tuple of four int): the odd paddding is the value 
-            that cannot be handled by the tuple padding (w, h) mode so 
-            it needs to firstly handle the input, then use the normal 
+        odd_padding (tuple of four int): the odd paddding is the value
+            that cannot be handled by the tuple padding (w, h) mode so
+            it needs to firstly handle the input, then use the normal
             padding method.
     Returns:
         the result Tensor
@@ -2116,254 +1674,7 @@ def pooling_2d(handle, x, odd_padding=(0, 0, 0, 0)):
     return _Pooling2d(handle, odd_padding)(x)[0]
 
 
-class Pooling2d(Layer):
-    """
-    Generate a Pooling 2d operator
-    """
-
-    def __init__(self,
-                 kernel_size,
-                 stride=None,
-                 padding=0,
-                 is_max=True,
-                 pad_mode="NOTSET"):
-        """
-        Args:
-            kernel_size (int or tuple): kernel size for two direction of each 
-                axis. For example, (2, 3), the first 2 means will add 2 at the 
-                beginning and also 2 at the end for its axis.and if a int is 
-                accepted, the kernel size will be initiated as (int, int)
-            stride (int or tuple): stride, the logic is the same as kernel size.
-            padding (int): tuple, list or None, padding, the logic is the same 
-                as kernel size. However, if you set pad_mode as "SAME_UPPER" or 
-                "SAME_LOWER" mode, you can set padding as None, and the padding 
-                will be computed automatically.
-            is_max (bool): is max pooling or avg pooling
-            pad_mode (string): can be NOTSET, SAME_UPPER, or SAME_LOWER, where 
-                default value is NOTSET, which means explicit padding is used. 
-                SAME_UPPER or SAME_LOWER mean pad the input so that the output 
-                spatial size match the input. In case of odd number add the extra 
-                padding at the end for SAME_UPPER and at the beginning for SAME_LOWER.
-        """
-        if isinstance(kernel_size, int):
-            self.kernel_size = (kernel_size, kernel_size)
-        elif isinstance(kernel_size, tuple):
-            self.kernel_size = kernel_size
-        else:
-            raise TypeError("Wrong kernel_size type.")
-
-        if stride is None:
-            self.stride = self.kernel_size
-        elif isinstance(stride, int):
-            self.stride = (stride, stride)
-        elif isinstance(stride, tuple):
-            self.stride = stride
-            assert stride[0] > 0 or (kernel_size[0] == 1 and padding[0] == 0), (
-                "stride[0]=0, but kernel_size[0]=%d, padding[0]=%d" %
-                (kernel_size[0], padding[0]))
-        else:
-            raise TypeError("Wrong stride type.")
-
-        self.odd_padding = (0, 0, 0, 0)
-        if isinstance(padding, int):
-            self.padding = (padding, padding)
-        elif isinstance(padding, tuple) or isinstance(padding, list):
-            if len(padding) == 2:
-                self.padding = padding
-            elif len(padding) == 4:
-                _h_mask = padding[0] - padding[1]
-                _w_mask = padding[2] - padding[3]
-                # the odd paddding is the value that cannot be handled by the tuple padding (w, h) mode
-                # so we need to firstly handle the input, then use the nomal padding method.
-                self.odd_padding = (max(_h_mask, 0), max(-_h_mask, 0),
-                                    max(_w_mask, 0), max(-_w_mask, 0))
-                self.padding = (
-                    padding[0] - self.odd_padding[0],
-                    padding[2] - self.odd_padding[2],
-                )
-            else:
-                raise TypeError("Wrong padding value.")
-
-        self.is_max = is_max
-        self.pad_mode = pad_mode
-
-    def __call__(self, x):
-        # if same pad mode, re-compute the padding
-        if self.pad_mode in ("SAME_UPPER", "SAME_LOWER"):
-            self.padding, self.odd_padding = utils.get_padding_shape(
-                self.pad_mode, x.shape[2:], self.kernel_size, self.stride)
-
-        out_shape_h = (int(
-            (x.shape[2] + 2 * self.padding[0] - self.kernel_size[0]) //
-            self.stride[0]) + 1)
-        out_shape_w = (int(
-            (x.shape[3] + 2 * self.padding[1] - self.kernel_size[1]) //
-            self.stride[1]) + 1)
-        if x.device.id() == -1:
-            if not hasattr(self, "handle"):
-                self.handle = singa.PoolingHandle(
-                    x.data,
-                    self.kernel_size,
-                    self.stride,
-                    self.padding,
-                    self.is_max,
-                )
-            elif (x.shape[0] != self.handle.batchsize or
-                  out_shape_h != self.handle.pooled_height or
-                  out_shape_w != self.handle.pooled_width):
-                self.handle = singa.PoolingHandle(
-                    x.data,
-                    self.kernel_size,
-                    self.stride,
-                    self.padding,
-                    self.is_max,
-                )
-        else:
-            if not hasattr(self, "handle"):
-                self.handle = singa.CudnnPoolingHandle(
-                    x.data,
-                    self.kernel_size,
-                    self.stride,
-                    self.padding,
-                    self.is_max,
-                )
-            elif (x.shape[0] != self.handle.batchsize or
-                  out_shape_h != self.handle.pooled_height or
-                  out_shape_w != self.handle.pooled_width):
-                self.handle = singa.CudnnPoolingHandle(
-                    x.data,
-                    self.kernel_size,
-                    self.stride,
-                    self.padding,
-                    self.is_max,
-                )
-
-        y = pooling_2d(self.handle, x, self.odd_padding)
-        return y
-
-
-class MaxPool2d(Pooling2d):
-    """
-    Generate a Max Pooling 2d operator
-    """
-
-    def __init__(self,
-                 kernel_size,
-                 stride=None,
-                 padding=0,
-                 odd_padding=(0, 0, 0, 0)):
-        """
-        Args:
-            kernel_size (int or tuple): kernel size for two direction of each 
-                axis. For example, (2, 3), the first 2 means will add 2 at the 
-                beginning and also 2 at the end for its axis.and if a int is 
-                accepted, the kernel size will be initiated as (int, int)
-            stride (int or tuple): stride, the logic is the same as kernel size.
-            padding (int): tuple, list or None, padding, the logic is the same 
-                as kernel size. However, if you set pad_mode as "SAME_UPPER" or 
-                "SAME_LOWER" mode, you can set padding as None, and the padding 
-                will be computed automatically.
-            odd_padding (tuple of four int): the odd paddding is the value 
-                that cannot be handled by the tuple padding (w, h) mode so 
-                it needs to firstly handle the input, then use the normal 
-                padding method.
-        """
-        super(MaxPool2d, self).__init__(kernel_size, stride, padding, True,
-                                        odd_padding)
-
-
-class AvgPool2d(Pooling2d):
-
-    def __init__(self,
-                 kernel_size,
-                 stride=None,
-                 padding=0,
-                 odd_padding=(0, 0, 0, 0)):
-        """
-        Args:
-            kernel_size (int or tuple): kernel size for two direction of each 
-                axis. For example, (2, 3), the first 2 means will add 2 at the 
-                beginning and also 2 at the end for its axis.and if a int is 
-                accepted, the kernel size will be initiated as (int, int)
-            stride (int or tuple): stride, the logic is the same as kernel size.
-            padding (int): tuple, list or None, padding, the logic is the same 
-                as kernel size. However, if you set pad_mode as "SAME_UPPER" or 
-                "SAME_LOWER" mode, you can set padding as None, and the padding 
-                will be computed automatically.
-            odd_padding (tuple of four int): the odd paddding is the value 
-                that cannot be handled by the tuple padding (w, h) mode so 
-                it needs to firstly handle the input, then use the normal 
-                padding method.
-        """
-        super(AvgPool2d, self).__init__(kernel_size, stride, padding, False,
-                                        odd_padding)
-
-
-class MaxPool1d(Pooling2d):
-    """
-    Generate a Max Pooling 1d operator
-    """
-
-    def __init__(self,
-                 kernel_size,
-                 stride=None,
-                 padding=0,
-                 odd_padding=(0, 0, 0, 0)):
-        """
-        Args:
-            kernel_size (int or tuple): kernel size for two direction of each 
-                axis. For example, (2, 3), the first 2 means will add 2 at the 
-                beginning and also 2 at the end for its axis.and if a int is 
-                accepted, the kernel size will be initiated as (int, int)
-            stride (int or tuple): stride, the logic is the same as kernel size.
-            padding (int): tuple, list or None, padding, the logic is the same 
-                as kernel size. However, if you set pad_mode as "SAME_UPPER" or 
-                "SAME_LOWER" mode, you can set padding as None, and the padding 
-                will be computed automatically.
-            odd_padding (tuple of four int): the odd paddding is the value 
-                that cannot be handled by the tuple padding (w, h) mode so 
-                it needs to firstly handle the input, then use the normal 
-                padding method.
-        """
-        if stride is None:
-            stride = kernel_size
-        super(MaxPool1d, self).__init__((1, kernel_size), (1, stride),
-                                        (0, padding), True, odd_padding)
-
-
-class AvgPool1d(Pooling2d):
-    """
-    Generate a Avg Pooling 1d operator
-    """
-
-    def __init__(self,
-                 kernel_size,
-                 stride=None,
-                 padding=0,
-                 odd_padding=(0, 0, 0, 0)):
-        """
-        Args:
-            kernel_size (int or tuple): kernel size for two direction of each 
-                axis. For example, (2, 3), the first 2 means will add 2 at the 
-                beginning and also 2 at the end for its axis.and if a int is 
-                accepted, the kernel size will be initiated as (int, int)
-            stride (int or tuple): stride, the logic is the same as kernel size.
-            padding (int): tuple, list or None, padding, the logic is the same 
-                as kernel size. However, if you set pad_mode as "SAME_UPPER" or 
-                "SAME_LOWER" mode, you can set padding as None, and the padding 
-                will be computed automatically.
-            odd_padding (tuple of four int): the odd paddding is the value 
-                that cannot be handled by the tuple padding (w, h) mode so 
-                it needs to firstly handle the input, then use the normal 
-                padding method.
-        """
-        if stride is None:
-            stride = kernel_size
-        super(AvgPool1d, self).__init__((1, kernel_size), (1, stride),
-                                        (0, padding), False, odd_padding)
-
-
-class Tanh(Operation):
+class Tanh(Operator):
     """
     Calculates the hyperbolic tangent of the given input tensor element-wise.
     """
@@ -2375,7 +1686,7 @@ class Tanh(Operation):
         """
         Args:
             x (CTensor): Input tensor
-        Returns: 
+        Returns:
             CTensor, the output
         """
         out = singa.Tanh(x)
@@ -2387,7 +1698,7 @@ class Tanh(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         dx = singa.__mul__(self.cache[0], self.cache[0])
@@ -2402,13 +1713,13 @@ def tanh(x):
     Calculates the hyperbolic tangent of the given input tensor element-wise.
     Args:
         x (Tensor): Input tensor
-    Returns: 
+    Returns:
         Tensor, the output
     """
     return Tanh()(x)[0]
 
 
-class Cos(Operation):
+class Cos(Operator):
     """
     Calculates the cosine of the given input tensor, element-wise.
     """
@@ -2420,7 +1731,7 @@ class Cos(Operation):
         """
         Args:
             x (CTensor): Input tensor
-        Returns: 
+        Returns:
             CTensor, the output
         """
         if training:
@@ -2431,7 +1742,7 @@ class Cos(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         dx = singa.Sin(self.input)
@@ -2445,14 +1756,14 @@ def cos(x):
     Calculates the cosine of the given input tensor, element-wise.
     Args:
         x (Tensor): Input tensor
-    Returns: 
+    Returns:
         Tensor, the output
     """
 
     return Cos()(x)[0]
 
 
-class Cosh(Operation):
+class Cosh(Operator):
     """
     Calculates the hyperbolic cosine of the given input tensor element-wise.
     """
@@ -2464,7 +1775,7 @@ class Cosh(Operation):
         """
         Args:
             x (CTensor): Input tensor
-        Returns: 
+        Returns:
             CTensor, the output
         """
         if training:
@@ -2475,7 +1786,7 @@ class Cosh(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         dx = singa.Sinh(self.input)
@@ -2488,15 +1799,15 @@ def cosh(x):
     Calculates the hyperbolic cosine of the given input tensor element-wise.
     Args:
         x (Tensor): Input tensor
-    Returns: 
+    Returns:
         Tensor, the output
     """
     return Cosh()(x)[0]
 
 
-class Acos(Operation):
+class Acos(Operator):
     """
-    Calculates the arccosine (inverse of cosine) of the given input tensor, 
+    Calculates the arccosine (inverse of cosine) of the given input tensor,
     element-wise.
     """
 
@@ -2507,7 +1818,7 @@ class Acos(Operation):
         """
         Args:
             x (CTensor): Input tensor
-        Returns: 
+        Returns:
             CTensor, the output
         """
         if training:
@@ -2518,7 +1829,7 @@ class Acos(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         dx = singa.Square(self.input)
@@ -2532,17 +1843,17 @@ class Acos(Operation):
 
 def acos(x):
     """
-    Calculates the arccosine (inverse of cosine) of the given input tensor, 
+    Calculates the arccosine (inverse of cosine) of the given input tensor,
     element-wise.
     Args:
         x (Tensor): Input tensor
-    Returns: 
+    Returns:
         Tensor, the output
     """
     return Acos()(x)[0]
 
 
-class Acosh(Operation):
+class Acosh(Operator):
     """
     Calculates the hyperbolic arccosine of the given input tensor element-wise.
     """
@@ -2554,7 +1865,7 @@ class Acosh(Operation):
         """
         Args:
             x (CTensor): Input tensor
-        Returns: 
+        Returns:
             CTensor, the output
         """
         if training:
@@ -2565,7 +1876,7 @@ class Acosh(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         dx = singa.SubFloat(self.input, 1.0)
@@ -2583,13 +1894,13 @@ def acosh(x):
     Calculates the hyperbolic arccosine of the given input tensor element-wise.
     Args:
         x (Tensor): Input tensor
-    Returns: 
+    Returns:
         Tensor, the output
     """
     return Acosh()(x)[0]
 
 
-class Sin(Operation):
+class Sin(Operator):
     """
     Calculates the sine of the given input tensor, element-wise.
     """
@@ -2601,7 +1912,7 @@ class Sin(Operation):
         """
         Args:
             x (CTensor): Input tensor
-        Returns: 
+        Returns:
             CTensor, the output
         """
         if training:
@@ -2612,7 +1923,7 @@ class Sin(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         dx = singa.Cos(self.input)
@@ -2625,13 +1936,13 @@ def sin(x):
     Calculates the sine of the given input tensor, element-wise.
     Args:
         x (Tensor): Input tensor
-    Returns: 
+    Returns:
         Tensor, the output
     """
     return Sin()(x)[0]
 
 
-class Sinh(Operation):
+class Sinh(Operator):
     """
     Calculates the hyperbolic sine of the given input tensor element-wise.
     """
@@ -2643,7 +1954,7 @@ class Sinh(Operation):
         """
         Args:
             x (CTensor): Input tensor
-        Returns: 
+        Returns:
             CTensor, the output
         """
         if training:
@@ -2654,7 +1965,7 @@ class Sinh(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         dx = singa.Cosh(self.input)
@@ -2667,13 +1978,13 @@ def sinh(x):
     Calculates the hyperbolic sine of the given input tensor element-wise.
     Args:
         x (Tensor): Input tensor
-    Returns: 
+    Returns:
         Tensor, the output
     """
     return Sinh()(x)[0]
 
 
-class Asin(Operation):
+class Asin(Operator):
     """
     Calculates the arcsine (inverse of sine) of the given input tensor, element-wise.
     """
@@ -2685,7 +1996,7 @@ class Asin(Operation):
         """
         Args:
             x (CTensor): Input tensor
-        Returns: 
+        Returns:
             CTensor, the output
         """
         if training:
@@ -2696,7 +2007,7 @@ class Asin(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         dx = singa.Square(self.input)
@@ -2712,14 +2023,14 @@ def asin(x):
     Calculates the arcsine (inverse of sine) of the given input tensor, element-wise.
     Args:
         x (Tensor): Input tensor
-    Returns: 
+    Returns:
         Tensor, the output
     """
 
     return Asin()(x)[0]
 
 
-class Asinh(Operation):
+class Asinh(Operator):
     """
     Calculates the hyperbolic arcsine of the given input tensor element-wise.
     """
@@ -2731,7 +2042,7 @@ class Asinh(Operation):
         """
         Args:
             x (CTensor): Input tensor
-        Returns: 
+        Returns:
             CTensor, the output
         """
         if training:
@@ -2742,7 +2053,7 @@ class Asinh(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         dx = singa.Square(self.input)
@@ -2757,15 +2068,15 @@ def asinh(x):
     Calculates the hyperbolic arcsine of the given input tensor element-wise.
     Args:
         x (Tensor): Input tensor
-    Returns: 
+    Returns:
         Tensor, the output
     """
     return Asinh()(x)[0]
 
 
-class Tan(Operation):
+class Tan(Operator):
     """
-    Insert single-dimensional entries to the shape of an input tensor (data). 
+    Insert single-dimensional entries to the shape of an input tensor (data).
     """
 
     def __init__(self):
@@ -2775,7 +2086,7 @@ class Tan(Operation):
         """
         Args:
             x (CTensor): Input tensor
-        Returns: 
+        Returns:
             CTensor, the output
         """
         if training:
@@ -2786,7 +2097,7 @@ class Tan(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         dx = singa.Cos(self.input)
@@ -2801,13 +2112,13 @@ def tan(x):
     Calculates the tangent of the given input tensor, element-wise.
     Args:
         x (Tensor): Input tensor
-    Returns: 
+    Returns:
         Tensor, the output
     """
     return Tan()(x)[0]
 
 
-class Atan(Operation):
+class Atan(Operator):
     """
     Calculates the arctangent (inverse of tangent) of the given input tensor, element-wise.
     """
@@ -2819,7 +2130,7 @@ class Atan(Operation):
         """
         Args:
             x (CTensor): Input tensor
-        Returns: 
+        Returns:
             CTensor, the output
         """
         if training:
@@ -2830,7 +2141,7 @@ class Atan(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         dx = singa.Square(self.input)
@@ -2845,13 +2156,13 @@ def atan(x):
     Calculates the arctangent (inverse of tangent) of the given input tensor, element-wise.
     Args:
         x (Tensor): Input tensor
-    Returns: 
+    Returns:
         Tensor, the output
     """
     return Atan()(x)[0]
 
 
-class Atanh(Operation):
+class Atanh(Operator):
     """
     Calculates the hyperbolic arctangent of the given input tensor element-wise.
     """
@@ -2863,7 +2174,7 @@ class Atanh(Operation):
         """
         Args:
             x (CTensor): Input tensor
-        Returns: 
+        Returns:
             CTensor, the output
         """
         if training:
@@ -2874,7 +2185,7 @@ class Atanh(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         dx = singa.Square(self.input)
@@ -2890,13 +2201,13 @@ def atanh(x):
     Calculates the hyperbolic arctangent of the given input tensor element-wise.
     Args:
         x (Tensor): Input tensor
-    Returns: 
+    Returns:
         Tensor, the output
     """
     return Atanh()(x)[0]
 
 
-class Sigmoid(Operation):
+class Sigmoid(Operator):
     """
     `y = 1 / (1 + exp(-x))`, is applied to the tensor elementwise.
     """
@@ -2908,7 +2219,7 @@ class Sigmoid(Operation):
         """
         Args:
             x (CTensor): Input tensor
-        Returns: 
+        Returns:
             CTensor, the output
         """
         out = singa.Sigmoid(x)
@@ -2920,7 +2231,7 @@ class Sigmoid(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         dx = singa.MultFloat(self.cache[0], -1.0)
@@ -2935,16 +2246,16 @@ def sigmoid(x):
     `y = 1 / (1 + exp(-x))`, is applied to the tensor elementwise.
     Args:
         x (Tensor): Input tensor
-    Returns: 
+    Returns:
         Tensor, the output
     """
     return Sigmoid()(x)[0]
 
 
-class Mul(Operation):
+class Mul(Operator):
     """
-    Performs element-wise binary multiplication (with Numpy-style broadcasting 
-    support).        
+    Performs element-wise binary multiplication (with Numpy-style broadcasting
+    support).
     """
 
     def __init__(self):
@@ -2976,7 +2287,7 @@ class Mul(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             a tuple for (da, db), da is data for dL / da, db is data
                 for dL / db.
         """
@@ -2998,9 +2309,9 @@ def mul(x, y):
     return Mul()(x, y)[0]
 
 
-class Unsqueeze(Operation):
+class Unsqueeze(Operator):
     """
-    Insert single-dimensional entries to the shape of an input tensor (data). 
+    Insert single-dimensional entries to the shape of an input tensor (data).
     """
 
     def __init__(self, axis):
@@ -3018,7 +2329,7 @@ class Unsqueeze(Operation):
         """
         Args:
             x (CTensor): Input tensor
-        Returns: 
+        Returns:
             CTensor, the output
         """
         self.cache = x.shape()
@@ -3034,7 +2345,7 @@ class Unsqueeze(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         return singa.Reshape(dy, self.cache)
@@ -3042,25 +2353,25 @@ class Unsqueeze(Operation):
 
 def unsqueeze(x, axis=-1):
     """
-    Insert single-dimensional entries to the shape of an input tensor (data). 
+    Insert single-dimensional entries to the shape of an input tensor (data).
     Args:
         x (Tensor): Input tensor
         axis (list of int): the dimensions to be inserted.
-    Returns: 
+    Returns:
         Tensor, the output
     """
     return Unsqueeze(axis)(x)[0]
 
 
-class Transpose(Operation):
+class Transpose(Operator):
     """
-    Transpose the input tensor similar to numpy.transpose. 
+    Transpose the input tensor similar to numpy.transpose.
     """
 
     def __init__(self, perm):
         """
         Args:
-            perm (list of ints): A list of integers. By default, reverse the 
+            perm (list of ints): A list of integers. By default, reverse the
                 dimensions, otherwise permute the axes according to the values given.
         """
         super(Transpose, self).__init__()
@@ -3070,7 +2381,7 @@ class Transpose(Operation):
         """
         Args:
             x (CTensor): Input tensor
-        Returns: 
+        Returns:
             CTensor, the output
         """
         return singa.Transpose(x, self.perm)
@@ -3079,7 +2390,7 @@ class Transpose(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         cur = []
@@ -3090,12 +2401,12 @@ class Transpose(Operation):
 
 def transpose(x, shape):
     """
-    Transpose the input tensor similar to numpy.transpose. 
+    Transpose the input tensor similar to numpy.transpose.
     Args:
         x (Tensor): Input tensor
-        perm (list of ints): A list of integers. By default, reverse the 
+        perm (list of ints): A list of integers. By default, reverse the
             dimensions, otherwise permute the axes according to the values given.
-    Returns: 
+    Returns:
         Tensor, the output
     """
     return Transpose(shape)(x)[0]
@@ -3109,230 +2420,7 @@ def add_all(*xs):
     return
 
 
-class RNN_Base(Layer):
-
-    def __init__(self):
-        raise NotImplementedError
-
-    def __call__(self):
-        raise NotImplementedError
-
-    def step_forward(self,
-                     x=None,
-                     h=None,
-                     c=None,
-                     Wx=None,
-                     Wh=None,
-                     Bx=None,
-                     Bh=None,
-                     b=None):
-        raise NotImplementedError
-
-
-class RNN(RNN_Base):
-    """
-    Generate a RNN operator
-    """
-
-    def __init__(
-            self,
-            input_size,
-            hidden_size,
-            num_layers=1,
-            nonlinearity="tanh",
-            bias=True,
-            batch_first=False,
-            dropout=0,
-            bidirectional=False,
-    ):
-        """
-        Args:
-            input_size (int):  The number of expected features in the input x
-            hidden_size (int): The number of features in the hidden state h
-            num_layers (int):  Number of recurrent layers. Default: 1
-            nonlinearity (string): The non-linearity to use. Default: 'tanh'
-            bias (bool):  If False, then the layer does not use bias weights. 
-                Default: True
-            batch_first (bool):  If True, then the input and output tensors 
-                are provided as (batch, seq, feature). Default: False
-            dropout (float): If non-zero, introduces a Dropout layer on the 
-                outputs of each RNN layer except the last layer, with dropout 
-                probability equal to dropout. Default: 0
-            bidirectional (bool): If True, becomes a bidirectional RNN. 
-                Default: False
-        """
-        self.nonlinearity = nonlinearity
-
-        Wx_shape = (input_size, hidden_size)
-        self.Wx = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
-        self.Wx.gaussian(0.0, 1.0)
-
-        Wh_shape = (hidden_size, hidden_size)
-        self.Wh = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
-        self.Wh.gaussian(0.0, 1.0)
-
-        B_shape = (hidden_size,)
-        self.b = Tensor(shape=B_shape, requires_grad=True, stores_grad=True)
-        self.b.set_value(0.0)
-
-        self.params = (self.Wx, self.Wh, self.b)
-
-    def __call__(self, xs, h0):
-        # xs: a tuple or list of input tensors
-        if not isinstance(xs, tuple):
-            xs = tuple(xs)
-        inputs = xs + (h0,)
-        self.device_check(*inputs)
-        # self.device_check(inputs[0], *self.params)
-        self.device_check(inputs[0], self.Wx, self.Wh, self.b)
-        batchsize = xs[0].shape[0]
-        out = []
-        h = self.step_forward(xs[0], h0, self.Wx, self.Wh, self.b)
-        out.append(h)
-        for x in xs[1:]:
-            assert x.shape[0] == batchsize
-            h = self.step_forward(x, h, self.Wx, self.Wh, self.b)
-            out.append(h)
-        return out, h
-
-    def step_forward(self, x, h, Wx, Wh, b):
-        y2 = matmul(h, Wh)
-        y1 = matmul(x, Wx)
-        y = add(y2, y1)
-        y = add_bias(y, b, axis=0)
-        if self.nonlinearity == "tanh":
-            y = tanh(y)
-        elif self.nonlinearity == "relu":
-            y = relu(y)
-        else:
-            raise ValueError
-        return y
-
-
-class LSTM(RNN_Base):
-    """
-    Generate a LSTM operator
-    """
-
-    def __init__(
-            self,
-            input_size,
-            hidden_size,
-            nonlinearity="tanh",
-            num_layers=1,
-            bias=True,
-            batch_first=False,
-            dropout=0,
-            bidirectional=False,
-    ):
-        """
-        Args:
-            input_size (int):  The number of expected features in the input x
-            hidden_size (int): The number of features in the hidden state h
-            num_layers (int):  Number of recurrent layers. Default: 1
-            nonlinearity (string): The non-linearity to use. Default: 'tanh'
-            bias (bool):  If False, then the layer does not use bias weights. 
-                Default: True
-            batch_first (bool):  If True, then the input and output tensors 
-                are provided as (batch, seq, feature). Default: False
-            dropout (float): If non-zero, introduces a Dropout layer on the 
-                outputs of each RNN layer except the last layer, with dropout 
-                probability equal to dropout. Default: 0
-            bidirectional (bool): If True, becomes a bidirectional RNN. 
-                Default: False
-        """
-        self.nonlinearity = nonlinearity
-
-        Wx_shape = (input_size, hidden_size)
-        self.Wx = []
-        for i in range(4):
-            w = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
-            w.gaussian(0.0, 0.01)
-            self.Wx.append(w)
-
-        Wh_shape = (hidden_size, hidden_size)
-        self.Wh = []
-        for i in range(4):
-            w = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
-            w.gaussian(0.0, 0.01)
-            self.Wh.append(w)
-
-        Bx_shape = (hidden_size,)
-        self.Bx = []
-        for i in range(4):
-            b = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
-            b.set_value(0.0)
-            self.Bx.append(b)
-
-        self.Bh = []
-        for i in range(4):
-            b = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
-            b.set_value(0.0)
-            self.Bh.append(b)
-
-        self.params = self.Wx + self.Wh + self.Bx + self.Bh
-
-    def __call__(self, xs, h0_c0):
-        # xs: a tuple or list of input tensors
-        # h0_c0: a tuple of (h0, c0)
-        h0, c0 = h0_c0
-        if not isinstance(xs, list):
-            xs = list(xs)
-        inputs = xs + list((h0, c0))
-        self.device_check(*inputs)
-        # self.device_check(inputs[0], *self.params)
-        self.device_check(inputs[0], *(self.Wx + self.Wh + self.Bx + self.Bh))
-        batchsize = xs[0].shape[0]
-        out = []
-        h, c = self.step_forward(xs[0], h0, c0, self.Wx, self.Wh, self.Bx,
-                                 self.Bh)
-        out.append(h)
-        for x in xs[1:]:
-            assert x.shape[0] == batchsize
-            h, c = self.step_forward(x, h, c, self.Wx, self.Wh, self.Bx,
-                                     self.Bh)
-            out.append(h)
-        return out, h, c
-
-    def step_forward(self, x, h, c, Wx, Wh, Bx, Bh):
-        y1 = matmul(x, Wx[0])
-        y1 = add_bias(y1, Bx[0], axis=0)
-        y2 = matmul(h, Wh[0])
-        y2 = add_bias(y2, Bh[0], axis=0)
-        i = add(y1, y2)
-        i = sigmoid(i)
-
-        y1 = matmul(x, Wx[1])
-        y1 = add_bias(y1, Bx[1], axis=0)
-        y2 = matmul(h, Wh[1])
-        y2 = add_bias(y2, Bh[1], axis=0)
-        f = add(y1, y2)
-        f = sigmoid(f)
-
-        y1 = matmul(x, Wx[2])
-        y1 = add_bias(y1, Bx[2], axis=0)
-        y2 = matmul(h, Wh[2])
-        y2 = add_bias(y2, Bh[2], axis=0)
-        o = add(y1, y2)
-        o = sigmoid(o)
-
-        y1 = matmul(x, Wx[3])
-        y1 = add_bias(y1, Bx[3], axis=0)
-        y2 = matmul(h, Wh[3])
-        y2 = add_bias(y2, Bh[3], axis=0)
-        g = add(y1, y2)
-        g = tanh(g)
-
-        cout1 = mul(f, c)
-        cout2 = mul(i, g)
-        cout = add(cout1, cout2)
-
-        hout = tanh(cout)
-        hout = mul(o, hout)
-        return hout, cout
-
-
-class Abs(Operation):
+class Abs(Operator):
     """
     `y = abs(x)`, is applied to the tensor elementwise.
     """
@@ -3349,7 +2437,7 @@ class Abs(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         dx = singa.Sign(self.input)
@@ -3364,7 +2452,7 @@ def abs(a):
     return Abs()(a)[0]
 
 
-class Exp(Operation):
+class Exp(Operator):
     """
     `y = exp(x)`, is applied to the tensor elementwise.
     """
@@ -3381,7 +2469,7 @@ class Exp(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         dx = singa.Exp(self.input)
@@ -3396,7 +2484,7 @@ def exp(a):
     return Exp()(a)[0]
 
 
-class LeakyRelu(Operation):
+class LeakyRelu(Operator):
     """
     `f(x) = alpha * x` for x < 0, `f(x) = x` for x >= 0, is applied to the tensor elementwise.
     """
@@ -3413,7 +2501,7 @@ class LeakyRelu(Operation):
         """
         Args:
             x (CTensor): Input tensor
-        Returns: 
+        Returns:
             CTensor, the output
         """
         if training:
@@ -3429,7 +2517,7 @@ class LeakyRelu(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         # TODO(wangwei) check the correctness
@@ -3443,20 +2531,20 @@ class LeakyRelu(Operation):
 
 def leakyrelu(x, a=0.01):
     """
-    `f(x) = alpha * x` for x < 0, `f(x) = x` for x >= 0 is applied to the tensor 
+    `f(x) = alpha * x` for x < 0, `f(x) = x` for x >= 0 is applied to the tensor
     elementwise.
     Args:
         x (Tensor): Input tensor
         a (float): Coefficient of leakage, default to 0.01.
-    Returns: 
+    Returns:
         Tensor, the output
     """
     return LeakyRelu(a)(x)[0]
 
 
-class Sign(Operation):
+class Sign(Operator):
     """
-    Calculate the sign of the given input tensor element-wise. If input > 0, 
+    Calculate the sign of the given input tensor element-wise. If input > 0,
     output 1. if input < 0, output -1. if input == 0, output 0.
     """
 
@@ -3467,7 +2555,7 @@ class Sign(Operation):
         """
         Args:
             a (CTensor): Input tensor
-        Returns: 
+        Returns:
             CTensor, the output
         """
         if training:
@@ -3478,7 +2566,7 @@ class Sign(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         dx = singa.MultFloat(dy, 0.0)
@@ -3487,17 +2575,17 @@ class Sign(Operation):
 
 def sign(a):
     """
-    Calculate the sign of the given input tensor element-wise. If input > 0, 
+    Calculate the sign of the given input tensor element-wise. If input > 0,
     output 1. if input < 0, output -1. if input == 0, output 0.
     Args:
         a (Tensor): Input tensor
-    Returns: 
+    Returns:
         Tensor, the output
     """
     return Sign()(a)[0]
 
 
-class Pow(Operation):
+class Pow(Operator):
     """
     `f(x) = a^b`, is applied to the tensor elementwise.
     """
@@ -3521,7 +2609,7 @@ class Pow(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             a tuple for (da, db), da is data for dL / da, db is data
                 for dL / db.
         """
@@ -3548,7 +2636,7 @@ def pow(a, b):
     return Pow()(a, b)[0]
 
 
-class SoftSign(Operation):
+class SoftSign(Operator):
     """
     Calculates the softsign `(x/(1+|x|))` of the given input tensor element-wise.
     """
@@ -3572,7 +2660,7 @@ class SoftSign(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         dx = singa.AddFloat(singa.Abs(self.input), 1.0)
@@ -3588,7 +2676,7 @@ def softsign(x):
     return SoftSign()(x)[0]
 
 
-class Sqrt(Operation):
+class Sqrt(Operator):
     """
     `y = x^0.5`, is applied to the tensor elementwise.
     """
@@ -3608,7 +2696,7 @@ class Sqrt(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         dx = singa.PowFloat(self.input, -0.5)
@@ -3624,7 +2712,7 @@ def sqrt(x):
     return Sqrt()(x)[0]
 
 
-class SoftPlus(Operation):
+class SoftPlus(Operator):
     """
     `y = ln(exp(x) + 1)` is applied to the tensor elementwise.
     """
@@ -3647,7 +2735,7 @@ class SoftPlus(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         dx = singa.Exp(singa.MultFloat(self.input, -1.0))
@@ -3663,9 +2751,9 @@ def softplus(x):
     return SoftPlus()(x)[0]
 
 
-class Sub(Operation):
+class Sub(Operator):
     """
-    Performs element-wise binary subtraction (with Numpy-style broadcasting 
+    Performs element-wise binary subtraction (with Numpy-style broadcasting
     support).
     """
 
@@ -3687,7 +2775,7 @@ class Sub(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             a tuple for (da, db), da is data for dL / da, db is data
                 for dL / db.
         """
@@ -3710,9 +2798,9 @@ def sub(a, b):
 
 
 # optimize min to support multi inputs
-class Min(Operation):
+class Min(Operator):
     """
-    Element-wise min of each of the input tensors (with Numpy-style 
+    Element-wise min of each of the input tensors (with Numpy-style
     broadcasting support).
     """
 
@@ -3725,7 +2813,7 @@ class Min(Operation):
         Args:
             a (CTensor): First operand
             b (CTensor): Second operand
-        Returns: 
+        Returns:
             CTensor, the output
             tuple of CTensor, mask tensor
         """
@@ -3739,7 +2827,7 @@ class Min(Operation):
         """
         Args:
             *x (a list of CTensor): List of tensors for max.
-        Returns: 
+        Returns:
             CTensor, the output
         """
         assert (len(x) > 0)
@@ -3759,7 +2847,7 @@ class Min(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             a tuple for (*dx), dx is data for dL / dx.
         """
         if self.l == 1:
@@ -3780,17 +2868,17 @@ class Min(Operation):
 
 def min(*l):
     """
-    Element-wise min of each of the input tensors (with Numpy-style 
+    Element-wise min of each of the input tensors (with Numpy-style
     broadcasting support).
     Args:
         *x (a list of Tensor): List of tensors for max.
-    Returns: 
+    Returns:
         Tensor, the output
     """
     return Min()(*l)[0]
 
 
-class Log(Operation):
+class Log(Operator):
     """
     `y = log(x)`, is applied to the tensor elementwise.
     """
@@ -3810,7 +2898,7 @@ class Log(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         dx = singa.PowFloat(self.input, -1)
@@ -3825,7 +2913,7 @@ def log(x):
     return Log()(x)[0]
 
 
-class HardSigmoid(Operation):
+class HardSigmoid(Operator):
     """
     `y = max(0, min(1, alpha * x + beta))`, is applied to the tensor elementwise.
     """
@@ -3862,7 +2950,7 @@ class HardSigmoid(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         mask0 = singa.GTFloat(self.cache, 0.0)
@@ -3877,26 +2965,26 @@ def hardsigmoid(x, alpha=0.2, gamma=0.5):
     Args:
         x (Tensor): matrix
         alpha (float): Value of alpha.
-        gamma (float): Value of beta.        
+        gamma (float): Value of beta.
     Returns:
         a Tensor for the result
     """
     return HardSigmoid(alpha, gamma)(x)[0]
 
 
-class Squeeze(Operation):
+class Squeeze(Operator):
     """
-    Remove single-dimensional entries from the shape of a tensor. Takes a 
-    parameter axes with a list of axes to squeeze. If axes is not provided, 
-    all the single dimensions will be removed from the shape. If an axis is 
+    Remove single-dimensional entries from the shape of a tensor. Takes a
+    parameter axes with a list of axes to squeeze. If axes is not provided,
+    all the single dimensions will be removed from the shape. If an axis is
     selected with shape entry not equal to one, an error is raised.
     """
 
     def __init__(self, axis=[]):
         """
         Args:
-            axis (list of ints): List of integers indicating the dimensions 
-                to squeeze. Negative value means counting dimensions from 
+            axis (list of ints): List of integers indicating the dimensions
+                to squeeze. Negative value means counting dimensions from
                 the back. Accepted range is [-r, r-1] where r = rank(data).
         """
         super(Squeeze, self).__init__()
@@ -3906,7 +2994,7 @@ class Squeeze(Operation):
         """
         Args:
             x (CTensor): Input tensor
-        Returns: 
+        Returns:
             CTensor, the output
         """
         self.cache = x.shape()
@@ -3932,7 +3020,7 @@ class Squeeze(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         return singa.Reshape(dy, self.cache)
@@ -3940,22 +3028,22 @@ class Squeeze(Operation):
 
 def squeeze(x, axis=[]):
     """
-    Remove single-dimensional entries from the shape of a tensor. Takes a 
-    parameter axes with a list of axes to squeeze. If axes is not provided, 
-    all the single dimensions will be removed from the shape. If an axis is 
+    Remove single-dimensional entries from the shape of a tensor. Takes a
+    parameter axes with a list of axes to squeeze. If axes is not provided,
+    all the single dimensions will be removed from the shape. If an axis is
     selected with shape entry not equal to one, an error is raised.
     Args:
         x (Tensor): Input tensor
-        axis (list of ints): List of integers indicating the dimensions 
-            to squeeze. Negative value means counting dimensions from 
+        axis (list of ints): List of integers indicating the dimensions
+            to squeeze. Negative value means counting dimensions from
             the back. Accepted range is [-r, r-1] where r = rank(data).
-    Returns: 
+    Returns:
         Tensor, the output
     """
     return Squeeze(axis)(x)[0]
 
 
-class Div(Operation):
+class Div(Operator):
     """
     Performs element-wise binary division (with Numpy-style broadcasting support).
     """
@@ -3981,7 +3069,7 @@ class Div(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             a CTensor tuple for (da, db), da is data for dL / da, db is data
                 for dL / db.
         """
@@ -4006,9 +3094,9 @@ def div(a, b):
     return Div()(a, b)[0]
 
 
-class Shape(Operation):
+class Shape(Operator):
     """
-    Takes a tensor as input and outputs a tensor containing the shape of the 
+    Takes a tensor as input and outputs a tensor containing the shape of the
     input tensor.
     """
 
@@ -4019,7 +3107,7 @@ class Shape(Operation):
         """
         Args:
             x (CTensor): Input tensor
-        Returns: 
+        Returns:
             CTensor, the output
         """
         cur = list(x.shape())
@@ -4031,7 +3119,7 @@ class Shape(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             list of int, the shape of dy
         """
         return list(dy.shape())
@@ -4039,21 +3127,21 @@ class Shape(Operation):
 
 def shape(x):
     """
-    Takes a tensor as input and outputs a tensor containing the shape of the 
+    Takes a tensor as input and outputs a tensor containing the shape of the
     input tensor.
     Args:
         x (Tensor): Input tensor
-    Returns: 
+    Returns:
         Tensor, the output
     """
     return Shape()(x)[0]
 
 
 # optimize max to support multi inputs
-class Max(Operation):
+class Max(Operator):
     """
-    Element-wise max of each of the input tensors (with Numpy-style 
-    broadcasting support). 
+    Element-wise max of each of the input tensors (with Numpy-style
+    broadcasting support).
     """
 
     def __init__(self):
@@ -4065,7 +3153,7 @@ class Max(Operation):
         Args:
             a (CTensor): First operand
             b (CTensor): Second operand
-        Returns: 
+        Returns:
             CTensor, the output
             tuple of CTensor, mask tensor
         """
@@ -4079,7 +3167,7 @@ class Max(Operation):
         """
         Args:
             *x (a list of CTensor): List of tensors for max.
-        Returns: 
+        Returns:
             CTensor, the output
         """
         assert (len(x) > 0)
@@ -4099,7 +3187,7 @@ class Max(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             a tuple for (*dx), dx is data for dL / dx.
         """
         if self.l == 1:
@@ -4120,16 +3208,16 @@ class Max(Operation):
 
 def max(*l):
     """
-    Element-wise max of each of the input tensors (with Numpy-style broadcasting support). 
+    Element-wise max of each of the input tensors (with Numpy-style broadcasting support).
     Args:
         *x (a list of Tensor): List of tensors for max.
-    Returns: 
+    Returns:
         Tensor, the output
     """
     return Max()(*l)[0]
 
 
-class And(Operation):
+class And(Operator):
     """
     Returns the tensor resulted from performing the and logical operation elementwise on the input tensors A and B (with Numpy-style broadcasting support).
     """
@@ -4163,7 +3251,7 @@ def _and(a, b):
     return And()(a, b)[0]
 
 
-class Or(Operation):
+class Or(Operator):
     """
     Returns the tensor resulted from performing the or logical operation elementwise on the input tensors A and B (with Numpy-style broadcasting support).
     """
@@ -4198,7 +3286,7 @@ def _or(a, b):
     return Or()(a, b)[0]
 
 
-class Not(Operation):
+class Not(Operator):
     """
     Returns the negation of the input tensor element-wise.
     """
@@ -4233,7 +3321,7 @@ def _not(x):
     return Not()(x)[0]
 
 
-class Xor(Operation):
+class Xor(Operator):
     """
     Performing the xor logical operation elementwise on the input tensors A and B (with Numpy-style broadcasting support).
     """
@@ -4268,7 +3356,7 @@ def _xor(a, b):
     return Xor()(a, b)[0]
 
 
-class Negative(Operation):
+class Negative(Operator):
     """
     `y = -x`, is applied to the tensor elementwise.
     """
@@ -4287,7 +3375,7 @@ class Negative(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         return singa.MultFloat(dy, -1)
@@ -4300,7 +3388,7 @@ def negative(x):
     return Negative()(x)[0]
 
 
-class Reciprocal(Operation):
+class Reciprocal(Operator):
     """
     `y = 1/x`, is applied to the tensor elementwise.
     """
@@ -4322,7 +3410,7 @@ class Reciprocal(Operation):
         """
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         #dy/dx = -1/x**2
@@ -4337,11 +3425,11 @@ def reciprocal(x):
     return Reciprocal()(x)[0]
 
 
-class Gemm(Operation):
+class Gemm(Operator):
     """
-    Init a General Matrix multiplication(Gemm) operator. Compute `Y = alpha * 
-    A' * B' + beta * C`, where input tensor A has shape (M, K) or (K, M), input 
-    tensor B has shape (K, N) or (N, K), input tensor C is broadcastable to 
+    Init a General Matrix multiplication(Gemm) operator. Compute `Y = alpha *
+    A' * B' + beta * C`, where input tensor A has shape (M, K) or (K, M), input
+    tensor B has shape (K, N) or (N, K), input tensor C is broadcastable to
     shape (M, N), and output tensor Y has shape (M, N).
     `A' = transpose(A)` if transA else A
     `B' = transpose(B)` if transB else B
@@ -4350,12 +3438,12 @@ class Gemm(Operation):
     def __init__(self, alpha=1.0, beta=1.0, transA=0, transB=0):
         """
         Args:
-            alpha (float): Scalar multiplier for the product of input tensors 
+            alpha (float): Scalar multiplier for the product of input tensors
                 A * B.
             beta (float): Scalar multiplier for input tensor C.
             ransA (int): Whether A should be transposed
             transB (int): Whether B should be transposed
-        Returns: 
+        Returns:
             CTensor, the output
         """
         super(Gemm, self).__init__()
@@ -4368,14 +3456,14 @@ class Gemm(Operation):
         """
         forward propogation of Gemm
         Args:
-            A (CTensor): The shape of A should be (M, K) if transA is 0, or 
+            A (CTensor): The shape of A should be (M, K) if transA is 0, or
                 (K, M) if transA is non-zero.
-            B (CTensor): The shape of B should be (K, N) if transB is 0, or 
+            B (CTensor): The shape of B should be (K, N) if transB is 0, or
                 (N, K) if transB is non-zero.
-            C (CTensor): (optional), Optional input tensor C. If not specified, 
-                the computation is done as if C is a scalar 0. The shape of C 
+            C (CTensor): (optional), Optional input tensor C. If not specified,
+                the computation is done as if C is a scalar 0. The shape of C
                 should be unidirectional broadcastable to (M, N).
-        Returns: 
+        Returns:
             tensor, the output
         """
         _A = singa.DefaultTranspose(A) if self.transA == 1 else A
@@ -4392,7 +3480,7 @@ class Gemm(Operation):
         backward propogation of Gemm
         Args:
             dy (CTensor): The shape of A should be (M, K) if transA is 0, or (K, M) if transA is non-zero.
-        Returns: 
+        Returns:
             CTensor, the gradient over A
             CTensor, the gradient over B
             CTensor(optional), the gradient over C
@@ -4425,31 +3513,34 @@ class Gemm(Operation):
 
 def gemm(A, B, C=None, alpha=1.0, beta=1.0, transA=0, transB=0):
     """
-    Init a General Matrix multiplication(Gemm) operator. Compute `Y = alpha * 
-    A' * B' + beta * C`, where input tensor A has shape (M, K) or (K, M), input 
-    tensor B has shape (K, N) or (N, K), input tensor C is broadcastable to 
+    Init a General Matrix multiplication(Gemm) operator. Compute `Y = alpha *
+    A' * B' + beta * C`, where input tensor A has shape (M, K) or (K, M), input
+    tensor B has shape (K, N) or (N, K), input tensor C is broadcastable to
     shape (M, N), and output tensor Y has shape (M, N).
     `A' = transpose(A)` if transA else A
     `B' = transpose(B)` if transB else B
     Args:
-        A (Tensor): The shape of A should be (M, K) if transA is 0, or 
+        A (Tensor): The shape of A should be (M, K) if transA is 0, or
             (K, M) if transA is non-zero.
-        B (Tensor): The shape of B should be (K, N) if transB is 0, or 
+        B (Tensor): The shape of B should be (K, N) if transB is 0, or
             (N, K) if transB is non-zero.
-        C (Tensor): (optional), Optional input tensor C. If not specified, 
-            the computation is done as if C is a scalar 0. The shape of C 
+        C (Tensor): (optional), Optional input tensor C. If not specified,
+            the computation is done as if C is a scalar 0. The shape of C
             should be unidirectional broadcastable to (M, N).
         alpha (float): Scalar multiplier for the product of input tensors A * B.
         beta (float): Scalar multiplier for input tensor C.
         ransA (int): Whether A should be transposed
         transB (int): Whether B should be transposed
-    Returns: 
+    Returns:
         Tensor, the output
     """
-    return Gemm(alpha, beta, transA, transB)(A, B, C)[0]
+    if C:
+        return Gemm(alpha, beta, transA, transB)(A, B, C)[0]
+    else:
+        return Gemm(alpha, beta, transA, transB)(A, B)[0]
 
 
-class GlobalAveragePool(Operation):
+class GlobalAveragePool(Operator):
     """
     Init a GlobalAveragePool operator
     """
@@ -4457,7 +3548,7 @@ class GlobalAveragePool(Operation):
     def __init__(self, data_format='channels_first'):
         """
         Args:
-            data_format (string): A string, we support two formats: 
+            data_format (string): A string, we support two formats:
                 channels_last and channels_first, default is channels_first.
                 channels_first means the format of input is (N x C x H x W)
                 channels_last means the format of input is (N x H x W x C)
@@ -4470,7 +3561,7 @@ class GlobalAveragePool(Operation):
         forward propogation of GlobalAveragePool
         Args:
             x (CTensor): the input tensor
-        Returns: 
+        Returns:
             CTensor, the output
         """
         if training:
@@ -4502,7 +3593,7 @@ class GlobalAveragePool(Operation):
         backward propogation of GlobalAveragePool
         Args:
             dy (CTensor): the gradient tensor from upper operations
-        Returns: 
+        Returns:
             CTensor, the gradient over input
         """
         self.mask.SetFloatValue(self.shape_divisor)
@@ -4514,17 +3605,17 @@ def globalaveragepool(x, data_format='channels_first'):
     GlobalAveragePool operator
     Args:
         x (Tensor): the input tensor
-        data_format (string): A string, we support two formats: 
+        data_format (string): A string, we support two formats:
             channels_last and channels_first, default is channels_first.
             channels_first means the format of input is (N x C x H x W)
             channels_last means the format of input is (N x H x W x C)
-    Returns: 
+    Returns:
         Tensor, the output
     """
     return GlobalAveragePool(data_format)(x)[0]
 
 
-class ConstantOfShape(Operation):
+class ConstantOfShape(Operator):
     """
     Init a ConstantOfShape, generate a tensor with given value and shape.
     """
@@ -4532,8 +3623,8 @@ class ConstantOfShape(Operation):
     def __init__(self, value=0.):
         """
         Args:
-            value (float): (Optional) The value of the output elements. Should 
-                be a one-element value. If not specified, it defaults to 0 and 
+            value (float): (Optional) The value of the output elements. Should
+                be a one-element value. If not specified, it defaults to 0 and
                 datatype float32
         """
         super(ConstantOfShape, self).__init__()
@@ -4543,12 +3634,12 @@ class ConstantOfShape(Operation):
         """
         forward of ConstantOfShape
         Args:
-            x: CTensor, 1D tensor. The shape of the expected output tensor. 
+            x: CTensor, 1D tensor. The shape of the expected output tensor.
                 All values must be >= 0.
         Returns:
-            the output CTensor. If attribute 'value' is specified, the value 
-                and datatype of the output tensor is taken from 'value'. If 
-                attribute 'value' is not specified, the value in the output 
+            the output CTensor. If attribute 'value' is specified, the value
+                and datatype of the output tensor is taken from 'value'. If
+                attribute 'value' is not specified, the value in the output
                 defaults to 0, and the datatype defaults to float32.
         """
         x_shape = tensor.to_numpy(tensor.from_raw_tensor(x)).astype(
@@ -4573,21 +3664,21 @@ def constant_of_shape(x, value=0):
     """
     Init a ConstantOfShape, generate a tensor with given value and shape.
     Args:
-        x: Tensor, 1D tensor. The shape of the expected output tensor. 
+        x: Tensor, 1D tensor. The shape of the expected output tensor.
             All values must be >= 0.
-        value (float): (Optional) The value of the output elements. Should 
-            be a one-element value. If not specified, it defaults to 0 and 
+        value (float): (Optional) The value of the output elements. Should
+            be a one-element value. If not specified, it defaults to 0 and
             datatype float32
     Returns:
-        the output Tensor. If attribute 'value' is specified, the value 
-            and datatype of the output tensor is taken from 'value'. If 
-            attribute 'value' is not specified, the value in the output 
+        the output Tensor. If attribute 'value' is specified, the value
+            and datatype of the output tensor is taken from 'value'. If
+            attribute 'value' is not specified, the value in the output
             defaults to 0, and the datatype defaults to float32.
     """
     return ConstantOfShape(value)(x)[0]
 
 
-class Dropout(Operation):
+class Dropout(Operator):
     """
     Init a Dropout, which scales the masked input data by the following equation:
     `output = scale * data * mask`, `scale = 1. / (1. - ratio)`.
@@ -4631,7 +3722,7 @@ class Dropout(Operation):
 
 def dropout(x, ratio=0.5):
     """
-    Init a Dropout, which scales the masked input data by the following 
+    Init a Dropout, which scales the masked input data by the following
     equation: `output = scale * data * mask`, `scale = 1. / (1. - ratio)`.
     Args:
         x (Tensor): input tensor.
@@ -4642,19 +3733,19 @@ def dropout(x, ratio=0.5):
     return Dropout(ratio)(x)[0]
 
 
-class ReduceSum(Operation):
+class ReduceSum(Operator):
     """
-    Init a ReduceSum, computes the sum of the input tensor's element along 
+    Init a ReduceSum, computes the sum of the input tensor's element along
     the provided axes.
     """
 
     def __init__(self, axes=None, keepdims=1):
         """
         Args:
-            axes (list of int): A list of integers, along which to reduce. 
-                Accepted range is [-r, r-1] where r = rank(data). The default 
+            axes (list of int): A list of integers, along which to reduce.
+                Accepted range is [-r, r-1] where r = rank(data). The default
                 is None, which reduces over all the dimensions of the input tensor.
-            keepdims (int): Keep the reduced dimension or not, default 1 mean 
+            keepdims (int): Keep the reduced dimension or not, default 1 mean
                 keep reduced dimension.
         """
         super(ReduceSum, self).__init__()
@@ -4705,14 +3796,14 @@ class ReduceSum(Operation):
 
 def reduce_sum(x, axes=None, keepdims=1):
     """
-    Init a ReduceSum, computes the sum of the input tensor's element along 
+    Init a ReduceSum, computes the sum of the input tensor's element along
     the provided axes.
     Args:
         x (Tensor): input tensor.
-        axes (list of int): A list of integers, along which to reduce. 
-            Accepted range is [-r, r-1] where r = rank(data). The default 
+        axes (list of int): A list of integers, along which to reduce.
+            Accepted range is [-r, r-1] where r = rank(data). The default
             is None, which reduces over all the dimensions of the input tensor.
-        keepdims (int): Keep the reduced dimension or not, default 1 mean 
+        keepdims (int): Keep the reduced dimension or not, default 1 mean
             keep reduced dimension.
     Returns:
         the output Tensor.
@@ -4720,19 +3811,19 @@ def reduce_sum(x, axes=None, keepdims=1):
     return ReduceSum(axes, keepdims)(x)[0]
 
 
-class ReduceMean(Operation):
+class ReduceMean(Operator):
     """
-    Init a ReduceMean, computes the mean of the input tensor's element along 
+    Init a ReduceMean, computes the mean of the input tensor's element along
     the provided axes.
     """
 
     def __init__(self, axes=None, keepdims=1):
         """
         Args:
-            axes (list of int): A list of integers, along which to reduce. 
-                Accepted range is [-r, r-1] where r = rank(data). The default 
+            axes (list of int): A list of integers, along which to reduce.
+                Accepted range is [-r, r-1] where r = rank(data). The default
                 is None, which reduces over all the dimensions of the input tensor.
-            keepdims (int): Keep the reduced dimension or not, default 1 mean 
+            keepdims (int): Keep the reduced dimension or not, default 1 mean
                 keep reduced dimension.
         """
         super(ReduceMean, self).__init__()
@@ -4784,14 +3875,14 @@ class ReduceMean(Operation):
 
 def reduce_mean(x, axes=None, keepdims=1):
     """
-    Init a ReduceMean, computes the mean of the input tensor's element along 
+    Init a ReduceMean, computes the mean of the input tensor's element along
     the provided axes.
     Args:
         x (Tensor): input tensor.
-        axes (list of int): A list of integers, along which to reduce. 
-            Accepted range is [-r, r-1] where r = rank(data). The default 
+        axes (list of int): A list of integers, along which to reduce.
+            Accepted range is [-r, r-1] where r = rank(data). The default
             is None, which reduces over all the dimensions of the input tensor.
-        keepdims (int): Keep the reduced dimension or not, default 1 mean 
+        keepdims (int): Keep the reduced dimension or not, default 1 mean
             keep reduced dimension.
     Returns:
         the output Tensor.
@@ -4799,9 +3890,9 @@ def reduce_mean(x, axes=None, keepdims=1):
     return ReduceMean(axes, keepdims)(x)[0]
 
 
-class Slice(Operation):
+class Slice(Operator):
     """
-    Init a Slice, Produces a slice of the input tensor along multiple axes. 
+    Init a Slice, Produces a slice of the input tensor along multiple axes.
     Similar to numpy: https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html
     """
 
@@ -4810,11 +3901,11 @@ class Slice(Operation):
         Args:
             starts (list of int): starting indices of corresponding axis
             ends (list of int): ending indices of corresponding axis
-            axes (list of int): axes that `starts` and `ends` apply to. 
-                Negative value means counting dimensions from the back. 
+            axes (list of int): axes that `starts` and `ends` apply to.
+                Negative value means counting dimensions from the back.
                 Accepted range is [-r, r-1] where r = rank(data).
-            steps (list of int): slice step of corresponding axis in `axes`. 
-                Negative value means slicing backward. 'steps' cannot be 0. 
+            steps (list of int): slice step of corresponding axis in `axes`.
+                Negative value means slicing backward. 'steps' cannot be 0.
                 Defaults to 1.
         """
         super(Slice, self).__init__()
@@ -4843,6 +3934,7 @@ class Slice(Operation):
         if self.steps is None:
             self.steps = [1] * len(x_shape)  # steps = None
         for idx, axis in enumerate(self.axes):
+            axis = int(axis)
             start, end, step = self.starts[idx], self.ends[idx], self.steps[idx]
             if end > x_shape[axis]:
                 end = x_shape[axis]
@@ -4884,17 +3976,17 @@ class Slice(Operation):
 
 def slice(x, starts, ends, axes=None, steps=None):
     """
-    Init a Slice, Produces a slice of the input tensor along multiple axes. 
+    Init a Slice, Produces a slice of the input tensor along multiple axes.
     Similar to numpy: https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html
     Args:
         x (Tensor): input tensor.
         starts (list of int): starting indices of corresponding axis
         ends (list of int): ending indices of corresponding axis
-        axes (list of int): axes that `starts` and `ends` apply to. 
-            Negative value means counting dimensions from the back. 
+        axes (list of int): axes that `starts` and `ends` apply to.
+            Negative value means counting dimensions from the back.
             Accepted range is [-r, r-1] where r = rank(data).
-        steps (list of int): slice step of corresponding axis in `axes`. 
-            Negative value means slicing backward. 'steps' cannot be 0. 
+        steps (list of int): slice step of corresponding axis in `axes`.
+            Negative value means slicing backward. 'steps' cannot be 0.
             Defaults to 1.
     Returns:
         the output Tensor.
@@ -4902,9 +3994,9 @@ def slice(x, starts, ends, axes=None, steps=None):
     return Slice(starts, ends, axes, steps)(x)[0]
 
 
-class Ceil(Operation):
+class Ceil(Operator):
     """
-    Ceil takes one input data (Tensor) and produces one output data (Tensor) 
+    Ceil takes one input data (Tensor) and produces one output data (Tensor)
     where the ceil is, `y = ceil(x)`, is applied to the tensor elementwise.
     """
 
@@ -4936,7 +4028,7 @@ class Ceil(Operation):
 
 def ceil(x):
     """
-    Ceil takes one input data (Tensor) and produces one output data (Tensor) 
+    Ceil takes one input data (Tensor) and produces one output data (Tensor)
     where the ceil is, `y = ceil(x)`, is applied to the tensor elementwise.
     Args:
         x (Tensor): input tensor.
@@ -4946,22 +4038,22 @@ def ceil(x):
     return Ceil()(x)[0]
 
 
-class Split(Operation):
+class Split(Operator):
     """
-    Init a Split, Split a tensor into a list of tensors, along the specified 
-    'axis'. 
+    Init a Split, Split a tensor into a list of tensors, along the specified
+    'axis'.
     """
 
     def __init__(self, axis, parts, num_output=None):
         """
         Args:
-            axis (int): which axis to split on. A negative value means 
-                counting dimensions from the back. Accepted range is 
+            axis (int): which axis to split on. A negative value means
+                counting dimensions from the back. Accepted range is
                 [-rank, rank-1] where r = rank(input).
-            parts (list of int): length of each output, which can be specified 
-                using argument 'parts'. Otherwise, the tensor is parts to equal 
+            parts (list of int): length of each output, which can be specified
+                using argument 'parts'. Otherwise, the tensor is parts to equal
                 sized parts.
-            num_output (bool): once parts is none, the tensor is split to equal 
+            num_output (bool): once parts is none, the tensor is split to equal
                 sized parts for each output.
         """
         super(Split, self).__init__()
@@ -5006,17 +4098,17 @@ class Split(Operation):
 
 def split(x, axis, parts, num_output=None):
     """
-    Init a Split, Split a tensor into a list of tensors, along the specified 
-    'axis'. 
+    Init a Split, Split a tensor into a list of tensors, along the specified
+    'axis'.
     Args:
         x (Tensor): input tensor.
-        axis (int): which axis to split on. A negative value means 
-            counting dimensions from the back. Accepted range is 
+        axis (int): which axis to split on. A negative value means
+            counting dimensions from the back. Accepted range is
             [-rank, rank-1] where r = rank(input).
-        parts (list of int): length of each output, which can be specified 
-            using argument 'parts'. Otherwise, the tensor is parts to equal 
+        parts (list of int): length of each output, which can be specified
+            using argument 'parts'. Otherwise, the tensor is parts to equal
             sized parts.
-        num_output (bool): once parts is none, the tensor is split to equal 
+        num_output (bool): once parts is none, the tensor is split to equal
             sized parts for each output.
     Returns:
         the output Tensor.
@@ -5024,18 +4116,18 @@ def split(x, axis, parts, num_output=None):
     return Split(axis, parts, num_output)(x)
 
 
-class Gather(Operation):
+class Gather(Operator):
     """
-    Init a Gather, Given data tensor of rank r >= 1, and indices tensor of 
-    rank q, gather entries of the axis dimension of data (by default outer-most 
+    Init a Gather, Given data tensor of rank r >= 1, and indices tensor of
+    rank q, gather entries of the axis dimension of data (by default outer-most
     one as axis=0) indexed by indices, and concatenates them in an output tensor of rank `q + (r - 1)`.
     """
 
     def __init__(self, axis, indices):
         """
         Args:
-            axis (int): which axis to slice on. A negative value means counting 
-                dimensions from the back. Accepted range is [-rank, rank-1] 
+            axis (int): which axis to slice on. A negative value means counting
+                dimensions from the back. Accepted range is [-rank, rank-1]
                 where r = rank(input).
             indices (list of int): entries of the axis dimension of data.
         """
@@ -5069,7 +4161,7 @@ class Gather(Operation):
                 _slice_shape.insert(self.axis, 1)  # add a new axis to concat
                 tmp_tensor = singa.Reshape(tmp_tensor, _slice_shape)
             else:
-                indice = indice % _shape
+                indice = int(indice % _shape)
                 tmp_tensor = singa.SliceOn(x, indice, indice + 1, self.axis)
             xs.append(tmp_tensor)
         xs = singa.VecTensor(xs)
@@ -5126,13 +4218,13 @@ class Gather(Operation):
 
 def gather(x, axis, indices):
     """
-    Init a Gather, Given data tensor of rank r >= 1, and indices tensor of 
-    rank q, gather entries of the axis dimension of data (by default outer-most 
+    Init a Gather, Given data tensor of rank r >= 1, and indices tensor of
+    rank q, gather entries of the axis dimension of data (by default outer-most
     one as axis=0) indexed by indices, and concatenates them in an output tensor of rank `q + (r - 1)`.
     Args:
         x (Tensor): input tensor.
-        axis (int): which axis to slice on. A negative value means counting 
-            dimensions from the back. Accepted range is [-rank, rank-1] 
+        axis (int): which axis to slice on. A negative value means counting
+            dimensions from the back. Accepted range is [-rank, rank-1]
             where r = rank(input).
         indices (list of int): entries of the axis dimension of data.
     Returns:
@@ -5141,17 +4233,17 @@ def gather(x, axis, indices):
     return Gather(axis, indices)(x)[0]
 
 
-class Tile(Operation):
+class Tile(Operator):
     """
-    Init a Tile, Constructs a tensor by tiling a given tensor. This is the same 
+    Init a Tile, Constructs a tensor by tiling a given tensor. This is the same
     as function tile in Numpy: https://docs.scipy.org/doc/numpy/reference/generated/numpy.tile.html
     """
 
     def __init__(self, repeats):
         """
         Args:
-            repeats (list of int): 1D int matrix of the same length as input's 
-                dimension number, includes numbers of repeated copies along 
+            repeats (list of int): 1D int matrix of the same length as input's
+                dimension number, includes numbers of repeated copies along
                 input's dimensions.
         """
         super(Tile, self).__init__()
@@ -5211,12 +4303,12 @@ class Tile(Operation):
 
 def tile(x, repeats):
     """
-    Init a Tile, Constructs a tensor by tiling a given tensor. This is the same 
+    Init a Tile, Constructs a tensor by tiling a given tensor. This is the same
     as function tile in Numpy: https://docs.scipy.org/doc/numpy/reference/generated/numpy.tile.html
     Args:
         x (Tensor): input tensor.
-        repeats (list of int): 1D int matrix of the same length as input's 
-            dimension number, includes numbers of repeated copies along 
+        repeats (list of int): 1D int matrix of the same length as input's
+            dimension number, includes numbers of repeated copies along
             input's dimensions.
     Returns:
         the output Tensor.
@@ -5224,9 +4316,9 @@ def tile(x, repeats):
     return Tile(repeats)(x)[0]
 
 
-class NonZero(Operation):
+class NonZero(Operator):
     """
-    Init a NonZero, Constructs a tensor by tiling a given tensor. This is the same 
+    Init a NonZero, Constructs a tensor by tiling a given tensor. This is the same
     as function tile in Numpy: https://docs.scipy.org/doc/numpy/reference/generated/numpy.tile.html
     """
 
@@ -5260,7 +4352,7 @@ class NonZero(Operation):
 
 def nonzero(x):
     """
-    Init a NonZero, Constructs a tensor by tiling a given tensor. This is the same 
+    Init a NonZero, Constructs a tensor by tiling a given tensor. This is the same
     as function tile in Numpy: https://docs.scipy.org/doc/numpy/reference/generated/numpy.tile.html
     Args:
         x (Tensor): input tensor.
@@ -5270,10 +4362,10 @@ def nonzero(x):
     return NonZero()(x)[0]
 
 
-class Cast(Operation):
+class Cast(Operator):
     """
-    The operator casts the elements of a given input tensor to a data type 
-    specified by the 'to' argument and returns an output tensor of the same 
+    The operator casts the elements of a given input tensor to a data type
+    specified by the 'to' argument and returns an output tensor of the same
     size in the converted type.
     """
 
@@ -5310,8 +4402,8 @@ class Cast(Operation):
 
 def cast(x, to):
     """
-    The operator casts the elements of a given input tensor to a data type 
-    specified by the 'to' argument and returns an output tensor of the same 
+    The operator casts the elements of a given input tensor to a data type
+    specified by the 'to' argument and returns an output tensor of the same
     size in the converted type.
     Args:
         x (Tensor): input tensor.
@@ -5322,27 +4414,27 @@ def cast(x, to):
     return Cast(to)(x)[0]
 
 
-class OneHot(Operation):
+class OneHot(Operator):
     """
-    Produces a one-hot tensor based on inputs. 
+    Produces a one-hot tensor based on inputs.
     """
 
     def __init__(self, axis, depth, values):
         """
         Args:
-            axis (int): Axis along which one-hot representation in added. 
-                Default: axis=-1. axis=-1 means that the additional dimension 
-                will be inserted as the innermost/last dimension in the output 
+            axis (int): Axis along which one-hot representation in added.
+                Default: axis=-1. axis=-1 means that the additional dimension
+                will be inserted as the innermost/last dimension in the output
                 tensor.
-            depth (int): Scalar specifying the number of classes in one-hot 
-                tensor. This is also the size of the one-hot dimension 
-                (specified by 'axis' attribute) added on in the output tensor. 
-                The values in the 'indices' input tensor are expected to be in 
+            depth (int): Scalar specifying the number of classes in one-hot
+                tensor. This is also the size of the one-hot dimension
+                (specified by 'axis' attribute) added on in the output tensor.
+                The values in the 'indices' input tensor are expected to be in
                 the range [-depth, depth-1].
-            values (float): Rank 1 tensor containing exactly two elements, in 
-                the format [off_value, on_value], where 'on_value' is the 
-                value used for filling locations specified in 'indices' input 
-                tensor, 
+            values (float): Rank 1 tensor containing exactly two elements, in
+                the format [off_value, on_value], where 'on_value' is the
+                value used for filling locations specified in 'indices' input
+                tensor,
         """
         super(OneHot, self).__init__()
         self.axis = axis
@@ -5353,9 +4445,9 @@ class OneHot(Operation):
         """
         forward of OneHot, we borrow this function from onnx
         Args:
-            indices (CTensor): Scalar specifying the number of classes in 
-                one-hot tensor. The values in the 'indices' input tensor are 
-                expected to be in the range [-depth, depth-1]. 
+            indices (CTensor): Scalar specifying the number of classes in
+                one-hot tensor. The values in the 'indices' input tensor are
+                expected to be in the range [-depth, depth-1].
         Returns:
             the output CTensor.
         """
@@ -5389,25 +4481,45 @@ class OneHot(Operation):
 
 def onehot(axis, indices, depth, values):
     """
-    Produces a one-hot tensor based on inputs. 
+    Produces a one-hot tensor based on inputs.
     Args:
-        axis (int): Axis along which one-hot representation in added. 
-            Default: axis=-1. axis=-1 means that the additional dimension 
-            will be inserted as the innermost/last dimension in the output 
+        axis (int): Axis along which one-hot representation in added.
+            Default: axis=-1. axis=-1 means that the additional dimension
+            will be inserted as the innermost/last dimension in the output
             tensor.
-        indices (Tensor): Scalar specifying the number of classes in 
-            one-hot tensor. The values in the 'indices' input tensor are 
-            expected to be in the range [-depth, depth-1]. 
-        depth (int): Scalar specifying the number of classes in one-hot 
-            tensor. This is also the size of the one-hot dimension 
-            (specified by 'axis' attribute) added on in the output tensor. 
-            The values in the 'indices' input tensor are expected to be in 
+        indices (Tensor): Scalar specifying the number of classes in
+            one-hot tensor. The values in the 'indices' input tensor are
+            expected to be in the range [-depth, depth-1].
+        depth (int): Scalar specifying the number of classes in one-hot
+            tensor. This is also the size of the one-hot dimension
+            (specified by 'axis' attribute) added on in the output tensor.
+            The values in the 'indices' input tensor are expected to be in
             the range [-depth, depth-1].
-        values (float): Rank 1 tensor containing exactly two elements, in 
-            the format [off_value, on_value], where 'on_value' is the 
-            value used for filling locations specified in 'indices' input 
-            tensor, 
+        values (float): Rank 1 tensor containing exactly two elements, in
+            the format [off_value, on_value], where 'on_value' is the
+            value used for filling locations specified in 'indices' input
+            tensor,
     Returns:
         the output Tensor.
     """
     return OneHot(axis, depth, values)(indices)[0]
+
+
+''' alias for Operator and Layers
+'''
+Operation = Operator
+''' import layer at the end to resolve circular import
+'''
+from singa import layer
+Linear = layer.Linear
+Conv2d = layer.Conv2d
+SeparableConv2d = layer.SeparableConv2d
+BatchNorm2d = layer.BatchNorm2d
+Pooling2d = layer.Pooling2d
+MaxPool2d = layer.MaxPool2d
+AvgPool2d = layer.AvgPool2d
+MaxPool1d = layer.MaxPool1d
+AvgPool1d = layer.AvgPool1d
+RNN_Base = layer.RNN_Base
+RNN = layer.RNN
+LSTM = layer.LSTM

@@ -69,18 +69,15 @@ def train_resnet(DIST=True, graph=True, sequential=False, verbosity=0):
     model = resnet.resnet50(num_channels=3, num_classes=1000)
 
     model.train()
-    model.on_device(dev)
     model.set_optimizer(sgd)
-    model.graph(graph, sequential)
+    model.compile([tx], is_train=True, use_graph=graph, sequential=sequential)
 
     # train model
     dev.Sync()
     start = time.time()
     with trange(niters) as t:
         for _ in t:
-            out = model(tx)
-            loss = model.loss(out, ty)
-            model.optim(loss, dist_option='fp32', spars=None)
+            model(tx, ty, dist_option='fp32', spars=None)
 
     dev.Sync()
     end = time.time()

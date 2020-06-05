@@ -19,6 +19,7 @@
 
 from singa import singa_wrap as singa
 from singa import autograd
+from singa import layer
 from singa import tensor
 from singa import device
 from singa import opt
@@ -33,23 +34,27 @@ import time
 class CNN:
 
     def __init__(self):
-        self.conv1 = autograd.Conv2d(1, 20, 5, padding=0)
-        self.conv2 = autograd.Conv2d(20, 50, 5, padding=0)
-        self.linear1 = autograd.Linear(4 * 4 * 50, 500)
-        self.linear2 = autograd.Linear(500, 10)
-        self.pooling1 = autograd.MaxPool2d(2, 2, padding=0)
-        self.pooling2 = autograd.MaxPool2d(2, 2, padding=0)
+        self.conv1 = layer.Conv2d(1, 20, 5, padding=0)
+        self.conv2 = layer.Conv2d(20, 50, 5, padding=0)
+        self.linear1 = layer.Linear(4 * 4 * 50, 500)
+        self.linear2 = layer.Linear(500, 10)
+        self.pooling1 = layer.MaxPool2d(2, 2, padding=0)
+        self.pooling2 = layer.MaxPool2d(2, 2, padding=0)
+        self.relu1 = layer.ReLU()
+        self.relu2 = layer.ReLU()
+        self.relu3 = layer.ReLU()
+        self.flatten = layer.Flatten()
 
     def forward(self, x):
         y = self.conv1(x)
-        y = autograd.relu(y)
+        y = self.relu1(y)
         y = self.pooling1(y)
         y = self.conv2(y)
-        y = autograd.relu(y)
+        y = self.relu2(y)
         y = self.pooling2(y)
-        y = autograd.flatten(y)
+        y = self.flatten(y)
         y = self.linear1(y)
-        y = autograd.relu(y)
+        y = self.relu3(y)
         y = self.linear2(y)
         return y
 

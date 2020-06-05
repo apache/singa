@@ -22,6 +22,7 @@ from singa import singa_wrap as singa_api
 from singa import tensor
 from singa import singa_wrap as singa
 from singa import autograd
+from singa import layer
 from singa import sonnx
 from singa import opt
 
@@ -54,7 +55,7 @@ class TestPythonOnnx(unittest.TestCase):
     def _conv2d_helper(self, dev):
         x = tensor.Tensor(shape=(2, 3, 3, 3), device=dev)
         x.gaussian(0.0, 1.0)
-        y = autograd.Conv2d(3, 1, 2)(x)
+        y = layer.Conv2d(3, 1, 2)(x)
 
         # frontend
         model = sonnx.to_onnx([x], [y])
@@ -102,7 +103,7 @@ class TestPythonOnnx(unittest.TestCase):
     def _avg_pool_helper(self, dev):
         x = tensor.Tensor(shape=(2, 3, 3, 3), device=dev)
         x.gaussian(0.0, 1.0)
-        y = autograd.AvgPool2d(3, 1, 2)(x)
+        y = layer.AvgPool2d(3, 1, 2)(x)
 
         # frontend
         model = sonnx.to_onnx([x], [y])
@@ -260,7 +261,7 @@ class TestPythonOnnx(unittest.TestCase):
     def _max_pool_helper(self, dev):
         x = tensor.Tensor(shape=(2, 3, 4, 4), device=dev)
         x.gaussian(0.0, 1.0)
-        y = autograd.MaxPool2d(2, 2, 0)(x)
+        y = layer.MaxPool2d(2, 2, 0)(x)
 
         # frontend
         model = sonnx.to_onnx([x], [y])
@@ -329,7 +330,7 @@ class TestPythonOnnx(unittest.TestCase):
         x = tensor.Tensor(shape=(2, 20), device=dev)
         x.gaussian(0.0, 1.0)
         x1 = x.clone()
-        y = autograd.Linear(20, 1, bias=False)(x)
+        y = layer.Linear(20, 1, bias=False)(x)
 
         # frontend
         model = sonnx.to_onnx([x], [y])
@@ -1900,8 +1901,8 @@ class TestPythonOnnx(unittest.TestCase):
     def _inference_helper(self, dev):
         x = tensor.Tensor(shape=(2, 3, 3, 3), device=dev)
         x.gaussian(0.0, 1.0)
-        x1 = autograd.Conv2d(3, 1, 2)(x)
-        y = autograd.Conv2d(1, 1, 2)(x1)
+        x1 = layer.Conv2d(3, 1, 2)(x)
+        y = layer.Conv2d(1, 1, 2)(x1)
 
         # frontend
         model = sonnx.to_onnx([x], [y])
@@ -1926,8 +1927,8 @@ class TestPythonOnnx(unittest.TestCase):
         # forward
         x = tensor.Tensor(shape=(2, 3, 3, 3), device=dev)
         x.gaussian(0.0, 1.0)
-        x1 = autograd.Conv2d(3, 1, 2)(x)
-        x2 = autograd.Conv2d(1, 1, 2)(x1)
+        x1 = layer.Conv2d(3, 1, 2)(x)
+        x2 = layer.Conv2d(1, 1, 2)(x1)
         y = autograd.Flatten()(x2)[0]
         y_t = tensor.Tensor(shape=(2, 1), device=dev)
         y_t.gaussian(0.0, 1.0)
@@ -1968,7 +1969,7 @@ class TestPythonOnnx(unittest.TestCase):
         # forward
         x = tensor.Tensor(shape=(2, 3, 3, 3), device=dev)
         x.gaussian(0.0, 1.0)
-        x1 = autograd.Conv2d(3, 1, 2)(x)
+        x1 = layer.Conv2d(3, 1, 2)(x)
         y = autograd.Flatten()(x1)[0]
         y_t = tensor.Tensor(shape=(2, 4), device=dev)
         y_t.gaussian(0.0, 1.0)
@@ -1987,7 +1988,7 @@ class TestPythonOnnx(unittest.TestCase):
         sg_ir = sonnx.prepare(model, device=dev)
         # forward
         x1 = sg_ir.run([x], last_layers=-1)[0]
-        x2 = autograd.Conv2d(1, 1, 2)(x1)
+        x2 = layer.Conv2d(1, 1, 2)(x1)
         y_o = autograd.Flatten()(x2)[0]
         # backward
         y_ot = tensor.Tensor(shape=(2, 1), device=dev)
