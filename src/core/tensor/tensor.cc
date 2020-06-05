@@ -407,7 +407,7 @@ Tensor Tensor::Repeat(const vector<size_t> &repeats, int axis,
 
 Tensor Tensor::Clone(std::shared_ptr<Device> device) const {
   if (device == nullptr) device = device_;
-  Tensor t(shape_, device_, data_type_);
+  Tensor t(shape_, device, data_type_);
   // t.transpose_ = transpose_;
   t.stride_ = stride_;
   t.CopyData(*this);
@@ -1447,17 +1447,18 @@ void Axpy(const SType alpha, const Tensor &in, Tensor *out) {
 template void Axpy<float>(const float alpha, const Tensor &in, Tensor *out);
 
 void Axpy(const Tensor &alpha, const Tensor &in, Tensor *out) {
-  CHECK(alpha.device() == defaultDevice);
   TYPE_SWITCH(alpha.data_type(), SType, {
     TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
       Tensor fake(*out);
       Tensor &outRef = *out;
       out->device()->Exec(
           [alpha, in, outRef, fake](Context *ctx) mutable {
+            Tensor alphaHost = alpha.Clone(defaultDevice);
+            // synchronize the stream to wait for the data transfer to complete
+            alpha.device()->Sync();
             const SType value =
-                static_cast<const SType *>(alpha.block()->data())[0];
+                static_cast<const SType *>(alphaHost.block()->data())[0];
             auto a = TypeCast<SType, DType>(value);
-            // printf("a: %f\n", a);
             Axpy<DType, Lang>(a, in, &outRef, ctx);
           },
           {alpha.block(), in.block(), out->block()}, {out->block()}, "Axpy");

@@ -45,7 +45,7 @@ class Constant(DecayScheduler):
 
     def call(self, step: Tensor) -> Tensor:
         # TODO should be an in-place operator
-        ret = Tensor((1,), device.create_cpu_device())
+        ret = Tensor((1,), step.device)
         ret.set_value(self.init_value)
         return ret
 
@@ -64,7 +64,7 @@ class ExponentialDecay(DecayScheduler):
             s = step // self.decay_steps
         else:
             s = step / self.decay_steps
-        ret = Tensor((1, ), s.device)
+        ret = Tensor((1,), s.device)
         ret.set_value(self.decay_rate)
         return self.init_value * tensor.pow(ret, s)
 
@@ -87,9 +87,7 @@ class Optimizer(object):
 
         # init step counter
         # TODO change type to int32
-        self.step_counter = Tensor((1,),
-                                   dtype=tensor.float32,
-                                   device=device.create_cpu_device())
+        self.step_counter = Tensor((1,), dtype=tensor.float32)
         self.step_counter.set_value(0)
         self.lr_value = self.lr(self.step_counter)
 
@@ -115,7 +113,8 @@ class Optimizer(object):
     def step(self):
         """To increment the step counter and update the lr"""
         self.step_counter.data += 1
-        self.lr_value = self.lr(self.step_counter)
+        lr_value = self.lr(self.step_counter)
+        self.lr_value.copy_from(lr_value)
 
     def apply(self, param_name, param_value, param_grad):
         """ update the pvalue inplace using pgrad, lr_value and mom_value
@@ -124,7 +123,7 @@ class Optimizer(object):
 
     @deprecated(
         reason=
-        "Update is deprecated, use __call__() to do update, refer to __call__ for more details."
+        "Update is deprecated, use apply() to do update, refer to apply for more details."
     )
     def update(self, param, grad):
         """Update the param values with given gradients.
@@ -219,7 +218,6 @@ class SGD(Optimizer):
             self.weight_decay = Constant(weight_decay)
         elif isinstance(weight_decay, DecayScheduler):
             self.weight_decay = weight_decay
-            weight_decay = weight_decay.init_value
         else:
             raise TypeError("Wrong weight_decay type")
         self.decay_value = self.weight_decay(self.step_counter)
@@ -244,7 +242,8 @@ class SGD(Optimizer):
         assert param_value.shape == param_grad.shape, ("shape mismatch",
                                                        param_value.shape,
                                                        param_grad.shape)
-        self.device_check(param_value, self.mom_value)
+        self.device_check(param_value, self.step_counter, self.lr_value,
+                          self.mom_value, self.dam_value, self.decay_value)
 
         # TODO add branch operator
         # if self.decay_value != 0:
@@ -255,29 +254,31 @@ class SGD(Optimizer):
             if param_name not in self.moments:
                 flag = param_value.device.graph_enabled()
                 param_value.device.EnableGraph(False)
-                buf = self.moments[param_name] = tensor.zeros_like(param_value)
+                self.moments[param_name] = tensor.zeros_like(param_value)
                 param_value.device.EnableGraph(flag)
-                buf *= self.mom_value
-                singa.Axpy(1.0, param_grad.data, buf.data)
-            else:
-                buf = self.moments[param_name]
-                buf *= self.mom_value
-                alpha = 1.0 - self.dam_value
-                singa.Axpy(alpha.data, param_grad.data, buf.data)
+
+            buf = self.moments[param_name]
+            buf *= self.mom_value
+            alpha = 1.0 - self.dam_value
+            singa.Axpy(alpha.data, param_grad.data, buf.data)
+
             if self.nesterov:
-                # TODO: fix Axpy
                 singa.Axpy(self.mom_value.data, buf.data, param_grad.data)
             else:
                 param_grad = buf
+
         minus_lr = 0.0 - self.lr_value
         singa.Axpy(minus_lr.data, param_grad.data, param_value.data)
 
     def step(self):
-        """ increment step counter, lr and moment"""
+        # increment step counter, lr and moment
         super().step()
-        self.mom_value = self.momentum(self.step_counter)
-        self.dam_value = self.dampening(self.step_counter)
-        self.decay_value = self.weight_decay(self.step_counter)
+        mom_value = self.momentum(self.step_counter)
+        dam_value = self.dampening(self.step_counter)
+        decay_value = self.weight_decay(self.step_counter)
+        self.mom_value.copy_from(mom_value)
+        self.dam_value.copy_from(dam_value)
+        self.decay_value.copy_from(decay_value)
 
     def get_states(self):
         states = super().get_states()
@@ -304,7 +305,7 @@ class SGD(Optimizer):
 
     @deprecated(
         reason=
-        "Update is deprecated, use __call__() to do update, refer to __call__ for more details."
+        "backward_and_update is deprecated, use __call__() to do update, refer to __call__ for more details."
     )
     def backward_and_update(self, loss):
         """Performs backward propagation from the loss and parameter update.

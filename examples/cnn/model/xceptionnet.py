@@ -18,7 +18,6 @@
 # the code is modified from
 # https://github.com/Cadene/pretrained-models.pytorch/blob/master/pretrainedmodels/models/xception.py
 
-from singa import autograd
 from singa import layer
 from singa import model
 

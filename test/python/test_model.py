@@ -22,7 +22,6 @@ import os
 import math
 import unittest
 import numpy as np
-import time
 
 from singa import singa_wrap as singa_api
 from singa import autograd
@@ -34,24 +33,27 @@ from singa import opt
 
 from cuda_helper import gpu_dev, cpu_dev
 
+
 class DoubleLinear(layer.Layer):
+
     def __init__(self, a, b, c):
         super(DoubleLinear, self).__init__()
-        self.l1 = layer.Linear(a,b)
-        self.l2 = layer.Linear(b,c)
+        self.l1 = layer.Linear(a, b)
+        self.l2 = layer.Linear(b, c)
 
     def forward(self, x):
         y = self.l1(x)
         y = self.l2(y)
         return y
 
+
 class MyModel(model.Model):
 
     def __init__(self):
         super(MyModel, self).__init__()
-        self.conv1 = layer.Conv2d(2,2)
+        self.conv1 = layer.Conv2d(2, 2)
         self.bn1 = layer.BatchNorm2d(2)
-        self.doublelinear1 = DoubleLinear(2,4,2)
+        self.doublelinear1 = DoubleLinear(2, 4, 2)
         self.optimizer = opt.SGD()
 
     def forward(self, x):
@@ -71,38 +73,49 @@ class MyModel(model.Model):
         return autograd.softmax_cross_entropy(out, ty)
 
     def optim(self, loss):
-        self.optimizer.backward_and_update(loss)
+        self.optimizer(loss)
+
 
 class TestTensorMethods(unittest.TestCase):
+
     def _save_states_load_states_helper(self, dev, graph_flag="False"):
-        x_shape =(2, 2, 2, 2)
+        x_shape = (2, 2, 2, 2)
         x = tensor.PlaceHolder(x_shape, device=dev)
 
         m = MyModel()
-        m.on_device(dev)
-
         m.compile([x], is_train=True, use_graph=graph_flag, sequential=False)
 
         states = {
-                "MyModel.conv1.W": tensor.Tensor((2, 2, 2, 2), device=dev).set_value(0.1),
-                "MyModel.conv1.b": tensor.Tensor((2,), device=dev).set_value(0.2),
-                "MyModel.bn1.scale": tensor.Tensor((2,), device=dev).set_value(0.3),
-                "MyModel.bn1.bias": tensor.Tensor((2,), device=dev).set_value(0.4),
-                "MyModel.bn1.running_mean": tensor.Tensor((2,), device=dev).set_value(0.5),
-                "MyModel.bn1.running_var": tensor.Tensor((2,), device=dev).set_value(0.6),
-                "MyModel.doublelinear1.l1.W": tensor.Tensor((2, 4), device=dev).set_value(0.7),
-                "MyModel.doublelinear1.l1.b": tensor.Tensor((4,), device=dev).set_value(0.8),
-                "MyModel.doublelinear1.l2.W": tensor.Tensor((4, 2), device=dev).set_value(0.9),
-                "MyModel.doublelinear1.l2.b": tensor.Tensor((2,), device=dev).set_value(1.0)}
+            "MyModel.conv1.W":
+                tensor.Tensor((2, 2, 2, 2), device=dev).set_value(0.1),
+            "MyModel.conv1.b":
+                tensor.Tensor((2,), device=dev).set_value(0.2),
+            "MyModel.bn1.scale":
+                tensor.Tensor((2,), device=dev).set_value(0.3),
+            "MyModel.bn1.bias":
+                tensor.Tensor((2,), device=dev).set_value(0.4),
+            "MyModel.bn1.running_mean":
+                tensor.Tensor((2,), device=dev).set_value(0.5),
+            "MyModel.bn1.running_var":
+                tensor.Tensor((2,), device=dev).set_value(0.6),
+            "MyModel.doublelinear1.l1.W":
+                tensor.Tensor((2, 4), device=dev).set_value(0.7),
+            "MyModel.doublelinear1.l1.b":
+                tensor.Tensor((4,), device=dev).set_value(0.8),
+            "MyModel.doublelinear1.l2.W":
+                tensor.Tensor((4, 2), device=dev).set_value(0.9),
+            "MyModel.doublelinear1.l2.b":
+                tensor.Tensor((2,), device=dev).set_value(1.0)
+        }
 
         m.set_states(states)
         states2 = m.get_states()
         for k in states2.keys():
-            np.testing.assert_array_almost_equal(tensor.to_numpy(states[k]), tensor.to_numpy(states2[k]))
+            np.testing.assert_array_almost_equal(tensor.to_numpy(states[k]),
+                                                 tensor.to_numpy(states2[k]))
 
-
-        opt_state1 = tensor.Tensor((2,10), device=dev).gaussian(1, 0.1)
-        opt_state2 = tensor.Tensor((20,2), device=dev).gaussian(0.1, 1)
+        opt_state1 = tensor.Tensor((2, 10), device=dev).gaussian(1, 0.1)
+        opt_state2 = tensor.Tensor((20, 2), device=dev).gaussian(0.1, 1)
         aux = {"opt1": opt_state1, "opt2": opt_state2}
 
         # save snapshot1
@@ -120,14 +133,16 @@ class TestTensorMethods(unittest.TestCase):
 
         # restore snapshot
         aux2 = m.load_states(zip_fp)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(aux2["opt1"]), tensor.to_numpy(aux["opt1"]))
-        np.testing.assert_array_almost_equal(tensor.to_numpy(aux2["opt2"]), tensor.to_numpy(aux["opt2"]))
+        np.testing.assert_array_almost_equal(tensor.to_numpy(aux2["opt1"]),
+                                             tensor.to_numpy(aux["opt1"]))
+        np.testing.assert_array_almost_equal(tensor.to_numpy(aux2["opt2"]),
+                                             tensor.to_numpy(aux["opt2"]))
 
         # snapshot states
         states3 = m.get_states()
         for k in states3.keys():
-            np.testing.assert_array_almost_equal(tensor.to_numpy(states[k]), tensor.to_numpy(states3[k]))
-
+            np.testing.assert_array_almost_equal(tensor.to_numpy(states[k]),
+                                                 tensor.to_numpy(states3[k]))
 
     @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
     def test_save_states_load_states_gpu(self):
@@ -137,6 +152,7 @@ class TestTensorMethods(unittest.TestCase):
     def test_save_states_load_states_cpu(self):
         self._save_states_load_states_helper(cpu_dev, graph_flag=False)
         self._save_states_load_states_helper(cpu_dev, graph_flag=True)
+
 
 if __name__ == '__main__':
     unittest.main()

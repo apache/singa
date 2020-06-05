@@ -20,7 +20,6 @@
 # the code is modified from
 # https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
 
-from singa import autograd
 from singa import layer
 from singa import model
 

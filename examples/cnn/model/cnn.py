@@ -17,7 +17,6 @@
 # under the License.
 #
 
-from singa import autograd
 from singa import layer
 from singa import model
 

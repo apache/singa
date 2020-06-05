@@ -17,11 +17,9 @@
 # under the License.
 #
 
-from singa import autograd
 from singa import layer
 from singa import model
 from singa import tensor
-from singa.tensor import Tensor
 
 
 class MLP(model.Model):
