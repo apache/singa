@@ -1631,7 +1631,7 @@ class SingaBackend(Backend):
                 padding, odd_padding = utils.get_padding_shape(
                     auto_pad, inputs[0].shape[2:], kernel, stride)
 
-        # not support count_include_pad and auto_pad
+        # not support count_include_pad and auto_pad ignore if its set to zero
         ceil_mode = onnx_node.getattr("ceil_mode", 0)
         count_include_pad = onnx_node.getattr("count_include_pad", 0)
         if ceil_mode != 0 or count_include_pad != 0:
