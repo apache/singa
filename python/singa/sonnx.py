@@ -1632,10 +1632,11 @@ class SingaBackend(Backend):
                     auto_pad, inputs[0].shape[2:], kernel, stride)
 
         # not support count_include_pad and auto_pad
-        ceil_mode = onnx_node.getattr("ceil_mode",0)
-        count_include_pad = onnx_node.getattr("count_include_pad",0)
-        if ceil_mode!=0 or count_include_pad!=0:
-            raise ValueError("Not implemented yet for count_include_pad or ceil_mode")
+        ceil_mode = onnx_node.getattr("ceil_mode", 0)
+        count_include_pad = onnx_node.getattr("count_include_pad", 0)
+        if ceil_mode != 0 or count_include_pad != 0:
+            raise ValueError(
+                "Not implemented yet for count_include_pad or ceil_mode")
         # only support 2d
         if len(kernel) != 2:
             raise ValueError("Not implemented yet")
@@ -2078,9 +2079,9 @@ class SingaRep(BackendRep):
         # last_layers means we run this model until the last #N layers
         last_layers = kwargs.get('last_layers', len(self.singa_ops))
         if last_layers != len(self.singa_ops):
-            final_outputs = self.singa_ops[last_layers-1].op.outputs
+            final_outputs = self.singa_ops[last_layers - 1].op.outputs
         else:
-            final_outputs =  [outp.name for outp in graph.output]
+            final_outputs = [outp.name for outp in graph.output]
         # whether return all outputs
         all_outputs = kwargs.get('all_outputs', False)
         # get a specific op by its name
