@@ -730,6 +730,86 @@ class TestAPI(unittest.TestCase):
     def test_as_type2_gpu(self):
         self._as_type2_helper(gpu_dev)
 
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_rnn_relu(self):
+        self._rnn_helper(0)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_rnn_tanh(self):
+        self._rnn_helper(1)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_rnn_lstm(self):
+        self._rnn_helper(2)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_rnn_gru(self):
+        self._rnn_helper(3)
+
+    def _rnn_helper(self, mode):
+        dev = gpu_dev
+
+        hidden_size = 7
+        seq_length = 5
+        batch_size = 6
+        feature_size = 3
+        directions = 2
+        num_layers = 2
+
+        x = tensor.Tensor(shape=(seq_length, batch_size, feature_size),
+                          device=dev).gaussian(0, 1)
+        hx = tensor.Tensor(shape=(num_layers * directions, batch_size,
+                                  hidden_size),
+                           device=dev).gaussian(0, 1)
+        cx = tensor.Tensor(shape=(num_layers * directions, batch_size,
+                                  hidden_size),
+                           device=dev).gaussian(0, 1)
+
+        rnn_handle = singa_api.CudnnRNNHandle(x.data,
+                                              hidden_size,
+                                              mode,
+                                              num_layers=num_layers,
+                                              dropout=0.1,
+                                              bidirectional=1)
+
+        w = tensor.Tensor(shape=(rnn_handle.weights_size,),
+                          device=dev).gaussian(0, 1)
+        # print("weights size is ", rnn_handle.weights_size)
+
+        (y, hy, cy) = singa_api.GpuRNNForwardTraining(x.data, hx.data, cx.data,
+                                                      w.data, rnn_handle)
+        self.assertEqual(y.shape(),
+                         (seq_length, batch_size, directions * hidden_size))
+        self.assertEqual(hy.shape(), hx.shape)
+        self.assertEqual(cy.shape(), cx.shape)
+
+        (y2, hy2,
+         cy2) = singa_api.GpuRNNForwardInference(x.data, hx.data, cx.data,
+                                                 w.data, rnn_handle)
+        self.assertEqual(y2.shape(),
+                         (seq_length, batch_size, directions * hidden_size))
+        self.assertEqual(hy2.shape(), hx.shape)
+        self.assertEqual(cy2.shape(), cx.shape)
+
+        dy = tensor.Tensor(shape=(seq_length, batch_size,
+                                  directions * hidden_size),
+                           device=dev).gaussian(0, 1)
+        dhy = tensor.Tensor(shape=(num_layers * directions, batch_size,
+                                   hidden_size),
+                            device=dev).gaussian(0, 1)
+        dcy = tensor.Tensor(shape=(num_layers * directions, batch_size,
+                                   hidden_size),
+                            device=dev).gaussian(0, 1)
+
+        (dx, dhx, dcx) = singa_api.GpuRNNBackwardx(y, dy.data, dhy.data,
+                                                   dcy.data, w.data, hx.data,
+                                                   cx.data, rnn_handle)
+        self.assertEqual(dx.shape(), (seq_length, batch_size, feature_size))
+        self.assertEqual(dhx.shape(), hx.shape)
+        self.assertEqual(dcx.shape(), cx.shape)
+
+        dW = singa_api.GpuRNNBackwardW(x.data, hx.data, y, rnn_handle)
+
 
 if __name__ == '__main__':
     unittest.main()

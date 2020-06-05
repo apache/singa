@@ -2998,6 +2998,56 @@ class TestPythonOperation(unittest.TestCase):
     def test_onehot_gpu(self):
         self.onehot_test(gpu_dev)
 
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_cudnn_rnn_operation(self, dev=gpu_dev):
+        # init params, inputs
+        hidden_size = 7
+        seq_length = 5
+        batch_size = 6
+        feature_size = 3
+        directions = 2
+        num_layers = 2
+
+        for mode in [0, 1, 2, 3]:  # 0-relu, 1-tanh, 2-lstm, 3-gru
+            x = tensor.Tensor(shape=(seq_length, batch_size, feature_size),
+                              device=dev).gaussian(0, 1)
+            hx = tensor.Tensor(shape=(num_layers * directions, batch_size,
+                                      hidden_size),
+                               device=dev).gaussian(0, 1)
+            cx = tensor.Tensor(shape=(num_layers * directions, batch_size,
+                                      hidden_size),
+                               device=dev).gaussian(0, 1)
+            dy = tensor.Tensor(shape=(seq_length, batch_size,
+                                      directions * hidden_size),
+                               device=dev).gaussian(0, 1)
+            dhy = tensor.Tensor(shape=(num_layers * directions, batch_size,
+                                       hidden_size),
+                                device=dev).gaussian(0, 1)
+            dcy = tensor.Tensor(shape=(num_layers * directions, batch_size,
+                                       hidden_size),
+                                device=dev).gaussian(0, 1)
+
+            # init cudnn rnn op
+            rnn_handle = singa.CudnnRNNHandle(x.data,
+                                              hidden_size,
+                                              mode,
+                                              num_layers=num_layers,
+                                              dropout=0.1,
+                                              bidirectional=1)
+
+            w = tensor.Tensor(shape=(rnn_handle.weights_size,),
+                              device=dev).gaussian(0, 1)
+
+            # init operator/operation
+            _rnn = autograd._RNN(rnn_handle)
+
+            # forward
+            (y, hy, cy) = _rnn(x, hx, cx, w)
+            # print(ys)
+
+            # backward
+            dx, dhx, dcx, dw = _rnn.backward(dy.data, dhy.data, dcy.data)
+
 
 if __name__ == '__main__':
     unittest.main()

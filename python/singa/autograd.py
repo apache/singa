@@ -4505,6 +4505,82 @@ def onehot(axis, indices, depth, values):
     return OneHot(axis, depth, values)(indices)[0]
 
 
+class _RNN(Operator):
+    """ RNN operation with c++ backend
+    """
+
+    def __init__(self, handle, return_sequences=False):
+        assert singa.USE_CUDA, "Not able to run without CUDA"
+        super(_RNN, self).__init__()
+        self.handle = handle
+        self.return_sequences = return_sequences
+
+    def forward(self, x, hx, cx, w):
+        if training:
+            (y, hy, cy) = singa.GpuRNNForwardTraining(x, hx, cx, w, self.handle)
+            self.inputs = {
+                'x': x,
+                'hx': hx,
+                'cx': cx,
+                'w': w,
+                'y': y,
+                'hy': hy,
+                'cy': cy
+            }
+        else:
+            (y, hy, cy) = singa.GpuRNNForwardInference(x, hx, cx, w,
+                                                       self.handle)
+
+        if self.return_sequences:
+            return y
+        else:
+            last_y_shape = (y.shape()[1], y.shape()[2])
+            last_y = singa.Tensor(list(last_y_shape), x.device())
+
+            src_offset = y.Size() - last_y.Size()
+            # def copy_data_to_from(dst, src, size, dst_offset=0, src_offset=0):
+            singa.CopyDataToFrom(last_y, y, last_y.Size(), 0, src_offset)
+            return last_y
+
+    def backward(self, grad):
+        assert training is True and hasattr(
+            self, "inputs"), "Please set training as True before do BP. "
+
+        dy = None
+        if self.return_sequences:
+            assert grad.shape() == self.inputs['y'].shape(), (
+                "grad shape %s != y shape %s" %
+                (grad.shape(), self.inputs['y'].shape()))
+            dy = grad
+        else:
+            assert grad.shape() == (self.inputs['y'].shape()[1],
+                                    self.inputs['y'].shape()[2]), (
+                                        "grad y shape %s != last y shape %s" %
+                                        (grad.shape(),
+                                         (self.inputs['y'].shape()[1],
+                                          self.inputs['y'].shape()[2])))
+            dy = singa.Tensor(list(self.inputs['y'].shape()), grad.device())
+            dy.SetFloatValue(0.0)
+            # grad shape (bs, directions*hidden)
+            # dy shape (seq, bs, directions*hidden)
+            dst_offset = dy.Size() - grad.Size()
+            singa.CopyDataToFrom(dy, grad, grad.Size(), dst_offset, 0)
+
+        dhy = singa.Tensor(list(self.inputs['hy'].shape()), grad.device())
+        dhy.SetFloatValue(0.0)
+        dcy = singa.Tensor(list(self.inputs['cy'].shape()), grad.device())
+        dcy.SetFloatValue(0.0)
+
+        (dx, dhx, dcx) = singa.GpuRNNBackwardx(self.inputs['y'], dy, dhy, dcy,
+                                               self.inputs['w'],
+                                               self.inputs['hx'],
+                                               self.inputs['cx'], self.handle)
+        dW = singa.GpuRNNBackwardW(self.inputs['x'], self.inputs['hx'],
+                                   self.inputs['y'], self.handle)
+
+        return dx, dhx, dcx, dW
+
+
 ''' alias for Operator and Layers
 '''
 Operation = Operator

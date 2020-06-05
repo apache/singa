@@ -73,7 +73,104 @@ class MyModel(model.Model):
     def optim(self, loss):
         self.optimizer.backward_and_update(loss)
 
-class TestTensorMethods(unittest.TestCase):
+
+# lstm testing
+class LSTMModel(model.Model):
+
+    def __init__(self, hidden_size, seq_length, batch_size, bidirectional,
+                 num_layers, return_sequences, rnn_mode, batch_first):
+        super(LSTMModel, self).__init__()
+        self.hidden_size = hidden_size
+        self.seq_length = seq_length
+        self.return_sequences = return_sequences
+
+        self.lstm = layer.CudnnRNN(hidden_size=hidden_size,
+                                   num_layers=num_layers,
+                                   bidirectional=bidirectional,
+                                   return_sequences=return_sequences,
+                                   rnn_mode=rnn_mode,
+                                   batch_first=batch_first)
+
+        directions = 2 if bidirectional else 1
+        self.hx = tensor.Tensor(shape=(num_layers * directions, batch_size,
+                                       hidden_size),
+                                requires_grad=True,
+                                stores_grad=True)
+        self.cx = tensor.Tensor(shape=(num_layers * directions, batch_size,
+                                       hidden_size),
+                                requires_grad=True,
+                                stores_grad=True)
+
+        self.optimizer = opt.SGD(0.1)
+
+    def reset_states(self, dev):
+        self.hx.to_device(dev)
+        self.cx.to_device(dev)
+        self.hx.set_value(0.0)
+        self.cx.set_value(0.0)
+
+    def forward(self, x):
+        y = self.lstm(x, self.hx, self.cx)
+        if self.return_sequences:
+            y = autograd.reshape(y, (-1, self.seq_length * self.hidden_size))
+        return y
+
+
+class TestModelMethods(unittest.TestCase):
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_lstm_model(self, dev=gpu_dev):
+        hidden_size = 3
+        seq_length = 2
+        batch_size = 4
+        feature_size = 3
+        bidirectional = False
+        directions = 2 if bidirectional else 1
+        num_layers = 2
+        out_size = hidden_size
+        return_sequences = False
+        batch_first = True
+        rnn_mode = "lstm"
+
+        # manual test case
+        x_data = np.array([[[0, 0, 1], [0, 1, 0]], [[0, 1, 0], [1, 0, 0]],
+                           [[0, 0, 1], [0, 1, 0]], [[1, 0, 0], [0, 0, 1]]],
+                          dtype=np.float32).reshape(batch_size, seq_length,
+                                                    hidden_size)  # bs, seq, fea
+        if return_sequences:
+            y_data = np.array(
+                [[[0, 1, 0], [1, 0, 0]], [[1, 0, 0], [0, 0, 1]],
+                 [[0, 1, 0], [1, 0, 0]], [[0, 0, 1], [0, 1, 0]]],
+                dtype=np.float32).reshape(batch_size, seq_length,
+                                          hidden_size)  # bs, hidden
+            y_data.reshape(batch_size, -1)
+        else:
+            y_data = np.array([[1, 0, 0], [0, 0, 1], [1, 0, 0], [0, 1, 0]],
+                              dtype=np.float32).reshape(
+                                  batch_size, hidden_size)  # bs, hidden
+
+        x = tensor.Tensor(device=dev, data=x_data)
+        y_t = tensor.Tensor(device=dev, data=y_data)
+
+        m = LSTMModel(hidden_size, seq_length, batch_size, bidirectional,
+                      num_layers, return_sequences, rnn_mode, batch_first)
+        m.reset_states(x.device)
+        m.compile([x], is_train=True, use_graph=False, sequential=False)
+
+        m.train()
+        for i in range(1000):
+            y = m.forward(x)
+            assert y.shape == y_t.shape
+            loss = autograd.softmax_cross_entropy(y, y_t)
+            if i % 100 == 0:
+                print("loss", loss)
+            m.optimizer.backward_and_update(loss)
+
+        m.eval()
+        y = m.forward(x)
+        loss = autograd.softmax_cross_entropy(y, y_t)
+        print("eval loss", loss)
+
     def _save_states_load_states_helper(self, dev, graph_flag="False"):
         x_shape =(2, 2, 2, 2)
         x = tensor.PlaceHolder(x_shape, device=dev)
