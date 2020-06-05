@@ -169,7 +169,7 @@ class Layer(object, metaclass=LayerMeta):
 
     def register_layers(self, *args):
         if len(args) == 1 and isinstance(args[0], OrderedDict):
-            items = agrs[0].itmes()
+            items = args[0].items()
         else:
             items = [(v.__class__.__name__ + '_' + str(idx), v)
                      for idx, v in enumerate(args)]
