@@ -3048,6 +3048,35 @@ class TestPythonOperation(unittest.TestCase):
             # backward
             dx, dhx, dcx, dw = _rnn.backward(dy.data, dhy.data, dcy.data)
 
+    def cossim_helper(self, dev):
+        from numpy.linalg import norm
+
+        A = np.random.randn(*[3, 10]).astype(np.float32)
+        B = np.random.randn(*[3, 10]).astype(np.float32)
+
+        a = tensor.from_numpy(A)
+        a.to_device(dev)
+        b = tensor.from_numpy(B)
+        b.to_device(dev)
+
+        DY = np.random.randn(3).astype(np.float32)
+        dy = tensor.from_numpy(DY)
+        dy.to_device(dev)
+
+        y = autograd.cossim(a, b)
+        da, db = y.creator.backward(dy.data)  # CTensor
+
+        self.check_shape(y.shape, (3, ))
+        self.check_shape(da.shape(), (3, 10))
+        self.check_shape(db.shape(), (3, 10))
+
+    def test_cossim_cpu(self):
+        self.cossim_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_cossim_gpu(self):
+        self.cossim_helper(gpu_dev)
+
 
 if __name__ == '__main__':
     unittest.main()
