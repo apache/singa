@@ -182,7 +182,7 @@ void Communicator::wait() {
         CUDA_CHECK(cudaEventRecord(event, ctx->c2));
         CUDA_CHECK(cudaStreamWaitEvent(ctx->stream, event, 0));
       },
-      blocks_, blocks_, "Sync");
+      blocks_, blocks_, "Waiting");
 }
 
 Communicator::~Communicator() {

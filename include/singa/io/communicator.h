@@ -115,11 +115,6 @@ class Communicator {
   std::vector<Block *> prev_blocks_;
 
   ncclUniqueId id;
-  // cuda stream s is for nccl all reduce
-  cudaStream_t s;
-  // cuda streams c1 and c2 are mainly for data copy to and from memory buffers
-  cudaStream_t c1;
-  cudaStream_t c2;
   ncclComm_t comm;
   cudaEvent_t event;
 
