@@ -138,10 +138,10 @@ class Tensor {
   /// used for swig code to convert Tensor into numpy array.
   /// It gets data into 'value'
   template <typename SType>
-  void GetValue(SType *value, const size_t num);
+  void GetValue(SType *value, const size_t num) const;
 
   template <typename SType>
-  void get_value(SType *value, const size_t num);
+  void get_value(SType *value, const size_t num) const;
 
   /// Serialize data, shape and transpose to protobuf object.
   void ToProto(singa::TensorProto *proto) const;
@@ -169,7 +169,7 @@ class Tensor {
   /// memory with 'offset' (elements).
   template <typename SType>
   void CopyDataFromHostPtr(const SType *src, const size_t num,
-                           const size_t offset = 0);
+                           const size_t offset = 0) const;
 
   /// Copy data from another Tensor which may be on a diff device.
   /// Meta data would not be copied!
@@ -344,6 +344,7 @@ void RepeatDataToFrom(bool broadcast_flag, const vector<size_t> &repeats,
 // =============Element-wise operations====================================
 Tensor Abs(const Tensor &in);
 Tensor Ceil(const Tensor &in);
+Tensor Floor(const Tensor &in);
 Tensor Exp(const Tensor &in);
 Tensor Log(const Tensor &in);
 Tensor ReLU(const Tensor &in);
@@ -369,6 +370,7 @@ Tensor Transform(const Tensor &in);
 
 void Abs(const Tensor &in, Tensor *out);
 void Ceil(const Tensor &in, Tensor *out);
+void Floor(const Tensor &in, Tensor *out);
 void Exp(const Tensor &in, Tensor *out);
 void Log(const Tensor &in, Tensor *out);
 void ReLU(const Tensor &in, Tensor *out);
@@ -556,6 +558,8 @@ void Uniform(const SType low, const SType high, Tensor *out);
 /// out = alpha*in + out
 template <typename SType>
 void Axpy(SType alpha, const Tensor &in, Tensor *out);
+
+void Axpy(const Tensor &alpha, const Tensor &in, Tensor *out);
 
 /// Do matrix vector multipication or matrix matrix multiplication depdending
 /// on the Tensor shape.  result = A * B

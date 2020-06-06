@@ -84,7 +84,7 @@ if __name__ == "__main__":
         x = autograd.matmul(x, w1)
         x = autograd.add_bias(x, b1)
         loss = autograd.softmax_cross_entropy(x, target)
-        sgd.backward_and_update(loss)
+        sgd(loss)
 
         if i % 100 == 0:
             print("training loss = ", tensor.to_numpy(loss)[0])

@@ -17,11 +17,9 @@
 # under the License.
 #
 
-from singa import autograd
 from singa import layer
 from singa import model
 from singa import tensor
-from singa.tensor import Tensor
 
 
 class MLP(model.Model):
@@ -47,7 +45,7 @@ class MLP(model.Model):
         loss = self.softmax_cross_entropy(out, y)
 
         if dist_option == 'fp32':
-            self.optimizer.backward_and_update(loss)
+            self.optimizer(loss)
         elif dist_option == 'fp16':
             self.optimizer.backward_and_update_half(loss)
         elif dist_option == 'partialUpdate':
