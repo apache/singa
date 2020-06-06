@@ -4505,6 +4505,88 @@ def onehot(axis, indices, depth, values):
     return OneHot(axis, depth, values)(indices)[0]
 
 
+class CosSim(Operator):
+    """
+    Init a cos similarity operator
+    """
+
+    def __init__(self):
+        super(CosSim, self).__init__()
+
+    @classmethod
+    def dot(cls, a, b):
+        """ 
+        dot multiply
+        Args:
+            a (CTensor): 2d input tensor.
+            b (CTensor): 2d input tensor.
+        Returns:
+            CTensor: the output CTensor.
+        """
+        batch_size = a.shape()[0]
+        ret = []
+        for indice in range(batch_size):
+            tmp_a = singa.SliceOn(a, indice, indice + 1, 0)  # 1 * d
+            tmp_b = singa.SliceOn(b, indice, indice + 1, 0)  # 1 * d
+            tmp_b = singa.DefaultTranspose(tmp_b)
+            tmp_tensor = singa.Mult(tmp_a, tmp_b)  # 1 * d * d * 1
+            ret.append(tmp_tensor)
+        ret = singa.VecTensor(ret)
+        ret = singa.ConcatOn(ret, 0)  # b * 1
+        return singa.Reshape(ret, [ret.shape()[0]])  # b
+
+    def forward(self, a, b):
+        """
+        forward of CosSim
+        Args:
+            a (CTensor): input tensor.
+            b (CTensor): input tensor.
+        Returns:
+            the output CTensor.
+        """
+        ad = CosSim.dot(a, a)
+        bd = CosSim.dot(b, b)
+        ap = singa.PowFloat(ad, 0.5)
+        bp = singa.PowFloat(bd, 0.5)
+        ret = singa.__div__(CosSim.dot(a, b), singa.__mul__(ap, bp))
+        if training:
+            self.cache = (a, b, ad, bd, ap, bp, ret)
+        return ret
+
+    def backward(self, dy):
+        """
+        backward of CosSim
+        follow https://math.stackexchange.com/a/1923705
+        Args:
+            dy (CTensor): gradient tensor.
+        Raises:
+            the gradient tensor over input tensor.
+        """
+        a, b, ad, bd, ap, bp, ret = self.cache
+        ab = singa.__mul__(ap, bp)
+        ab = singa.Reshape(ab, list(ab.shape()) + [1])  # b * 1
+        ad = singa.Reshape(ad, list(ad.shape()) + [1])  # b * 1
+        bd = singa.Reshape(bd, list(bd.shape()) + [1])  # b * 1
+        ret = singa.Reshape(ret, list(ret.shape()) + [1])  # b * 1
+        da = singa.__sub__(singa.__div__(b, ab),
+                           singa.__mul__(ret, singa.__div__(a, ad)))
+        db = singa.__sub__(singa.__div__(a, ab),
+                           singa.__mul__(ret, singa.__div__(b, bd)))
+        return da, db
+
+
+def cossim(a, b):
+    """
+    Produces a cos similarity operator
+    Args:
+        a (CTensor): input tensor.
+        b (CTensor): input tensor.
+    Returns:
+        the output Tensor.
+    """
+    return CosSim()(a, b)[0]
+
+
 ''' alias for Operator and Layers
 '''
 Operation = Operator
