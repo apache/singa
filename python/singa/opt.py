@@ -17,7 +17,6 @@
 '''This module includes a set of optimizers for updating model parameters.
 It replaces the old optimizers from optimizer.py'''
 
-from singa import device
 from singa import tensor
 from singa.tensor import Tensor
 from singa import autograd
@@ -370,6 +369,9 @@ class DistOpt(object):
         self.local_rank = self.communicator.local_rank
         self.global_rank = self.communicator.global_rank
 
+    def __call__(self, loss):
+        self.backward_and_update(loss)
+
     def update(self, param, grad):
         """Performs a single optimization step.
 
@@ -497,6 +499,7 @@ class DistOpt(object):
         self.wait()
         for p, g in plist:
             self.update(p, g)
+        self.opt.step()
 
     def backward_and_update_half(self,
                                  loss,
@@ -548,6 +551,7 @@ class DistOpt(object):
         self.wait()
         for p, g in plist:
             self.update(p, g)
+        self.opt.step()
 
     def backward_and_partial_update(self, loss, threshold=2097152):
         """Performs backward propagation from the loss and parameter update using asychronous training.
@@ -619,6 +623,7 @@ class DistOpt(object):
         # the counter returns to zero after a cycle of partial update
         if (k == self.partial):
             self.partial = 0
+        self.opt.step()
 
     def backward_and_sparse_update(self,
                                    loss,
@@ -720,3 +725,4 @@ class DistOpt(object):
         for p, g in plist:
             self.update(p, g)
         self.sparsInit = True
+        self.opt.step()

@@ -206,7 +206,7 @@ class ResNet(model.Model):
         loss = self.softmax_cross_entropy(out, y)
 
         if dist_option == 'fp32':
-            self.optimizer.backward_and_update(loss)
+            self.optimizer(loss)
         elif dist_option == 'fp16':
             self.optimizer.backward_and_update_half(loss)
         elif dist_option == 'partialUpdate':
