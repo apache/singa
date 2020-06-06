@@ -111,17 +111,12 @@ class MyModel(sonnx.SONNXModel):
         self.dimension = 4
         self.num_channels = num_channels
         self.num_classes = num_classes
-        self.linear1 = layer.Linear(1000, 256)
-        self.linear2 = layer.Linear(256, num_classes)
+        self.linear = layer.Linear(512, num_classes)
 
     def forward(self, *x):
-        y = super(MyModel, self).forward(*x)[0]
-        y = self.linear1(y)
-        y = autograd.relu(y)
-        y = autograd.dropout(y, 0.5)
-        y = self.linear2(y)
-        y = autograd.relu(y)
-        y = autograd.dropout(y, 0.2)
+        # if you change to other models, please update the output name here
+        y = super(MyModel, self).forward(*x, aux_output=['flatten_170'])[1]
+        y = self.linear(y)
         return y
 
     def train_one_batch(self, x, y, dist_option, spars):
@@ -308,7 +303,7 @@ if __name__ == '__main__':
     parser.add_argument('--model',
                         choices=list(model_config.keys()),
                         help='please refer to the models.json for more details',
-                        default='mobilenet')
+                        default='resnet18v1')
     parser.add_argument('--data',
                         choices=['cifar10', 'cifar100'],
                         default='cifar10')
