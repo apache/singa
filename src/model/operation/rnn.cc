@@ -46,15 +46,16 @@ CudnnRNNHandle::CudnnRNNHandle(const Tensor &x, const int hidden_size,
   cudnnRNNAlgo = CUDNN_RNN_ALGO_STANDARD;
   cudnnDataType = CUDNN_DATA_FLOAT;
 
-  init_data_desc();
-  update_data_desc();
+  cudnnTensorDescriptor_t *xDesc = new cudnnTensorDescriptor_t[seq_length];
+  init_xDesc(xDesc, *this);
+
   init_dropout_desc();
   init_rnn_desc();
-  init_parameters_desc();
-  init_workspace();
+  init_parameters_desc(xDesc);
+  init_workspace(xDesc);
 }
 
-void CudnnRNNHandle::init_workspace() {
+void CudnnRNNHandle::init_workspace(cudnnTensorDescriptor_t *xDesc) {
   /* workspace data */
   // Need for every pass
   CUDNN_CHECK(cudnnGetRNNWorkspaceSize(ctx->cudnn_handle, rnnDesc, seq_length,
@@ -67,7 +68,7 @@ void CudnnRNNHandle::init_workspace() {
   reserve_space = Tensor(Shape{reserve_size}, dev);
 }
 
-void CudnnRNNHandle::init_parameters_desc() {
+void CudnnRNNHandle::init_parameters_desc(cudnnTensorDescriptor_t *xDesc) {
   /* weights size
    *   depends on rnn desc */
   CUDNN_CHECK(cudnnGetRNNParamsSize(ctx->cudnn_handle, rnnDesc, xDesc[0],
@@ -116,91 +117,6 @@ void CudnnRNNHandle::init_dropout_desc() {
                                         states, stateSize, seed));
 }
 
-void CudnnRNNHandle::init_data_desc() {
-  /* xDesc, yDesc */
-  xDesc = (cudnnTensorDescriptor_t *)malloc(seq_length *
-                                            sizeof(cudnnTensorDescriptor_t));
-  yDesc = (cudnnTensorDescriptor_t *)malloc(seq_length *
-                                            sizeof(cudnnTensorDescriptor_t));
-  dxDesc = (cudnnTensorDescriptor_t *)malloc(seq_length *
-                                             sizeof(cudnnTensorDescriptor_t));
-  dyDesc = (cudnnTensorDescriptor_t *)malloc(seq_length *
-                                             sizeof(cudnnTensorDescriptor_t));
-
-  for (int i = 0; i < seq_length; i++) {
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&xDesc[i]));
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&yDesc[i]));
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&dxDesc[i]));
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&dyDesc[i]));
-  }
-  CUDNN_CHECK(cudnnCreateTensorDescriptor(&hxDesc));
-  CUDNN_CHECK(cudnnCreateTensorDescriptor(&cxDesc));
-  CUDNN_CHECK(cudnnCreateTensorDescriptor(&hyDesc));
-  CUDNN_CHECK(cudnnCreateTensorDescriptor(&cyDesc));
-  CUDNN_CHECK(cudnnCreateTensorDescriptor(&dhxDesc));
-  CUDNN_CHECK(cudnnCreateTensorDescriptor(&dcxDesc));
-  CUDNN_CHECK(cudnnCreateTensorDescriptor(&dhyDesc));
-  CUDNN_CHECK(cudnnCreateTensorDescriptor(&dcyDesc));
-}
-
-void CudnnRNNHandle::update_data_desc() {
-  int dimA[3];
-  int strideA[3];
-
-  // init list of desc for x, y
-  for (int i = 0; i < seq_length; i++) {
-    // dimA[0] = x[i].shape(0); // batch size
-    dimA[0] = batch_size;  // TODO bs changes
-    dimA[1] = feature_size;
-    dimA[2] = 1;
-    strideA[0] = dimA[2] * dimA[1];
-    strideA[1] = dimA[2];
-    strideA[2] = 1;
-    CUDNN_CHECK(
-        cudnnSetTensorNdDescriptor(xDesc[i], cudnnDataType, 3, dimA, strideA));
-    CUDNN_CHECK(
-        cudnnSetTensorNdDescriptor(dxDesc[i], cudnnDataType, 3, dimA, strideA));
-
-    // dimA[0] = x[i].shape(0); // batch size
-    dimA[0] = batch_size;  // TODO bs changes
-    dimA[1] = bidirectional ? hidden_size * 2 : hidden_size;
-    dimA[2] = 1;
-
-    strideA[0] = dimA[2] * dimA[1];
-    strideA[1] = dimA[2];
-    strideA[2] = 1;
-    CUDNN_CHECK(
-        cudnnSetTensorNdDescriptor(yDesc[i], cudnnDataType, 3, dimA, strideA));
-    CUDNN_CHECK(
-        cudnnSetTensorNdDescriptor(dyDesc[i], cudnnDataType, 3, dimA, strideA));
-  }
-
-  dimA[0] = num_layers * (bidirectional ? 2 : 1);
-  dimA[1] = batch_size;
-  dimA[2] = hidden_size;
-
-  strideA[0] = dimA[2] * dimA[1];
-  strideA[1] = dimA[2];
-  strideA[2] = 1;
-
-  CUDNN_CHECK(
-      cudnnSetTensorNdDescriptor(hxDesc, cudnnDataType, 3, dimA, strideA));
-  CUDNN_CHECK(
-      cudnnSetTensorNdDescriptor(cxDesc, cudnnDataType, 3, dimA, strideA));
-  CUDNN_CHECK(
-      cudnnSetTensorNdDescriptor(hyDesc, cudnnDataType, 3, dimA, strideA));
-  CUDNN_CHECK(
-      cudnnSetTensorNdDescriptor(cyDesc, cudnnDataType, 3, dimA, strideA));
-  CUDNN_CHECK(
-      cudnnSetTensorNdDescriptor(dhxDesc, cudnnDataType, 3, dimA, strideA));
-  CUDNN_CHECK(
-      cudnnSetTensorNdDescriptor(dcxDesc, cudnnDataType, 3, dimA, strideA));
-  CUDNN_CHECK(
-      cudnnSetTensorNdDescriptor(dhyDesc, cudnnDataType, 3, dimA, strideA));
-  CUDNN_CHECK(
-      cudnnSetTensorNdDescriptor(dcyDesc, cudnnDataType, 3, dimA, strideA));
-}
-
 // reserve for masking
 Tensor CudnnRNNHandle::merge_inputs(size_t num, const vector<Tensor> &in) {
   if (num == 1) return in.at(0);
@@ -232,16 +148,60 @@ vector<Tensor> CudnnRNNHandle::split_output(size_t num, size_t dim,
   return outputs;
 }
 
-CudnnRNNHandle::~CudnnRNNHandle() {
-  free(xDesc);
-  free(yDesc);
-  free(dxDesc);
-  free(dyDesc);
+void init_yDesc(cudnnTensorDescriptor_t *yDesc, CudnnRNNHandle &h) {
+  int dimA[3];
+  int strideA[3];
+  dimA[0] = h.batch_size;
+  dimA[1] = h.bidirectional ? h.hidden_size * 2 : h.hidden_size;
+  dimA[2] = 1;
+  strideA[0] = dimA[2] * dimA[1];
+  strideA[1] = dimA[2];
+  strideA[2] = 1;
+
+  for (int i = 0; i < h.seq_length; i++) {
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&yDesc[i]));
+    CUDNN_CHECK(cudnnSetTensorNdDescriptor(yDesc[i], h.cudnnDataType, 3, dimA,
+                                           strideA));
+  }
+}
+
+void init_xDesc(cudnnTensorDescriptor_t *xDesc, CudnnRNNHandle &h) {
+  int dimA[3];
+  int strideA[3];
+  dimA[0] = h.batch_size;
+  dimA[1] = h.feature_size;
+  dimA[2] = 1;
+  strideA[0] = dimA[2] * dimA[1];
+  strideA[1] = dimA[2];
+  strideA[2] = 1;
+
+  for (int i = 0; i < h.seq_length; i++) {
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&xDesc[i]));
+    CUDNN_CHECK(cudnnSetTensorNdDescriptor(xDesc[i], h.cudnnDataType, 3, dimA,
+                                           strideA));
+  }
+}
+
+void init_hc_Desc(cudnnTensorDescriptor_t &hxDesc, CudnnRNNHandle &h) {
+  int dimA[3];
+  int strideA[3];
+  dimA[0] = h.num_layers * (h.bidirectional ? 2 : 1);
+  dimA[1] = h.batch_size;
+  dimA[2] = h.hidden_size;
+  strideA[0] = dimA[2] * dimA[1];
+  strideA[1] = dimA[2];
+  strideA[2] = 1;
+  CUDNN_CHECK(cudnnCreateTensorDescriptor(&hxDesc));
+  CUDNN_CHECK(
+      cudnnSetTensorNdDescriptor(hxDesc, h.cudnnDataType, 3, dimA, strideA));
 }
 
 vector<Tensor> GpuRNNForwardInference(const Tensor &x, const Tensor &hx,
                                       const Tensor &cx, const Tensor &W,
                                       CudnnRNNHandle &h) {
+  CHECK_EQ(h.feature_size, x.shape(2)) << "feature size should not change";
+  h.seq_length = x.shape(0);
+  h.batch_size = x.shape(1);  // update batch size to accomodate bs change
   Tensor y(Shape{h.seq_length, h.batch_size,
                  h.hidden_size * (h.bidirectional ? 2 : 1)},
            x.device());
@@ -251,15 +211,41 @@ vector<Tensor> GpuRNNForwardInference(const Tensor &x, const Tensor &hx,
   Tensor cy(Shape{h.num_layers * (h.bidirectional ? 2 : 1), h.batch_size,
                   h.hidden_size},
             x.device());
+
   y.device()->Exec(
       [&y, &hy, &cy, &x, &hx, &cx, &W, &h](Context *ctx) {
+        // require desc, [x], hx, cx, w, y, hy, cy
+        cudnnTensorDescriptor_t *xDesc =
+            new cudnnTensorDescriptor_t[h.seq_length];
+        cudnnTensorDescriptor_t *yDesc =
+            new cudnnTensorDescriptor_t[h.seq_length];
+        init_xDesc(xDesc, h);
+        init_yDesc(yDesc, h);
+        cudnnTensorDescriptor_t hxDesc;
+        cudnnTensorDescriptor_t cxDesc;
+        cudnnTensorDescriptor_t hyDesc;
+        cudnnTensorDescriptor_t cyDesc;
+        init_hc_Desc(hxDesc, h);
+        init_hc_Desc(cxDesc, h);
+        init_hc_Desc(hyDesc, h);
+        init_hc_Desc(cyDesc, h);
+
+        auto xptr = x.block()->data();
+        auto hxptr = hx.block()->data();
+        auto cxptr = cx.block()->data();
+        auto Wptr = W.block()->data();
+        auto yptr = y.block()->mutable_data();
+        auto hyptr = hy.block()->mutable_data();
+        auto cyptr = cy.block()->mutable_data();
+        auto wsptr = h.workspace.block()->mutable_data();
+
         CUDNN_CHECK(cudnnRNNForwardInference(
-            ctx->cudnn_handle, h.rnnDesc, h.seq_length, h.xDesc,
-            x.block()->data(), h.hxDesc, hx.block()->data(), h.cxDesc,
-            cx.block()->data(), h.wDesc, W.block()->data(), h.yDesc,
-            y.block()->mutable_data(), h.hyDesc, hy.block()->mutable_data(),
-            h.cyDesc, cy.block()->mutable_data(),
-            h.workspace.block()->mutable_data(), h.workspace_size));
+            ctx->cudnn_handle, h.rnnDesc, h.seq_length, xDesc, xptr, hxDesc,
+            hxptr, cxDesc, cxptr, h.wDesc, Wptr, yDesc, yptr, hyDesc, hyptr,
+            cyDesc, cyptr, wsptr, h.workspace_size));
+
+        delete[] xDesc;
+        delete[] yDesc;
       },
       {x.block(), hx.block(), cx.block(), W.block()},
       {y.block(), hy.block(), cy.block()});
@@ -269,6 +255,9 @@ vector<Tensor> GpuRNNForwardInference(const Tensor &x, const Tensor &hx,
 vector<Tensor> GpuRNNForwardTraining(const Tensor &x, const Tensor &hx,
                                      const Tensor &cx, const Tensor &W,
                                      CudnnRNNHandle &h) {
+  CHECK_EQ(h.feature_size, x.shape(2)) << "feature size should not change";
+  h.seq_length = x.shape(0);
+  h.batch_size = x.shape(1);  // update batch size to accomodate bs change
   Tensor y(Shape{h.seq_length, h.batch_size,
                  h.hidden_size * (h.bidirectional ? 2 : 1)},
            x.device());
@@ -280,14 +269,37 @@ vector<Tensor> GpuRNNForwardTraining(const Tensor &x, const Tensor &hx,
             x.device());
   y.device()->Exec(
       [&y, &hy, &cy, &x, &hx, &cx, &W, &h](Context *ctx) {
+        // require desc, [x], hx, cx, w, y, hy, cy
+        cudnnTensorDescriptor_t *xDesc =
+            new cudnnTensorDescriptor_t[h.seq_length];
+        cudnnTensorDescriptor_t *yDesc =
+            new cudnnTensorDescriptor_t[h.seq_length];
+        init_xDesc(xDesc, h);
+        init_yDesc(yDesc, h);
+        cudnnTensorDescriptor_t hxDesc;
+        cudnnTensorDescriptor_t cxDesc;
+        cudnnTensorDescriptor_t hyDesc;
+        cudnnTensorDescriptor_t cyDesc;
+        init_hc_Desc(hxDesc, h);
+        init_hc_Desc(cxDesc, h);
+        init_hc_Desc(hyDesc, h);
+        init_hc_Desc(cyDesc, h);
+
+        auto xptr = x.block()->data();
+        auto hxptr = hx.block()->data();
+        auto cxptr = cx.block()->data();
+        auto Wptr = W.block()->data();
+        auto yptr = y.block()->mutable_data();
+        auto hyptr = hy.block()->mutable_data();
+        auto cyptr = cy.block()->mutable_data();
+        auto wsptr = h.workspace.block()->mutable_data();
+        auto rsptr = h.reserve_space.block()->mutable_data();
         CUDNN_CHECK(cudnnRNNForwardTraining(
-            ctx->cudnn_handle, h.rnnDesc, h.seq_length, h.xDesc,
-            x.block()->data(), h.hxDesc, hx.block()->data(), h.cxDesc,
-            cx.block()->data(), h.wDesc, W.block()->data(), h.yDesc,
-            y.block()->mutable_data(), h.hyDesc, hy.block()->mutable_data(),
-            h.cyDesc, cy.block()->mutable_data(),
-            h.workspace.block()->mutable_data(), h.workspace_size,
-            h.reserve_space.block()->mutable_data(), h.reserve_size));
+            ctx->cudnn_handle, h.rnnDesc, h.seq_length, xDesc, xptr, hxDesc,
+            hxptr, cxDesc, cxptr, h.wDesc, Wptr, yDesc, yptr, hyDesc, hyptr,
+            cyDesc, cyptr, wsptr, h.workspace_size, rsptr, h.reserve_size));
+        delete[] xDesc;
+        delete[] yDesc;
       },
       {x.block(), hx.block(), cx.block(), W.block()},
       {y.block(), hy.block(), cy.block()});
@@ -308,15 +320,52 @@ vector<Tensor> GpuRNNBackwardx(const Tensor &y, const Tensor &dy,
              y.device());
   dx.device()->Exec(
       [&dx, &dhx, &dcx, &y, &dy, &dhy, &dcy, &W, &hx, &cx, &h](Context *ctx) {
+        // require desc:
+        //      [dx], hx, dhx, cx, dcx, w,
+        // [y], [dy],     dhy,     dcy
+        cudnnTensorDescriptor_t *dxDesc =
+            new cudnnTensorDescriptor_t[h.seq_length];
+        cudnnTensorDescriptor_t *yDesc =
+            new cudnnTensorDescriptor_t[h.seq_length];
+        cudnnTensorDescriptor_t *dyDesc =
+            new cudnnTensorDescriptor_t[h.seq_length];
+        init_yDesc(yDesc, h);
+        init_xDesc(dxDesc, h);
+        init_yDesc(dyDesc, h);
+        cudnnTensorDescriptor_t hxDesc;
+        cudnnTensorDescriptor_t cxDesc;
+        cudnnTensorDescriptor_t dhxDesc;
+        cudnnTensorDescriptor_t dcxDesc;
+        cudnnTensorDescriptor_t dhyDesc;
+        cudnnTensorDescriptor_t dcyDesc;
+        init_hc_Desc(hxDesc, h);
+        init_hc_Desc(cxDesc, h);
+        init_hc_Desc(dhxDesc, h);
+        init_hc_Desc(dcxDesc, h);
+        init_hc_Desc(dhyDesc, h);
+        init_hc_Desc(dcyDesc, h);
+
+        auto dxptr = dx.block()->mutable_data();
+        auto hxptr = hx.block()->data();
+        auto dhxptr = dhx.block()->mutable_data();
+        auto cxptr = cx.block()->data();
+        auto dcxptr = dcx.block()->mutable_data();
+        auto Wptr = W.block()->data();
+        auto yptr = y.block()->data();
+        auto dyptr = dy.block()->data();
+        auto dhyptr = dhy.block()->data();
+        auto dcyptr = dcy.block()->data();
+        auto wsptr = h.workspace.block()->mutable_data();
+        auto rsptr = h.reserve_space.block()->mutable_data();
+
         CUDNN_CHECK(cudnnRNNBackwardData(
-            ctx->cudnn_handle, h.rnnDesc, h.seq_length, h.yDesc,
-            y.block()->data(), h.dyDesc, dy.block()->data(), h.dhyDesc,
-            dhy.block()->data(), h.dcyDesc, dcy.block()->data(), h.wDesc,
-            W.block()->data(), h.hxDesc, hx.block()->data(), h.cxDesc,
-            cx.block()->data(), h.dxDesc, dx.block()->mutable_data(), h.dhxDesc,
-            dhx.block()->mutable_data(), h.dcxDesc, dcx.block()->mutable_data(),
-            h.workspace.block()->mutable_data(), h.workspace_size,
-            h.reserve_space.block()->mutable_data(), h.reserve_size));
+            ctx->cudnn_handle, h.rnnDesc, h.seq_length, yDesc, yptr, dyDesc,
+            dyptr, dhyDesc, dhyptr, dcyDesc, dcyptr, h.wDesc, Wptr, hxDesc,
+            hxptr, cxDesc, cxptr, dxDesc, dxptr, dhxDesc, dhxptr, dcxDesc,
+            dcxptr, wsptr, h.workspace_size, rsptr, h.reserve_size));
+        delete[] dxDesc;
+        delete[] yDesc;
+        delete[] dyDesc;
       },
       {y.block(), dy.block(), dhy.block(), dcy.block(), hx.block(), cx.block(),
        W.block()},
@@ -329,14 +378,26 @@ Tensor GpuRNNBackwardW(const Tensor &x, const Tensor &hx, const Tensor &y,
   Tensor dW(Shape{h.weights_size}, x.device());
   dW.device()->Exec(
       [&dW, &x, &hx, &y, &h](Context *ctx) {
+        cudnnTensorDescriptor_t *xDesc =
+            new cudnnTensorDescriptor_t[h.seq_length];
+        cudnnTensorDescriptor_t *yDesc =
+            new cudnnTensorDescriptor_t[h.seq_length];
+        init_xDesc(xDesc, h);
+        init_yDesc(yDesc, h);
+        cudnnTensorDescriptor_t hxDesc;
+        init_hc_Desc(hxDesc, h);
+        auto xptr = x.block()->data();
+        auto hxptr = hx.block()->data();
+        auto yptr = y.block()->data();
+        auto dWptr = dW.block()->mutable_data();
+        auto wsptr = h.workspace.block()->mutable_data();
+        auto rsptr = h.reserve_space.block()->mutable_data();
         CUDNN_CHECK(cudnnRNNBackwardWeights(
-            ctx->cudnn_handle, h.rnnDesc, h.seq_length, h.xDesc,
-            x.block()->data(), h.hxDesc, hx.block()->data(), h.yDesc,
-            y.block()->data(), h.workspace.block()->mutable_data(),
-            h.workspace_size, h.dwDesc, dW.block()->mutable_data(),
-            h.reserve_space.block()
-                ->mutable_data(),  // from previous backward data
+            ctx->cudnn_handle, h.rnnDesc, h.seq_length, xDesc, xptr, hxDesc,
+            hxptr, yDesc, yptr, wsptr, h.workspace_size, h.dwDesc, dWptr, rsptr,
             h.reserve_size));
+        delete[] xDesc;
+        delete[] yDesc;
       },
       {x.block(), y.block(), hx.block()}, {dW.block()});
   return dW;

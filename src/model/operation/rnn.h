@@ -40,7 +40,6 @@ class CudnnRNNHandle {
   CudnnRNNHandle(const Tensor &x, const int hidden_size, const int mode = 0,
                  const int num_layers = 1, const int bias = 1,
                  const float dropout = 0.0f, const int bidirectional = 0);
-  ~CudnnRNNHandle();
 
   Context *ctx;
   std::shared_ptr<Device> dev;
@@ -56,17 +55,8 @@ class CudnnRNNHandle {
   size_t weights_size;
   int num_layers;
   // vary
-  size_t batch_size;
+  size_t batch_size;  // remove
   size_t seq_length;
-
-  /* xDesc, yDesc */
-  cudnnTensorDescriptor_t *xDesc, *yDesc, *dxDesc, *dyDesc;
-
-  /* hx, cx, hy, cy desc */
-  cudnnTensorDescriptor_t hxDesc, cxDesc;
-  cudnnTensorDescriptor_t hyDesc, cyDesc;
-  cudnnTensorDescriptor_t dhxDesc, dcxDesc;
-  cudnnTensorDescriptor_t dhyDesc, dcyDesc;
 
   /* workspace data */
   size_t workspace_size;
@@ -87,17 +77,19 @@ class CudnnRNNHandle {
   /* weights desc */
   cudnnFilterDescriptor_t wDesc, dwDesc;
 
-  void init_data_desc();
-  void update_data_desc();
   void init_dropout_desc();
   void init_rnn_desc();
-  void init_parameters_desc();
-  void init_workspace();
+  void init_parameters_desc(cudnnTensorDescriptor_t *xDesc);
+  void init_workspace(cudnnTensorDescriptor_t *xDesc);
   Tensor merge_inputs(size_t num, const vector<Tensor> &in);
   vector<Tensor> split_output(size_t num, size_t dim, const vector<Tensor> &in,
                               const Tensor output);
   Tensor get_weight(size_t pseudo_layer, const Tensor &w, size_t lin_layer_id);
 };
+
+void init_xDesc(cudnnTensorDescriptor_t *xDesc, CudnnRNNHandle &h);
+void init_yDesc(cudnnTensorDescriptor_t *yDesc, CudnnRNNHandle &h);
+void init_hc_Desc(cudnnTensorDescriptor_t &hDesc, CudnnRNNHandle &h);
 
 vector<Tensor> GpuRNNForwardTraining(const Tensor &x, const Tensor &hx,
                                      const Tensor &cx, const Tensor &W,
