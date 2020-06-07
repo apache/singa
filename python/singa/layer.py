@@ -1446,7 +1446,7 @@ class CudnnRNN(Layer):
         elif self.rnn_mode == "gru":
             self.cudnn_rnn_mode = 3
 
-    def initialize(self, x, hx, cx):
+    def initialize(self, x, hx=None, cx=None):
         if self.batch_first:
             x = x.transpose((1, 0, 2))
         self.input_size = x.shape[1]
@@ -1467,16 +1467,33 @@ class CudnnRNN(Layer):
                         device=x.device)
         self.W.gaussian(0, 1)
 
-    def forward(self, x, hx, cx):
+    def forward(self, x, hx=None, cx=None):
+
         self.device_check(x, self.W)
         if self.batch_first:
             x = x.transpose((1, 0, 2))
+
+        batch_size = x.shape[1]
+        directions = 2 if self.bidirectional else 1
+        if hx == None:
+            hx = Tensor(shape=(self.num_layers * directions, batch_size,
+                                           self.hidden_size),
+                                    requires_grad=False,
+                                    stores_grad=False,
+                                    device=x.device).set_value(0.0)
+        if cx == None:
+            cx = Tensor(shape=(self.num_layers * directions, batch_size,
+                                           self.hidden_size),
+                                    requires_grad=False,
+                                    stores_grad=False,
+                                    device=x.device).set_value(0.0)
+
         # outputs returned is list
         #   inputs has shape of {sequence length, batch size, feature size}
         y = autograd._RNN(self.handle,
                           return_sequences=self.return_sequences)(x, hx, cx,
                                                                   self.W)[0]
-        if self.return_sequences:
+        if self.return_sequences and self.batch_first:
             #   outputs has shape of {sequence length, batch size, hidden size}
             y = y.transpose((1, 0, 2))  # to {bs, seq, hid}
         return y

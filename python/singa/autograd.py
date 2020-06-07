@@ -1190,6 +1190,37 @@ def cross_entropy(y, t):
     return CrossEntropy()(y, t)[0]
 
 
+class QALSTMLoss(Operator):
+
+    def __init__(self, M=0.2):
+        super(QALSTMLoss, self).__init__()
+        self.M = M
+
+    def forward(self, pos, neg):
+        # L = max{0, M - cosine(q, a+) + cosine(q, a-)}
+        zero = singa.Tensor(list(pos.shape()), pos.device())
+        zero.SetFloatValue(0.0)
+        val = singa.AddFloat(singa.__sub__(neg, pos), self.M)
+        gt_zero = singa.__gt__(val, zero)
+        self.inputs = (gt_zero, )
+        return singa.__mul__(gt_zero, val)
+
+    def backward(self, dy=1.0):
+        # dpos = -1 if M-pos+neg > 0 else 0
+        # dneg =  1 if M-pos+neg > 0 else 0
+        gt_zero = self.inputs[0]
+        dpos_factor = singa.Tensor(list(gt_zero.shape()), gt_zero.device())
+        dpos_factor.SetFloatValue(-1.0)
+        dneg_factor = singa.Tensor(list(gt_zero.shape()), gt_zero.device())
+        dneg_factor.SetFloatValue(1.0)
+        dpos = singa.__mul__(gt_zero, dpos_factor)
+        dneg = singa.__mul__(gt_zero, dneg_factor)
+        return dpos, dneg
+
+def qa_lstm_loss(pos, neg, M=0.2):
+    return QALSTMLoss(M)(pos, neg)[0]
+
+
 class SoftMaxCrossEntropy(Operator):
 
     def __init__(self, t):
