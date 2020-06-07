@@ -51,6 +51,8 @@ requirements:
     - protobuf 3.9.2          # [linux]
     - glog 0.3.5
     - numpy 1.16.5
+    - pytest
+    - deprecated 1.2.7
     - cudnn {{ cudnn }}       # ['cudnn' in str(build_str)]
     - dnnl {{ dnnl }}
     - python {{ python }}
@@ -73,6 +75,7 @@ requirements:
     - tqdm
     - onnx 1.6.0
     - deprecated 1.2.7
+    - pytest
 
 test:
   source_files:
