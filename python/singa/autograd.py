@@ -1202,8 +1202,12 @@ class QALSTMLoss(Operator):
         zero.SetFloatValue(0.0)
         val = singa.AddFloat(singa.__sub__(neg, pos), self.M)
         gt_zero = singa.__gt__(val, zero)
-        self.inputs = (gt_zero, )
-        return singa.__mul__(gt_zero, val)
+        self.inputs = (gt_zero, ) # (BS,)
+        all_loss = singa.__mul__(gt_zero, val)
+        loss = singa.SumAll(all_loss)
+        loss /= (pos.shape()[0])
+        # assert loss.shape(0) == 1
+        return loss
 
     def backward(self, dy=1.0):
         # dpos = -1 if M-pos+neg > 0 else 0

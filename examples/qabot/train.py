@@ -1,3 +1,27 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+import os
+import sys
+new_path = r'/root/singa/build/python'
+sys.path.append(new_path)
+
 from data import *
 from model import QAModel, MLP #, QALoss
 
@@ -16,7 +40,7 @@ import numpy as np
 def train(m, tq, ta, id_to_word, label_to_ans_text, wv):
     print("training")
     train_data = parse_file('./V2/InsuranceQA.question.anslabel.token.100.pool.solr.train.encoded', id_to_word, label_to_ans_text)
-    train_data = train_data
+    train_data = train_data[:100]
     train_triplets = generate_qa_triplets(train_data) # (q, a+, a-)
 
 
@@ -67,39 +91,39 @@ def train(m, tq, ta, id_to_word, label_to_ans_text, wv):
         print("training top 1 hit accuracy: ", top1hit/trials)
 
 
-    def test(m, tq, ta, id_to_word, label_to_ans_text, wv):
-        print("testing")
-        test_data = parse_test_file('./V2/InsuranceQA.question.anslabel.token.100.pool.solr.test.encoded', id_to_word, label_to_ans_text)
-        test_data = test_data[:10]  # run on n samples
+def test(m, tq, ta, id_to_word, label_to_ans_text, wv):
+    print("testing")
+    test_data = parse_test_file('./V2/InsuranceQA.question.anslabel.token.100.pool.solr.test.encoded', id_to_word, label_to_ans_text)
+    test_data = test_data[:10]  # run on n samples
 
-        m.eval()
-        top1hit=0
-        trials = len(test_data)
-        for (q, labels, cands) in test_data:
+    m.eval()
+    top1hit=0
+    trials = len(test_data)
+    for (q, labels, cands) in test_data:
 
-            q_vec = words_text_to_fixed_seqlen_vec(wv, q, q_seq_length)
-            tq.copy_from_numpy(np.array(q_vec))
+        q_vec = words_text_to_fixed_seqlen_vec(wv, q, q_seq_length)
+        tq.copy_from_numpy(np.array(q_vec))
 
-            cands_vec = [words_text_to_fixed_seqlen_vec(wv, label_to_ans_text[candidate_label], a_seq_length) for candidate_label in cands]
+        cands_vec = [words_text_to_fixed_seqlen_vec(wv, label_to_ans_text[candidate_label], a_seq_length) for candidate_label in cands]
 
-            scores = []
-            # inference all candidates
-            # import pdb; pdb.set_trace()
-            while len(cands_vec) > 1:
-                a_vec=[]
-                a_vec.append(cands_vec.pop(0))
-                a_vec.append(cands_vec.pop(0))
-                ta.copy_from_numpy(np.array(a_vec))
-                score = m(tq,ta) # inference mode only return forward result
-                scores.extend(score)
+        scores = []
+        # inference all candidates
+        # import pdb; pdb.set_trace()
+        while len(cands_vec) > 1:
+            a_vec=[]
+            a_vec.append(cands_vec.pop(0))
+            a_vec.append(cands_vec.pop(0))
+            ta.copy_from_numpy(np.array(a_vec))
+            score = m(tq,ta) # inference mode only return forward result
+            scores.extend(score)
 
-            # check correct from predict
-            true_idxs = [cands.index(l) for l in labels if l in cands]
-            pred_idx = np.argmax(np.array([tensor.to_numpy(s) for s in scores]).flatten())
-            if pred_idx in true_idxs:
-                top1hit += 1
+        # check correct from predict
+        true_idxs = [cands.index(l) for l in labels if l in cands]
+        pred_idx = np.argmax(np.array([tensor.to_numpy(s) for s in scores]).flatten())
+        if pred_idx in true_idxs:
+            top1hit += 1
 
-        print("testing top 1 hit accuracy: ", top1hit/trials)
+    print("testing top 1 hit accuracy: ", top1hit/trials)
 
 if __name__ == "__main__":
     dev = device.create_cuda_gpu(set_default=False)
