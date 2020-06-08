@@ -2575,6 +2575,7 @@ class TestPythonOperation(unittest.TestCase):
         dy = tensor.from_numpy(DY)
         dy.to_device(dev)
 
+        
         result = autograd.globalaveragepool(x)
         dx = result.creator.backward(dy.data)
 
