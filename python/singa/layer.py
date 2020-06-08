@@ -95,7 +95,8 @@ class Layer(object, metaclass=LayerMeta):
         params = dict()
         sublayers = self._layers
         for name, sublayer in sublayers.items():
-            params.update(sublayer.get_params())
+            if sublayer._initialized:
+                params.update(sublayer.get_params())
         return params
 
     def set_params(self, parameters):
@@ -104,23 +105,36 @@ class Layer(object, metaclass=LayerMeta):
         # examples: Layer.set_params(W=np.ones((in, out), dtype=np.float32)),
         # Layer.set_params(**{'block1':{'linear1':{'W':np.ones((in, out),
         # dtype=np.float32)}}})
+        names = parameters.keys()
         sublayers = self._layers
         for name, sublayer in sublayers.items():
-            sublayer.set_params(parameters)
+            if sublayer._initialized:
+                if self.has_layer_param(sublayer, names):
+                    sublayer.set_params(parameters)
 
     def get_states(self):
         states = dict()
         sublayers = self._layers
         for name, sublayer in sublayers.items():
-            states.update(sublayer.get_states())
+            if sublayer._initialized:
+                states.update(sublayer.get_states())
         states.update(self.get_params())
         return states
 
     def set_states(self, states):
+        names = states.keys()
         sublayers = self._layers
         for name, sublayer in sublayers.items():
-            sublayer.set_states(states)
+            if sublayer._initialized:
+                if self.has_layer_param(sublayer, names):
+                    sublayer.set_states(states)
         self.set_params(states)
+
+    def has_layer_param(self, layer, names):
+        for name in names:
+            if name.startswith(layer.name):
+                return True
+        return False
 
     def device_check(self, *inputs):
         # disabled the graph to prevent buffering data transfer operator
@@ -139,8 +153,9 @@ class Layer(object, metaclass=LayerMeta):
             prefix = self._parent.name
             if prefix:
                 prefix += Layer.sep
-
-        self.name = prefix + self.name
+            self.name = prefix + self.name
+        else:
+            self.name = ''
         return self.name
 
     def __getattr__(self, name):
