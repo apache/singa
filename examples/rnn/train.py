@@ -76,7 +76,7 @@ class CharRNN(model.Model):
         out = self.forward(x)
         y = self.reshape2(y, (-1, 1))
         loss = self.softmax_cross_entropy(out, y)
-        self.optimizer.backward_and_update(loss)
+        self.optimizer(loss)
         return out, loss
 
     def get_states(self):

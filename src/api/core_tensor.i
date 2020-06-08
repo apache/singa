@@ -90,7 +90,7 @@ namespace singa{
 
     std::shared_ptr<singa::Device> device() const;
 
-    template <typename SType> void GetValue(SType* value, const size_t num);
+    template <typename SType> void GetValue(SType* value, const size_t num) const;
     %template(GetFloatValue) GetValue<float>;
     %template(GetIntValue) GetValue<int>;
 
@@ -101,11 +101,11 @@ namespace singa{
     const std::vector<size_t> &shape() const;
     const size_t shape(size_t idx) const;
     bool transpose() const;
-    size_t nDim() const;    
+    size_t nDim() const;
 
     size_t Size() const;
     size_t MemSize() const;
-    
+
     void ResetLike(const Tensor &t);
     Tensor AsType(DataType type);
     void ToDevice(std::shared_ptr<singa::Device> dev);
@@ -115,16 +115,16 @@ namespace singa{
 
     template <typename DType> void CopyDataFromHostPtr(const DType *src,
                                                        const size_t num,
-                                                       const size_t offset = 0);
+                                                       const size_t offset = 0) const;
     %template(CopyFloatDataFromHostPtr) CopyDataFromHostPtr<float>;
     %template(CopyIntDataFromHostPtr) CopyDataFromHostPtr<int>;
 
     void CopyData(const Tensor &other);
     void RepeatData(std::vector<size_t> repeats, int axis, int total_repeats, const Tensor &src);
-    
+
     Tensor Clone() const;
     Tensor Repeat(std::vector<size_t> repeats, int axis);
-    
+
 
 #if USE_JAVA
     %rename(iAdd) operator+=(const Tensor &t);
@@ -161,7 +161,7 @@ namespace singa{
   void CopyDataToFrom(Tensor *dst, const Tensor &src, size_t num,
                       size_t src_offset = 0, size_t dst_offset = 0);
 
-  void RepeatDataToFrom(bool broadcast_flag, std::vector<size_t> repeats, int axis, 
+  void RepeatDataToFrom(bool broadcast_flag, std::vector<size_t> repeats, int axis,
                         Tensor *dst, const Tensor &src, const size_t num);
 
   Tensor Reshape(const Tensor &in, const std::vector<size_t> &s);
@@ -172,6 +172,7 @@ namespace singa{
 
   Tensor Abs(const Tensor &t);
   Tensor Ceil(const Tensor &t);
+  Tensor Floor(const Tensor &t);
   Tensor Exp(const Tensor &t);
   Tensor Log(const Tensor &t);
   Tensor ReLU(const Tensor &t);
@@ -312,6 +313,7 @@ namespace singa{
   template <typename SType>
   void Axpy(SType alpha, const Tensor &in, Tensor *out);
   %template(Axpy) Axpy<float>;
+  void Axpy(const Tensor &alpha, const Tensor &in, Tensor *out);
 
   Tensor Mult(const Tensor &A, const Tensor &B);
   %rename(MultWithRet) Mult(const Tensor &A, const Tensor &B, Tensor *C);

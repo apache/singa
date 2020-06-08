@@ -64,10 +64,3 @@ def check_exist_or_download(url):
         urllib.request.urlretrieve(url, filename)
     return filename
 
-
-def update_batch_size(onnx_model, batch_size):
-    model_input = onnx_model.graph.input[0]
-    model_input.type.tensor_type.shape.dim[0].dim_value = batch_size
-    model_output = onnx_model.graph.output[0]
-    model_output.type.tensor_type.shape.dim[0].dim_value = batch_size
-    return onnx_model

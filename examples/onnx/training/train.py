@@ -17,15 +17,27 @@
 # under the License.
 #
 
+import sys, os
+import json
 from singa import singa_wrap as singa
+from singa import opt
 from singa import device
 from singa import tensor
-from singa import opt
+from singa import sonnx
+from singa import layer
+from singa import autograd
 import numpy as np
 import time
 import argparse
 from PIL import Image
+import onnx
+import logging
+from tqdm import tqdm
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
+sys.path.append(os.path.dirname(__file__) + '/../../cnn')
+sys.path.append(os.path.dirname(__file__) + '/..')
+from utils import download_model
 
 # Data Augmentation
 def augmentation(x, batch_size):
@@ -90,12 +102,52 @@ def resize_dataset(x, image_size):
     return X
 
 
+class MyModel(sonnx.SONNXModel):
+
+    def __init__(self, onnx_model, num_classes=10, num_channels=3):
+        super(MyModel, self).__init__(onnx_model)
+        self.num_classes = num_classes
+        self.input_size = 224
+        self.dimension = 4
+        self.num_channels = num_channels
+        self.num_classes = num_classes
+        self.linear = layer.Linear(512, num_classes)
+
+    def forward(self, *x):
+        # if you change to other models, please update the output name here
+        y = super(MyModel, self).forward(*x, aux_output=['flatten_170'])[1]
+        y = self.linear(y)
+        return y
+
+    def train_one_batch(self, x, y, dist_option, spars):
+        out = self.forward(x)
+        loss = autograd.softmax_cross_entropy(out, y)
+        if dist_option == 'fp32':
+            self.optimizer.backward_and_update(loss)
+        elif dist_option == 'fp16':
+            self.optimizer.backward_and_update_half(loss)
+        elif dist_option == 'partialUpdate':
+            self.optimizer.backward_and_partial_update(loss)
+        elif dist_option == 'sparseTopK':
+            self.optimizer.backward_and_sparse_update(loss,
+                                                      topK=True,
+                                                      spars=spars)
+        elif dist_option == 'sparseThreshold':
+            self.optimizer.backward_and_sparse_update(loss,
+                                                      topK=False,
+                                                      spars=spars)
+        return out, loss
+
+    def set_optimizer(self, optimizer):
+        self.optimizer = optimizer
+
+
 def run(global_rank,
         world_size,
         local_rank,
         max_epoch,
         batch_size,
-        model,
+        model_config,
         data,
         sgd,
         graph,
@@ -112,41 +164,18 @@ def run(global_rank,
     elif data == 'cifar100':
         from data import cifar100
         train_x, train_y, val_x, val_y = cifar100.load()
-    elif data == 'mnist':
-        from data import mnist
-        train_x, train_y, val_x, val_y = mnist.load()
 
     num_channels = train_x.shape[1]
     image_size = train_x.shape[2]
     data_size = np.prod(train_x.shape[1:train_x.ndim]).item()
     num_classes = (np.max(train_y) + 1).item()
-    #print(num_classes)
 
-    if model == 'resnet':
-        from model import resnet
-        model = resnet.resnet50(num_channels=num_channels,
-                                num_classes=num_classes)
-    elif model == 'xceptionnet':
-        from model import xceptionnet
-        model = xceptionnet.create_model(num_channels=num_channels,
-                                         num_classes=num_classes)
-    elif model == 'cnn':
-        from model import cnn
-        model = cnn.create_model(num_channels=num_channels,
-                                 num_classes=num_classes)
-    elif model == 'alexnet':
-        from model import alexnet
-        model = alexnet.create_model(num_channels=num_channels,
-                                     num_classes=num_classes)
-    elif model == 'mlp':
-        import os, sys, inspect
-        current = os.path.dirname(
-            os.path.abspath(inspect.getfile(inspect.currentframe())))
-        parent = os.path.dirname(current)
-        sys.path.insert(0, parent)
-        from mlp import module
-        model = module.create_model(data_size=data_size,
-                                    num_classes=num_classes)
+    # read and make onnx model
+    download_model(model_config['url'])
+    onnx_model = onnx.load(os.path.join('/tmp', model_config['path']))
+    model = MyModel(onnx_model,
+                    num_channels=num_channels,
+                    num_classes=num_classes)
 
     # For distributed training, sequential gives better performance
     if hasattr(sgd, "communicator"):
@@ -201,7 +230,7 @@ def run(global_rank,
         train_loss = np.zeros(shape=[1], dtype=np.float32)
 
         model.train()
-        for b in range(num_train_batch):
+        for b in tqdm(range(num_train_batch)):
             # Generate the patch data in this iteration
             x = train_x[idx[b * batch_size:(b + 1) * batch_size]]
             if model.dimension == 4:
@@ -233,7 +262,7 @@ def run(global_rank,
 
         # Evaluation Phase
         model.eval()
-        for b in range(num_val_batch):
+        for b in tqdm(range(num_val_batch)):
             x = val_x[b * batch_size:(b + 1) * batch_size]
             if model.dimension == 4:
                 if (image_size != model.input_size):
@@ -258,50 +287,60 @@ def run(global_rank,
     dev.PrintTimeProfiling()
 
 
+def loss(out, y):
+    return autograd.softmax_cross_entropy(out, y)
+
+
 if __name__ == '__main__':
+
+    with open(os.path.join(os.path.dirname(__file__),
+                           'model.json')) as json_file:
+        model_config = json.load(json_file)
+
     # use argparse to get command config: max_epoch, model, data, etc. for single gpu training
     parser = argparse.ArgumentParser(
         description='Training using the autograd and graph.')
-    parser.add_argument('model',
-                        choices=['resnet', 'xceptionnet', 'cnn', 'mlp', 'alexnet'],
-                        default='cnn')
-    parser.add_argument('data',
-                        choices=['cifar10', 'cifar100', 'mnist'],
-                        default='mnist')
-    parser.add_argument('-m',
+    parser.add_argument('--model',
+                        choices=list(model_config.keys()),
+                        help='please refer to the models.json for more details',
+                        default='resnet18v1')
+    parser.add_argument('--data',
+                        choices=['cifar10', 'cifar100'],
+                        default='cifar10')
+    parser.add_argument('--epoch',
                         '--max-epoch',
                         default=10,
                         type=int,
                         help='maximum epochs',
                         dest='max_epoch')
-    parser.add_argument('-b',
+    parser.add_argument('--bs',
                         '--batch-size',
-                        default=64,
+                        default=32,
                         type=int,
                         help='batch size',
                         dest='batch_size')
-    parser.add_argument('-l',
+    parser.add_argument('--lr',
                         '--learning-rate',
                         default=0.005,
                         type=float,
                         help='initial learning rate',
                         dest='lr')
     # determine which gpu to use
-    parser.add_argument('-i',
+    parser.add_argument('--id',
                         '--device-id',
                         default=0,
                         type=int,
                         help='which GPU to use',
                         dest='device_id')
-    parser.add_argument('-g',
+    parser.add_argument('--no-graph',
                         '--disable-graph',
                         default='True',
                         action='store_false',
                         help='disable graph',
                         dest='graph')
-    parser.add_argument('-v',
+    parser.add_argument('--verbosity',
                         '--log-verbosity',
-                        default=0,
+                        default=1,
                         type=int,
                         help='logging verbosity',
                         dest='verbosity')
@@ -309,5 +348,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5)
-    run(0, 1, args.device_id, args.max_epoch, args.batch_size, args.model,
+    run(0, 1, args.device_id, args.max_epoch, args.batch_size, model_config[args.model],
         args.data, sgd, args.graph, args.verbosity)

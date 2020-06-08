@@ -123,6 +123,12 @@ __global__ void KernelCeil2(const size_t n, const float *in, float *out) {
     out[i] = std::ceil(in[i]);
   }
 }
+__global__ void KernelFloor(const size_t n, const float *in, float *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = std::floor(in[i]);
+  }
+}
 
 __global__ void KernelLog(const size_t n, const float *in, float *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
@@ -541,6 +547,10 @@ void exp(const size_t n, const float *in, float *out, cudaStream_t s) {
 
 void ceil2(const size_t n, const float *in, float *out, cudaStream_t s) {
   KernelCeil2 <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
+}
+
+void floor(const size_t n, const float *in, float *out, cudaStream_t s) {
+  KernelFloor <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
 }
 
 void log(const size_t n, const float *in, float *out, cudaStream_t s) {

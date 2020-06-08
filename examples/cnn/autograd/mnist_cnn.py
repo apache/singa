@@ -260,7 +260,7 @@ def train_mnist_cnn(DIST=False,
                                                    topK=topK,
                                                    corr=corr)
             else:
-                sgd.backward_and_update(loss)
+                sgd(loss)
 
         if DIST:
             # Reduce the Evaluation Accuracy and Loss from Multiple Devices

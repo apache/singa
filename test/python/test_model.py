@@ -22,7 +22,6 @@ import os
 import math
 import unittest
 import numpy as np
-import time
 
 from singa import singa_wrap as singa_api
 from singa import autograd
@@ -74,8 +73,7 @@ class MyModel(model.Model):
         return autograd.softmax_cross_entropy(out, ty)
 
     def optim(self, loss):
-        self.optimizer.backward_and_update(loss)
-
+        self.optimizer(loss)
 
 # lstm testing
 class LSTMModel2(model.Model):
@@ -204,13 +202,14 @@ class TestModelMethods(unittest.TestCase):
         loss = autograd.softmax_cross_entropy(y, y_t)
         print("eval loss", loss)
 
+        
+class TestModelSaveMethods(unittest.TestCase):
+
     def _save_states_load_states_helper(self, dev, graph_flag="False"):
         x_shape = (2, 2, 2, 2)
         x = tensor.PlaceHolder(x_shape, device=dev)
 
         m = MyModel()
-        m.on_device(dev)
-
         m.compile([x], is_train=True, use_graph=graph_flag, sequential=False)
 
         states = {

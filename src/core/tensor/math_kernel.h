@@ -45,6 +45,7 @@ void abs(const size_t n, const float *in, float *out, cudaStream_t s);
 void sign(const size_t n, const float *in, float *out, cudaStream_t s);
 void exp(const size_t n, const float *in, float *out, cudaStream_t s);
 void ceil2(const size_t n, const float *in, float *out, cudaStream_t s);
+void floor(const size_t n, const float *in, float *out, cudaStream_t s);
 void cast_float_2_int(const size_t n, const float *src, int *dst,
                       cudaStream_t s);
 void cast_int_2_float(const size_t n, const int *src, float *dst,
