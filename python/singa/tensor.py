@@ -653,6 +653,14 @@ class Tensor(object):
         else:
             return _call_singa_func(singa.DivFloat, self.data, rhs)
 
+    def __floordiv__(self, rhs):
+        if isinstance(rhs, Tensor):
+            tmp = from_raw_tensor(singa.__div__(self.data, rhs.data))
+            return _call_singa_func(singa.Floor, tmp.data)
+        else:
+            tmp = _call_singa_func(singa.DivFloat, self.data, rhs)
+            return _call_singa_func(singa.Floor, tmp.data)
+
     def __lt__(self, rhs):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(singa.__lt__(self.data, rhs.data))

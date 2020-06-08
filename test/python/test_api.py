@@ -666,6 +666,28 @@ class TestAPI(unittest.TestCase):
     def test_ceil_gpu(self):
         self._ceil_helper(gpu_dev)
 
+    def _floor_helper(self, dev):
+
+        np1 = np.random.random([5, 6, 7, 8]).astype(np.float32)
+
+        np1 = np.random.random([5, 6, 7, 8]).astype(np.float32)
+        np1 = np1 * 10
+        np2 = np.floor(np1)
+
+        t1 = tensor.Tensor(device=dev, data=np1)
+
+        t2_ct = singa_api.Floor(t1.data)
+
+        np.testing.assert_array_almost_equal(
+            tensor.to_numpy(_cTensor_to_pyTensor(t2_ct)), np2)
+
+    def test_floor_cpu(self):
+        self._floor_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_floor_gpu(self):
+        self._floor_helper(gpu_dev)
+
     def _as_type_helper(self, dev):
 
         np1 = np.random.random([3]).astype(np.float32)

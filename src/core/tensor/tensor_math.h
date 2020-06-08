@@ -96,6 +96,11 @@ void Ceil(const Tensor &in, Tensor *out, Context *ctx) {
   LOG(FATAL) << "Ceil Not Implemented";
 }
 
+template <typename DType, typename Lang>
+void Floor(const Tensor &in, Tensor *out, Context *ctx) {
+  LOG(FATAL) << "Floor Not Implemented";
+}
+
 /// out[i] = in[i] + x
 template <typename DType, typename Lang>
 void Add(const Tensor &in, const DType x, Tensor *out, Context *ctx) {

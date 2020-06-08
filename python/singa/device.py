@@ -85,6 +85,15 @@ def device_query(id, verbose=False):
     return singa.Platform.DeviceQuery(id, verbose)
 
 
+def create_cpu_device():
+    '''Create the default CPU device.
+
+    Returns:
+        a swig converted CPU device.
+    '''
+    return singa.Platform.GetDefaultDevice()
+
+
 def create_cuda_gpus(num):
     '''Create a list of CudaGPU devices.
 

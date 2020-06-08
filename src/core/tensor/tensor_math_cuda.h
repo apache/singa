@@ -377,6 +377,20 @@ void Ceil<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
 }
 
 template <>
+void Floor<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
+  const float* inPtr = static_cast<const float*>(in.block()->data());
+  float* outPtr = static_cast<float*>(out->block()->mutable_data());
+  const size_t num = in.Size();
+
+  if (in.stride() == out->stride()) {
+    cuda::floor(num, inPtr, outPtr, ctx->stream);
+  } else {  // else we transform in to out to store first
+    Transform<float, lang::Cuda>(in, out, ctx);
+    cuda::floor(num, outPtr, outPtr, ctx->stream);
+  }
+}
+
+template <>
 void GE<float, lang::Cuda>(const Tensor& in, const float x, Tensor* out,
                            Context* ctx) {
   float* outPtr = static_cast<float*>(out->block()->mutable_data());

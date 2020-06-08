@@ -300,5 +300,4 @@ if __name__ == '__main__':
         for _ in t:
             x = model(tx)
             loss = autograd.softmax_cross_entropy(x, ty)
-            for p, g in autograd.backward(loss):
-                sgd.update(p, g)
+            sgd(loss)

@@ -24,14 +24,13 @@ import json
 from singa import device
 from singa import tensor
 from singa import sonnx
-from singa import autograd
 import onnx
 import tokenization
 from run_onnx_squad import read_squad_examples, convert_examples_to_features, RawResult, write_predictions
 
 import sys
 sys.path.append(os.path.dirname(__file__) + '/..')
-from utils import download_model, update_batch_size, check_exist_or_download
+from utils import download_model, check_exist_or_download
 
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(message)s')
@@ -52,15 +51,6 @@ def load_vocab():
     with zipfile.ZipFile(check_exist_or_download(url), 'r') as z:
         z.extractall(path=download_dir)
     return filename
-
-
-class Infer:
-
-    def __init__(self, sg_ir):
-        self.sg_ir = sg_ir
-
-    def forward(self, x):
-        return sg_ir.run(x)
 
 
 def preprocess():
@@ -96,6 +86,19 @@ def postprocess(eval_examples, extra_data, all_results):
         print("The result is:", json.dumps(test_data, indent=2))
 
 
+class MyModel(sonnx.SONNXModel):
+
+    def __init__(self, onnx_model):
+        super(MyModel, self).__init__(onnx_model)
+
+    def forward(self, *x):
+        y = super(MyModel, self).forward(*x)
+        return y
+
+    def train_one_batch(self, x, y):
+        pass
+
+
 if __name__ == "__main__":
 
     url = 'https://media.githubusercontent.com/media/onnx/models/master/text/machine_comprehension/bert-squad/model/bertsquad-10.tar.gz'
@@ -107,16 +110,12 @@ if __name__ == "__main__":
     download_model(url)
     onnx_model = onnx.load(model_path)
 
-    # set batch size
-    onnx_model = update_batch_size(onnx_model, batch_size)
-    dev = device.create_cuda_gpu()
-    autograd.training = False
-
     # inference
     logging.info("preprocessing...")
     input_ids, input_mask, segment_ids, extra_data, eval_examples = preprocess()
 
-    sg_ir = None
+    m = None
+    dev = device.create_cuda_gpu()
     n = len(input_ids)
     bs = batch_size
     all_results = []
@@ -132,23 +131,20 @@ if __name__ == "__main__":
             input_ids[idx:idx + bs].astype(np.int32),
         ]
 
-        if sg_ir is None:
-            # prepare the model
-            logging.info("model is none, prepare model...")
-            sg_ir = sonnx.prepare(onnx_model,
-                                  device=dev,
-                                  init_inputs=inputs,
-                                  keep_initializers_as_inputs=False)
-            model = Infer(sg_ir)
-
         x_batch = []
         for inp in inputs:
             tmp_tensor = tensor.from_numpy(inp)
             tmp_tensor.to_device(dev)
             x_batch.append(tmp_tensor)
 
+        # prepare the model
+        if m is None:
+            logging.info("model compling...")
+            m = MyModel(onnx_model)
+            # m.compile(x_batch, is_train=False, use_graph=True, sequential=True)
+
         logging.info("model running for sample {}...".format(idx))
-        outputs = model.forward(x_batch)
+        outputs = m.forward(*x_batch)
 
         logging.info("hanlde the result of sample {}...".format(idx))
         result = []

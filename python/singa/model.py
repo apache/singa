@@ -32,7 +32,6 @@ from singa import autograd
 from singa import layer
 from .tensor import Tensor
 from . import singa_wrap as singa
-from .device import get_default_device
 
 import gc
 
@@ -46,7 +45,6 @@ class ModelMeta(layer.LayerMeta):
             if self.graph_mode and self.training:
                 if len(args) == 0:
                     raise ValueError('expect at least one input tensor')
-                    return
 
                 if isinstance(args[0], list):
                     assert isinstance(
@@ -112,9 +110,9 @@ class Model(layer.Layer, metaclass=ModelMeta):
             def __init__(self):
                 super(MyModel, self).__init__()
 
+                self.softmax_cross_entropy = layer.SoftMaxCrossEntropy()
                 self.conv1 = layer.Conv2d(1, 20, 5, padding=0)
                 self.conv2 = layer.Conv2d(20, 50, 5, padding=0)
-
                 self.sgd = opt.SGD(lr=0.01)
 
             def forward(self, x):
@@ -124,8 +122,8 @@ class Model(layer.Layer, metaclass=ModelMeta):
 
             def train_one_batch(self, x, y):
                 out = self.forward(x)
-                loss = autograd.softmax_cross_entropy(out, y)
-                self.sgd.backward_and_update(loss)
+                loss = self.softmax_cross_entropy(out, y)
+                self.sgd(loss)
                 return out, loss
 
     """
