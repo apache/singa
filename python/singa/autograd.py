@@ -4540,7 +4540,6 @@ def onehot(axis, indices, depth, values):
     return OneHot(axis, depth, values)(indices)[0]
 
 
-
 class _RNN(Operator):
     """ RNN operation with c++ backend
     """
@@ -4615,6 +4614,7 @@ class _RNN(Operator):
                                    self.inputs['y'], self.handle)
 
         return dx, dhx, dcx, dW
+
 
 class CosSim(Operator):
     """
