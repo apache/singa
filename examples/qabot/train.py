@@ -19,144 +19,166 @@
 
 import os
 import sys
-new_path = r'/root/singa/build/python'
-sys.path.append(new_path)
+build_path = r'build/python'
+sys.path.append(build_path)
+model_path = r'examples/qabot'
+sys.path.append(model_path)
 
-from data import *
-from model import QAModel, MLP #, QALoss
-
+import time
 from singa import autograd
 from singa import layer
 from singa import model
 from singa import tensor
 from singa import device
 from singa import opt
-from tqdm import tqdm
 
-import singa.singa_wrap as singa
-
+from gensim.models.keyedvectors import KeyedVectors
 import numpy as np
+import random
 
-def train(m, tq, ta, id_to_word, label_to_ans_text, wv):
-    print("training")
-    train_data = parse_file('./V2/InsuranceQA.question.anslabel.token.100.pool.solr.train.encoded', id_to_word, label_to_ans_text)
-    train_data = train_data[:100]
-    train_triplets = generate_qa_triplets(train_data) # (q, a+, a-)
+from data import parse_file, parse_test_file, load_vocabulary, generate_qa_triplets, words_text_to_fixed_seqlen_vec, triplet_text_to_vec, train_data_gen_fn
+from model import QAModel
 
+# params
+q_max_len = 10
+a_max_len = 100
+bs = 128
+embed_size = 300
+hidden_size = 50
+max_epoch = 2
+dev = device.create_cuda_gpu(set_default=False)
 
-    for epoch in range(max_epoch):
-        for (q,apos,aneg) in tqdm(train_triplets):
-            q = words_text_to_fixed_seqlen_vec(wv,q,q_seq_length)
-            a = np.array([words_text_to_fixed_seqlen_vec(wv,apos,a_seq_length),words_text_to_fixed_seqlen_vec(wv,aneg,a_seq_length)])
-            q = q.astype(np.float32)
-            a = a.astype(np.float32)
+# embeding
+embed_path = 'GoogleNews-vectors-negative300.bin'
+wv = KeyedVectors.load_word2vec_format(embed_path, binary=True)
+print("successfully loaded word2vec model")
 
-            tq.copy_from_numpy(q)
-            ta.copy_from_numpy(a)
+# vocab
+id_to_word, label_to_ans, label_to_ans_text = load_vocabulary(
+    './V2/vocabulary', './V2/InsuranceQA.label2answer.token.encoded')
+print("loaded vocab")
 
-            # train
-            _, l = m(tq,ta)
-
-        print("loss", l)
-
-        # training top1 accuracy
-        top1hit = 0
-        trials = len(train_data)
-
-        for (q, a_pos, a_negs) in train_data:
-            scores = []
-            q_vec = words_text_to_fixed_seqlen_vec(wv,q,q_seq_length)
-            tq.copy_from_numpy(q_vec)
-
-            a_pos_vec = words_text_to_fixed_seqlen_vec(wv,a_pos,a_seq_length)
-            # prepare for <q, a+, a+> input
-            ta.copy_from_numpy(np.array([a_pos_vec]*2))
-            true_score, l = m(tq,ta)
-
-            a_neg_vecs = [words_text_to_fixed_seqlen_vec(wv,a_neg,a_seq_length) for a_neg in a_negs]
-
-            # prepare for triplets <q, a-, a-> input
-            while len(a_neg_vecs) > 1:
-                a_vec=[]
-                a_vec.append(a_neg_vecs.pop(0))
-                a_vec.append(a_neg_vecs.pop(0))
-                ta.copy_from_numpy(np.array(a_vec))
-                score, l = m(tq,ta)
-                scores.extend(score)
-
-            max_neg = np.max(np.array([tensor.to_numpy(s) for s in scores]).flatten())
-            if max_neg < tensor.to_numpy(true_score[0])[0]:
-                top1hit+=1
-
-        print("training top 1 hit accuracy: ", top1hit/trials)
+train_data = parse_file(
+    './V2/InsuranceQA.question.anslabel.token.100.pool.solr.train.encoded',
+    id_to_word, label_to_ans_text)
+test_data = parse_test_file(
+    './V2/InsuranceQA.question.anslabel.token.100.pool.solr.test.encoded',
+    id_to_word, label_to_ans_text)
+# train_data = train_data[:100]
+# test_data = test_data[:100]
+print("loaded train data")
 
 
-def test(m, tq, ta, id_to_word, label_to_ans_text, wv):
-    print("testing")
-    test_data = parse_test_file('./V2/InsuranceQA.question.anslabel.token.100.pool.solr.test.encoded', id_to_word, label_to_ans_text)
-    test_data = test_data[:10]  # run on n samples
-
-    m.eval()
-    top1hit=0
-    trials = len(test_data)
-    for (q, labels, cands) in test_data:
-
-        q_vec = words_text_to_fixed_seqlen_vec(wv, q, q_seq_length)
-        tq.copy_from_numpy(np.array(q_vec))
-
-        cands_vec = [words_text_to_fixed_seqlen_vec(wv, label_to_ans_text[candidate_label], a_seq_length) for candidate_label in cands]
-
-        scores = []
-        # inference all candidates
-        # import pdb; pdb.set_trace()
-        while len(cands_vec) > 1:
-            a_vec=[]
-            a_vec.append(cands_vec.pop(0))
-            a_vec.append(cands_vec.pop(0))
-            ta.copy_from_numpy(np.array(a_vec))
-            score = m(tq,ta) # inference mode only return forward result
-            scores.extend(score)
-
-        # check correct from predict
-        true_idxs = [cands.index(l) for l in labels if l in cands]
-        pred_idx = np.argmax(np.array([tensor.to_numpy(s) for s in scores]).flatten())
-        if pred_idx in true_idxs:
-            top1hit += 1
-
-    print("testing top 1 hit accuracy: ", top1hit/trials)
-
-if __name__ == "__main__":
-    dev = device.create_cuda_gpu(set_default=False)
-
-    q_seq_length = 10
-    a_seq_length = 100
-    embed_size = 300
-    batch_size = 128
-    max_epoch = 30
-    hidden_size = 100
-
-    # build model
+def load_model(max_bs, hidden_size):
     m = QAModel(hidden_size)
-    print("created qa model")
-    # m = MLP()
     m.optimizer = opt.SGD()
-
-    tq = tensor.Tensor((1, q_seq_length, embed_size), dev, tensor.float32)
-    ta = tensor.Tensor((2, a_seq_length, embed_size), dev, tensor.float32)
-
+    tq = tensor.Tensor((max_bs, q_max_len, embed_size), dev, tensor.float32)
+    ta = tensor.Tensor((max_bs * 2, a_max_len, embed_size), dev, tensor.float32)
     tq.set_value(0.0)
     ta.set_value(0.0)
-
     m.compile([tq, ta], is_train=True, use_graph=False, sequential=False)
+    return m
 
-    # embeding
-    embed_path = 'GoogleNews-vectors-negative300.bin'
-    wv = KeyedVectors.load_word2vec_format(embed_path, binary=True)
-    print("successfully loaded word2vec model")
 
-    # vocab data
-    id_to_word, label_to_ans, label_to_ans_text = load_vocabulary('./V2/vocabulary', './V2/InsuranceQA.label2answer.token.encoded')
+def training_top1_hits(m, wv, q_max_len, a_max_len, train_data):
+    m.eval()
+    hits = 0
+    train_eval_data = [
+        train_eval_format(r, wv, q_max_len, a_max_len) for r in train_data
+    ]
+    trials = len(train_eval_data)
+    for q, a in train_eval_data:
+        tq = tensor.from_numpy(q.astype(np.float32))
+        ta = tensor.from_numpy(a.astype(np.float32))
+        tq.to_device(dev)
+        ta.to_device(dev)
+        out = m.forward(tq, ta)
+        sim_first_half = tensor.to_numpy(out[0])
+        sim_second_half = tensor.to_numpy(out[1])
+        sim = np.concatenate([sim_first_half, sim_second_half]).flatten()
+        if np.argmax(sim) == 0:
+            hits += 1
+    # print("training top1 hits rate: ", hits/trials)
+    return hits / trials
 
-    train(m, tq, ta, id_to_word, label_to_ans_text, wv)
 
-    test(m, tq, ta, id_to_word, label_to_ans_text, wv)
+def training(m, all_train_data, max_epoch, eval_split_ratio=0.8):
+    split_num = int(eval_split_ratio * len(all_train_data))
+    train_data = all_train_data[:split_num]
+    eval_data = all_train_data[split_num:]
+
+    train_triplets = generate_qa_triplets(train_data)
+    train_triplet_vecs = [
+        triplet_text_to_vec(t, wv, q_max_len, a_max_len) for t in train_triplets
+    ]
+    train_data_gen = train_data_gen_fn(train_triplet_vecs, bs)
+    m.train()
+    for epoch in range(max_epoch):
+        start = time.time()
+        for q, a in train_data_gen:
+            #     print(tq.shape)
+            #     print(ta.shape)
+            tq = tensor.from_numpy(q)
+            tq.to_device(dev)
+            ta = tensor.from_numpy(a)
+            ta.to_device(dev)
+            score, l = m(tq, ta)
+        top1hits = training_top1_hits(m, wv, q_max_len, a_max_len, train_data)
+        print(
+            "epoch %d, time used %d sec, top1 hits: %f, loss: " %
+            (epoch, time.time() - start, top1hits), l)
+
+
+def train_eval_format(row, wv, q_max_len, a_max_len):
+    q, apos, anegs = row
+    all_a = [apos] + anegs
+    a_vecs = [words_text_to_fixed_seqlen_vec(wv, a, a_max_len) for a in all_a]
+    if len(a_vecs) % 2 == 1:
+        a_vecs.pop(-1)
+    assert len(a_vecs) % 2 == 0
+    q_repeat = int(len(a_vecs) / 2)
+    q_vecs = [words_text_to_fixed_seqlen_vec(wv, q, q_max_len)] * q_repeat
+    return np.array(q_vecs), np.array(a_vecs)
+
+
+def test_format(r, wv, q_max_len, a_max_len):
+    q_text, labels, candis = r
+    candis_vecs = [
+        words_text_to_fixed_seqlen_vec(wv, label_to_ans_text[a_label],
+                                       a_max_len) for a_label in candis
+    ]
+    if len(candis_vecs) % 2 == 1:
+        candis_vecs.pop(-1)
+    assert len(candis_vecs) % 2 == 0
+    q_repeat = int(len(candis_vecs) / 2)
+    q_vecs = [words_text_to_fixed_seqlen_vec(wv, q_text, q_max_len)] * q_repeat
+    labels_idx = [candis.index(l) for l in labels if l in candis]
+    return np.array(q_vecs), np.array(candis_vecs), labels, labels_idx
+
+
+def testing(m, test_data):
+    test_tuple_vecs = [
+        test_format(r, wv, q_max_len, a_max_len) for r in test_data
+    ]
+    m.eval()
+    hits = 0
+    trials = len(test_tuple_vecs)
+    for q, a, labels, labels_idx in test_tuple_vecs:
+        #     print(q.shape)
+        #     print(a.shape)
+        tq = tensor.from_numpy(q.astype(np.float32))
+        ta = tensor.from_numpy(a.astype(np.float32))
+        tq.to_device(dev)
+        ta.to_device(dev)
+        out = m.forward(tq, ta)
+        sim_first_half = tensor.to_numpy(out[0])
+        sim_second_half = tensor.to_numpy(out[1])
+        sim = np.concatenate([sim_first_half, sim_second_half]).flatten()
+        if np.argmax(sim) in labels_idx:
+            hits += 1
+    print("training top1 hits rate: ", hits / trials)
+
+
+m = load_model(bs, hidden_size)
+training(m, train_data, max_epoch)
+testing(m, test_data)

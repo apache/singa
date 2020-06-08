@@ -23,27 +23,38 @@ from singa import model
 from singa import tensor
 from singa import device
 
+
 class QAModel(model.Model):
-    def __init__(self, hidden_size, num_layers=1, rnn_mode="lstm", batch_first=True):
+
+    def __init__(self,
+                 hidden_size,
+                 num_layers=1,
+                 rnn_mode="lstm",
+                 batch_first=True):
         super(QAModel, self).__init__()
         self.lstm_q = layer.CudnnRNN(hidden_size=hidden_size,
-                                   num_layers=num_layers,
-                                   bidirectional=True,
-                                   return_sequences=False,
-                                   rnn_mode=rnn_mode,
-                                   batch_first=batch_first)
+                                     num_layers=num_layers,
+                                     bidirectional=True,
+                                     return_sequences=False,
+                                     rnn_mode=rnn_mode,
+                                     batch_first=batch_first)
         self.lstm_a = layer.CudnnRNN(hidden_size=hidden_size,
-                                   num_layers=num_layers,
-                                   bidirectional=True,
-                                   return_sequences=False,
-                                   rnn_mode=rnn_mode,
-                                   batch_first=batch_first)
+                                     num_layers=num_layers,
+                                     bidirectional=True,
+                                     return_sequences=False,
+                                     rnn_mode=rnn_mode,
+                                     batch_first=batch_first)
 
     def forward(self, q, a_batch):
-        q = self.lstm_q(q) # BS, Hidden*2
-        a_batch = self.lstm_a(a_batch) # {2, hidden*2}
-        bs_a = int(a_batch.shape[0]/2) # cut concated a-a+ to half and half
-        a_pos, a_neg = autograd.split(a_batch, 0, [bs_a,bs_a])
+        q = self.lstm_q(q)  # BS, Hidden*2
+        a_batch = self.lstm_a(a_batch)  # {2, hidden*2}
+
+        # full sequences {2bs, seqlength, hidden*2}
+        # 1d max pooling on dim==2
+
+        bs_a = int(a_batch.shape[0] / 2)  # cut concated a-a+ to half and half
+        a_pos, a_neg = autograd.split(a_batch, 0, [bs_a, bs_a])
+
         sim_pos = autograd.cossim(q, a_pos)
         sim_neg = autograd.cossim(q, a_neg)
         return sim_pos, sim_neg
@@ -55,8 +66,8 @@ class QAModel(model.Model):
         return out, loss
 
 
-
 class MLP(model.Model):
+
     def __init__(self):
         super(MLP, self).__init__()
         self.linear1 = layer.Linear(500)
@@ -64,12 +75,12 @@ class MLP(model.Model):
         self.linear2 = layer.Linear(2)
 
     def forward(self, q, a):
-        q=autograd.reshape(q, (q.shape[0], -1))
-        a=autograd.reshape(a, (q.shape[0], -1))
-        qa=autograd.cat([q,a], 1)
-        y=self.linear1(qa)
-        y=self.relu(y)
-        y=self.linear2(y)
+        q = autograd.reshape(q, (q.shape[0], -1))
+        a = autograd.reshape(a, (q.shape[0], -1))
+        qa = autograd.cat([q, a], 1)
+        y = self.linear1(qa)
+        y = self.relu(y)
+        y = self.linear2(y)
         return y
 
     def train_one_batch(self, q, a, y):
