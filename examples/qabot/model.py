@@ -32,16 +32,17 @@ class QAModel(model.Model):
                  rnn_mode="lstm",
                  batch_first=True):
         super(QAModel, self).__init__()
+        return_sequences = False
         self.lstm_q = layer.CudnnRNN(hidden_size=hidden_size,
                                      num_layers=num_layers,
                                      bidirectional=True,
-                                     return_sequences=False,
+                                     return_sequences=return_sequences,
                                      rnn_mode=rnn_mode,
                                      batch_first=batch_first)
         self.lstm_a = layer.CudnnRNN(hidden_size=hidden_size,
                                      num_layers=num_layers,
                                      bidirectional=True,
-                                     return_sequences=False,
+                                     return_sequences=return_sequences,
                                      rnn_mode=rnn_mode,
                                      batch_first=batch_first)
 
@@ -50,7 +51,7 @@ class QAModel(model.Model):
         a_batch = self.lstm_a(a_batch)  # {2, hidden*2}
 
         # full sequences {2bs, seqlength, hidden*2}
-        # 1d max pooling on dim==2
+        # a_batch = autograd.reduce_mean(a_batch, [1]) # to {2bs, hidden*2}
 
         bs_a = int(a_batch.shape[0] / 2)  # cut concated a-a+ to half and half
         a_pos, a_neg = autograd.split(a_batch, 0, [bs_a, bs_a])
@@ -63,6 +64,7 @@ class QAModel(model.Model):
         out = self.forward(q, a)
         loss = autograd.qa_lstm_loss(out[0], out[1])
         self.optimizer.backward_and_update(loss)
+
         return out, loss
 
 

@@ -40,13 +40,15 @@ from data import parse_file, parse_test_file, load_vocabulary, generate_qa_tripl
 from model import QAModel
 
 # params
-q_max_len = 10
-a_max_len = 100
-bs = 128
+q_max_len = 15
+a_max_len = 150
+bs = 50 # as tq, ta use fix bs, bs should be factor of test size - 100
 embed_size = 300
-hidden_size = 50
+hidden_size = 100
 max_epoch = 2
-dev = device.create_cuda_gpu(set_default=False)
+
+dev = device.create_cuda_gpu()
+# dev = device.create_cuda_gpu_on(7)
 
 # embeding
 embed_path = 'GoogleNews-vectors-negative300.bin'
@@ -77,6 +79,8 @@ def load_model(max_bs, hidden_size):
     tq.set_value(0.0)
     ta.set_value(0.0)
     m.compile([tq, ta], is_train=True, use_graph=False, sequential=False)
+    # m.compile([tq, ta], is_train=True, use_graph=True, sequential=True)
+    # m.compile([tq, ta], is_train=True, use_graph=True, sequential=False)
     return m
 
 
@@ -107,21 +111,22 @@ def training(m, all_train_data, max_epoch, eval_split_ratio=0.8):
     train_data = all_train_data[:split_num]
     eval_data = all_train_data[split_num:]
 
-    train_triplets = generate_qa_triplets(train_data)
+    train_triplets = generate_qa_triplets(train_data) # triplet = <q, a+, a->
     train_triplet_vecs = [
         triplet_text_to_vec(t, wv, q_max_len, a_max_len) for t in train_triplets
-    ]
+    ] # triplet vecs = <q_vec, a+_vec, a-_vec>
     train_data_gen = train_data_gen_fn(train_triplet_vecs, bs)
     m.train()
+
+    tq = tensor.Tensor((bs, q_max_len, embed_size), dev, tensor.float32)
+    ta = tensor.Tensor((bs * 2, a_max_len, embed_size), dev, tensor.float32)
     for epoch in range(max_epoch):
         start = time.time()
-        for q, a in train_data_gen:
-            #     print(tq.shape)
-            #     print(ta.shape)
-            tq = tensor.from_numpy(q)
-            tq.to_device(dev)
-            ta = tensor.from_numpy(a)
-            ta.to_device(dev)
+        for q, a in train_data_gen: 
+            #     print(tq.shape) # (bs,seq,embed)
+            #     print(ta.shape) # (bs*2, seq, embed)
+            tq.copy_from_numpy(q)
+            ta.copy_from_numpy(a)
             score, l = m(tq, ta)
         top1hits = training_top1_hits(m, wv, q_max_len, a_max_len, train_data)
         print(
@@ -155,7 +160,6 @@ def test_format(r, wv, q_max_len, a_max_len):
     labels_idx = [candis.index(l) for l in labels if l in candis]
     return np.array(q_vecs), np.array(candis_vecs), labels, labels_idx
 
-
 def testing(m, test_data):
     test_tuple_vecs = [
         test_format(r, wv, q_max_len, a_max_len) for r in test_data
@@ -163,13 +167,14 @@ def testing(m, test_data):
     m.eval()
     hits = 0
     trials = len(test_tuple_vecs)
+
+    tq = tensor.Tensor((bs, q_max_len, embed_size), dev, tensor.float32)
+    ta = tensor.Tensor((bs * 2, a_max_len, embed_size), dev, tensor.float32)
     for q, a, labels, labels_idx in test_tuple_vecs:
-        #     print(q.shape)
-        #     print(a.shape)
-        tq = tensor.from_numpy(q.astype(np.float32))
-        ta = tensor.from_numpy(a.astype(np.float32))
-        tq.to_device(dev)
-        ta.to_device(dev)
+        # print(q.shape) # (50, seq, embed)
+        # print(a.shape) # (100, seq, embed)
+        tq.copy_from_numpy(q)
+        ta.copy_from_numpy(a)
         out = m.forward(tq, ta)
         sim_first_half = tensor.to_numpy(out[0])
         sim_second_half = tensor.to_numpy(out[1])
