@@ -75,8 +75,135 @@ class MyModel(model.Model):
     def optim(self, loss):
         self.optimizer(loss)
 
+# lstm testing
+class LSTMModel2(model.Model):
 
-class TestTensorMethods(unittest.TestCase):
+    def __init__(self, hidden_size, bidirectional, num_layers):
+        super(LSTMModel2, self).__init__()
+        self.lstm = layer.CudnnRNN(hidden_size=hidden_size,
+                                   num_layers=num_layers,
+                                   bidirectional=bidirectional,
+                                   return_sequences=False,
+                                   rnn_mode='lstm',
+                                   batch_first=True)
+        self.optimizer = opt.SGD(0.1)
+
+    def forward(self, x):
+        return self.lstm(x)
+
+
+class LSTMModel(model.Model):
+
+    def __init__(self, hidden_size, seq_length, batch_size, bidirectional,
+                 num_layers, return_sequences, rnn_mode, batch_first):
+        super(LSTMModel, self).__init__()
+        self.hidden_size = hidden_size
+        self.seq_length = seq_length
+        self.return_sequences = return_sequences
+
+        self.lstm = layer.CudnnRNN(hidden_size=hidden_size,
+                                   num_layers=num_layers,
+                                   bidirectional=bidirectional,
+                                   return_sequences=return_sequences,
+                                   rnn_mode=rnn_mode,
+                                   batch_first=batch_first)
+        self.optimizer = opt.SGD(0.1)
+
+    def forward(self, x):
+        y = self.lstm(x)
+        if self.return_sequences:
+            y = autograd.reshape(y, (-1, self.seq_length * self.hidden_size))
+        return y
+
+
+class TestModelMethods(unittest.TestCase):
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_lstm_model_varying_bs_seq_length(self, dev=gpu_dev):
+        hidden_size = 6
+        bidirectional = False
+        num_layers = 1
+        m = LSTMModel2(hidden_size, bidirectional, num_layers)
+        x = tensor.Tensor(shape=(2, 3, 4), device=dev)
+        x.gaussian(0, 1)
+        y = tensor.Tensor(shape=(2, hidden_size), device=dev)
+        y.gaussian(0, 1)
+        m.compile([x], is_train=True, use_graph=False, sequential=False)
+        m.train()
+        for i in range(1000):
+            out = m.forward(x)
+            loss = autograd.mse_loss(out, y)
+            if i % 50 == 0:
+                print("l:", loss)
+            m.optimizer.backward_and_update(loss)
+
+        # bs changed
+        bs = 1
+        seq = 2
+        x2 = tensor.Tensor(shape=(bs, seq, 4), device=dev)
+        x2.gaussian(0, 1)
+        y2 = tensor.Tensor(shape=(bs, hidden_size), device=dev)
+        y2.gaussian(0, 1)
+
+        out = m.forward(x2)
+        loss = autograd.mse_loss(out, y2)
+        print("test l:", loss)
+        m.optimizer.backward_and_update(loss)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_lstm_model(self, dev=gpu_dev):
+        hidden_size = 3
+        seq_length = 2
+        batch_size = 4
+        feature_size = 3
+        bidirectional = False
+        directions = 2 if bidirectional else 1
+        num_layers = 2
+        out_size = hidden_size
+        return_sequences = False
+        batch_first = True
+        rnn_mode = "lstm"
+
+        # manual test case
+        x_data = np.array([[[0, 0, 1], [0, 1, 0]], [[0, 1, 0], [1, 0, 0]],
+                           [[0, 0, 1], [0, 1, 0]], [[1, 0, 0], [0, 0, 1]]],
+                          dtype=np.float32).reshape(batch_size, seq_length,
+                                                    hidden_size)  # bs, seq, fea
+        if return_sequences:
+            y_data = np.array(
+                [[[0, 1, 0], [1, 0, 0]], [[1, 0, 0], [0, 0, 1]],
+                 [[0, 1, 0], [1, 0, 0]], [[0, 0, 1], [0, 1, 0]]],
+                dtype=np.float32).reshape(batch_size, seq_length,
+                                          hidden_size)  # bs, hidden
+            y_data.reshape(batch_size, -1)
+        else:
+            y_data = np.array([[1, 0, 0], [0, 0, 1], [1, 0, 0], [0, 1, 0]],
+                              dtype=np.float32).reshape(
+                                  batch_size, hidden_size)  # bs, hidden
+
+        x = tensor.Tensor(device=dev, data=x_data)
+        y_t = tensor.Tensor(device=dev, data=y_data)
+
+        m = LSTMModel(hidden_size, seq_length, batch_size, bidirectional,
+                      num_layers, return_sequences, rnn_mode, batch_first)
+        m.compile([x], is_train=True, use_graph=False, sequential=False)
+
+        m.train()
+        for i in range(1000):
+            y = m.forward(x)
+            assert y.shape == y_t.shape
+            loss = autograd.softmax_cross_entropy(y, y_t)
+            if i % 100 == 0:
+                print("loss", loss)
+            m.optimizer.backward_and_update(loss)
+
+        m.eval()
+        y = m.forward(x)
+        loss = autograd.softmax_cross_entropy(y, y_t)
+        print("eval loss", loss)
+
+        
+class TestModelSaveMethods(unittest.TestCase):
 
     def _save_states_load_states_helper(self, dev, graph_flag="False"):
         x_shape = (2, 2, 2, 2)

@@ -1417,6 +1417,108 @@ class Reshape(Layer):
         return autograd.reshape(x, shape)
 
 
+class CudnnRNN(Layer):
+    """ `CudnnRNN` class implements with c++ backend and run the operation
+          directly on cuDNN
+        While `RNN` class implements with high level singa API
+    """
+
+    def __init__(self,
+                 hidden_size,
+                 activation="tanh",
+                 num_layers=1,
+                 bias=True,
+                 batch_first=False,
+                 dropout=0,
+                 bidirectional=False,
+                 rnn_mode="lstm",
+                 return_sequences=False):
+        """
+            Args:
+                hidden_size: hidden feature dim
+                rnn_mode: accepted value: "vanilla", "tanh", "relu",  "lstm", "gru"
+        """
+        assert singa.USE_CUDA, "Not able to run without CUDA"
+        super(CudnnRNN, self).__init__()
+
+        self.rnn_mode = rnn_mode
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.dropout = dropout
+        self.bidirectional = 1 if bidirectional else 0
+        self.return_sequences = return_sequences
+        self.batch_first = batch_first
+
+        # GPU parameter
+        # cudnn_rnn_mode: 0 - RNN RELU, 1 - RNN TANH, 2 - LSTM, 3 - GRU
+        if self.rnn_mode == "lstm":
+            self.cudnn_rnn_mode = 2
+        elif self.rnn_mode == "vanilla" or self.rnn_mode == "tanh":
+            self.cudnn_rnn_mode = 1
+        elif self.rnn_mode == "relu":
+            self.cudnn_rnn_mode = 0
+        elif self.rnn_mode == "gru":
+            self.cudnn_rnn_mode = 3
+
+    def initialize(self, x, hx=None, cx=None):
+        if self.batch_first:
+            x = x.transpose((1, 0, 2))
+        self.input_size = x.shape[1]
+
+        # GPU handle
+        self.handle = singa.CudnnRNNHandle(x.data,
+                                           self.hidden_size,
+                                           mode=self.cudnn_rnn_mode,
+                                           num_layers=self.num_layers,
+                                           dropout=self.dropout,
+                                           bidirectional=self.bidirectional)
+
+        w_name = self.name + Layer.sep + 'W'
+        self.W = Tensor(shape=(self.handle.weights_size,),
+                        requires_grad=True,
+                        stores_grad=True,
+                        name=w_name,
+                        device=x.device)
+        self.W.gaussian(0, 1)
+
+    def forward(self, x, hx=None, cx=None):
+
+        self.device_check(x, self.W)
+        if self.batch_first:
+            x = x.transpose((1, 0, 2))
+
+        batch_size = x.shape[1]
+        directions = 2 if self.bidirectional else 1
+        if hx == None:
+            hx = Tensor(shape=(self.num_layers * directions, batch_size,
+                                           self.hidden_size),
+                                    requires_grad=False,
+                                    stores_grad=False,
+                                    device=x.device).set_value(0.0)
+        if cx == None:
+            cx = Tensor(shape=(self.num_layers * directions, batch_size,
+                                           self.hidden_size),
+                                    requires_grad=False,
+                                    stores_grad=False,
+                                    device=x.device).set_value(0.0)
+
+        # outputs returned is list
+        #   inputs has shape of {sequence length, batch size, feature size}
+        y = autograd._RNN(self.handle,
+                          return_sequences=self.return_sequences)(x, hx, cx,
+                                                                  self.W)[0]
+        if self.return_sequences and self.batch_first:
+            #   outputs has shape of {sequence length, batch size, hidden size}
+            y = y.transpose((1, 0, 2))  # to {bs, seq, hid}
+        return y
+
+    def get_params(self):
+        return {self.W.name: self.W}
+
+    def set_params(self, parameters):
+        self.set_attribute(self.W, parameters[self.W.name])
+
+
 ''' import autograd at the end to resolve circular import
 '''
 from singa import autograd

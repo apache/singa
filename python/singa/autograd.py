@@ -1190,6 +1190,41 @@ def cross_entropy(y, t):
     return CrossEntropy()(y, t)[0]
 
 
+class QALSTMLoss(Operator):
+
+    def __init__(self, M=0.2):
+        super(QALSTMLoss, self).__init__()
+        self.M = M
+
+    def forward(self, pos, neg):
+        # L = max{0, M - cosine(q, a+) + cosine(q, a-)}
+        zero = singa.Tensor(list(pos.shape()), pos.device())
+        zero.SetFloatValue(0.0)
+        val = singa.AddFloat(singa.__sub__(neg, pos), self.M)
+        gt_zero = singa.__gt__(val, zero)
+        self.inputs = (gt_zero, ) # (BS,)
+        all_loss = singa.__mul__(gt_zero, val)
+        loss = singa.SumAll(all_loss)
+        loss /= (pos.shape()[0])
+        # assert loss.shape(0) == 1
+        return loss
+
+    def backward(self, dy=1.0):
+        # dpos = -1 if M-pos+neg > 0 else 0
+        # dneg =  1 if M-pos+neg > 0 else 0
+        gt_zero = self.inputs[0]
+        dpos_factor = singa.Tensor(list(gt_zero.shape()), gt_zero.device())
+        dpos_factor.SetFloatValue(-1.0)
+        dneg_factor = singa.Tensor(list(gt_zero.shape()), gt_zero.device())
+        dneg_factor.SetFloatValue(1.0)
+        dpos = singa.__mul__(gt_zero, dpos_factor)
+        dneg = singa.__mul__(gt_zero, dneg_factor)
+        return dpos, dneg
+
+def qa_lstm_loss(pos, neg, M=0.2):
+    return QALSTMLoss(M)(pos, neg)[0]
+
+
 class SoftMaxCrossEntropy(Operator):
 
     def __init__(self, t):
@@ -4503,6 +4538,82 @@ def onehot(axis, indices, depth, values):
         the output Tensor.
     """
     return OneHot(axis, depth, values)(indices)[0]
+
+
+class _RNN(Operator):
+    """ RNN operation with c++ backend
+    """
+
+    def __init__(self, handle, return_sequences=False):
+        assert singa.USE_CUDA, "Not able to run without CUDA"
+        super(_RNN, self).__init__()
+        self.handle = handle
+        self.return_sequences = return_sequences
+
+    def forward(self, x, hx, cx, w):
+        if training:
+            (y, hy, cy) = singa.GpuRNNForwardTraining(x, hx, cx, w, self.handle)
+            self.inputs = {
+                'x': x,
+                'hx': hx,
+                'cx': cx,
+                'w': w,
+                'y': y,
+                'hy': hy,
+                'cy': cy
+            }
+        else:
+            (y, hy, cy) = singa.GpuRNNForwardInference(x, hx, cx, w,
+                                                       self.handle)
+
+        if self.return_sequences:
+            return y
+        else:
+            last_y_shape = (y.shape()[1], y.shape()[2])
+            last_y = singa.Tensor(list(last_y_shape), x.device())
+
+            src_offset = y.Size() - last_y.Size()
+            # def copy_data_to_from(dst, src, size, dst_offset=0, src_offset=0):
+            singa.CopyDataToFrom(last_y, y, last_y.Size(), 0, src_offset)
+            return last_y
+
+    def backward(self, grad):
+        assert training is True and hasattr(
+            self, "inputs"), "Please set training as True before do BP. "
+
+        dy = None
+        if self.return_sequences:
+            assert grad.shape() == self.inputs['y'].shape(), (
+                "grad shape %s != y shape %s" %
+                (grad.shape(), self.inputs['y'].shape()))
+            dy = grad
+        else:
+            assert grad.shape() == (self.inputs['y'].shape()[1],
+                                    self.inputs['y'].shape()[2]), (
+                                        "grad y shape %s != last y shape %s" %
+                                        (grad.shape(),
+                                         (self.inputs['y'].shape()[1],
+                                          self.inputs['y'].shape()[2])))
+            dy = singa.Tensor(list(self.inputs['y'].shape()), grad.device())
+            dy.SetFloatValue(0.0)
+            # grad shape (bs, directions*hidden)
+            # dy shape (seq, bs, directions*hidden)
+            dst_offset = dy.Size() - grad.Size()
+            singa.CopyDataToFrom(dy, grad, grad.Size(), dst_offset, 0)
+
+        dhy = singa.Tensor(list(self.inputs['hy'].shape()), grad.device())
+        dhy.SetFloatValue(0.0)
+        dcy = singa.Tensor(list(self.inputs['cy'].shape()), grad.device())
+        dcy.SetFloatValue(0.0)
+
+        (dx, dhx, dcx) = singa.GpuRNNBackwardx(self.inputs['y'], dy, dhy, dcy,
+                                               self.inputs['w'],
+                                               self.inputs['hx'],
+                                               self.inputs['cx'], self.handle)
+        dW = singa.GpuRNNBackwardW(self.inputs['x'], self.inputs['hx'],
+                                   self.inputs['y'], self.handle)
+
+        return dx, dhx, dcx, dW
 
 
 class CosSim(Operator):
