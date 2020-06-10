@@ -63,7 +63,7 @@ class QAModel(model.Model):
     def train_one_batch(self, q, a):
         out = self.forward(q, a)
         loss = autograd.qa_lstm_loss(out[0], out[1])
-        self.optimizer.backward_and_update(loss)
+        self.optimizer(loss)
 
         return out, loss
 
