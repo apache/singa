@@ -98,16 +98,16 @@ class Communicator {
   void generateBlocks(Tensor &t);
   void generateBlocks(std::vector<Tensor> &t);
   void allReduce(int size, void *sendbuff, void *recvbuff,
-                 ncclDataType_t ncclType);
+                 ncclDataType_t ncclType, Context *ctx);
   void setup();
   void sparsInit();
   void halfInit();
   void _fusedSparsification(vector<Tensor> &t, Tensor *accumulation,
-                            float sparsThreshold, bool topK);
+                            float sparsThreshold, bool topK, Context *ctx);
   void _sparsification(Tensor &t, Tensor *accumulation, float sparsThreshold,
-                       bool topK);
-  void valSparsAllReduce(size_t num, float *accumulation);
-  void topKSparsAllReduce(size_t num, float *accumulation);
+                       bool topK, Context *ctx);
+  void valSparsAllReduce(size_t num, float *accumulation, Context *ctx);
+  void topKSparsAllReduce(size_t num, float *accumulation, Context *ctx);
 
   // last group of synchronized memory blocks
   std::shared_ptr<Device> device_ = nullptr;
@@ -115,11 +115,6 @@ class Communicator {
   std::vector<Block *> prev_blocks_;
 
   ncclUniqueId id;
-  // cuda stream s is for nccl all reduce
-  cudaStream_t s;
-  // cuda streams c1 and c2 are mainly for data copy to and from memory buffers
-  cudaStream_t c1;
-  cudaStream_t c2;
   ncclComm_t comm;
   cudaEvent_t event;
 

@@ -254,13 +254,12 @@ void Graph::PrintTimeProfiling() {
         time_elapsed = (nodes_[i]->time_elapsed()) /
                        (iteration_ - device_->skip_iteration());
 
-        // ss << forward_time << " , " << backward_time << std::endl;
-
-        if (forward == true)
-          forward_time += time_elapsed;
-        else
-          backward_time += time_elapsed;
+        if (forward == true) forward_time += time_elapsed;
       }
+
+    backward_time = (time_elapsed_ / (iteration_ - device_->skip_iteration())) -
+                    forward_time;
+
     ss << std::endl << "Time Profiling:" << std::endl;
     ss << "Forward Propagation Time : " << forward_time << " sec" << std::endl;
     ss << "Backward Propagation Time : " << backward_time << " sec"
@@ -276,11 +275,21 @@ void Graph::PrintTimeProfiling() {
            << (nodes_[i]->time_elapsed()) / (iteration_) << " sec" << std::endl;
   }
 
+  // verbosity level: 3 -> Distributed training operations
+  if (device_->verbosity() == 3) {
+    ss << std::endl << "Time Profiling:" << std::endl;
+    for (size_t i = 0; i < nodes_.size(); ++i)
+      if ((nodes_[i]->op_name().find("Dist") != std::string::npos) &&
+          (nodes_[i]->time_elapsed() > 0))
+        ss << "OP_ID" << nodes_[i]->id_ << ". " << nodes_[i]->op_name() << " : "
+           << (nodes_[i]->time_elapsed()) / (iteration_) << " sec" << std::endl;
+  }
+
   printf("%s", ss.str().c_str());
 }
 
 void Graph::TimeProfilingDoExec(Node *curNode) {
-  if ((device_->verbosity() > 0) && (curNode->op_name_ != "Sync") &&
+  if ((device_->verbosity() > 0) && (curNode->op_name_ != "Waiting") &&
       (iteration_ >= device_->skip_iteration()))
     device_->TimeProfilingDoExec(std::move(curNode->op_), 0, curNode);
   else
@@ -290,12 +299,22 @@ void Graph::TimeProfilingDoExec(Node *curNode) {
 void Graph::EvaluateTimeElapsed() {
   if ((device_->verbosity() > 0) && (iteration_ > device_->skip_iteration())) {
     device_->Sync();
+    std::chrono::duration<float> duration =
+        std::chrono::high_resolution_clock::now() - t_start_;
+    time_elapsed_inc(duration.count());
     for (size_t i = 0; i < nodes_.size(); ++i) {
       Node *curNode = nodes_[i];
-      if (curNode->op_name_ != "Sync") {
+      if (curNode->op_name_ != "Waiting") {
         device_->EvaluateTimeElapsed(curNode);
       }
     }
+  }
+}
+
+void Graph::TakeStartTime() {
+  if ((device_->verbosity() > 0) && (iteration_ >= device_->skip_iteration())) {
+    device_->Sync();
+    t_start_ = std::chrono::high_resolution_clock::now();
   }
 }
 
@@ -309,6 +328,8 @@ void Graph::RunGraph() {
   for (auto it : begin_nodes_) {
     node_queue.Push(it);
   }
+
+  TakeStartTime();
 
   // run graph
   while (node_queue.Size()) {
@@ -347,6 +368,8 @@ void Graph::RunGraph() {
 void Graph::RunInSerial() {
   in_serial_ = true;
   if (dirty_) Analyze();
+
+  TakeStartTime();
 
   for (size_t i = 0; i < nodes_.size(); ++i) {
     Node *curNode = nodes_[i];
