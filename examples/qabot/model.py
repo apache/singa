@@ -67,6 +67,9 @@ class QAModel(model.Model):
 
         return out, loss
 
+    def set_optimizer(self, optimizer):
+        self.optimizer = optimizer
+
 
 class MLP(model.Model):
 

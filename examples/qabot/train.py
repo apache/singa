@@ -20,8 +20,9 @@
 import time
 import random
 
+import argparse
 import numpy as np
-from gensim.models import keyedvectors
+import gensim.models.keyedvectors as kv
 
 from singa import device
 from singa import tensor
@@ -30,33 +31,29 @@ from singa import opt
 from data import *
 from model import QAModel
 
-# params
 q_max_len = 15
 a_max_len = 150
-bs = 50  # as tq, ta use fix bs, bs should be factor of test size - 100
 embed_size = 300
 hidden_size = 100
-max_epoch = 10
+bs = 32  # as tq, ta use fix bs, bs should be factor of test size - 100
 
-dev = device.create_cuda_gpu(0)
 
-# embeding
-embed_path = 'GoogleNews-vectors-negative300.bin'
-wv = keyedvectors.KeyedVectors.load_word2vec_format(embed_path, binary=True)
-print("successfully loaded word2vec model")
+def load_data():
+    # file paths
+    embed_path = 'GoogleNews-vectors-negative300.bin'
+    vocab_path = 'V2/vocabulary'
+    label_path = 'V2/InsuranceQA.label2answer.token.encoded'
+    train_path = 'V2/InsuranceQA.question.anslabel.token.100.pool.solr.train.encoded'
+    test_path = 'V2/InsuranceQA.question.anslabel.token.100.pool.solr.test.encoded'
 
-q# vocab
-id_to_word, label_to_ans, label_to_ans_text = load_vocabulary(
-    './V2/vocabulary', './V2/InsuranceQA.label2answer.token.encoded')
-print("loaded vocab")
+    # load word2vec model and corpus
+    word_to_vec = kv.KeyedVectors.load_word2vec_format(embed_path, binary=True)
+    id_to_word, label_to_ans = load_vocabulary(vocab_path, label_path)
+    train_raw_data = parse_train_file(train_path, id_to_word, label_to_ans)
+    test_raw_data = parse_test_file(test_path, id_to_word, label_to_ans)
 
-train_data = parse_file(
-    './V2/InsuranceQA.question.anslabel.token.100.pool.solr.train.encoded',
-    id_to_word, label_to_ans_text)
-test_data = parse_test_file(
-    './V2/InsuranceQA.question.anslabel.token.100.pool.solr.test.encoded',
-    id_to_word, label_to_ans_text)
-print("loaded train data")
+    print('successfully loaded word2vec model and corpus')
+    return word_to_vec, label_to_ans, train_raw_data, test_raw_data
 
 
 def load_model(max_bs, hidden_size):
@@ -72,7 +69,7 @@ def load_model(max_bs, hidden_size):
     return m
 
 
-def training_top1_hits(m, wv, q_max_len, a_max_len, train_data):
+def training_top1_hits(m, dev, wv, q_max_len, a_max_len, train_data):
     m.eval()
     hits = 0
     train_eval_data = [
@@ -94,7 +91,7 @@ def training_top1_hits(m, wv, q_max_len, a_max_len, train_data):
     return hits / trials
 
 
-def training(m, all_train_data, max_epoch, eval_split_ratio=0.8):
+def training(m, dev, wv, all_train_data, max_epoch, eval_split_ratio=0.8):
     split_num = int(eval_split_ratio * len(all_train_data))
     train_data = all_train_data[:split_num]
     eval_data = all_train_data[split_num:]
@@ -124,7 +121,8 @@ def training(m, all_train_data, max_epoch, eval_split_ratio=0.8):
             score, l = m(tq, ta)
             train_loss += l
 
-        top1hits = training_top1_hits(m, wv, q_max_len, a_max_len, train_data)
+        top1hits = training_top1_hits(m, dev, wv, q_max_len, a_max_len,
+                                      train_data)
         print(
             "epoch %d, time used %d sec, top1 hits: %f, loss: " %
             (epoch, time.time() - start, top1hits), train_loss)
@@ -142,11 +140,11 @@ def train_eval_format(row, wv, q_max_len, a_max_len):
     return np.array(q_vecs), np.array(a_vecs)
 
 
-def test_format(r, wv, q_max_len, a_max_len):
+def test_format(r, wv, label_to_ans, q_max_len, a_max_len):
     q_text, labels, candis = r
     candis_vecs = [
-        words_text_to_fixed_seqlen_vec(wv, label_to_ans_text[a_label],
-                                       a_max_len) for a_label in candis
+        words_text_to_fixed_seqlen_vec(wv, label_to_ans[a_label], a_max_len)
+        for a_label in candis
     ]
     if len(candis_vecs) % 2 == 1:
         candis_vecs.pop(-1)
@@ -157,9 +155,10 @@ def test_format(r, wv, q_max_len, a_max_len):
     return np.array(q_vecs), np.array(candis_vecs), labels, labels_idx
 
 
-def testing(m, test_data):
+def testing(m, dev, wv, label_to_ans, test_data):
     test_tuple_vecs = [
-        test_format(r, wv, q_max_len, a_max_len) for r in test_data
+        test_format(r, wv, label_to_ans, q_max_len, a_max_len)
+        for r in test_data
     ]
     m.eval()
     hits = 0
@@ -181,6 +180,76 @@ def testing(m, test_data):
     print("training top1 hits rate: ", hits / trials)
 
 
-m = load_model(bs, hidden_size)
-training(m, train_data, max_epoch)
-testing(m, test_data)
+def run(device_id, max_epoch, batch_size, sgd, graph, verbosity):
+    # 1. create device
+    dev = device.create_cuda_gpu_on(device_id)
+    dev.SetVerbosity(verbosity)
+    dev.SetRandSeed(0)
+    np.random.seed(0)
+
+    # 2. load data
+    word_to_vec, label_to_ans, train_data, test_data = load_data()
+
+    # 3. create placeholders
+    tq = tensor.Tensor((batch_size, q_max_len, embed_size), dev)
+    ta = tensor.Tensor((batch_size * 2, a_max_len, embed_size), dev)
+
+    # 4. load model
+    model = QAModel(hidden_size)
+    model.set_optimizer(sgd)
+    model.compile([tq, ta], is_train=True, use_graph=graph, sequential=False)
+
+    # 5. training
+    training(model, dev, word_to_vec, train_data, max_epoch)
+
+    # 6. testing
+    testing(model, dev, word_to_vec, label_to_ans, test_data)
+
+
+if __name__ == '__main__':
+    # use argparse to get command config: max_epoch, batch_size, etc. for single gpu training
+    parser = argparse.ArgumentParser(
+        description='Training using the autograd and graph.')
+    parser.add_argument('-m',
+                        '--max-epoch',
+                        default=10,
+                        type=int,
+                        help='maximum epochs',
+                        dest='max_epoch')
+    parser.add_argument('-b',
+                        '--batch-size',
+                        default=64,
+                        type=int,
+                        help='batch size',
+                        dest='batch_size')
+    parser.add_argument('-l',
+                        '--learning-rate',
+                        default=0.005,
+                        type=float,
+                        help='initial learning rate',
+                        dest='lr')
+    # determine which gpu to use
+    parser.add_argument('-i',
+                        '--device-id',
+                        default=0,
+                        type=int,
+                        help='which GPU to use',
+                        dest='device_id')
+    parser.add_argument('-g',
+                        '--disable-graph',
+                        default='True',
+                        action='store_false',
+                        help='disable graph',
+                        dest='graph')
+    parser.add_argument('-v',
+                        '--log-verbosity',
+                        default=0,
+                        type=int,
+                        help='logging verbosity',
+                        dest='verbosity')
+
+    args = parser.parse_args()
+
+    sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5)
+    run(args.device_id, args.max_epoch, args.batch_size, sgd, args.graph,
+        args.verbosity)
