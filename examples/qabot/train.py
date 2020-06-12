@@ -35,7 +35,6 @@ q_max_len = 15
 a_max_len = 150
 embed_size = 300
 hidden_size = 100
-bs = 32  # as tq, ta use fix bs, bs should be factor of test size - 100
 
 
 def load_data():
@@ -51,133 +50,19 @@ def load_data():
     id_to_word, label_to_ans = load_vocabulary(vocab_path, label_path)
     train_raw_data = parse_train_file(train_path, id_to_word, label_to_ans)
     test_raw_data = parse_test_file(test_path, id_to_word, label_to_ans)
-
     print('successfully loaded word2vec model and corpus')
-    return word_to_vec, label_to_ans, train_raw_data, test_raw_data
 
+    # cut part of the data
+    train_raw_data = train_raw_data[:200]
+    test_raw_data = test_raw_data[:200]
 
-def load_model(max_bs, hidden_size):
-    m = QAModel(hidden_size)
-    m.optimizer = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)
-    tq = tensor.Tensor((max_bs, q_max_len, embed_size), dev, tensor.float32)
-    ta = tensor.Tensor((max_bs * 2, a_max_len, embed_size), dev, tensor.float32)
-    tq.set_value(0.0)
-    ta.set_value(0.0)
-    m.compile([tq, ta], is_train=True, use_graph=False, sequential=False)
-    # m.compile([tq, ta], is_train=True, use_graph=True, sequential=True)
-    # m.compile([tq, ta], is_train=True, use_graph=True, sequential=False)
-    return m
+    # process raw data
+    train_data = generate_train_data(train_raw_data, word_to_vec)
+    eval_data = generate_eval_data(train_raw_data, word_to_vec)
+    test_data = generate_test_data(test_raw_data, word_to_vec, label_to_ans)
+    print('successfully generated train, eval, test data')
 
-
-def training_top1_hits(m, dev, wv, q_max_len, a_max_len, train_data):
-    m.eval()
-    hits = 0
-    train_eval_data = [
-        train_eval_format(r, wv, q_max_len, a_max_len) for r in train_data
-    ]
-    trials = len(train_eval_data)
-    for q, a in train_eval_data:
-        tq = tensor.from_numpy(q.astype(np.float32))
-        ta = tensor.from_numpy(a.astype(np.float32))
-        tq.to_device(dev)
-        ta.to_device(dev)
-        out = m.forward(tq, ta)
-        sim_first_half = tensor.to_numpy(out[0])
-        sim_second_half = tensor.to_numpy(out[1])
-        sim = np.concatenate([sim_first_half, sim_second_half]).flatten()
-        if np.argmax(sim) == 0:
-            hits += 1
-    # print("training top1 hits rate: ", hits/trials)
-    return hits / trials
-
-
-def training(m, dev, wv, all_train_data, max_epoch, eval_split_ratio=0.8):
-    split_num = int(eval_split_ratio * len(all_train_data))
-    train_data = all_train_data[:split_num]
-    eval_data = all_train_data[split_num:]
-    train_data = train_data[:10]
-    eval_data = eval_data[:10]
-
-    train_triplets = generate_qa_triplets(train_data)  # triplet = <q, a+, a->
-    train_triplet_vecs = [
-        triplet_text_to_vec(t, wv, q_max_len, a_max_len) for t in train_triplets
-    ]  # triplet vecs = <q_vec, a+_vec, a-_vec>
-
-    tq = tensor.Tensor((bs, q_max_len, embed_size), dev, tensor.float32)
-    ta = tensor.Tensor((bs * 2, a_max_len, embed_size), dev, tensor.float32)
-
-    for epoch in range(max_epoch):
-        start = time.time()
-
-        train_loss = 0
-        train_data_gen = train_data_gen_fn(train_triplet_vecs, bs)
-
-        m.train()
-        for q, a in train_data_gen:
-            #     print(tq.shape) # (bs,seq,embed)
-            #     print(ta.shape) # (bs*2, seq, embed)
-            tq.copy_from_numpy(q)
-            ta.copy_from_numpy(a)
-            score, l = m(tq, ta)
-            train_loss += l
-
-        top1hits = training_top1_hits(m, dev, wv, q_max_len, a_max_len,
-                                      train_data)
-        print(
-            "epoch %d, time used %d sec, top1 hits: %f, loss: " %
-            (epoch, time.time() - start, top1hits), train_loss)
-
-
-def train_eval_format(row, wv, q_max_len, a_max_len):
-    q, apos, anegs = row
-    all_a = [apos] + anegs
-    a_vecs = [words_text_to_fixed_seqlen_vec(wv, a, a_max_len) for a in all_a]
-    if len(a_vecs) % 2 == 1:
-        a_vecs.pop(-1)
-    assert len(a_vecs) % 2 == 0
-    q_repeat = int(len(a_vecs) / 2)
-    q_vecs = [words_text_to_fixed_seqlen_vec(wv, q, q_max_len)] * q_repeat
-    return np.array(q_vecs), np.array(a_vecs)
-
-
-def test_format(r, wv, label_to_ans, q_max_len, a_max_len):
-    q_text, labels, candis = r
-    candis_vecs = [
-        words_text_to_fixed_seqlen_vec(wv, label_to_ans[a_label], a_max_len)
-        for a_label in candis
-    ]
-    if len(candis_vecs) % 2 == 1:
-        candis_vecs.pop(-1)
-    assert len(candis_vecs) % 2 == 0
-    q_repeat = int(len(candis_vecs) / 2)
-    q_vecs = [words_text_to_fixed_seqlen_vec(wv, q_text, q_max_len)] * q_repeat
-    labels_idx = [candis.index(l) for l in labels if l in candis]
-    return np.array(q_vecs), np.array(candis_vecs), labels, labels_idx
-
-
-def testing(m, dev, wv, label_to_ans, test_data):
-    test_tuple_vecs = [
-        test_format(r, wv, label_to_ans, q_max_len, a_max_len)
-        for r in test_data
-    ]
-    m.eval()
-    hits = 0
-    trials = len(test_tuple_vecs)
-
-    tq = tensor.Tensor((bs, q_max_len, embed_size), dev, tensor.float32)
-    ta = tensor.Tensor((bs * 2, a_max_len, embed_size), dev, tensor.float32)
-    for q, a, labels, labels_idx in test_tuple_vecs:
-        # print(q.shape) # (50, seq, embed)
-        # print(a.shape) # (100, seq, embed)
-        tq.copy_from_numpy(q)
-        ta.copy_from_numpy(a)
-        out = m.forward(tq, ta)
-        sim_first_half = tensor.to_numpy(out[0])
-        sim_second_half = tensor.to_numpy(out[1])
-        sim = np.concatenate([sim_first_half, sim_second_half]).flatten()
-        if np.argmax(sim) in labels_idx:
-            hits += 1
-    print("training top1 hits rate: ", hits / trials)
+    return train_data, eval_data, test_data
 
 
 def run(device_id, max_epoch, batch_size, sgd, graph, verbosity):
@@ -188,7 +73,10 @@ def run(device_id, max_epoch, batch_size, sgd, graph, verbosity):
     np.random.seed(0)
 
     # 2. load data
-    word_to_vec, label_to_ans, train_data, test_data = load_data()
+    train_data, eval_data, test_data = load_data()
+    num_train_batch = train_data[0].shape[0] // batch_size
+    num_eval_batch = len(eval_data)
+    num_test_batch = len(test_data)
 
     # 3. create placeholders
     tq = tensor.Tensor((batch_size, q_max_len, embed_size), dev)
@@ -200,10 +88,63 @@ def run(device_id, max_epoch, batch_size, sgd, graph, verbosity):
     model.compile([tq, ta], is_train=True, use_graph=graph, sequential=False)
 
     # 5. training
-    training(model, dev, word_to_vec, train_data, max_epoch)
+    for epoch in range(max_epoch):
+        start = time.time()
+
+        # 5-1 train the model
+        train_loss = 0
+        model.train()
+        for b in range(num_train_batch):
+            q = train_data[0][b * batch_size:(b + 1) * batch_size]
+            a = train_data[1][b * batch_size * 2:(b + 1) * batch_size * 2]
+            tq.copy_from_numpy(q)
+            ta.copy_from_numpy(a)
+            score, loss = model(tq, ta)
+            train_loss += loss
+
+        # 5-2 evaluate the model
+        hits = 0
+        model.eval()
+        for b in range(num_eval_batch):
+            q, a = eval_data[b]
+            q = tensor.from_numpy(q.astype(np.float32))
+            a = tensor.from_numpy(a.astype(np.float32))
+            q.to_device(dev)
+            a.to_device(dev)
+            out = model.forward(q, a)
+
+            sim_first_half = tensor.to_numpy(out[0])
+            sim_second_half = tensor.to_numpy(out[1])
+            sim = np.concatenate([sim_first_half, sim_second_half]).flatten()
+            if np.argmax(sim) == 0:
+                hits += 1
+
+        top1hits = hits / num_eval_batch
+        elapsed_time = time.time() - start
+        print(
+            "epoch %d, time used %d sec, top1 hits: %f, loss: " %
+            (epoch, elapsed_time, top1hits), train_loss)
 
     # 6. testing
-    testing(model, dev, word_to_vec, label_to_ans, test_data)
+    batch_size = 100 / 2  # 100: the number of candidate answers
+    tq = tensor.Tensor((50, q_max_len, embed_size), dev)
+    ta = tensor.Tensor((50 * 2, a_max_len, embed_size), dev)
+
+    hits = 0
+    model.eval()
+    for b in range(num_test_batch):
+        q, a, labels, labels_idx = test_data[b]
+        tq.copy_from_numpy(q)
+        ta.copy_from_numpy(a)
+        out = model.forward(tq, ta)
+        sim_first_half = tensor.to_numpy(out[0])
+        sim_second_half = tensor.to_numpy(out[1])
+        sim = np.concatenate([sim_first_half, sim_second_half]).flatten()
+        if np.argmax(sim) == 0:
+            hits += 1
+    print("training top1 hits rate: ", hits / num_test_batch)
+
+    dev.PrintTimeProfiling()
 
 
 if __name__ == '__main__':

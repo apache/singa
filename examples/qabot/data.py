@@ -22,6 +22,7 @@ import numpy as np
 import random
 
 
+# auxiliary function
 def split_one_line(line, decode=False):
     if decode:
         return line.rstrip().decode("utf-8").split("\t")
@@ -29,6 +30,21 @@ def split_one_line(line, decode=False):
         return line.rstrip().split("\t")
 
 
+def words_to_fixed_length_vec(word_to_vec, words, sentence_length=10):
+    sentence_vec = []
+    for word in words:
+        if len(sentence_vec) >= sentence_length:
+            break
+        if word in word_to_vec:
+            sentence_vec.append(word_to_vec[word])
+        else:
+            sentence_vec.append(np.zeros((300,)))
+    while len(sentence_vec) < sentence_length:
+        sentence_vec.append(np.zeros((300,)))
+    return np.array(sentence_vec, dtype=np.float32)
+
+
+# functions for parsing files
 def load_vocabulary(vocab_path, label_path):
     id_to_word = {}
     with open(vocab_path, 'rb') as f:
@@ -83,71 +99,79 @@ def parse_test_file(fpath, id_to_word, label_to_ans):
     return data
 
 
-def words_text_to_fixed_seqlen_vec(word2vec, words, sentence_length=10):
-    sentence_vec = []
-    for word in words:
-        if len(sentence_vec) >= sentence_length:
-            break
-        if word in word2vec:
-            sentence_vec.append(word2vec[word])
-        else:
-            sentence_vec.append(np.zeros((300,)))
-    while len(sentence_vec) < sentence_length:
-        sentence_vec.append(np.zeros((300,)))
-    return np.array(sentence_vec, dtype=np.float32)
-
-
-def generate_qa_triplets(data, num_negs=10):
-    tuples = []
-    for (q, a_pos, a_negs) in data:
+# functions for generating data
+def generate_train_data(train_raw_data, word_to_vec, num_negs=10):
+    train_q = []
+    train_a_pos = []
+    train_a_neg = []
+    q_max_len = 15
+    a_max_len = 150
+    for (question, a_pos, a_negs) in train_raw_data:
         for i in range(num_negs):
-            tpl = (q, a_pos, random.choice(a_negs))
-            tuples.append(tpl)
-    return tuples
+            a_neg = random.choice(a_negs)
+            q_vec = words_to_fixed_length_vec(word_to_vec, question, q_max_len)
+            a_pos_vec = words_to_fixed_length_vec(word_to_vec, a_pos, a_max_len)
+            a_neg_vec = words_to_fixed_length_vec(word_to_vec, a_neg, a_max_len)
+            train_q.append(np.array(q_vec))
+            train_a_pos.append(np.array(a_pos_vec))
+            train_a_neg.append(np.array(a_neg_vec))
+
+    train_q = np.array(train_q)
+    train_a_pos = np.array(train_a_pos)
+    train_a_neg = np.array(train_a_neg)
+    train_a = np.concatenate([train_a_pos, train_a_neg])
+    return (train_q, train_a)
 
 
-def qa_tuples_to_naive_training_format(wv, tuples):
-    training = []
-    q_len_limit = 10
-    a_len_limit = 100
-    for tpl in tuples:
-        q, a_pos, a_neg = tpl
-        q_vec = words_text_to_fixed_seqlen_vec(wv, q, q_len_limit)
-        training.append(
-            (q_vec, words_text_to_fixed_seqlen_vec(wv, a_pos, a_len_limit), 1))
-        training.append(
-            (q_vec, words_text_to_fixed_seqlen_vec(wv, a_neg, a_len_limit), 0))
-    return training
+def generate_eval_data(train_raw_data, word_to_vec):
+    eval_data = []
+    q_max_len = 15
+    a_max_len = 150
+    for (question, a_pos, a_negs) in train_raw_data:
+        a_vecs = []
+        for ans in [a_pos] + a_negs:
+            a_vec = words_to_fixed_length_vec(word_to_vec, ans, a_max_len)
+            a_vecs.append(np.array(a_vec))
+        if len(a_vecs) % 2 == 1:
+            a_vecs.pop(-1)
+        assert len(a_vecs) % 2 == 0
+
+        repeat_times = int(len(a_vecs) / 2)
+        q_vec = words_to_fixed_length_vec(word_to_vec, question, q_max_len)
+        q_vecs = [q_vec] * repeat_times
+
+        q_vecs = np.array(q_vecs)
+        a_vecs = np.array(a_vecs)
+        eval_data.append((q_vecs, a_vecs))
+
+    return eval_data
 
 
-def triplet_text_to_vec(triplet, wv, q_max_len, a_max_len):
-    return [
-        words_text_to_fixed_seqlen_vec(wv, triplet[0], q_max_len),
-        words_text_to_fixed_seqlen_vec(wv, triplet[1], a_max_len),
-        words_text_to_fixed_seqlen_vec(wv, triplet[2], a_max_len)
-    ]
+def generate_test_data(train_test_data, word_to_vec, label_to_ans):
+    test_data = []
+    q_max_len = 15
+    a_max_len = 150
+    for (question, labels, cands) in train_test_data:
+        cands_vecs = []
+        for cand in cands:
+            text = label_to_ans[cand]
+            cand_vec = words_to_fixed_length_vec(word_to_vec, text, a_max_len)
+            cands_vecs.append(cand_vec)
+        if len(cands_vecs) % 2 == 1:
+            cands_vecs.pop(-1)
+        assert len(cands_vecs) % 2 == 0
 
+        repeat_times = int(len(cands_vecs) / 2)
+        q_vec = words_to_fixed_length_vec(word_to_vec, question, q_max_len)
+        q_vecs = [q_vec] * repeat_times
 
-def train_data_gen_fn(train_triplet_vecs, bs=32):
-    q = []
-    ap = []
-    an = []
-    for t in train_triplet_vecs:
-        q.append(t[0])
-        ap.append(t[1])
-        an.append(t[2])
-        if len(q) >= bs:
-            q = np.array(q)
-            ap = np.array(ap)
-            an = np.array(an)
-            a = np.concatenate([ap, an])
-            assert 2 * q.shape[0] == a.shape[0]
-            yield q, a
-            q = []
-            ap = []
-            an = []
-    # return the rest
-    # return np.array(q), np.concatenate([np.array(ap), np.array(an)])
+        labels_idx = [cands.index(label) for label in labels if label in cands]
+
+        q_vecs = np.array(q_vecs)
+        cands_vecs = np.array(cands_vecs)
+        test_data.append((q_vecs, cands_vecs, labels, labels_idx))
+
+    return test_data
 
 
 if __name__ == "__main__":
