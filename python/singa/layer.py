@@ -83,15 +83,38 @@ class Layer(object, metaclass=LayerMeta):
         self._layers = dict()
 
     def initialize(self, *input):
+        """ Initialize the layer
+
+        This function will be called before the forward function if this
+        layer hasn't been initialized. Those members that need to be
+        initialized according to the input will be initialized in this
+        function. e.g. parameters, states and handles.
+
+        Args:
+            *input: input args, should be consistent with the forward function
+        """
         pass
 
     def forward(self, *input):
-        pass
+        """ Forward propagation
+
+        Args:
+            *input: input arguments consisting of only PyTensors
+        Returns:
+            PyTensor instance(s)
+        """
+        raise NotImplementedError
 
     def __call__(self, *args, **kwargs):
         return self.forward(*args, **kwargs)
 
     def get_params(self):
+        """ Get parameters of this layer and all sublayers
+
+        Returns:
+            parameters(dict): A dictionary contains parameter names
+            and values of this layer and all sublayers.
+        """
         params = dict()
         sublayers = self._layers
         for name, sublayer in sublayers.items():
@@ -100,19 +123,27 @@ class Layer(object, metaclass=LayerMeta):
         return params
 
     def set_params(self, parameters):
-        # set parameters for Layer
-        # input should be either a PyTensor or numpy ndarray.
-        # examples: Layer.set_params(W=np.ones((in, out), dtype=np.float32)),
-        # Layer.set_params(**{'block1':{'linear1':{'W':np.ones((in, out),
-        # dtype=np.float32)}}})
+        """ Set parameters for this layer and all sublayers
+
+        Args:
+            parameters(dict): A dictionary contains parameter names
+            and corresponding values. The value shoud be either a
+            PyTensor or numpy ndarray
+        """
         names = parameters.keys()
         sublayers = self._layers
         for name, sublayer in sublayers.items():
             if sublayer._initialized:
-                if self.has_layer_param(sublayer, names):
+                if self._has_layer_param(sublayer, names):
                     sublayer.set_params(parameters)
 
     def get_states(self):
+        """ Get states of this layer and all sublayers
+
+        Returns:
+            states(dict): A dictionary contains state names and values
+            of this layer and all sublayers.
+        """
         states = dict()
         sublayers = self._layers
         for name, sublayer in sublayers.items():
@@ -122,21 +153,31 @@ class Layer(object, metaclass=LayerMeta):
         return states
 
     def set_states(self, states):
+        """ Set states for this layer and all sublayers
+
+        Args:
+            states(dict): A dictionary contains state names and
+            corresponding values. The value shoud be either a
+            PyTensor or numpy ndarray
+        """
         names = states.keys()
         sublayers = self._layers
         for name, sublayer in sublayers.items():
             if sublayer._initialized:
-                if self.has_layer_param(sublayer, names):
+                if self._has_layer_param(sublayer, names):
                     sublayer.set_states(states)
         self.set_params(states)
 
-    def has_layer_param(self, layer, names):
-        for name in names:
-            if name.startswith(layer.name):
-                return True
-        return False
-
     def device_check(self, *inputs):
+        """ Check if the devices of the input tensor are the same.
+
+        Keep the device where each tensors is located the same as the
+        first tensor. Copy data to the device of the first tensor if
+        the device does not match.
+
+        Args:
+            *inputs: input args consisting of only PyTensors
+        """
         # disabled the graph to prevent buffering data transfer operator
         x_device = inputs[0].device
         prev_state = x_device.graph_enabled()
@@ -147,7 +188,25 @@ class Layer(object, metaclass=LayerMeta):
                 var.to_device(x_device)
         x_device.EnableGraph(prev_state)
 
+    def get_param_name(self, name):
+        """ Get the unique name of parameter based the local name.
+
+        Args:
+            name(str): the local name of the parameter
+        Returns:
+            str: unique name of the parameter
+        """
+        if self.name:
+            return self.name + Layer.sep + name
+        else:
+            return name
+
     def _get_unique_name(self):
+        """ Get the unique name of this layer.
+
+        Returns:
+            str: unique name of this layer
+        """
         prefix = ''
         if self._parent:
             prefix = self._parent.name
@@ -157,6 +216,21 @@ class Layer(object, metaclass=LayerMeta):
         else:
             self.name = ''
         return self.name
+
+    def _has_layer_param(self, layer, names):
+        """ Determine whether names contains parameter names in the layer
+
+        Args:
+            layer(Layer): the layer instance
+            names(list): the list of parameter names
+
+        Returns:
+            boolean: whether names contains parameter names in that layer
+        """
+        for name in names:
+            if name.startswith(layer.name):
+                return True
+        return False
 
     def __getattr__(self, name):
         if '_layers' in self.__dict__:
@@ -182,6 +256,14 @@ class Layer(object, metaclass=LayerMeta):
             object.__delattr__(self, name)
 
     def register_layers(self, *args):
+        """ Register a list of sublayers.
+
+        Can only be called once in each subclass.
+
+        Args:
+            *args: a list of sublayers or a dictionary that contains
+            the name and the instance of each sublayer
+        """
         if len(args) == 1 and isinstance(args[0], OrderedDict):
             items = args[0].items()
         else:
@@ -226,8 +308,8 @@ class Linear(Layer):
         self.in_features = x.shape[1]
         w_shape = (self.in_features, self.out_features)
         b_shape = (self.out_features,)
-        w_name = self.name + Layer.sep + 'W'
-        b_name = self.name + Layer.sep + 'b'
+        w_name = self.get_param_name('W')
+        b_name = self.get_param_name('b')
 
         self.W = Tensor(shape=w_shape,
                         requires_grad=True,
@@ -322,8 +404,8 @@ class Gemm(Layer):
         else:
             b_shape = (1, self.nb_kernels)
 
-        w_name = self.name + Layer.sep + 'W'
-        b_name = self.name + Layer.sep + 'b'
+        w_name = self.get_param_name('W')
+        b_name = self.get_param_name('b')
 
         self.W = Tensor(shape=w_shape,
                         requires_grad=True,
@@ -499,7 +581,7 @@ class Conv2d(Layer):
             self.kernel_size[0],
             self.kernel_size[1],
         )
-        w_name = self.name + Layer.sep + 'W'
+        w_name = self.get_param_name('W')
 
         self.W = Tensor(shape=w_shape,
                         requires_grad=True,
@@ -516,7 +598,7 @@ class Conv2d(Layer):
 
         if self.bias:
             b_shape = (self.nb_kernels,)
-            b_name = self.name + Layer.sep + 'b'
+            b_name = self.get_param_name('b')
             self.b = Tensor(shape=b_shape,
                             requires_grad=True,
                             stores_grad=True,
@@ -685,10 +767,10 @@ class BatchNorm2d(Layer):
     def initialize(self, x):
         self.channels = x.shape[1]
         param_shape = (self.channels,)
-        scale_name = self.name + Layer.sep + 'scale'
-        bias_name = self.name + Layer.sep + 'bias'
-        running_mean_name = self.name + Layer.sep + 'running_mean'
-        running_var_name = self.name + Layer.sep + 'running_var'
+        scale_name = self.get_param_name('scale')
+        bias_name = self.get_param_name('bias')
+        running_mean_name = self.get_param_name('running_mean')
+        running_var_name = self.get_param_name('running_var')
 
         self.scale = Tensor(shape=param_shape,
                             requires_grad=True,
@@ -1039,7 +1121,7 @@ class RNN(RNN_Base):
         self.bidirectional = bidirectional
 
     def initialize(self, xs, h0):
-        Wx_name = self.name + Layer.sep + 'Wx'
+        Wx_name = self.get_param_name('Wx')
         Wx_shape = (self.input_size, self.hidden_size)
         self.Wx = Tensor(shape=Wx_shape,
                          requires_grad=True,
@@ -1047,7 +1129,7 @@ class RNN(RNN_Base):
                          name=Wx_name)
         self.Wx.gaussian(0.0, 1.0)
 
-        Wh_name = self.name + Layer.sep + 'Wh'
+        Wh_name = self.get_param_name('Wh')
         Wh_shape = (self.hidden_size, self.hidden_size)
         self.Wh = Tensor(shape=Wh_shape,
                          requires_grad=True,
@@ -1055,7 +1137,7 @@ class RNN(RNN_Base):
                          name=Wh_name)
         self.Wh.gaussian(0.0, 1.0)
 
-        b_name = self.name + Layer.sep + 'b'
+        b_name = self.get_param_name('b')
         b_shape = (self.hidden_size,)
         self.b = Tensor(shape=b_shape,
                         requires_grad=True,
@@ -1155,7 +1237,7 @@ class LSTM(RNN_Base):
         # 2. Wx_f forget, Bx_f
         # 3. Wx_o output, Bx_o
         # 4. Wx_g candidate, Bx_g
-        prefix = self.name + Layer.sep
+        prefix = self.get_param_name('')
         Wx_shape = (self.input_size, self.hidden_size)
         self.Wx_i = Tensor(shape=Wx_shape,
                            requires_grad=True,
@@ -1473,7 +1555,7 @@ class CudnnRNN(Layer):
                                            dropout=self.dropout,
                                            bidirectional=self.bidirectional)
 
-        w_name = self.name + Layer.sep + 'W'
+        w_name = self.get_param_name('W')
         self.W = Tensor(shape=(self.handle.weights_size,),
                         requires_grad=True,
                         stores_grad=True,
@@ -1491,16 +1573,16 @@ class CudnnRNN(Layer):
         directions = 2 if self.bidirectional else 1
         if hx == None:
             hx = Tensor(shape=(self.num_layers * directions, batch_size,
-                                           self.hidden_size),
-                                    requires_grad=False,
-                                    stores_grad=False,
-                                    device=x.device).set_value(0.0)
+                               self.hidden_size),
+                        requires_grad=False,
+                        stores_grad=False,
+                        device=x.device).set_value(0.0)
         if cx == None:
             cx = Tensor(shape=(self.num_layers * directions, batch_size,
-                                           self.hidden_size),
-                                    requires_grad=False,
-                                    stores_grad=False,
-                                    device=x.device).set_value(0.0)
+                               self.hidden_size),
+                        requires_grad=False,
+                        stores_grad=False,
+                        device=x.device).set_value(0.0)
 
         # outputs returned is list
         #   inputs has shape of {sequence length, batch size, feature size}

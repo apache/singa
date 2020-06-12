@@ -75,6 +75,7 @@ class MyModel(model.Model):
     def optim(self, loss):
         self.optimizer(loss)
 
+
 # lstm testing
 class LSTMModel2(model.Model):
 
@@ -135,7 +136,7 @@ class TestModelMethods(unittest.TestCase):
             loss = autograd.mse_loss(out, y)
             if i % 50 == 0:
                 print("l:", loss)
-            m.optimizer.backward_and_update(loss)
+            m.optimizer(loss)
 
         # bs changed
         bs = 1
@@ -148,7 +149,7 @@ class TestModelMethods(unittest.TestCase):
         out = m.forward(x2)
         loss = autograd.mse_loss(out, y2)
         print("test l:", loss)
-        m.optimizer.backward_and_update(loss)
+        m.optimizer(loss)
 
     @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
     def test_lstm_model(self, dev=gpu_dev):
@@ -195,14 +196,14 @@ class TestModelMethods(unittest.TestCase):
             loss = autograd.softmax_cross_entropy(y, y_t)
             if i % 100 == 0:
                 print("loss", loss)
-            m.optimizer.backward_and_update(loss)
+            m.optimizer(loss)
 
         m.eval()
         y = m.forward(x)
         loss = autograd.softmax_cross_entropy(y, y_t)
         print("eval loss", loss)
 
-        
+
 class TestModelSaveMethods(unittest.TestCase):
 
     def _save_states_load_states_helper(self, dev, graph_flag="False"):
@@ -213,25 +214,25 @@ class TestModelSaveMethods(unittest.TestCase):
         m.compile([x], is_train=True, use_graph=graph_flag, sequential=False)
 
         states = {
-            "MyModel.conv1.W":
+            "conv1.W":
                 tensor.Tensor((2, 2, 2, 2), device=dev).set_value(0.1),
-            "MyModel.conv1.b":
+            "conv1.b":
                 tensor.Tensor((2,), device=dev).set_value(0.2),
-            "MyModel.bn1.scale":
+            "bn1.scale":
                 tensor.Tensor((2,), device=dev).set_value(0.3),
-            "MyModel.bn1.bias":
+            "bn1.bias":
                 tensor.Tensor((2,), device=dev).set_value(0.4),
-            "MyModel.bn1.running_mean":
+            "bn1.running_mean":
                 tensor.Tensor((2,), device=dev).set_value(0.5),
-            "MyModel.bn1.running_var":
+            "bn1.running_var":
                 tensor.Tensor((2,), device=dev).set_value(0.6),
-            "MyModel.doublelinear1.l1.W":
+            "doublelinear1.l1.W":
                 tensor.Tensor((2, 4), device=dev).set_value(0.7),
-            "MyModel.doublelinear1.l1.b":
+            "doublelinear1.l1.b":
                 tensor.Tensor((4,), device=dev).set_value(0.8),
-            "MyModel.doublelinear1.l2.W":
+            "doublelinear1.l2.W":
                 tensor.Tensor((4, 2), device=dev).set_value(0.9),
-            "MyModel.doublelinear1.l2.b":
+            "doublelinear1.l2.b":
                 tensor.Tensor((2,), device=dev).set_value(1.0)
         }
 
