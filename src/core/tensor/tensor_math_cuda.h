@@ -802,7 +802,16 @@ void Gaussian<float, lang::Cuda>(const float mean, const float std, Tensor* out,
   auto rgen = ctx->curand_generator;
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
   const size_t num = out->Size();
-  CURAND_CHECK(curandGenerateNormal(rgen, outPtr, num, mean, std));
+
+  // CURAND_STATUS_LENGTH_NOT_MULTIPLE
+  if (num % 2 != 0) {
+    Tensor tmp(Shape{num + 1}, out->device());
+    float* outPtr_tmp = static_cast<float*>(tmp.block()->mutable_data());
+    CURAND_CHECK(curandGenerateNormal(rgen, outPtr_tmp, num + 1, mean, std));
+    CopyDataToFrom(out, tmp, num, 0, 0);
+  } else {
+    CURAND_CHECK(curandGenerateNormal(rgen, outPtr, num, mean, std));
+  }
 }
 
 // =========================Blas operations==================================

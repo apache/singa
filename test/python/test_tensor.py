@@ -467,6 +467,13 @@ class TestTensorMethods(unittest.TestCase):
     def test_matmul_transpose_gpu(self):
         self._matmul_transpose_helper(gpu_dev)
 
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_gaussian_gpu(self, dev=gpu_dev):
+        x = tensor.Tensor((3, 5, 3, 5), device=dev)
+        x.gaussian(0, 1)
+        x = tensor.Tensor((4, 5, 3, 2), device=dev)
+        x.gaussian(0, 1)
+
 
 if __name__ == '__main__':
     unittest.main()
