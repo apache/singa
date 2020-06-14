@@ -4698,6 +4698,148 @@ def cossim(a, b):
     return CosSim()(a, b)[0]
 
 
+class Pad(Operator):
+    """
+    Pad operator following ONNX Operator Schemas
+    https://github.com/onnx/onnx/blob/master/docs/Operators.md#Pad
+
+    Example usage::
+        data = 
+        [
+            [1.0, 1.2],
+            [2.3, 3.4],
+            [4.5, 5.7],
+        ] 
+        pads = [0, 2, 0, 0]
+
+        # constant mode
+        mode = 'constant'
+        constant_value = 0.0
+        output = 
+        [
+            [
+                [0.0, 0.0, 1.0, 1.2],
+                [0.0, 0.0, 2.3, 3.4],
+                [0.0, 0.0, 4.5, 5.7],
+            ],
+        ]
+
+        # reflect mode
+        mode = 'reflect'
+        output = 
+        [
+            [
+                [1.0, 1.2, 1.0, 1.2],
+                [2.3, 3.4, 2.3, 3.4],
+                [4.5, 5.7, 4.5, 5.7],
+            ],
+        ]
+
+        # edge mode
+        mode = 'edge'
+        output = 
+        [
+            [
+                [1.0, 1.0, 1.0, 1.2],
+                [2.3, 2.3, 2.3, 3.4],
+                [4.5, 4.5, 4.5, 5.7],
+            ],
+        ]
+    """
+
+    def __init__(self, mode, pads, constant=0.):
+        """
+        Args:
+            mode (string): Supported modes: `constant`(default), `reflect`, `edge`.
+            pads (list[int]): list of integers indicating the number of padding elements 
+                to add at the beginning each axis.
+            constant (float): A scalar value to be used if the mode chosen is 
+                `constant`
+        """
+        super(Pad, self).__init__()
+        self.mode = mode
+        if self.mode not in ("constant", "reflect", "edge"):
+            assert False, ('Only support three modes: constant, reflect, edge')
+        self.constant = constant
+        self.pads = pads
+        self.pad_width = ()
+
+    def forward(self, x):
+        if not self.pad_width:
+            half_width = len(self.pads) // 2
+            for i in range(half_width):
+                self.pad_width += ((self.pads[i], self.pads[i + half_width])),
+
+        for axis, pads in zip(range(len(x.shape())), self.pad_width):
+            for pad, is_left in zip(pads, (True, False)):
+                if pad == 0:
+                    continue
+                pad_shape = list(x.shape())
+                if self.mode == "constant":
+                    pad_shape[axis] = pad
+                    padding = singa.Tensor(list(pad_shape), x.device())
+                    padding.SetFloatValue(self.constant)
+                    if is_left:
+                        x = singa.ConcatOn(singa.VecTensor([padding, x]), axis)
+                    else:
+                        x = singa.ConcatOn(singa.VecTensor([x, padding]), axis)
+                elif self.mode == "reflect":
+                    axis_shape = pad_shape[axis]
+                    if is_left:
+                        padding = singa.SliceOn(x, 0, pad, axis)
+                        x = singa.ConcatOn(singa.VecTensor([padding, x]), axis)
+                    else:
+                        padding = singa.SliceOn(x, axis_shape - pad, axis_shape,
+                                                axis)
+                        x = singa.ConcatOn(singa.VecTensor([x, padding]), axis)
+                elif self.mode == "edge":
+                    axis_shape = pad_shape[axis]
+                    if is_left:
+                        padding = []
+                        for _ in range(pad):
+                            padding.append(singa.SliceOn(x, 0, 1, axis))
+                        padding.append(x)
+                        padding = singa.VecTensor(padding)
+                        x = singa.ConcatOn(padding, axis)
+                    else:
+                        padding = [x]
+                        for _ in range(pad):
+                            padding.append(
+                                singa.SliceOn(x, axis_shape - 1, axis_shape,
+                                              axis))
+                        padding = singa.VecTensor(padding)
+                        x = singa.ConcatOn(padding, axis)
+        return x
+
+    def backward(self, dy):
+        for axis, pads in zip(range(len(dy.shape())), self.pad_width):
+            for pad, is_left in zip(pads, (True, False)):
+                if pad == 0:
+                    continue
+                axis_shape = list(dy.shape())[axis]
+                if is_left:
+                    dy = singa.SliceOn(dy, pad, axis_shape, axis)
+                else:
+                    dy = singa.SliceOn(dy, 0, axis_shape - pad, axis)
+        return dy
+
+
+def pad(x, mode, pads, constant=0.):
+    """
+    Produces a pad operator
+    Args:
+        x (Tensor): input tensor.
+        mode (string): Supported modes: `constant`(default), `reflect`, `edge`.
+        pads (list[int]): list of integers indicating the number of padding elements 
+            to add at the beginning each axis.
+        constant (float): A scalar value to be used if the mode chosen is 
+            `constant`
+    Returns:
+        the output Tensor.
+    """
+    return Pad(mode, pads, constant)(x)[0]
+
+
 ''' alias for Operator and Layers
 '''
 Operation = Operator
