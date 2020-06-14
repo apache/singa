@@ -58,7 +58,7 @@ TEST(CppCPU, CopyData) {
   EXPECT_EQ('x', bstr[3]);
 
   Block* c = dev.NewBlock(4);
-  dev.CopyDataToFrom(c, b, 4, singa::kHostToHost, 0, 0);
+  dev.CopyDataToFrom(c, b, 4, singa::kHostToHost, 0, 0, dev.context(0));
   const char* cstr = static_cast<const char*>(c->data());
 
   EXPECT_EQ('a', cstr[0]);

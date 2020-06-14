@@ -248,7 +248,8 @@ vector<Tensor> GpuRNNForwardInference(const Tensor &x, const Tensor &hx,
         delete[] yDesc;
       },
       {x.block(), hx.block(), cx.block(), W.block()},
-      {y.block(), hy.block(), cy.block(), h.workspace.block()});
+      {y.block(), hy.block(), cy.block(), h.workspace.block()},
+      "cudnnRNNForwardInterface");
   return {y, hy, cy};
 }
 
@@ -303,7 +304,8 @@ vector<Tensor> GpuRNNForwardTraining(const Tensor &x, const Tensor &hx,
       },
       {x.block(), hx.block(), cx.block(), W.block()},
       {y.block(), hy.block(), cy.block(), h.workspace.block(),
-       h.reserve_space.block()});
+       h.reserve_space.block()},
+      "cudnnRNNForwardTraining");
 
   return {y, hy, cy};
 }
@@ -371,7 +373,8 @@ vector<Tensor> GpuRNNBackwardx(const Tensor &y, const Tensor &dy,
       {y.block(), dy.block(), dhy.block(), dcy.block(), hx.block(), cx.block(),
        W.block()},
       {dx.block(), dhx.block(), dcx.block(), h.workspace.block(),
-       h.reserve_space.block()});
+       h.reserve_space.block()},
+      "cudnnRNNBackwardx");
   return {dx, dhx, dcx};
 }
 
@@ -402,7 +405,8 @@ Tensor GpuRNNBackwardW(const Tensor &x, const Tensor &hx, const Tensor &y,
         delete[] yDesc;
       },
       {x.block(), y.block(), hx.block()},
-      {dW.block(), h.workspace.block(), h.reserve_space.block()});
+      {dW.block(), h.workspace.block(), h.reserve_space.block()},
+      "cudnnRnnBackwardW");
   return dW;
 }
 

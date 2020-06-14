@@ -210,8 +210,16 @@ void Tensor::CopyDataFromHostPtr(const DType *src, const size_t num,
       << "data_type is " << DataType_Name(data_type_)
       << " user given type is of size " << sizeof(DType);
   if (src != nullptr) {
-    device_->CopyDataFromHostPtr(block(), src, sizeof(DType) * num,
-                                 sizeof(DType) * offset);
+    Device *dev = device_.get();
+    const Tensor &thisRef = *this;
+    size_t nBytes = sizeof(DType) * num;
+    size_t dst_offset = sizeof(DType) * offset;
+    device_->Exec(
+        [dev, thisRef, src, nBytes, dst_offset](Context *ctx) mutable {
+          dev->CopyDataFromHostPtr(thisRef.block(), src, nBytes, dst_offset,
+                                   ctx);
+        },
+        {}, {block()}, "CopyDataFromHostPtr");
   } else {
     LOG(WARNING) << "Copy data from null host ptr";
   }
@@ -552,24 +560,34 @@ void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
   CHECK_GE(src.MemSize(), s_offset + nBytes);
   CHECK_GE(dst->MemSize(), d_offset + nBytes);
 
+  Device *dev = nullptr;
+  CopyDirection direct;
   std::shared_ptr<Device> src_dev = src.device(), dst_dev = dst->device();
-  Block *from = src.block(), *to = dst->block();
   if (dst_dev->lang() != src_dev->lang()) {
     // let the none cpp device conduct copy op
     if (dst_dev->lang() == kCpp) {
-      src_dev->CopyDataToFrom(to, from, nBytes, kDeviceToHost, (int)d_offset,
-                              (int)s_offset);
+      dev = src_dev.get();
+      direct = kDeviceToHost;
     } else if (src_dev->lang() == kCpp) {
-      dst_dev->CopyDataToFrom(to, from, nBytes, kHostToDevice, (int)d_offset,
-                              (int)s_offset);
+      dev = dst_dev.get();
+      direct = kHostToDevice;
     } else {
-      LOG(FATAL) << "Not support mem copy betwee Cuda and OpenCL device";
+      LOG(FATAL) << "Not support mem copy between Cuda and OpenCL device";
     }
   } else {
-    auto direct = src_dev->lang() == kCpp ? kHostToHost : kDeviceToDevice;
-    src_dev->CopyDataToFrom(to, from, nBytes, direct, (int)d_offset,
-                            (int)s_offset);
+    dev = src_dev.get();
+    direct = src_dev->lang() == kCpp ? kHostToHost : kDeviceToDevice;
   }
+
+  Tensor &dstRef = *dst;
+  dev->Exec(
+      [dev, dstRef, src, nBytes, direct, d_offset,
+       s_offset](Context *ctx) mutable {
+        Block *from = src.block(), *to = dstRef.block();
+        dev->CopyDataToFrom(to, from, nBytes, direct, (int)d_offset,
+                            (int)s_offset, ctx);
+      },
+      {src.block()}, {dst->block()}, "CopyDataToFrom");
 }
 
 void RepeatDataToFrom(bool broadcast_flag, const vector<size_t> &repeats,
@@ -603,31 +621,42 @@ void RepeatDataToFrom(bool broadcast_flag, const vector<size_t> &repeats,
       chunk *= src.shape()[i];
     }
   }
+
+  Device *dev = nullptr;
+  CopyDirection direct;
+  std::shared_ptr<Device> src_dev = src.device(), dst_dev = dst->device();
+  if (dst_dev->lang() != src_dev->lang()) {
+    // let the none cpp device conduct copy op
+    if (dst_dev->lang() == kCpp) {
+      dev = src_dev.get();
+      direct = kDeviceToHost;
+    } else if (src_dev->lang() == kCpp) {
+      dev = dst_dev.get();
+      direct = kHostToDevice;
+    } else {
+      LOG(FATAL)
+          << "Not support mem repeat copy between Cuda and OpenCL device";
+    }
+  } else {
+    dev = src_dev.get();
+    direct = src_dev->lang() == kCpp ? kHostToHost : kDeviceToDevice;
+  }
+
   int dst_offset = 0;
   int src_offset = 0;
-  std::shared_ptr<Device> src_dev = src.device(), dst_dev = dst->device();
-  Block *from = src.block(), *to = dst->block();
+  Tensor &dstRef = *dst;
   for (int i = 0; i < shape_outer; i++) {
     for (int j = 0; j < axis_shape; j++) {
       int temp = broadcast_flag ? repeats[0] : repeats[j];
       for (int k = 0; k < temp; k++) {
-        if (dst_dev->lang() != src_dev->lang()) {
-          // let the none cpp device conduct copy op
-          if (dst_dev->lang() == kCpp) {
-            src_dev->CopyDataToFrom(to, from, chunk, kDeviceToHost, dst_offset,
-                                    src_offset);
-          } else if (src_dev->lang() == kCpp) {
-            dst_dev->CopyDataToFrom(to, from, chunk, kHostToDevice, dst_offset,
-                                    src_offset);
-          } else {
-            LOG(FATAL)
-                << "Not support mem repeat copy betwee Cuda and OpenCL device";
-          }
-        } else {
-          auto direct = src_dev->lang() == kCpp ? kHostToHost : kDeviceToDevice;
-          src_dev->CopyDataToFrom(to, from, chunk, direct, dst_offset,
-                                  src_offset);
-        }
+        dev->Exec(
+            [dev, dstRef, src, chunk, direct, dst_offset,
+             src_offset](Context *ctx) mutable {
+              Block *from = src.block(), *to = dstRef.block();
+              dev->CopyDataToFrom(to, from, chunk, direct, dst_offset,
+                                  src_offset, ctx);
+            },
+            {src.block()}, {dst->block()}, "CopyDataToFrom");
         dst_offset += chunk;
       }
       src_offset += chunk;
