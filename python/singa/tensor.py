@@ -212,6 +212,11 @@ class Tensor(object):
         '''
         return self.data.MemSize()
 
+    def contiguous(self):
+        t = Tensor(self.shape, self.device, self.dtype)
+        t.data = singa.Contiguous(self.data)
+        return t
+
     def reshape(self, shape):
         '''Return a new tensor with the given shape, and the original
             tensor is not changed.
@@ -770,6 +775,10 @@ def sizeof(dtype):
         the number of bytes of the given SINGA data type defined in core.proto
     '''
     return singa.SizeOf(dtype)
+
+
+def contiguous(tensor):
+    return _call_singa_func(singa.Contiguous, tensor.data)
 
 
 def reshape(tensor, shape):

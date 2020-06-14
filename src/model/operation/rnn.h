@@ -49,18 +49,21 @@ class CudnnRNNHandle {
   int mode;
   float dropout;
   int bidirectional;
-  // dont change
   size_t feature_size;
   size_t hidden_size;
+  size_t num_layers;
+  int batch_first;
+
+  size_t weights_size_bytes;
   size_t weights_size;
-  int num_layers;
-  // vary
-  size_t batch_size;  // remove
+  size_t batch_size;
   size_t seq_length;
 
   /* workspace data */
   size_t workspace_size;
+  size_t workspace_size_bytes;
   size_t reserve_size;
+  size_t reserve_size_bytes;
   Tensor workspace;
   Tensor reserve_space;
 
@@ -81,9 +84,6 @@ class CudnnRNNHandle {
   void init_rnn_desc();
   void init_parameters_desc(cudnnTensorDescriptor_t *xDesc);
   void init_workspace(cudnnTensorDescriptor_t *xDesc);
-  Tensor merge_inputs(size_t num, const vector<Tensor> &in);
-  vector<Tensor> split_output(size_t num, size_t dim, const vector<Tensor> &in,
-                              const Tensor output);
   Tensor get_weight(size_t pseudo_layer, const Tensor &w, size_t lin_layer_id);
 };
 
@@ -103,6 +103,22 @@ vector<Tensor> GpuRNNBackwardx(const Tensor &y, const Tensor &dy,
                                const Tensor &cx, CudnnRNNHandle &h);
 Tensor GpuRNNBackwardW(const Tensor &x, const Tensor &hx, const Tensor &y,
                        CudnnRNNHandle &h);
+
+vector<Tensor> GpuRNNForwardTrainingEx(const Tensor &x, const Tensor &hx,
+                                       const Tensor &cx, const Tensor &W,
+                                       const Tensor &seq_lengths,
+                                       CudnnRNNHandle &h);
+vector<Tensor> GpuRNNForwardInferenceEx(const Tensor &x, const Tensor &hx,
+                                        const Tensor &cx, const Tensor &W,
+                                        const Tensor &seq_lengths,
+                                        CudnnRNNHandle &h);
+vector<Tensor> GpuRNNBackwardxEx(const Tensor &y, const Tensor &dy,
+                                 const Tensor &dhy, const Tensor &dcy,
+                                 const Tensor &W, const Tensor &hx,
+                                 const Tensor &cx, const Tensor &seq_lengths,
+                                 CudnnRNNHandle &h);
+Tensor GpuRNNBackwardWEx(const Tensor &x, const Tensor &hx, const Tensor &y,
+                         const Tensor &seq_lengths, CudnnRNNHandle &h);
 
 #endif  // USE_CUDNN
 

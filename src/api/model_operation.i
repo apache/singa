@@ -218,6 +218,11 @@ std::vector<Tensor> GpuRNNForwardInference(const Tensor &x, const Tensor &hx, co
 std::vector<Tensor> GpuRNNBackwardx(const Tensor &y, const Tensor &dy, const Tensor &dhy, const Tensor &dcy, const Tensor &W, const Tensor &hx, const Tensor &cx, CudnnRNNHandle &h);
 Tensor GpuRNNBackwardW(const Tensor &x, const Tensor &hx, const Tensor &y, CudnnRNNHandle &h);
 
+std::vector<Tensor> GpuRNNForwardTrainingEx(const Tensor &x, const Tensor &hx, const Tensor &cx, const Tensor &W, const Tensor &seq_lengths, CudnnRNNHandle &h);
+std::vector<Tensor> GpuRNNForwardInferenceEx(const Tensor &x, const Tensor &hx, const Tensor &cx, const Tensor &W, const Tensor &seq_lengths, CudnnRNNHandle &h);
+std::vector<Tensor> GpuRNNBackwardxEx(const Tensor &y, const Tensor &dy, const Tensor &dhy, const Tensor &dcy, const Tensor &W, const Tensor &hx, const Tensor &cx, const Tensor &seq_lengths, CudnnRNNHandle &h);
+Tensor GpuRNNBackwardWEx(const Tensor &x, const Tensor &hx, const Tensor &y, const Tensor &seq_lengths, CudnnRNNHandle &h);
+
 
 #endif  // USE_CUDNN
 

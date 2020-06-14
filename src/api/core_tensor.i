@@ -165,6 +165,7 @@ namespace singa{
                         Tensor *dst, const Tensor &src, const size_t num);
 
   Tensor Reshape(const Tensor &in, const std::vector<size_t> &s);
+  Tensor Contiguous(const Tensor &in);
   Tensor Transpose(const Tensor &in, const std::vector<size_t> &axes);
 
   %rename(DefaultTranspose) Transpose(const Tensor &in);
