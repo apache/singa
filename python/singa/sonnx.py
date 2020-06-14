@@ -1110,6 +1110,7 @@ class SingaBackend(Backend):
         'Reshape': 'Reshape',
         'Slice': 'Slice',
         'Clip': 'Clip',
+        'Pad': 'Pad',
         'Gemm': 'layer.Gemm',  # layer
         'BatchNormalization': 'layer.BatchNorm2d',  # layer
         'Conv': 'layer.Conv2d',  # layer
@@ -1148,7 +1149,25 @@ class SingaBackend(Backend):
         'Conv': '_create_conv',
         'MaxPool': '_create_max_avg_pool',
         'AveragePool': '_create_max_avg_pool',
+        'Pad': '_create_pad',
     }
+
+    @classmethod
+    def _create_pad(cls, onnx_node, operator, opset_version=_opset_version):
+        """
+        get the Pad operator from onnx node
+        Args:
+            onnx_node (OnnxNode): a given onnx node
+            operator (Operator Class): a singa operator class
+            opset_version (int): the opset version
+        Returns: 
+            singa operator instance
+        """
+        mode = onnx_node.getattr("mode", "constant")
+        onnx_node.set_attr_inputs(onnx_node.inputs[1], 'pads')
+        if len(onnx_node.inputs) == 3:
+            onnx_node.set_attr_inputs(onnx_node.inputs[2], 'constant')
+        return operator(mode, None, None)
 
     @classmethod
     def _create_cast(cls, onnx_node, operator, opset_version=_opset_version):
