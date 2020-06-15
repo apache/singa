@@ -25,6 +25,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "singa/core/common.h"
@@ -46,6 +47,7 @@ class BlkInfo;
 typedef std::vector<Node *> NodeVec;
 typedef std::vector<Edge *> EdgeVec;
 typedef std::vector<Block *> BlockVec;
+typedef std::unordered_set<Block *> BlockSet;
 typedef std::function<void(Context *)> OpFunc;
 typedef std::unordered_map<Block *, BlkInfo *> Blk2InfoMap;
 
@@ -160,7 +162,7 @@ class Graph {
   const EdgeVec &edges() const { return edges_; }
   const Blk2InfoMap &blocks() const { return blocks_; }
 
-  const BlockVec &write_blocks() const { return write_blocks_; }
+  const BlockSet &leaf_blocks() const { return leaf_blocks_; }
 
   bool dirty() const { return dirty_; }
   const NodeVec &begin_nodes() const { return begin_nodes_; }
@@ -171,8 +173,6 @@ class Graph {
   Node *node(const size_t idx) const;
   Edge *edge(const size_t idx) const;
   BlkInfo *block(Block *blk) const;
-
-  Block *write_block(const size_t idx) const;
 
   Node *begin_node(const size_t idx) const;
   const NodeVec &next_nodes(const size_t idx) const;
@@ -203,10 +203,10 @@ class Graph {
   EdgeVec edges_;
   Blk2InfoMap blocks_;
 
-  // Blocks written by the last operation, used for sync op
-  BlockVec write_blocks_;
+  // Leaf blocks written by the previous operations, used for sync op
+  BlockSet leaf_blocks_;
 
-  // Calculation graph analysis
+  // Computational graph analysis
   bool dirty_ = false;
   bool in_serial_ = false;
   NodeVec begin_nodes_;
@@ -217,7 +217,6 @@ class Graph {
   std::chrono::high_resolution_clock::time_point t_start_;
 
   SafeQueue<int> free_queue_;
-
 };
 
 /// Scheduling Tensor operations with dependency detection.
