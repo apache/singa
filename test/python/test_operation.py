@@ -2575,7 +2575,6 @@ class TestPythonOperation(unittest.TestCase):
         dy = tensor.from_numpy(DY)
         dy.to_device(dev)
 
-        
         result = autograd.globalaveragepool(x)
         dx = result.creator.backward(dy.data)
 
@@ -3077,6 +3076,36 @@ class TestPythonOperation(unittest.TestCase):
     @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_cossim_gpu(self):
         self.cossim_helper(gpu_dev)
+
+    def upsample_helper(self, dev):
+        X = np.array([[[
+            [1, 2],
+            [3, 4],
+        ]]], dtype=np.float32)
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        scales = np.array([1.0, 1.0, 2.0, 3.0], dtype=np.float32)
+        y_t = np.array([[[
+            [1, 1, 1, 2, 2, 2],
+            [1, 1, 1, 2, 2, 2],
+            [3, 3, 3, 4, 4, 4],
+            [3, 3, 3, 4, 4, 4],
+        ]]],dtype=np.float32)
+        dy = tensor.from_numpy(y_t)
+        dy.to_device(dev)
+
+        y = autograd.upsample(x, "nearest", scales)
+        dx = y.creator.backward(dy.data)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), y_t)
+        self.check_shape(dx.shape(), tuple(X.shape))
+
+    def test_upsample_cpu(self):
+        self.upsample_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_upsample_gpu(self):
+        self.upsample_helper(gpu_dev)
 
 
 if __name__ == '__main__':
