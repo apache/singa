@@ -2025,11 +2025,11 @@ class SingaRep(BackendRep):
             for key, name in node.attr_inputs.items():
                 if key in tensor_dict:
                     ts = tensor_dict[key]
-                    if isinstance(ts, tensor.Tensor):
-                        ts = tensor.to_numpy(ts)
-                    states[name] = ts
                 elif key in self.states:
-                    states[name] = self.states[key]
+                    ts = self.states[key]
+                if isinstance(ts, tensor.Tensor):
+                    ts = tensor.to_numpy(ts)
+                states[name] = ts
             # set states
             if states:
                 if callable(getattr(op, "set_states", None)):
