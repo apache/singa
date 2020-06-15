@@ -1110,6 +1110,7 @@ class SingaBackend(Backend):
         'Reshape': 'Reshape',
         'Slice': 'Slice',
         'Clip': 'Clip',
+        'Upsample': 'UpSample',
         'Gemm': 'layer.Gemm',  # layer
         'BatchNormalization': 'layer.BatchNorm2d',  # layer
         'Conv': 'layer.Conv2d',  # layer
@@ -1148,7 +1149,23 @@ class SingaBackend(Backend):
         'Conv': '_create_conv',
         'MaxPool': '_create_max_avg_pool',
         'AveragePool': '_create_max_avg_pool',
+        'Upsample': '_create_upsample',
     }
+
+    @classmethod
+    def _create_upsample(cls, onnx_node, operator, opset_version=_opset_version):
+        """
+        get the UpSample operator from onnx node
+        Args:
+            onnx_node (OnnxNode): a given onnx node
+            operator (Operator Class): a singa operator class
+            opset_version (int): the opset version
+        Returns: 
+            singa operator instance
+        """
+        mode = utils.force_unicode(onnx_node.getattr("mode", None))
+        onnx_node.set_attr_inputs(onnx_node.inputs[1], 'scales')
+        return operator(mode, None)
 
     @classmethod
     def _create_cast(cls, onnx_node, operator, opset_version=_opset_version):
