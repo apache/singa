@@ -106,17 +106,13 @@ def create_cuda_gpus(num):
     return singa.Platform.CreateCudaGPUs(num)
 
 
-def create_cuda_gpu(set_default=False):
+def create_cuda_gpu():
     '''Create a single CudaGPU device.
 
     Returns:
         a swig converted CudaGPU device.
     '''
-    assert singa.USE_CUDA, 'SINGA has not been compiled with CUDA enabled.'
-    devices = singa.Platform.CreateCudaGPUs(1)
-    if set_default:
-        set_default_device(devices[0])
-    return devices[0]
+    return create_cuda_gpu_on(0)
 
 
 def create_cuda_gpus_on(device_ids):
@@ -132,7 +128,7 @@ def create_cuda_gpus_on(device_ids):
     return singa.Platform.CreateCudaGPUsOn(device_ids)
 
 
-def create_cuda_gpu_on(device_id, set_default=False):
+def create_cuda_gpu_on(device_id):
     '''Create a CudaGPU device on the given device ID.
 
     Args:
@@ -143,8 +139,6 @@ def create_cuda_gpu_on(device_id, set_default=False):
     '''
     assert singa.USE_CUDA, 'SINGA has not been compiled with CUDA enabled.'
     devices = create_cuda_gpus_on([device_id])
-    if set_default:
-        set_default_device(devices[0])
     return devices[0]
 
 
@@ -158,17 +152,12 @@ def create_opencl_device():
     return singa.Platform.GetDefaultOpenclDevice()
 
 
-Device.default_device = singa.Platform.GetDefaultDevice()
+default_device = singa.Platform.GetDefaultDevice()
 
 
 def get_default_device():
     '''Get the default host device which is a CppCPU device'''
-    return Device.default_device
-
-
-def set_default_device(device):
-    '''Set the Device class static variable default_device'''
-    Device.default_device = device
+    return default_device
 
 
 def enbale_lazy_alloc(enable):
