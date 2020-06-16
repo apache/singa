@@ -43,7 +43,6 @@ class LayerMeta(type):
                     'initialize function expects PlaceHolders or Tensors')
                 dev = args[0].device
 
-            self._get_unique_name()
             prev_state = dev.graph_enabled()
             dev.EnableGraph(False)
             func(self, *args, **kwargs)
@@ -77,7 +76,7 @@ class Layer(object, metaclass=LayerMeta):
     sep = '.'
 
     def __init__(self):
-        self.name = self.__class__.__name__
+        self.name = None
         self._initialized = False
         self._parent = None
         self._layers = dict()
@@ -188,35 +187,6 @@ class Layer(object, metaclass=LayerMeta):
                 var.to_device(x_device)
         x_device.EnableGraph(prev_state)
 
-    def get_param_name(self, name):
-        """ Get the unique name of parameter based the local name.
-
-        Args:
-            name(str): the local name of the parameter
-        Returns:
-            str: unique name of the parameter
-        """
-        if self.name:
-            return self.name + Layer.sep + name
-        else:
-            return name
-
-    def _get_unique_name(self):
-        """ Get the unique name of this layer.
-
-        Returns:
-            str: unique name of this layer
-        """
-        prefix = ''
-        if self._parent:
-            prefix = self._parent.name
-            if prefix:
-                prefix += Layer.sep
-            self.name = prefix + self.name
-        else:
-            self.name = ''
-        return self.name
-
     def _has_layer_param(self, layer, names):
         """ Determine whether names contains parameter names in the layer
 
@@ -232,6 +202,17 @@ class Layer(object, metaclass=LayerMeta):
                 return True
         return False
 
+    def _get_name_prefix(self):
+        """ Get the name prefix
+
+        Returns:
+            prefix(str): the layer or param name prefix
+        """
+        if self.name and self._parent:
+            return self.name + Layer.sep
+        else:
+            return ''
+
     def __getattr__(self, name):
         if '_layers' in self.__dict__:
             layers = self.__dict__['_layers']
@@ -245,14 +226,18 @@ class Layer(object, metaclass=LayerMeta):
             # TODO: remove the attr from dict first
             self.__dict__['_layers'][name] = value
             value.__dict__['_parent'] = self
-            value.__dict__['name'] = name
+            value.name = self._get_name_prefix() + name
         else:
-            # Tensor name will be overwritten
-            # WARN: If tensors are initialized in __init__ function
-            #       their names may be incorrect
-            if isinstance(value, Tensor):
-                value.name = self.get_param_name(name)
             object.__setattr__(self, name, value)
+            if isinstance(value, Tensor) and value.is_dummy():
+                # WARN: If tensors are initialized in __init__ function
+                #       their names may be incorrect and should be reset
+                value.name = self._get_name_prefix() + name
+            elif name == 'name' and value:
+                # WARN: can't reset the name after the initialization
+                # update sublayer name
+                for name, sublayer in self._layers.items():
+                    sublayer.name = self._get_name_prefix() + name
 
     def __delattr__(self, name):
         if name in self._layers:
@@ -588,7 +573,6 @@ class Conv2d(Layer):
 
         if self.bias:
             b_shape = (self.nb_kernels,)
-            b_name = self.get_param_name('b')
             self.b = Tensor(shape=b_shape,
                             requires_grad=True,
                             stores_grad=True,
@@ -1110,7 +1094,6 @@ class RNN(RNN_Base):
         self.Wh = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
         self.Wh.gaussian(0.0, 1.0)
 
-        b_name = self.get_param_name('b')
         b_shape = (self.hidden_size,)
         self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
         self.b.set_value(0.0)
