@@ -247,6 +247,11 @@ class Layer(object, metaclass=LayerMeta):
             value.__dict__['_parent'] = self
             value.__dict__['name'] = name
         else:
+            # Tensor name will be overwritten
+            # WARN: If tensors are initialized in __init__ function
+            #       their names may be incorrect
+            if isinstance(value, Tensor):
+                value.name = self.get_param_name(name)
             object.__setattr__(self, name, value)
 
     def __delattr__(self, name):
@@ -308,21 +313,13 @@ class Linear(Layer):
         self.in_features = x.shape[1]
         w_shape = (self.in_features, self.out_features)
         b_shape = (self.out_features,)
-        w_name = self.get_param_name('W')
-        b_name = self.get_param_name('b')
 
-        self.W = Tensor(shape=w_shape,
-                        requires_grad=True,
-                        stores_grad=True,
-                        name=w_name)
+        self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
         std = math.sqrt(2.0 / (self.in_features + self.out_features))
         self.W.gaussian(0.0, std)
 
         if self.bias:
-            self.b = Tensor(shape=b_shape,
-                            requires_grad=True,
-                            stores_grad=True,
-                            name=b_name)
+            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
             self.b.set_value(0.0)
         else:
             self.b = None
@@ -404,14 +401,10 @@ class Gemm(Layer):
         else:
             b_shape = (1, self.nb_kernels)
 
-        w_name = self.get_param_name('W')
-        b_name = self.get_param_name('b')
-
         self.W = Tensor(shape=w_shape,
                         requires_grad=True,
                         stores_grad=True,
-                        device=x.device,
-                        name=w_name)
+                        device=x.device)
         std = math.sqrt(2.0 / (self.in_features + self.nb_kernels))
         self.W.gaussian(0.0, std)
 
@@ -419,8 +412,7 @@ class Gemm(Layer):
             self.b = Tensor(shape=b_shape,
                             requires_grad=True,
                             stores_grad=True,
-                            device=x.device,
-                            name=b_name)
+                            device=x.device)
             self.b.set_value(0.0)
         else:
             self.b = None
@@ -581,12 +573,10 @@ class Conv2d(Layer):
             self.kernel_size[0],
             self.kernel_size[1],
         )
-        w_name = self.get_param_name('W')
 
         self.W = Tensor(shape=w_shape,
                         requires_grad=True,
                         stores_grad=True,
-                        name=w_name,
                         device=x.device)
         # std = math.sqrt(
         # 2.0 / (self.in_channels * self.kernel_size[0] * self.kernel_size[1] +
@@ -602,7 +592,6 @@ class Conv2d(Layer):
             self.b = Tensor(shape=b_shape,
                             requires_grad=True,
                             stores_grad=True,
-                            name=b_name,
                             device=x.device)
             self.b.set_value(0.0)
         else:
@@ -767,33 +756,25 @@ class BatchNorm2d(Layer):
     def initialize(self, x):
         self.channels = x.shape[1]
         param_shape = (self.channels,)
-        scale_name = self.get_param_name('scale')
-        bias_name = self.get_param_name('bias')
-        running_mean_name = self.get_param_name('running_mean')
-        running_var_name = self.get_param_name('running_var')
 
         self.scale = Tensor(shape=param_shape,
                             requires_grad=True,
-                            stores_grad=True,
-                            name=scale_name)
+                            stores_grad=True)
         self.scale.set_value(1.0)
 
         self.bias = Tensor(shape=param_shape,
                            requires_grad=True,
-                           stores_grad=True,
-                           name=bias_name)
+                           stores_grad=True)
         self.bias.set_value(0.0)
 
         self.running_mean = Tensor(shape=param_shape,
                                    requires_grad=False,
-                                   stores_grad=False,
-                                   name=running_mean_name)
+                                   stores_grad=False)
         self.running_mean.set_value(0.0)
 
         self.running_var = Tensor(shape=param_shape,
                                   requires_grad=False,
-                                  stores_grad=False,
-                                  name=running_var_name)
+                                  stores_grad=False)
         self.running_var.set_value(1.0)
 
         if not hasattr(self, "handle"):
@@ -1121,28 +1102,17 @@ class RNN(RNN_Base):
         self.bidirectional = bidirectional
 
     def initialize(self, xs, h0):
-        Wx_name = self.get_param_name('Wx')
         Wx_shape = (self.input_size, self.hidden_size)
-        self.Wx = Tensor(shape=Wx_shape,
-                         requires_grad=True,
-                         stores_grad=True,
-                         name=Wx_name)
+        self.Wx = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
         self.Wx.gaussian(0.0, 1.0)
 
-        Wh_name = self.get_param_name('Wh')
         Wh_shape = (self.hidden_size, self.hidden_size)
-        self.Wh = Tensor(shape=Wh_shape,
-                         requires_grad=True,
-                         stores_grad=True,
-                         name=Wh_name)
+        self.Wh = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
         self.Wh.gaussian(0.0, 1.0)
 
         b_name = self.get_param_name('b')
         b_shape = (self.hidden_size,)
-        self.b = Tensor(shape=b_shape,
-                        requires_grad=True,
-                        stores_grad=True,
-                        name=b_name)
+        self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
         self.b.set_value(0.0)
 
     def forward(self, xs, h0):
@@ -1237,42 +1207,17 @@ class LSTM(RNN_Base):
         # 2. Wx_f forget, Bx_f
         # 3. Wx_o output, Bx_o
         # 4. Wx_g candidate, Bx_g
-        prefix = self.get_param_name('')
         Wx_shape = (self.input_size, self.hidden_size)
-        self.Wx_i = Tensor(shape=Wx_shape,
-                           requires_grad=True,
-                           stores_grad=True,
-                           name=prefix + 'Wx_i')
-        self.Wx_f = Tensor(shape=Wx_shape,
-                           requires_grad=True,
-                           stores_grad=True,
-                           name=prefix + 'Wx_f')
-        self.Wx_o = Tensor(shape=Wx_shape,
-                           requires_grad=True,
-                           stores_grad=True,
-                           name=prefix + 'Wx_o')
-        self.Wx_g = Tensor(shape=Wx_shape,
-                           requires_grad=True,
-                           stores_grad=True,
-                           name=prefix + 'Wx_g')
+        self.Wx_i = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
+        self.Wx_f = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
+        self.Wx_o = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
+        self.Wx_g = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
 
         Wh_shape = (self.hidden_size, self.hidden_size)
-        self.Wh_i = Tensor(shape=Wh_shape,
-                           requires_grad=True,
-                           stores_grad=True,
-                           name=prefix + 'Wh_i')
-        self.Wh_f = Tensor(shape=Wh_shape,
-                           requires_grad=True,
-                           stores_grad=True,
-                           name=prefix + 'Wh_f')
-        self.Wh_o = Tensor(shape=Wh_shape,
-                           requires_grad=True,
-                           stores_grad=True,
-                           name=prefix + 'Wh_o')
-        self.Wh_g = Tensor(shape=Wh_shape,
-                           requires_grad=True,
-                           stores_grad=True,
-                           name=prefix + 'Wh_g')
+        self.Wh_i = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
+        self.Wh_f = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
+        self.Wh_o = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
+        self.Wh_g = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
         [
             w.gaussian(0.0, 0.01) for w in [
                 self.Wx_i, self.Wx_f, self.Wx_o, self.Wx_g, self.Wh_i,
@@ -1281,38 +1226,14 @@ class LSTM(RNN_Base):
         ]
 
         Bx_shape = (self.hidden_size,)
-        self.Bx_i = Tensor(shape=Bx_shape,
-                           requires_grad=True,
-                           stores_grad=True,
-                           name=prefix + 'Bx_i')
-        self.Bx_f = Tensor(shape=Bx_shape,
-                           requires_grad=True,
-                           stores_grad=True,
-                           name=prefix + 'Bx_f')
-        self.Bx_o = Tensor(shape=Bx_shape,
-                           requires_grad=True,
-                           stores_grad=True,
-                           name=prefix + 'Bx_o')
-        self.Bx_g = Tensor(shape=Bx_shape,
-                           requires_grad=True,
-                           stores_grad=True,
-                           name=prefix + 'Bx_g')
-        self.Bh_i = Tensor(shape=Bx_shape,
-                           requires_grad=True,
-                           stores_grad=True,
-                           name=prefix + 'Bh_i')
-        self.Bh_f = Tensor(shape=Bx_shape,
-                           requires_grad=True,
-                           stores_grad=True,
-                           name=prefix + 'Bh_f')
-        self.Bh_o = Tensor(shape=Bx_shape,
-                           requires_grad=True,
-                           stores_grad=True,
-                           name=prefix + 'Bh_o')
-        self.Bh_g = Tensor(shape=Bx_shape,
-                           requires_grad=True,
-                           stores_grad=True,
-                           name=prefix + 'Bh_g')
+        self.Bx_i = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+        self.Bx_f = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+        self.Bx_o = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+        self.Bx_g = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+        self.Bh_i = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+        self.Bh_f = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+        self.Bh_o = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+        self.Bh_g = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
         [
             b.set_value(0.0) for b in [
                 self.Bx_i, self.Bx_f, self.Bx_o, self.Bx_g, self.Bh_i,
@@ -1555,11 +1476,9 @@ class CudnnRNN(Layer):
                                            dropout=self.dropout,
                                            bidirectional=self.bidirectional)
 
-        w_name = self.get_param_name('W')
         self.W = Tensor(shape=(self.handle.weights_size,),
                         requires_grad=True,
                         stores_grad=True,
-                        name=w_name,
                         device=x.device)
         self.W.gaussian(0, 1)
 
