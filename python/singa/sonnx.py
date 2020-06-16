@@ -1087,6 +1087,8 @@ class SingaBackend(Backend):
         'Unsqueeze': 'Unsqueeze',
         'NonZero': 'NonZero',
         'Ceil': 'Ceil',
+        'Floor': 'Floor',
+        'Abs': 'Abs',
         # # special op
         'Cast': 'Cast',
         'Split': 'Split',
@@ -1757,7 +1759,10 @@ class SingaBackend(Backend):
         return inputs, outputs
 
     @classmethod
-    def _onnx_model_to_singa_ops(cls, graph, device, opset_version=_opset_version):
+    def _onnx_model_to_singa_ops(cls,
+                                 graph,
+                                 device,
+                                 opset_version=_opset_version):
         """
         get all intermediate params, operators, and input info from onnx model
         Args:

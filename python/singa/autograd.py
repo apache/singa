@@ -1202,7 +1202,7 @@ class QALSTMLoss(Operator):
         zero.SetFloatValue(0.0)
         val = singa.AddFloat(singa.__sub__(neg, pos), self.M)
         gt_zero = singa.__gt__(val, zero)
-        self.inputs = (gt_zero, ) # (BS,)
+        self.inputs = (gt_zero,)  # (BS,)
         all_loss = singa.__mul__(gt_zero, val)
         loss = singa.SumAll(all_loss)
         loss /= (pos.shape()[0])
@@ -1220,6 +1220,7 @@ class QALSTMLoss(Operator):
         dpos = singa.__mul__(gt_zero, dpos_factor)
         dneg = singa.__mul__(gt_zero, dneg_factor)
         return dpos, dneg
+
 
 def qa_lstm_loss(pos, neg, M=0.2):
     return QALSTMLoss(M)(pos, neg)[0]
@@ -4071,6 +4072,50 @@ def ceil(x):
         the output Tensor.
     """
     return Ceil()(x)[0]
+
+
+class Floor(Operator):
+    """
+    Floor takes one input data (Tensor) and produces one output data (Tensor), 
+    where the floor is, `y = floor(x)`, is applied to the tensor elementwise
+    """
+
+    def __init__(self):
+        super(Floor, self).__init__()
+
+    def forward(self, x):
+        """
+        forward of floor
+        Args: 
+            x (CTensor): input tensor
+        Returns:
+            the output CTensor    
+        """
+        return singa.Floor(x)
+
+    def backward(self, dy):
+        """
+        backward of floor. Derivative of floor is 0
+        Args: 
+            dy (CTensor): gradient tensor
+        Returns:
+            the gradient tensor over the input tensor. 
+        """
+        dy = singa.Tensor(dy.shape(), dy.device())
+        dy.SetFloatValue(0.)
+        return dy
+
+
+def floor(x):
+    """
+    floor takes one input data (Tensor) and produces one output data (Tensor)
+    the value of floor is `y = floor(x)`, is applied to the tensor elementwise. 
+    Args: 
+        x(Tensor): input tensor.
+    Returns: 
+        the output tensor    
+    """
+    return Floor()(x)[0]
 
 
 class Split(Operator):
