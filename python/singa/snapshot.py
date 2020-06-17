@@ -18,6 +18,9 @@
 '''
 This script includes io::snapshot class and its methods.
 
+Note: This module is depreated. Please use the model module for 
+checkpoing and restore.
+
 Example usages::
 
     from singa import snapshot
