@@ -28,9 +28,9 @@ import numpy as np
 class TestInitializer(unittest.TestCase):
 
     def setUp(self):
-        self.t1 = tensor.Tensor((40, 90))
-        self.t2 = tensor.Tensor((30, 50, 8))
-        self.t3 = tensor.Tensor((30, 50, 4, 8))
+        self.t1 = tensor.Tensor((4, 9))
+        self.t2 = tensor.Tensor((3, 5, 8))
+        self.t3 = tensor.Tensor((3, 5, 4, 8))
 
     def compute_fan(self, shape):
         if len(shape) == 2:

@@ -145,7 +145,6 @@ def he_normal(t):
     """
     _random_fill(t, scale=2., mode='fan_in', distribution='normal')
 
-
 def lecun_normal(t):
     """LeCun normal initializer.
 
@@ -181,7 +180,7 @@ def he_uniform(t):
     _random_fill(t, scale=2., mode='fan_in', distribution='uniform')
 
 
-@deprecated(reason="Use he_normal or glorot_normal")
+@deprecated
 def gaussian(t, fan_in=0, fan_out=0):
     '''Initialize the values of the input tensor following a Gaussian
     distribution with specific std.
@@ -335,5 +334,3 @@ def _random_fill(t, scale, mode, distribution):
     else:
         limit = np.sqrt(3. * scale)
         t.uniform(-limit, limit)
-
-
