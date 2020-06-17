@@ -106,7 +106,11 @@ void Graph::Reset() {
 
   iteration_ = 0;
 
+  time_elapsed_ = 0;
+
   dirty_ = false;
+
+  in_serial_ = false;
 }
 
 void Graph::Debug() {
@@ -296,11 +300,11 @@ void Graph::TimeProfilingDoExec(Node *curNode) {
     device_->DoExec(std::move(curNode->op_), 0);
 }
 
-void Graph::EvaluateTimeElapsed() {
+void Graph::EvaluateTimeElapsed(const TimePoint &start) {
   if ((device_->verbosity() > 0) && (iteration_ > device_->skip_iteration())) {
     device_->Sync();
     std::chrono::duration<float> duration =
-        std::chrono::high_resolution_clock::now() - t_start_;
+        std::chrono::high_resolution_clock::now() - start;
     time_elapsed_inc(duration.count());
     for (size_t i = 0; i < nodes_.size(); ++i) {
       Node *curNode = nodes_[i];
@@ -311,10 +315,10 @@ void Graph::EvaluateTimeElapsed() {
   }
 }
 
-void Graph::TakeStartTime() {
+void Graph::TakeStartTime(TimePoint &start) {
   if ((device_->verbosity() > 0) && (iteration_ >= device_->skip_iteration())) {
     device_->Sync();
-    t_start_ = std::chrono::high_resolution_clock::now();
+    start = std::chrono::high_resolution_clock::now();
   }
 }
 
@@ -322,6 +326,7 @@ void Graph::RunGraph() {
   in_serial_ = false;
   if (dirty_) Analyze();
 
+  TimePoint start;
   SafeQueue<Node *> node_queue;
 
   // activate nodes
@@ -329,7 +334,7 @@ void Graph::RunGraph() {
     node_queue.Push(it);
   }
 
-  TakeStartTime();
+  TakeStartTime(start);
 
   // run graph
   while (node_queue.Size()) {
@@ -362,14 +367,15 @@ void Graph::RunGraph() {
 
   // increment iteration counter
   step();
-  EvaluateTimeElapsed();
+  EvaluateTimeElapsed(start);
 }
 
 void Graph::RunInSerial() {
   in_serial_ = true;
   if (dirty_) Analyze();
 
-  TakeStartTime();
+  TimePoint start;
+  TakeStartTime(start);
 
   for (size_t i = 0; i < nodes_.size(); ++i) {
     Node *curNode = nodes_[i];
@@ -392,7 +398,7 @@ void Graph::RunInSerial() {
 
   // increment iteration counter
   step();
-  EvaluateTimeElapsed();
+  EvaluateTimeElapsed(start);
 }
 
 void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
@@ -521,6 +527,7 @@ void Graph::AddSyncOp(function<void(Context *)> &&op, string op_name) {
 
 void Graph::Analyze() {
   begin_nodes_.clear();
+  next_nodes_.clear();
   next_nodes_.resize(nodes_.size());
   free_blocks_.clear();
   free_blocks_.resize(nodes_.size());
