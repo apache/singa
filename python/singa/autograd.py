@@ -4074,7 +4074,7 @@ def ceil(x):
     return Ceil()(x)[0]
 
 
-class Floor(Operation):
+class Floor(Operator):
     """
     Floor takes one input data (Tensor) and produces one output data (Tensor), 
     where the floor is, `y = floor(x)`, is applied to the tensor elementwise
