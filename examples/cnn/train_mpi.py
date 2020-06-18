@@ -21,7 +21,7 @@
 from singa import singa_wrap as singa
 from singa import opt
 import argparse
-import train
+import train_cnn
 
 if __name__ == '__main__':
     # use argparse to get command config: max_epoch, model, data, etc. for single gpu training
@@ -79,6 +79,6 @@ if __name__ == '__main__':
     sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5)
     sgd = opt.DistOpt(sgd)
 
-    train.run(sgd.global_rank, sgd.world_size, sgd.local_rank, args.max_epoch,
+    train_cnn.run(sgd.global_rank, sgd.world_size, sgd.local_rank, args.max_epoch,
               args.batch_size, args.model, args.data, sgd, args.graph,
               args.verbosity, args.dist_option, args.spars)
