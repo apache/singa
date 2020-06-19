@@ -1110,6 +1110,7 @@ class SingaBackend(Backend):
         'Reshape': 'Reshape',
         'Slice': 'Slice',
         'Clip': 'Clip',
+        'Expand': 'Expand',
         'Pad': 'Pad',
         'Upsample': 'UpSample',
         'Gemm': 'layer.Gemm',  # layer
@@ -1150,6 +1151,7 @@ class SingaBackend(Backend):
         'Conv': '_create_conv',
         'MaxPool': '_create_max_avg_pool',
         'AveragePool': '_create_max_avg_pool',
+        'Expand': '_create_expand',
         'Pad': '_create_pad',
         'Upsample': '_create_upsample',
     }
@@ -1186,6 +1188,20 @@ class SingaBackend(Backend):
         mode = utils.force_unicode(onnx_node.getattr("mode", None))
         onnx_node.set_attr_inputs(onnx_node.inputs[1], 'scales')
         return operator(mode, None)
+
+    @classmethod
+    def _create_expand(cls, onnx_node, operator, opset_version=_opset_version):
+        """
+        get the Expand operator from onnx node
+        Args:
+            onnx_node (OnnxNode): a given onnx node
+            operator (Operator Class): a singa operator class
+            opset_version (int): the opset version
+        Returns: 
+            singa operator instance
+        """
+        onnx_node.set_attr_inputs(onnx_node.inputs[1], 'shape')
+        return operator(None)
 
     @classmethod
     def _create_cast(cls, onnx_node, operator, opset_version=_opset_version):

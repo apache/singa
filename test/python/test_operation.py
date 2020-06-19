@@ -3081,6 +3081,40 @@ class TestPythonOperation(unittest.TestCase):
     def test_cossim_gpu(self):
         self.cossim_helper(gpu_dev)
 
+    def expand_helper(self, dev):
+        shape = [3, 1]
+        X = np.reshape(np.arange(1, np.prod(shape) + 1, dtype=np.float32),
+                       shape)
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        # dim_changed
+        new_shape = [2, 1, 6]
+        y_t = X * np.ones(new_shape, dtype=np.float32)
+        dy = tensor.from_numpy(y_t)
+        dy.to_device(dev)
+        y = autograd.expand(x, new_shape)
+        dx = y.creator.backward(dy.data)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), y_t)
+        self.check_shape(dx.shape(), tuple(shape))
+
+        # dim_unchanged
+        new_shape_2 = [3, 4]
+        y_t2 = np.tile(X, 4)
+        dy2 = tensor.from_numpy(y_t2)
+        dy2.to_device(dev)
+        y2 = autograd.expand(x, new_shape_2)
+        dx2 = y2.creator.backward(dy2.data)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y2), y_t2)
+        self.check_shape(dx2.shape(), tuple(shape))
+
+    def test_expand_cpu(self):
+        self.expand_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_expand_gpu(self):
+        self.expand_helper(gpu_dev)
+
     def pad_helper(self, dev):
         X = np.array([
             [1.0, 1.2],

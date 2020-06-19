@@ -4671,7 +4671,7 @@ class CosSim(Operator):
         follow https://math.stackexchange.com/a/1923705
         Args:
             dy (CTensor): gradient tensor.
-        Raises:
+        Return:
             the gradient tensor over input tensor.
         """
         a, b, ad, bd, ap, bp, ret = self.cache
@@ -4697,6 +4697,112 @@ def cossim(a, b):
         the output Tensor.
     """
     return CosSim()(a, b)[0]
+
+
+class Expand(Operator):
+    """
+    Expand operator following ONNX Operator Schemas
+    https://github.com/onnx/onnx/blob/master/docs/Operators.md#Expand
+
+    Example usage::
+    data = [[1.], [2.], [3.]]
+
+    # dim_changed
+    shape = [2, 1, 6]
+    output = [[[1., 1., 1., 1., 1., 1.], 
+               [2., 2., 2., 2., 2., 2.],
+               [3., 3., 3., 3., 3., 3.]],
+              [[1., 1., 1., 1., 1., 1.],
+               [2., 2., 2., 2., 2., 2.],
+               [3., 3., 3., 3., 3., 3.]]]
+
+    # dim_unchanged
+    shape = [3, 4]
+    output = [[1., 1., 1., 1.],
+              [2., 2., 2., 2.],
+              [3., 3., 3., 3.]]
+    """
+
+    def __init__(self, shape):
+        """
+        Args:
+            shape (list[int]: indicates the shape you want to expand to, 
+                following the broadcast rule
+        """
+        super(Expand, self).__init__()
+        self.shape = shape
+
+    def forward(self, x):
+        if isinstance(self.shape, np.ndarray):
+            self.shape = self.shape.tolist()
+        else:
+            self.shape = list(self.shape)
+        self.dim_changed = True
+        self.x_shape = list(x.shape())
+        x_shape = self.x_shape.copy()
+        for s_1, s_2 in zip(self.shape[::-1], x_shape[::-1]):
+            if s_1 != 1 and s_2 != 1:
+                if len(self.shape) != len(x_shape):
+                    assert False, ('not support dim_unchanged mode')
+                self.dim_changed = False
+                break
+        if self.dim_changed:
+            tmp_tensor = singa.Tensor(self.shape, x.device())
+            tmp_tensor.SetFloatValue(1.)
+            x = singa.__mul__(x, tmp_tensor)
+        else:
+            for axis, s_1, s_2 in zip(range(len(self.shape)), self.shape,
+                                      x_shape):
+                if s_1 == s_2:
+                    continue
+                xs = [x] * (s_1 // s_2)
+                x = singa.VecTensor(xs)
+                x = singa.ConcatOn(x, axis)
+        return x
+
+    def backward(self, dy):
+        x_shape = self.x_shape
+        if self.dim_changed:
+            dy = tensor.from_raw_tensor(dy)
+            if len(self.shape) > len(x_shape):
+                x_shape = [1] * (len(self.shape) - len(x_shape)) + x_shape
+            for axis, s in zip(range(len(self.shape))[::-1], x_shape[::1]):
+                if s == 1:
+                    dy = tensor.sum(dy, axis)
+            dy = dy.data
+        else:
+            for axis, s_1, s_2 in zip(
+                    range(len(self.shape))[::-1], self.shape[::-1],
+                    x_shape[::-1]):
+                if s_1 > s_2:
+                    duplic = s_1 // s_2
+                    dxs = []
+                    for i in range(s_2):
+                        tmp_tensor = None
+                        for j in range(duplic):
+                            if not tmp_tensor:
+                                tmp_tensor = singa.SliceOn(
+                                    dy, j * s_2 + i, j * s_2 + i + 1, axis)
+                            else:
+                                tmp_tensor += singa.SliceOn(
+                                    dy, j * s_2 + i, j * s_2 + i + 1, axis)
+                        dxs.append(tmp_tensor)
+                    dxs = singa.VecTensor(dxs)
+                    dy = singa.ConcatOn(dxs, axis)
+        dy = singa.Reshape(dy, self.x_shape)
+        return dy
+
+def expand(x, shape):
+    """
+    Produces a Expand operator
+    Args:
+        x (Tensor): input tensor.
+        shape (list[int]: indicates the shape you want to expand to, 
+            following the broadcast rule
+    Returns:
+        the output Tensor.
+    """
+    return Expand(shape)(x)[0]
 
 
 class Pad(Operator):
