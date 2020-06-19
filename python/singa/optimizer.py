@@ -17,6 +17,8 @@
 # =============================================================================
 '''This module includes a set of optimizers for updating model parameters.
 
+Note: This module is deprecated. Please use the opt module.
+
 Example usage::
 
   from singa import optimizer
