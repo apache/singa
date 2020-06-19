@@ -3020,12 +3020,6 @@ class TestPythonOperation(unittest.TestCase):
             dy = tensor.Tensor(shape=(seq_length, batch_size,
                                       directions * hidden_size),
                                device=dev).gaussian(0, 1)
-            dhy = tensor.Tensor(shape=(num_layers * directions, batch_size,
-                                       hidden_size),
-                                device=dev).gaussian(0, 1)
-            dcy = tensor.Tensor(shape=(num_layers * directions, batch_size,
-                                       hidden_size),
-                                device=dev).gaussian(0, 1)
 
             # init cudnn rnn op
             rnn_handle = singa.CudnnRNNHandle(x.data,
@@ -3038,15 +3032,27 @@ class TestPythonOperation(unittest.TestCase):
             w = tensor.Tensor(shape=(rnn_handle.weights_size,),
                               device=dev).gaussian(0, 1)
 
+            # return sequence, y shape = {seq, bs, hidden}
             # init operator/operation
-            _rnn = autograd._RNN(rnn_handle)
+            _rnn = autograd._RNN(rnn_handle, return_sequences=True)
 
             # forward
-            (y, hy, cy) = _rnn(x, hx, cx, w)
+            y = _rnn(x, hx, cx, w)[0]
+            assert y.shape == dy.shape
             # print(ys)
 
             # backward
-            dx, dhx, dcx, dw = _rnn.backward(dy.data, dhy.data, dcy.data)
+            dx, dhx, dcx, dw = _rnn.backward(dy.data)
+
+            # return no sequence, y shape = {bs, hidden}
+            _rnn = autograd._RNN(rnn_handle, return_sequences=False)
+            dy = tensor.Tensor(shape=(batch_size, directions * hidden_size),
+                               device=dev).gaussian(0, 1)
+            y = _rnn(x, hx, cx, w)[0]
+
+            assert y.shape == dy.shape
+            # backward
+            dx, dhx, dcx, dw = _rnn.backward(dy.data)
 
     def cossim_helper(self, dev):
         from numpy.linalg import norm
