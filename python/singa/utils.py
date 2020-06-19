@@ -237,13 +237,13 @@ def post_order_recursive(root, root_t):
         deque[int]
     """
 
-    def recursive(root, yid, root_t, nodes, weights, inputs):
+    def recursive(root, yid, root_t):
         if root:
             # srcop: operator for a input of root
             # yid: id(output of this operator)
             # y: output of this operator
             for srcop, yid, y, _ in root.src:
-                recursive(srcop, yid, y, nodes, weights, inputs)
+                recursive(srcop, yid, y)
 
             if type(root).__name__ == 'Dummy':
                 if root_t != None:
@@ -259,5 +259,5 @@ def post_order_recursive(root, root_t):
     weights = OrderedDict()
     inputs = OrderedDict()
 
-    recursive(root, None, root_t, nodes, weights, inputs)
+    recursive(root, None, root_t)
     return nodes, weights, inputs

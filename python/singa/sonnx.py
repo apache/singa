@@ -1111,6 +1111,7 @@ class SingaBackend(Backend):
         'Slice': 'Slice',
         'Clip': 'Clip',
         'Pad': 'Pad',
+        'Upsample': 'UpSample',
         'Gemm': 'layer.Gemm',  # layer
         'BatchNormalization': 'layer.BatchNorm2d',  # layer
         'Conv': 'layer.Conv2d',  # layer
@@ -1150,7 +1151,9 @@ class SingaBackend(Backend):
         'MaxPool': '_create_max_avg_pool',
         'AveragePool': '_create_max_avg_pool',
         'Pad': '_create_pad',
+        'Upsample': '_create_upsample',
     }
+
 
     @classmethod
     def _create_pad(cls, onnx_node, operator, opset_version=_opset_version):
@@ -1168,6 +1171,21 @@ class SingaBackend(Backend):
         if len(onnx_node.inputs) == 3:
             onnx_node.set_attr_inputs(onnx_node.inputs[2], 'constant')
         return operator(mode, None, None)
+
+    @classmethod
+    def _create_upsample(cls, onnx_node, operator, opset_version=_opset_version):
+        """
+        get the UpSample operator from onnx node
+        Args:
+            onnx_node (OnnxNode): a given onnx node
+            operator (Operator Class): a singa operator class
+            opset_version (int): the opset version
+        Returns: 
+            singa operator instance
+        """
+        mode = utils.force_unicode(onnx_node.getattr("mode", None))
+        onnx_node.set_attr_inputs(onnx_node.inputs[1], 'scales')
+        return operator(mode, None)
 
     @classmethod
     def _create_cast(cls, onnx_node, operator, opset_version=_opset_version):
@@ -1776,7 +1794,10 @@ class SingaBackend(Backend):
         return inputs, outputs
 
     @classmethod
-    def _onnx_model_to_singa_ops(cls, graph, device, opset_version=_opset_version):
+    def _onnx_model_to_singa_ops(cls,
+                                 graph,
+                                 device,
+                                 opset_version=_opset_version):
         """
         get all intermediate params, operators, and input info from onnx model
         Args:
@@ -1994,13 +2015,16 @@ class SingaRep(BackendRep):
             if isinstance(x[0], tensor.Tensor):
                 self.dev = x[0].device
 
-        outputs_dict = OrderedDict([(outp.name, None) for outp in self.outputs])
+        outputs_dict = OrderedDict([])
 
         # last_layers means we run this model until the last #N layers
         last_layers = kwargs.get('last_layers', len(self._layers))
         if last_layers != len(self._layers):
             for outp in self._layers[last_layers - 1].outputs:
                 outputs_dict[outp] = None
+        else:
+            for outp in self.outputs:
+                outputs_dict[outp.name] = None
 
         aux_output = kwargs.get('aux_output', ())
         for outp in aux_output:
@@ -2100,16 +2124,17 @@ class SONNXModel(model.Model):
             self.__dict__[node.name] = operator
         self.sg_ir.is_graph = True
 
-    def forward(self, *input, aux_output=()):
+    def forward(self, *input, aux_output=(), **kwargs):
         """
         The forward of the SINGA model
         Args:
             input (Tensors[]): a list of Tensor
             aux_output (string()): a set of required output name
+
         Returns:
             a OrderedDict of Tensor
         """
-        return self.sg_ir.run(input, aux_output=aux_output)
+        return self.sg_ir.run(input, aux_output=aux_output, **kwargs)
 
 
 run_node = SingaBackend.run_node

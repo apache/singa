@@ -2520,8 +2520,8 @@ class TestPythonOperation(unittest.TestCase):
             result = gemm(a)
 
             params = gemm.get_params()
-            B = tensor.to_numpy(params['.W'])
-            C = tensor.to_numpy(params['.b'])
+            B = tensor.to_numpy(params['W'])
+            C = tensor.to_numpy(params['b'])
 
             da, db, dc = result.creator.backward(dy.data)
 
@@ -3020,12 +3020,6 @@ class TestPythonOperation(unittest.TestCase):
             dy = tensor.Tensor(shape=(seq_length, batch_size,
                                       directions * hidden_size),
                                device=dev).gaussian(0, 1)
-            dhy = tensor.Tensor(shape=(num_layers * directions, batch_size,
-                                       hidden_size),
-                                device=dev).gaussian(0, 1)
-            dcy = tensor.Tensor(shape=(num_layers * directions, batch_size,
-                                       hidden_size),
-                                device=dev).gaussian(0, 1)
 
             # init cudnn rnn op
             rnn_handle = singa.CudnnRNNHandle(x.data,
@@ -3038,15 +3032,27 @@ class TestPythonOperation(unittest.TestCase):
             w = tensor.Tensor(shape=(rnn_handle.weights_size,),
                               device=dev).gaussian(0, 1)
 
+            # return sequence, y shape = {seq, bs, hidden}
             # init operator/operation
-            _rnn = autograd._RNN(rnn_handle)
+            _rnn = autograd._RNN(rnn_handle, return_sequences=True)
 
             # forward
-            (y, hy, cy) = _rnn(x, hx, cx, w)
+            y = _rnn(x, hx, cx, w)[0]
+            assert y.shape == dy.shape
             # print(ys)
 
             # backward
-            dx, dhx, dcx, dw = _rnn.backward(dy.data, dhy.data, dcy.data)
+            dx, dhx, dcx, dw = _rnn.backward(dy.data)
+
+            # return no sequence, y shape = {bs, hidden}
+            _rnn = autograd._RNN(rnn_handle, return_sequences=False)
+            dy = tensor.Tensor(shape=(batch_size, directions * hidden_size),
+                               device=dev).gaussian(0, 1)
+            y = _rnn(x, hx, cx, w)[0]
+
+            assert y.shape == dy.shape
+            # backward
+            dx, dhx, dcx, dw = _rnn.backward(dy.data)
 
     def cossim_helper(self, dev):
         A = np.random.randn(*[3, 10]).astype(np.float32)
@@ -3145,9 +3151,40 @@ class TestPythonOperation(unittest.TestCase):
     def test_pad_cpu(self):
         self.pad_helper(cpu_dev)
 
-    # @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
-    # def test_pad_gpu(self):
-    #     self.pad_helper(gpu_dev)
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_pad_gpu(self):
+        self.pad_helper(gpu_dev)
+
+    def upsample_helper(self, dev):
+        X = np.array([[[
+            [1, 2],
+            [3, 4],
+        ]]], dtype=np.float32)
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        scales = np.array([1.0, 1.0, 2.0, 3.0], dtype=np.float32)
+        y_t = np.array([[[
+            [1, 1, 1, 2, 2, 2],
+            [1, 1, 1, 2, 2, 2],
+            [3, 3, 3, 4, 4, 4],
+            [3, 3, 3, 4, 4, 4],
+        ]]],
+                       dtype=np.float32)
+        dy = tensor.from_numpy(y_t)
+        dy.to_device(dev)
+
+        y = autograd.upsample(x, "nearest", scales)
+        dx = y.creator.backward(dy.data)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), y_t)
+        self.check_shape(dx.shape(), tuple(X.shape))
+
+    def test_upsample_cpu(self):
+        self.upsample_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_upsample_gpu(self):
+        self.upsample_helper(gpu_dev)
 
 
 if __name__ == '__main__':

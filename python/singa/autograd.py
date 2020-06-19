@@ -1202,7 +1202,7 @@ class QALSTMLoss(Operator):
         zero.SetFloatValue(0.0)
         val = singa.AddFloat(singa.__sub__(neg, pos), self.M)
         gt_zero = singa.__gt__(val, zero)
-        self.inputs = (gt_zero, ) # (BS,)
+        self.inputs = (gt_zero,)  # (BS,)
         all_loss = singa.__mul__(gt_zero, val)
         loss = singa.SumAll(all_loss)
         loss /= (pos.shape()[0])
@@ -1220,6 +1220,7 @@ class QALSTMLoss(Operator):
         dpos = singa.__mul__(gt_zero, dpos_factor)
         dneg = singa.__mul__(gt_zero, dneg_factor)
         return dpos, dneg
+
 
 def qa_lstm_loss(pos, neg, M=0.2):
     return QALSTMLoss(M)(pos, neg)[0]
@@ -4427,7 +4428,7 @@ class Cast(Operator):
     def backward(self, dy):
         """
         backward of Cast
-        Args:f
+        Args:
             dy (CTensor), gradient tensor.
         Raises:
             AssertionError: no backward function for this operator
@@ -4838,6 +4839,89 @@ def pad(x, mode, pads, constant=0.):
         the output Tensor.
     """
     return Pad(mode, pads, constant)(x)[0]
+
+
+class UpSample(Operator):
+    """
+    UpSample operator following ONNX Operator Schemas
+    https://github.com/onnx/onnx/blob/master/docs/Operators.md#upsample
+
+    Example usage::
+    data = [[[[1, 2],
+              [3, 4],]]]
+
+    # nearest
+    scales = [1.0, 1.0, 2.0, 3.0]
+    output = [[[[1, 1, 1, 2, 2, 2],
+                [1, 1, 1, 2, 2, 2],
+                [3, 3, 3, 4, 4, 4],
+                [3, 3, 3, 4, 4, 4],]]]
+    """
+
+    def __init__(self, mode, scales):
+        """
+        Args:
+            scales (list[int]): The scale array along each dimension. It takes 
+                value greater than or equal to 1. 
+        """
+        super(UpSample, self).__init__()
+        self.scales = scales
+        self.mode = mode.lower()
+        if self.mode != "nearest":
+            assert False, "only support nearest mode."
+
+    def forward(self, x):
+        if isinstance(self.scales, np.ndarray):
+            self.scales = self.scales.tolist()
+        else:
+            self.scales = list(self.scales)
+        self.x_shape = list(x.shape())
+        for axis, s in zip(range(len(self.scales)), self.scales):
+            s = int(s)
+            if s == 1:
+                continue
+            x = x.Repeat([
+                s,
+            ], axis)
+        return x
+
+    def backward(self, dy):
+        x_shape = self.x_shape.copy()
+        for axis, s_1, s_2 in zip(
+                range(len(self.scales))[::-1], self.scales[::-1],
+                x_shape[::-1]):
+            s_1 = int(s_1)
+            if s_1 != 1:
+                duplic = s_1
+                dxs = []
+                for i in range(s_2):
+                    tmp_tensor = None
+                    for j in range(duplic):
+                        if not tmp_tensor:
+                            tmp_tensor = singa.SliceOn(dy, i * duplic + j,
+                                                       i * duplic + j + 1, axis)
+                        else:
+                            tmp_tensor += singa.SliceOn(dy, i * duplic + j,
+                                                        i * duplic + j + 1,
+                                                        axis)
+                    dxs.append(tmp_tensor)
+                dxs = singa.VecTensor(dxs)
+                dy = singa.ConcatOn(dxs, axis)
+        dy = singa.Reshape(dy, self.x_shape)
+        return dy
+
+
+def upsample(x, mode, scales):
+    """
+    Produces a upsample operator
+    Args:
+        x (Tensor): input tensor.
+        scales (list[int]): The scale array along each dimension. It takes 
+                value greater than or equal to 1. 
+    Returns:
+        the output Tensor.
+    """
+    return UpSample(mode, scales)(x)[0]
 
 
 ''' alias for Operator and Layers
