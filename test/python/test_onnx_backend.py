@@ -100,6 +100,10 @@ for name in sonnx.SingaBackend._rename_operators.keys():
 for pattern in _exclude_nodes_patterns:
     backend_test.exclude(pattern)
 
+# exclude the cuda cases
+if not singa.USE_CUDA:
+    backend_test.exclude(r'(cuda)')
+
 # import all test cases at global scope to make them visible to python.unittest
 # print(backend_test.enable_report().test_cases)
 test_cases = {
