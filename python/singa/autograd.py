@@ -1664,7 +1664,7 @@ class _Pooling2d(Operator):
         """
         assert x.nDim() == 4, "The dimensions of input should be 4D."
         if self.odd_padding != (0, 0, 0, 0):
-            x = utils.handle_odd_pad_fwd(x, self.odd_padding)
+            x = utils.handle_odd_pad_fwd(x, self.odd_padding, True)
 
         if (type(self.handle) != singa.PoolingHandle):
             y = singa.GpuPoolingForward(self.handle, x)
