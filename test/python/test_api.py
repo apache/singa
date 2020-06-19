@@ -129,7 +129,7 @@ class TestAPI(unittest.TestCase):
                 tensor.Tensor(device=dev, data=b_0).data, rm_t.data, rv_t.data)
 
             np.testing.assert_array_almost_equal(
-                y_1, tensor.to_numpy(_cTensor_to_pyTensor(y_2_c)))
+                y_1, tensor.to_numpy(_cTensor_to_pyTensor(y_2_c)), decimal=4)
             np.testing.assert_array_almost_equal(
                 bm_1, tensor.to_numpy(_cTensor_to_pyTensor(bm_2_c)))
             np.testing.assert_array_almost_equal(rm_1, tensor.to_numpy(rm_t))
@@ -183,7 +183,7 @@ class TestAPI(unittest.TestCase):
             #print(tensor.to_numpy(_cTensor_to_pyTensor(y_2_c)))
 
             np.testing.assert_array_almost_equal(
-                y_1, tensor.to_numpy(_cTensor_to_pyTensor(y_2_c)), decimal=5)
+                y_1, tensor.to_numpy(_cTensor_to_pyTensor(y_2_c)), decimal=3)
             return
 
         x_0 = np.array([1, 1, 1, 1, 2, 2, 2, 2, 10, 10, 10, 10, 20, 20, 20, 20],
