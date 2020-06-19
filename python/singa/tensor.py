@@ -59,6 +59,7 @@ from deprecated import deprecated
 from builtins import object
 import numpy as np
 from functools import reduce
+import re
 
 from .proto import core_pb2
 from . import singa_wrap as singa
@@ -154,6 +155,17 @@ class Tensor(object):
             axis_index += 1
 
         return ret
+
+    def is_dummy(self):
+        '''
+        Returns:
+            True if the tensor is a dummy tensor
+        '''
+        match = re.match(r'Dummy#\d+', self.name)
+        if match:
+            return True
+        else:
+            return False
 
     def ndim(self):
         '''

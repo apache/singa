@@ -147,6 +147,21 @@ class Model(layer.Layer, metaclass=ModelMeta):
         self._results = None
 
     def compile(self, inputs, is_train=True, use_graph=False, sequential=False):
+        """ Compile and initialize the model
+
+        This function will automatically derive the shape of parameters
+        in each sublayer based on the shape of input placeholders. It will
+        also do some settings.
+
+        Args:
+            inputs(list): the list of input tensors(placeholders)
+            is_train(bool): when is_trainis True, this model will enter
+            training mode, otherwise it will enter the evaluation mode
+            use_graph(bool): when use_graph is True, computational graph
+            will be used to train this model
+            sequential(bool): when sequential is True, model will execute ops
+            in the graph follow the order of joining the graph
+        """
         assert len(inputs) > 0 and isinstance(inputs[0], Tensor), (
             'compile function expects PlaceHolders or Tensors')
 
@@ -162,7 +177,7 @@ class Model(layer.Layer, metaclass=ModelMeta):
         self.sequential = sequential
 
     def forward(self, *input):
-        """Defines the computation performed at every call.
+        """Defines the computation performed in every forward propagation.
 
         Should be overridden by all subclasses.
 
@@ -174,7 +189,15 @@ class Model(layer.Layer, metaclass=ModelMeta):
         """
         raise NotImplementedError
 
-    def train_one_batch(self, *input):
+    def train_one_batch(self, *input, **kwargs):
+        """Defines the computation performed in every training iteration
+
+        Should be overridden by all subclasses.
+
+        Args:
+            *input: the arguments of train_one_batch
+            **kwargs: the keyword arguments of train_one_batch
+        """
         raise NotImplementedError
 
     def train(self, mode=True):

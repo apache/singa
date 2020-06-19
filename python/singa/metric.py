@@ -19,6 +19,8 @@
 performance. The specific metric classes could be converted from C++
 implmentation or implemented directly using Python.
 
+Note: This module is deprecated. Please convert the prediction into numpy 
+array and use the sklearn to compute the metrics.
 
 Example usage::
 

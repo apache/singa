@@ -542,10 +542,13 @@ void Graph::AnalyzeNodes() {
   if (in_serial_) {
     begin_nodes_.push_back(nodes_[0]);
 
-    for (size_t i = 0; i < nodes_.size() - 1; ++i) {
+    for (size_t i = 0; i < nodes_.size(); ++i) {
       Node *curNode = nodes_[i];
 
-      next_nodes_[i].push_back(nodes_[i + 1]);
+      next_nodes_[i].clear();
+      if (i + 1 < nodes_.size()) {
+        next_nodes_[i].push_back(nodes_[i + 1]);
+      }
 
       std::unordered_set<Block *> blks;
       for (size_t j = 0; j < curNode->in_edges_.size(); ++j) {

@@ -116,7 +116,7 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
         tvalidposhidprob = tvalidposhidprob + thbias
         tvalidposhidprob = tensor.sigmoid(tvalidposhidprob)
         tvalidposhidrandom = tensor.Tensor(tvalidposhidprob.shape, dev)
-        initializer.uniform(tvalidposhidrandom, 0.0, 1.0)
+        initializer.he_uniform(tvalidposhidrandom)
         tvalidposhidsample = tensor.gt(tvalidposhidprob, tvalidposhidrandom)
 
         tvalidnegdata = tensor.mult(tvalidposhidsample, tweight.T())

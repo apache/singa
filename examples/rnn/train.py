@@ -58,10 +58,8 @@ class CharRNN(model.Model):
 
     def initialize(self, inputs):
         batchsize = inputs[0].shape[0]
-        hx_name = self.name + CharRNN.sep + 'hx'
-        cx_name = self.name + CharRNN.sep + 'cx'
-        self.hx = tensor.Tensor((batchsize, self.hidden_size), name=hx_name)
-        self.cx = tensor.Tensor((batchsize, self.hidden_size), name=cx_name)
+        self.hx = tensor.Tensor((batchsize, self.hidden_size))
+        self.cx = tensor.Tensor((batchsize, self.hidden_size))
         self.reset_states(inputs[0].device)
 
     def forward(self, inputs):
