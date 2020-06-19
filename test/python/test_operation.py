@@ -3055,8 +3055,6 @@ class TestPythonOperation(unittest.TestCase):
             dx, dhx, dcx, dw = _rnn.backward(dy.data)
 
     def cossim_helper(self, dev):
-        from numpy.linalg import norm
-
         A = np.random.randn(*[3, 10]).astype(np.float32)
         B = np.random.randn(*[3, 10]).astype(np.float32)
 
@@ -3083,6 +3081,80 @@ class TestPythonOperation(unittest.TestCase):
     def test_cossim_gpu(self):
         self.cossim_helper(gpu_dev)
 
+    def pad_helper(self, dev):
+        X = np.array([
+            [1.0, 1.2],
+            [2.3, 3.4],
+            [4.5, 5.7],
+        ]).astype(np.float32)
+        Y1 = np.array([
+            [0.0, 0.0, 1.0, 1.2],
+            [0.0, 0.0, 2.3, 3.4],
+            [0.0, 0.0, 4.5, 5.7],
+        ],).astype(np.float32)
+        Y2 = np.array([
+            [1.0, 1.2, 1.0, 1.2],
+            [2.3, 3.4, 2.3, 3.4],
+            [4.5, 5.7, 4.5, 5.7],
+        ],).astype(np.float32)
+        Y3 = np.array([
+            [1.0, 1.0, 1.0, 1.2],
+            [2.3, 2.3, 2.3, 3.4],
+            [4.5, 4.5, 4.5, 5.7],
+        ],).astype(np.float32)
+
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+        pads = [0, 2, 0, 0]
+
+        DY = np.random.randn(3, 4).astype(np.float32)
+        dy = tensor.from_numpy(DY)
+        dy.to_device(dev)
+
+        y1 = autograd.pad(x, "constant", pads)
+        y2 = autograd.pad(x, "reflect", pads)
+        y3 = autograd.pad(x, "edge", pads)
+        dx1 = y1.creator.backward(dy.data)
+        dx2 = y2.creator.backward(dy.data)
+        dx3 = y3.creator.backward(dy.data)
+        pad_width = []
+        half_width = len(pads) // 2
+        for i in range(half_width):
+            pad_width += [[pads[i], pads[i + half_width]]]
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y1),
+                                             np.pad(
+                                                 X,
+                                                 pad_width=pad_width,
+                                                 mode="constant",
+                                                 constant_values=0.,
+                                             ),
+                                             decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y2),
+                                             np.pad(
+                                                 X,
+                                                 pad_width=pad_width,
+                                                 mode="reflect",
+                                             ),
+                                             decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y3),
+                                             np.pad(
+                                                 X,
+                                                 pad_width=pad_width,
+                                                 mode="edge",
+                                             ),
+                                             decimal=5)
+        self.check_shape(dx1.shape(), (3, 2))
+        self.check_shape(dx2.shape(), (3, 2))
+        self.check_shape(dx3.shape(), (3, 2))
+
+    def test_pad_cpu(self):
+        self.pad_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_pad_gpu(self):
+        self.pad_helper(gpu_dev)
+
     def upsample_helper(self, dev):
         X = np.array([[[
             [1, 2],
@@ -3097,7 +3169,8 @@ class TestPythonOperation(unittest.TestCase):
             [1, 1, 1, 2, 2, 2],
             [3, 3, 3, 4, 4, 4],
             [3, 3, 3, 4, 4, 4],
-        ]]],dtype=np.float32)
+        ]]],
+                       dtype=np.float32)
         dy = tensor.from_numpy(y_t)
         dy.to_device(dev)
 

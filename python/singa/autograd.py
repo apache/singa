@@ -1202,7 +1202,7 @@ class QALSTMLoss(Operator):
         zero.SetFloatValue(0.0)
         val = singa.AddFloat(singa.__sub__(neg, pos), self.M)
         gt_zero = singa.__gt__(val, zero)
-        self.inputs = (gt_zero, ) # (BS,)
+        self.inputs = (gt_zero,)  # (BS,)
         all_loss = singa.__mul__(gt_zero, val)
         loss = singa.SumAll(all_loss)
         loss /= (pos.shape()[0])
@@ -1220,6 +1220,7 @@ class QALSTMLoss(Operator):
         dpos = singa.__mul__(gt_zero, dpos_factor)
         dneg = singa.__mul__(gt_zero, dneg_factor)
         return dpos, dneg
+
 
 def qa_lstm_loss(pos, neg, M=0.2):
     return QALSTMLoss(M)(pos, neg)[0]
@@ -4698,6 +4699,148 @@ def cossim(a, b):
     return CosSim()(a, b)[0]
 
 
+class Pad(Operator):
+    """
+    Pad operator following ONNX Operator Schemas
+    https://github.com/onnx/onnx/blob/master/docs/Operators.md#Pad
+
+    Example usage::
+        data = 
+        [
+            [1.0, 1.2],
+            [2.3, 3.4],
+            [4.5, 5.7],
+        ] 
+        pads = [0, 2, 0, 0]
+
+        # constant mode
+        mode = 'constant'
+        constant_value = 0.0
+        output = 
+        [
+            [
+                [0.0, 0.0, 1.0, 1.2],
+                [0.0, 0.0, 2.3, 3.4],
+                [0.0, 0.0, 4.5, 5.7],
+            ],
+        ]
+
+        # reflect mode
+        mode = 'reflect'
+        output = 
+        [
+            [
+                [1.0, 1.2, 1.0, 1.2],
+                [2.3, 3.4, 2.3, 3.4],
+                [4.5, 5.7, 4.5, 5.7],
+            ],
+        ]
+
+        # edge mode
+        mode = 'edge'
+        output = 
+        [
+            [
+                [1.0, 1.0, 1.0, 1.2],
+                [2.3, 2.3, 2.3, 3.4],
+                [4.5, 4.5, 4.5, 5.7],
+            ],
+        ]
+    """
+
+    def __init__(self, mode, pads, constant=0.):
+        """
+        Args:
+            mode (string): Supported modes: `constant`(default), `reflect`, `edge`.
+            pads (list[int]): list of integers indicating the number of padding elements 
+                to add at the beginning each axis.
+            constant (float): A scalar value to be used if the mode chosen is 
+                `constant`
+        """
+        super(Pad, self).__init__()
+        self.mode = mode
+        if self.mode not in ("constant", "reflect", "edge"):
+            assert False, ('Only support three modes: constant, reflect, edge')
+        self.constant = constant
+        self.pads = pads
+        self.pad_width = ()
+
+    def forward(self, x):
+        if not self.pad_width:
+            half_width = len(self.pads) // 2
+            for i in range(half_width):
+                self.pad_width += ((self.pads[i], self.pads[i + half_width])),
+
+        for axis, pads in zip(range(len(x.shape())), self.pad_width):
+            for pad, is_left in zip(pads, (True, False)):
+                if pad == 0:
+                    continue
+                pad_shape = list(x.shape())
+                if self.mode == "constant":
+                    pad_shape[axis] = pad
+                    padding = singa.Tensor(list(pad_shape), x.device())
+                    padding.SetFloatValue(self.constant)
+                    if is_left:
+                        x = singa.ConcatOn(singa.VecTensor([padding, x]), axis)
+                    else:
+                        x = singa.ConcatOn(singa.VecTensor([x, padding]), axis)
+                elif self.mode == "reflect":
+                    axis_shape = pad_shape[axis]
+                    if is_left:
+                        padding = singa.SliceOn(x, 0, pad, axis)
+                        x = singa.ConcatOn(singa.VecTensor([padding, x]), axis)
+                    else:
+                        padding = singa.SliceOn(x, axis_shape - pad, axis_shape,
+                                                axis)
+                        x = singa.ConcatOn(singa.VecTensor([x, padding]), axis)
+                elif self.mode == "edge":
+                    axis_shape = pad_shape[axis]
+                    if is_left:
+                        padding = []
+                        for _ in range(pad):
+                            padding.append(singa.SliceOn(x, 0, 1, axis))
+                        padding.append(x)
+                        padding = singa.VecTensor(padding)
+                        x = singa.ConcatOn(padding, axis)
+                    else:
+                        padding = [x]
+                        for _ in range(pad):
+                            padding.append(
+                                singa.SliceOn(x, axis_shape - 1, axis_shape,
+                                              axis))
+                        padding = singa.VecTensor(padding)
+                        x = singa.ConcatOn(padding, axis)
+        return x
+
+    def backward(self, dy):
+        for axis, pads in zip(range(len(dy.shape())), self.pad_width):
+            for pad, is_left in zip(pads, (True, False)):
+                if pad == 0:
+                    continue
+                axis_shape = list(dy.shape())[axis]
+                if is_left:
+                    dy = singa.SliceOn(dy, pad, axis_shape, axis)
+                else:
+                    dy = singa.SliceOn(dy, 0, axis_shape - pad, axis)
+        return dy
+
+
+def pad(x, mode, pads, constant=0.):
+    """
+    Produces a pad operator
+    Args:
+        x (Tensor): input tensor.
+        mode (string): Supported modes: `constant`(default), `reflect`, `edge`.
+        pads (list[int]): list of integers indicating the number of padding elements 
+            to add at the beginning each axis.
+        constant (float): A scalar value to be used if the mode chosen is 
+            `constant`
+    Returns:
+        the output Tensor.
+    """
+    return Pad(mode, pads, constant)(x)[0]
+
+
 class UpSample(Operator):
     """
     UpSample operator following ONNX Operator Schemas
@@ -4737,12 +4880,16 @@ class UpSample(Operator):
             s = int(s)
             if s == 1:
                 continue
-            x = x.Repeat([s, ], axis)
+            x = x.Repeat([
+                s,
+            ], axis)
         return x
 
     def backward(self, dy):
         x_shape = self.x_shape.copy()
-        for axis, s_1, s_2 in zip(range(len(self.scales))[::-1], self.scales[::-1], x_shape[::-1]):
+        for axis, s_1, s_2 in zip(
+                range(len(self.scales))[::-1], self.scales[::-1],
+                x_shape[::-1]):
             s_1 = int(s_1)
             if s_1 != 1:
                 duplic = s_1
@@ -4751,14 +4898,18 @@ class UpSample(Operator):
                     tmp_tensor = None
                     for j in range(duplic):
                         if not tmp_tensor:
-                            tmp_tensor = singa.SliceOn(dy, i*duplic+j, i*duplic+j+1, axis)
+                            tmp_tensor = singa.SliceOn(dy, i * duplic + j,
+                                                       i * duplic + j + 1, axis)
                         else:
-                            tmp_tensor += singa.SliceOn(dy, i*duplic+j, i*duplic+j+1, axis)
+                            tmp_tensor += singa.SliceOn(dy, i * duplic + j,
+                                                        i * duplic + j + 1,
+                                                        axis)
                     dxs.append(tmp_tensor)
                 dxs = singa.VecTensor(dxs)
                 dy = singa.ConcatOn(dxs, axis)
         dy = singa.Reshape(dy, self.x_shape)
         return dy
+
 
 def upsample(x, mode, scales):
     """
@@ -4771,6 +4922,7 @@ def upsample(x, mode, scales):
         the output Tensor.
     """
     return UpSample(mode, scales)(x)[0]
+
 
 ''' alias for Operator and Layers
 '''
