@@ -960,9 +960,7 @@ class Equal(Operator):
         """
         Return `a=b`, where a and b are CTensor.
         """
-        m = singa.__sub__(x, y)
-        cur = singa.__mul__(singa.GEFloat(m, 0), singa.LEFloat(m, 0))
-        return cur
+        return singa.__eq__(x, y)
 
     def backward(self, dy):
         """

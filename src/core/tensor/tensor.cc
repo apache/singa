@@ -966,6 +966,7 @@ GenBinaryTensorFn(operator<, LT);
 GenBinaryTensorFn(operator<=, LE);
 GenBinaryTensorFn(operator>, GT);
 GenBinaryTensorFn(operator>=, GE);
+GenBinaryTensorFn(operator==, EQ);
 GenBinaryTensorFn(ReLUBackward, ReLUBackward);
 
 #define EltwiseTensorScalarFn(fn, t, x, ret)                            \
@@ -1005,6 +1006,8 @@ GenTensorScalarFn(operator<, LT);
 GenTensorScalarFn(operator<=, LE);
 GenTensorScalarFn(operator>, GT);
 GenTensorScalarFn(operator>=, GE);
+GenTensorScalarFn(operator==, EQ);
+
 template <typename SType>
 Tensor Div(const SType alpha, const Tensor &in) {
   Tensor out(in.shape(), in.device(), in.data_type());

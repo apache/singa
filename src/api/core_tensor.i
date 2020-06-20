@@ -222,10 +222,12 @@ namespace singa{
   %rename(__le__) operator<=(const Tensor &lhs, const Tensor &rhs);
   %rename(__gt__) operator>(const Tensor &lhs, const Tensor &rhs);
   %rename(__ge__) operator>=(const Tensor &lhs, const Tensor &rhs);
+  %rename(__eq__) operator==(const Tensor &lhs, const Tensor &rhs);
   Tensor operator<(const Tensor &lhs, const Tensor &rhs);
   Tensor operator<=(const Tensor &lhs, const Tensor &rhs);
   Tensor operator>(const Tensor &lhs, const Tensor &rhs);
   Tensor operator>=(const Tensor &lhs, const Tensor &rhs);
+  Tensor operator==(const Tensor &lhs, const Tensor &rhs);
 
 
   %rename(LTFloat) operator<(const Tensor &t, const float x);
@@ -244,6 +246,10 @@ namespace singa{
   %rename(GEFloat) operator>=(const Tensor &t, const float x);
   template <typename DType> Tensor operator>=(const Tensor &t, const DType x);
   %template(opge) operator>= <float>;
+
+  %rename(EQFloat) operator==(const Tensor &t, const float x);
+  template <typename DType> Tensor operator==(const Tensor &t, const DType x);
+  %template(opeq) operator== <float>;
 
   Tensor ConcatOn(const std::vector<Tensor> &in, int axis);
   Tensor SliceOn(const Tensor&in, const size_t start, const size_t end, int axis);
