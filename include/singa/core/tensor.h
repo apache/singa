@@ -345,6 +345,8 @@ void RepeatDataToFrom(bool broadcast_flag, const vector<size_t> &repeats,
 Tensor Abs(const Tensor &in);
 Tensor Ceil(const Tensor &in);
 Tensor Floor(const Tensor &in);
+Tensor Round(const Tensor &in);
+Tensor RoundE(const Tensor &in);
 Tensor Exp(const Tensor &in);
 Tensor Log(const Tensor &in);
 Tensor ReLU(const Tensor &in);
@@ -371,6 +373,8 @@ Tensor Transform(const Tensor &in);
 void Abs(const Tensor &in, Tensor *out);
 void Ceil(const Tensor &in, Tensor *out);
 void Floor(const Tensor &in, Tensor *out);
+void Round(const Tensor &in, Tensor *out);
+void RoundE(const Tensor &in, Tensor *out);
 void Exp(const Tensor &in, Tensor *out);
 void Log(const Tensor &in, Tensor *out);
 void ReLU(const Tensor &in, Tensor *out);
