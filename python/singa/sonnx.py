@@ -1113,6 +1113,8 @@ class SingaBackend(Backend):
         'Expand': 'Expand',
         'Pad': 'Pad',
         'Upsample': 'UpSample',
+        'DepthToSpace': 'DepthToSpace',
+        'SpaceToDepth': 'SpaceToDepth',
         'Gemm': 'layer.Gemm',  # layer
         'BatchNormalization': 'layer.BatchNorm2d',  # layer
         'Conv': 'layer.Conv2d',  # layer
@@ -1154,7 +1156,24 @@ class SingaBackend(Backend):
         'Expand': '_create_expand',
         'Pad': '_create_pad',
         'Upsample': '_create_upsample',
+        'DepthToSpace': '_create_depth_space',
+        'SpaceToDepth': '_create_depth_space',
     }
+
+    @classmethod
+    def _create_depth_space(cls, onnx_node, operator, opset_version=_opset_version):
+        """
+        get the DepthToSpace and SpaceToDepth operator from onnx node
+        Args:
+            onnx_node (OnnxNode): a given onnx node
+            operator (Operator Class): a singa operator class
+            opset_version (int): the opset version
+        Returns: 
+            singa operator instance
+        """
+        blocksize = onnx_node.getattr("blocksize")
+        mode = utils.force_unicode(onnx_node.getattr("mode", "DCR"))
+        return operator(blocksize, mode)
 
 
     @classmethod

@@ -3220,6 +3220,65 @@ class TestPythonOperation(unittest.TestCase):
     def test_upsample_gpu(self):
         self.upsample_helper(gpu_dev)
 
+    def depth_space_helper(self, dev):
+        # (1, 8, 2, 3) input tensor
+        X = np.array(
+            [[[[0., 1., 2.], [3., 4., 5.]], [[9., 10., 11.], [12., 13., 14.]],
+              [[18., 19., 20.], [21., 22., 23.]],
+              [[27., 28., 29.], [30., 31., 32.]],
+              [[36., 37., 38.], [39., 40., 41.]],
+              [[45., 46., 47.], [48., 49., 50.]],
+              [[54., 55., 56.], [57., 58., 59.]],
+              [[63., 64., 65.], [66., 67., 68.]]]],
+            dtype=np.float32)
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        # (1, 2, 4, 6) output tensor
+        y_t = np.array(
+            [[[[0., 18., 1., 19., 2., 20.], [36., 54., 37., 55., 38., 56.],
+               [3., 21., 4., 22., 5., 23.], [39., 57., 40., 58., 41., 59.]],
+              [[9., 27., 10., 28., 11., 29.], [45., 63., 46., 64., 47., 65.],
+               [12., 30., 13., 31., 14., 32.], [48., 66., 49., 67., 50., 68.]]]
+            ],
+            dtype=np.float32)
+        dy = tensor.from_numpy(y_t)
+        dy.to_device(dev)
+        y = autograd.depth_to_space(x, 2, "DCR")
+        dx = y.creator.backward(dy.data)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), y_t)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), X)
+
+        y = autograd.space_to_depth(dy, 2, "DCR")
+        dx = y.creator.backward(x.data)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), X)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), y_t)
+
+        y_t = np.array(
+            [[[[0., 9., 1., 10., 2., 11.], [18., 27., 19., 28., 20., 29.],
+               [3., 12., 4., 13., 5., 14.], [21., 30., 22., 31., 23., 32.]],
+              [[36., 45., 37., 46., 38., 47.], [54., 63., 55., 64., 56., 65.],
+               [39., 48., 40., 49., 41., 50.], [57., 66., 58., 67., 59., 68.]]]
+            ],
+            dtype=np.float32)
+        dy = tensor.from_numpy(y_t)
+        dy.to_device(dev)
+        y = autograd.depth_to_space(x, 2, "CRD")
+        dx = y.creator.backward(dy.data)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), y_t)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), X)
+
+        y = autograd.space_to_depth(dy, 2, "CRD")
+        dx = y.creator.backward(x.data)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), X)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), y_t)
+
+    def test_depth_space_cpu(self):
+        self.depth_space_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_depth_space_gpu(self):
+        self.depth_space_helper(gpu_dev)
 
 if __name__ == '__main__':
     unittest.main()

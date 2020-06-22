@@ -76,6 +76,7 @@ _exclude_nodes_patterns = [
     r'(test_gemm_default_single_elem_vector_bias_cuda)',  # status == CURAND_STATUS_SUCCESS
     r'(test_equal_bcast_cuda|test_equal_cuda)',  # Unknown combination of data type kInt and language kCuda
     r'(test_maxpool_1d|test_averagepool_1d|test_maxpool_3d|test_averagepool_3d)',  # Check failed: idx < shape_.size() (3 vs. 3)
+    r'test_depthtospace.*cuda', # cuda cannot support transpose with more than 4 dims
 ]
 
 _include_real_patterns = []  # todo

@@ -5030,6 +5030,182 @@ def upsample(x, mode, scales):
     return UpSample(mode, scales)(x)[0]
 
 
+class DepthToSpace(Operator):
+    """
+    DepthToSpace operator following ONNX Operator Schemas
+    https://github.com/onnx/onnx/blob/master/docs/Operators.md#DepthToSpace
+
+    Example usage::
+    blocksize = 2
+    # (1, 8, 2, 3) input tensor
+    data = [[[[0., 1., 2.],
+            [3., 4., 5.]],
+            [[9., 10., 11.],
+            [12., 13., 14.]],
+            [[18., 19., 20.],
+            [21., 22., 23.]],
+            [[27., 28., 29.],
+            [30., 31., 32.]],
+            [[36., 37., 38.],
+            [39., 40., 41.]],
+            [[45., 46., 47.],
+            [48., 49., 50.]],
+            [[54., 55., 56.],
+            [57., 58., 59.]],
+            [[63., 64., 65.],
+            [66., 67., 68.]]]]
+
+    # DCR mode
+    # (1, 2, 4, 6) output tensor
+    output = [[[[0., 18., 1., 19., 2., 20.],
+                [36., 54., 37., 55., 38., 56.],
+                [3., 21., 4., 22., 5., 23.],
+                [39., 57., 40., 58., 41., 59.]],
+               [[9., 27., 10., 28., 11., 29.],
+                [45., 63., 46., 64., 47., 65.],
+                [12., 30., 13., 31., 14., 32.],
+                [48., 66., 49., 67., 50., 68.]]]]
+
+    # CRD mode
+    # (1, 2, 4, 6) output tensor
+    output = [[[[0., 9., 1., 10., 2., 11.],
+                [18., 27., 19., 28., 20., 29.],
+                [3., 12., 4., 13., 5., 14.],
+                [21., 30., 22., 31., 23., 32.]],
+               [[36., 45., 37., 46., 38., 47.],
+                [54., 63., 55., 64., 56., 65.],
+                [39., 48., 40., 49., 41., 50.],
+                [57., 66., 58., 67., 59., 68.]]]]
+    """
+
+    def __init__(self, blocksize, mode="DCR"):
+        """
+        Args:
+            blocksize (int): Blocks of [blocksize, blocksize] are moved.
+            mode (string): DCR (default) for depth-column-row order re-
+                arrangement. Use CRD for column-row-depth order.
+        """
+        super(DepthToSpace, self).__init__()
+        self.blocksize = blocksize
+        self.mode = mode.upper()
+
+    def forward(self, x):
+        if training:
+            self.x_shape = x.shape()
+        b, c, h, w = x.shape()
+        blocksize = self.blocksize
+        if self.mode == "DCR":
+            x = singa.Reshape(
+                x, [b, blocksize, blocksize, c // (blocksize**2), h, w])
+            x = singa.Transpose(x, [0, 3, 4, 1, 5, 2])
+            x = singa.Reshape(
+                x, [b, c // (blocksize**2), h * blocksize, w * blocksize])
+        elif self.mode == "CRD":
+            x = singa.Reshape(
+                x, [b, c // (blocksize**2), blocksize, blocksize, h, w])
+            x = singa.Transpose(x, [0, 1, 4, 2, 5, 3])
+            x = singa.Reshape(
+                x, [b, c // (blocksize**2), h * blocksize, w * blocksize])
+        else:
+            assert False, ("only support two methods: DCR and CRD.")
+        return x
+
+    def backward(self, dy):
+        b, c, h, w = self.x_shape
+        blocksize = self.blocksize
+        dy = singa.Reshape(
+            dy, [b, c // (blocksize**2), h, blocksize, w, blocksize])
+        if self.mode == "DCR":
+            dy = singa.Transpose(dy, [0, 3, 5, 1, 2, 4])
+        elif self.mode == "CRD":
+            dy = singa.Transpose(dy, [0, 1, 3, 5, 2, 4])
+        else:
+            assert False, ("only support two methods: DCR and CRD.")
+        dy = singa.Reshape(dy, self.x_shape)
+        return dy
+
+
+def depth_to_space(x, blocksize, mode="DCR"):
+    """
+    Produces a DepthToSpace operator
+    Args:
+        x (Tensor): input tensor.
+        blocksize (int): Blocks of [blocksize, blocksize] are moved.
+        mode (string): DCR (default) for depth-column-row order re-
+            arrangement. Use CRD for column-row-depth order.
+    Returns:
+        the output Tensor.
+    """
+    return DepthToSpace(blocksize, mode)(x)[0]
+
+
+class SpaceToDepth(Operator):
+    """
+    SpaceToDepth operator following ONNX Operator Schemas, reverse of DepthToSpace
+    https://github.com/onnx/onnx/blob/master/docs/Operators.md#SpaceToDepth
+    """
+
+    def __init__(self, blocksize, mode="DCR"):
+        """
+        Args:
+            blocksize (int): Blocks of [blocksize, blocksize] are moved.
+            mode (string): DCR (default) for depth-column-row order re-
+                arrangement. Use CRD for column-row-depth order.
+        """
+        super(SpaceToDepth, self).__init__()
+        self.blocksize = blocksize
+        self.mode = mode.upper()
+
+    def forward(self, x):
+        blocksize = self.blocksize
+        b, c, h, w = x.shape()
+        b, c, h, w = b, c * (blocksize**2), h // blocksize, w // blocksize
+        if training:
+            self.x_shape = (b, c, h, w)
+        x = singa.Reshape(
+            x, [b, c // (blocksize**2), h, blocksize, w, blocksize])
+        if self.mode == "DCR":
+            x = singa.Transpose(x, [0, 3, 5, 1, 2, 4])
+        elif self.mode == "CRD":
+            x = singa.Transpose(x, [0, 1, 3, 5, 2, 4])
+        else:
+            assert False, ("only support two methods: DCR and CRD.")
+        x = singa.Reshape(x, self.x_shape)
+        return x
+
+    def backward(self, dy):
+        b, c, h, w = self.x_shape
+        blocksize = self.blocksize
+        if self.mode == "DCR":
+            dy = singa.Reshape(
+                dy, [b, blocksize, blocksize, c // (blocksize**2), h, w])
+            dy = singa.Transpose(dy, [0, 3, 4, 1, 5, 2])
+            dy = singa.Reshape(
+                dy, [b, c // (blocksize**2), h * blocksize, w * blocksize])
+        elif self.mode == "CRD":
+            dy = singa.Reshape(
+                dy, [b, c // (blocksize**2), blocksize, blocksize, h, w])
+            dy = singa.Transpose(dy, [0, 1, 4, 2, 5, 3])
+            dy = singa.Reshape(
+                dy, [b, c // (blocksize**2), h * blocksize, w * blocksize])
+        else:
+            assert False, ("only support two methods: DCR and CRD.")
+        return dy
+
+
+def space_to_depth(x, blocksize, mode="DCR"):
+    """
+    Produces a SpaceToDepth operator
+    Args:
+        x (Tensor): input tensor.
+        blocksize (int): Blocks of [blocksize, blocksize] are moved.
+        mode (string): DCR (default) for depth-column-row order re-
+            arrangement. Use CRD for column-row-depth order.
+    Returns:
+        the output Tensor.
+    """
+    return SpaceToDepth(blocksize, mode)(x)[0]
+
 ''' alias for Operator and Layers
 '''
 Operation = Operator
