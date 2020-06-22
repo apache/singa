@@ -44,9 +44,9 @@ CudaGPU::~CudaGPU() {
   }
 #endif
 
-// Explicitly destroys and cleans up all resources associated with current device 
-CUDA_CHECK(cudaDeviceReset());
-
+  // Explicitly destroys and cleans up all resources associated with current
+  // device
+  CUDA_CHECK(cudaDeviceReset());
 }
 const int kNumCudaStream = 1;
 
