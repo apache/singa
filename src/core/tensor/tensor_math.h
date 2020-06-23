@@ -101,6 +101,16 @@ void Floor(const Tensor &in, Tensor *out, Context *ctx) {
   LOG(FATAL) << "Floor Not Implemented";
 }
 
+template <typename DType, typename Lang>
+void Round(const Tensor &in, Tensor *out, Context *ctx) {
+  LOG(FATAL) << "Round Not Implemented";
+}
+
+template <typename DType, typename Lang>
+void RoundE(const Tensor &in, Tensor *out, Context *ctx) {
+  LOG(FATAL) << "Round Not Implemented";
+}
+
 /// out[i] = in[i] + x
 template <typename DType, typename Lang>
 void Add(const Tensor &in, const DType x, Tensor *out, Context *ctx) {

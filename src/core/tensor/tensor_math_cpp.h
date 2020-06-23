@@ -266,6 +266,16 @@ void Floor<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
   traverse_unary<float>(in, out, [](float x) { return std::floor(x); });
 }
 
+template <>
+void Round<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
+  traverse_unary<float>(in, out, [](float x) { return std::round(x); });
+}
+
+template <>
+void RoundE<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
+  traverse_unary<float>(in, out, [](float x) { return std::round(x/2)*2; });
+}
+
 #ifdef USE_DNNL
 template <>
 void SoftMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {

@@ -130,6 +130,21 @@ __global__ void KernelFloor(const size_t n, const float *in, float *out) {
   }
 }
 
+__global__ void KernelRound(const size_t n, const float *in, float *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = std::round(in[i]);
+  }
+}
+
+__global__ void KernelRoundE(const size_t n, const float *in, float *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = std::round(in[i]/2)*2;
+  }
+}
+
+
 __global__ void KernelLog(const size_t n, const float *in, float *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
@@ -551,6 +566,14 @@ void ceil2(const size_t n, const float *in, float *out, cudaStream_t s) {
 
 void floor(const size_t n, const float *in, float *out, cudaStream_t s) {
   KernelFloor <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
+}
+
+void round(const size_t n, const float *in, float *out, cudaStream_t s) {
+  KernelRound <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
+}
+
+void rounde(const size_t n, const float *in, float *out, cudaStream_t s) {
+  KernelRoundE <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
 }
 
 void log(const size_t n, const float *in, float *out, cudaStream_t s) {

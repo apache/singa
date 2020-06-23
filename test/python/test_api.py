@@ -832,6 +832,32 @@ class TestAPI(unittest.TestCase):
 
         dW = singa_api.GpuRNNBackwardW(x.data, hx.data, y, rnn_handle)
 
+    def test_round_cpu(self):
+        self._round(cpu_dev)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_round_gpu(self):
+        self._round(gpu_dev)
+
+    def _round(self, dev=gpu_dev):
+        x = tensor.Tensor(shape=(3,4,5), device=dev).gaussian(0, 1)
+        y = tensor._call_singa_func(singa_api.Round, x.data)
+        np.testing.assert_array_almost_equal(np.round(tensor.to_numpy(x)),
+                                             tensor.to_numpy(y))
+
+    def test_round_even_cpu(self):
+        self._round_even(cpu_dev)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_round_even_gpu(self):
+        self._round_even(gpu_dev)
+
+    def _round_even(self, dev=gpu_dev):
+        x = tensor.Tensor(shape=(2,3,3,2), device=dev).gaussian(0, 5)
+        y = tensor._call_singa_func(singa_api.RoundE, x.data)
+        np.testing.assert_array_almost_equal(np.round(tensor.to_numpy(x)/2)*2,
+                                             tensor.to_numpy(y))
+
 
 if __name__ == '__main__':
     unittest.main()
