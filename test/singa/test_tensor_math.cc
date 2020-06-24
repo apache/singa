@@ -270,6 +270,14 @@ TEST_F(TensorMath, GECpp) {
   EXPECT_FLOAT_EQ(1.0f, dptr1[2]);
 }
 
+TEST_F(TensorMath, EQCpp) {
+  Tensor p1 = a == 2.0f;
+  const float *dptr1 = p1.data<float>();
+  EXPECT_FLOAT_EQ(0.0f, dptr1[0]);
+  EXPECT_FLOAT_EQ(1.0f, dptr1[1]);
+  EXPECT_FLOAT_EQ(0.0f, dptr1[2]);
+}
+
 TEST_F(TensorMath, PowCpp) {
   Tensor p1 = Pow(b, 3.0f);
   const float *dptr1 = p1.data<float>();

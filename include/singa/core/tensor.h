@@ -453,6 +453,16 @@ void GE(const Tensor &in, const SType x, Tensor *out);
 Tensor operator>=(const Tensor &in1, const Tensor &in2);
 void GE(const Tensor &in1, const Tensor &in2, Tensor *out);
 
+/// Element-wise operation, out[i]= (in[i] == x) ? 1.f : 0.f
+template <typename SType>
+Tensor operator==(const Tensor &in, const SType x);
+template <typename SType>
+void EQ(const Tensor &in, const SType x, Tensor *out);
+
+/// Element-wise operation, out[i]= (in1[i] == in2[i]) ? 1.f : 0.f
+Tensor operator==(const Tensor &in1, const Tensor &in2);
+void EQ(const Tensor &in1, const Tensor &in2, Tensor *out);
+
 Tensor operator+(const Tensor &lhs, const Tensor &rhs);
 void Add(const Tensor &lhs, const Tensor &rhs, Tensor *out);
 Tensor operator-(const Tensor &lhs, const Tensor &rhs);

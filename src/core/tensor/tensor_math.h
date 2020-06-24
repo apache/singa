@@ -220,6 +220,16 @@ template <typename DType, typename Lang>
 void GT(const Tensor &in, const Tensor &in2, Tensor *out, Context *ctx) {
   LOG(FATAL) << "Tensor-Tensor GT Not Implemented";
 }
+/// out[i]=(in[i]==x)?1.f:0.f
+template <typename DType, typename Lang>
+void EQ(const Tensor &in, const DType x, Tensor *out, Context *ctx) {
+  LOG(FATAL) << "EQ Not Implemented";
+}
+/// out[i]=(in[i]==in2[i])?1.f:0.f
+template <typename DType, typename Lang>
+void EQ(const Tensor &in, const Tensor &in2, Tensor *out, Context *ctx) {
+  LOG(FATAL) << "Tensor-Tensor EQ Not Implemented";
+}
 /// out[i] = pow(in[i], x)
 template <typename DType, typename Lang>
 void Pow(const Tensor &in, const DType x, Tensor *out, Context *ctx) {

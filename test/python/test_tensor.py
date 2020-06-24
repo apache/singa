@@ -90,6 +90,8 @@ class TestTensorMethods(unittest.TestCase):
         self.assertEqual(tensor.to_numpy(a)[0, 0], 0)
         a = t >= 3.45
         self.assertEqual(tensor.to_numpy(a)[0, 0], 1)
+        a = t == 3.45
+        self.assertEqual(tensor.to_numpy(a)[0, 0], 1)
         a = tensor.lt(t, 3.45)
         self.assertEqual(tensor.to_numpy(a)[0, 0], 0)
         a = tensor.le(t, 3.45)
@@ -97,6 +99,8 @@ class TestTensorMethods(unittest.TestCase):
         a = tensor.gt(t, 3.45)
         self.assertEqual(tensor.to_numpy(a)[0, 0], 0)
         a = tensor.ge(t, 3.45)
+        self.assertEqual(tensor.to_numpy(a)[0, 0], 1)
+        a = tensor.eq(t, 3.45)
         self.assertEqual(tensor.to_numpy(a)[0, 0], 1)
 
     def test_tensor_copy(self):

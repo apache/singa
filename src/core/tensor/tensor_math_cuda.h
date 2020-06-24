@@ -487,6 +487,30 @@ void LE<float, lang::Cuda>(const Tensor& in1, const Tensor& in2, Tensor* out,
   cuda::le(num, outPtr, 0.0, outPtr, ctx->stream);
 }
 
+template <>
+void EQ<float, lang::Cuda>(const Tensor& in, const float x, Tensor* out,
+                           Context* ctx) {
+  float* outPtr = static_cast<float*>(out->block()->mutable_data());
+  const float* inPtr = static_cast<const float*>(in.block()->data());
+  const size_t num = in.Size();
+
+  if (in.stride() == out->stride()) {
+    cuda::eq(num, inPtr, x, outPtr, ctx->stream);
+  } else {  // else we transform in to out to store first
+    Transform<float, lang::Cuda>(in, out, ctx);
+    cuda::eq(num, outPtr, x, outPtr, ctx->stream);
+  }
+}
+template <>
+void EQ<float, lang::Cuda>(const Tensor& in1, const Tensor& in2, Tensor* out,
+                           Context* ctx) {
+  Sub<float, lang::Cuda>(in1, in2, out, ctx);
+  float* outPtr = static_cast<float*>(out->block()->mutable_data());
+  const size_t num = in1.Size();
+  cuda::eq(num, outPtr, 0.0, outPtr, ctx->stream);
+}
+
+
 /// Natual logarithm, the base is e, Neper number out[i]=ln(in[i]).
 template <>
 void Log<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
