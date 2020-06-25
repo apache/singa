@@ -688,7 +688,7 @@ void RepeatDataToFrom(bool broadcast_flag, const vector<size_t> &repeats,
         break;                                                 \
       }                                                        \
       case ((kInt << _SwitchShift) + kCpp): {                  \
-        typedef float DType;                                   \
+        typedef int DType;                                   \
         typedef lang::Cpp Lang;                                \
         { __VA_ARGS__ }                                        \
         break;                                                 \
@@ -730,9 +730,8 @@ float Tensor::l2() const {
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     device_->Exec(
         [&nrm, this](Context *ctx) {
-          DType ret = DType(0);
-          Nrm2<DType, Lang>(*this, &ret, ctx);
-          nrm = TypeCast<DType, float>(ret);
+          // output nrm is always float
+          Nrm2<DType, Lang>(*this, &nrm, ctx);
         },
         {this->block()}, {}, "L1");
   });
@@ -995,9 +994,9 @@ GenBinaryTensorFn(ReLUBackward, ReLUBackward);
   template <typename SType>                                   \
   void fn(const Tensor &in, const SType x, Tensor *ret) {     \
     EltwiseTensorScalarFn(fn, in, x, ret);                    \
-  }                                                           \
-  template Tensor op<float>(const Tensor &in, const float x); \
-  template void fn<float>(const Tensor &in, const float x, Tensor *ret)
+  }                                                           
+  // template Tensor op<float>(const Tensor &in, const float x); \
+  // template void fn<float>(const Tensor &in, const float x, Tensor *ret)
 
 GenTensorScalarFn(operator+, Add);
 GenTensorScalarFn(operator-, Sub);
