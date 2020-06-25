@@ -44,11 +44,9 @@ CudaGPU::~CudaGPU() {
   }
 #endif
 
-#ifdef USE_DIST
-  CUDA_CHECK(cudaStreamDestroy(ctx_.s));
-  CUDA_CHECK(cudaStreamDestroy(ctx_.c1));
-  CUDA_CHECK(cudaStreamDestroy(ctx_.c2));
-#endif  // USE_DIST
+  // Explicitly destroys and cleans up all resources associated with current
+  // device
+  CUDA_CHECK(cudaDeviceReset());
 }
 const int kNumCudaStream = 1;
 

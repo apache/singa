@@ -65,7 +65,7 @@ def onnx_type_to_singa_type(onnx_type):
 
 gpu_dev = None
 if singa.USE_CUDA:
-    gpu_dev = device.create_cuda_gpu(set_default=False)
+    gpu_dev = device.create_cuda_gpu()
 cpu_dev = device.get_default_device()
 
 
@@ -1735,7 +1735,7 @@ class SingaBackend(Backend):
                 x = tensor.from_numpy(val)
                 if device == 'CPU':
                     assert singa.USE_CUDA, "Your SINGA doesn't compile GPU module."
-                    dev = device.create_cuda_gpu(set_default=False)
+                    dev = device.create_cuda_gpu()
                 else:
                     dev = device.get_default_device()
                 x.to_device(dev)
