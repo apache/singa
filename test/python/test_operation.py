@@ -3220,6 +3220,19 @@ class TestPythonOperation(unittest.TestCase):
     def test_upsample_gpu(self):
         self.upsample_helper(gpu_dev)
 
+    def test_invalid_inputs(self,dev=cpu_dev):
+        _1d = tensor.Tensor((10,), dev)
+        _2d = tensor.Tensor((10,10), dev)
+        _3d = tensor.Tensor((10,10,10), dev)
+        self.assertRaises(AssertionError, autograd.softmax_cross_entropy, _2d,
+                          _3d)
+        self.assertRaises(AssertionError, autograd.mse_loss, _2d,
+                          _3d)
+        self.assertRaises(AssertionError, autograd.add_bias, _2d,
+                          _1d, 3)
+        self.assertRaises(AssertionError, autograd.qa_lstm_loss, _2d,
+                          _1d)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -711,6 +711,9 @@ def add_bias(x, b, axis=0):
     Return:
         the result Tensor
     """
+    assert x.ndim() == 2, "1st arg required 2d tensor. got shape: %s" % (x.shape)
+    assert b.ndim() == 1, "2nd arg required 1d tensor. got shape: %s" % (b.shape)
+    assert axis in [0, 1], "allowed axis: 0 or 1"
     return AddBias(axis)(x, b)[0]
 
 
@@ -1221,6 +1224,8 @@ class QALSTMLoss(Operator):
 
 
 def qa_lstm_loss(pos, neg, M=0.2):
+    assert pos.shape == neg.shape, "input and target shape different: %s, %s" % (
+        pos.shape, neg.shape)
     return QALSTMLoss(M)(pos, neg)[0]
 
 
@@ -1244,6 +1249,12 @@ class SoftMaxCrossEntropy(Operator):
 
 
 def softmax_cross_entropy(x, t):
+    assert x.shape == t.shape, "input and target shape different: %s, %s" % (
+        x.shape, t.shape)
+    assert x.ndim() == 2, "1st arg required 2d tensor. got shape: %s" % (
+        x.shape)
+    assert t.ndim() == 2, "2nd arg required 2d tensor. got shape: %s" % (
+        t.shape)
     # x is the logits and t is the ground truth; both are 2D.
     return SoftMaxCrossEntropy(t)(x)[0]
 
@@ -1268,6 +1279,12 @@ class MeanSquareError(Operator):
 
 
 def mse_loss(x, t):
+    assert x.shape == t.shape, "input and target shape different: %s, %s" % (
+        x.shape, t.shape)
+    assert x.ndim() == 2, "2d input required, input shapes: %s, %s" % (x.shape,
+                                                                       t.shape)
+    assert t.ndim() == 2, "2d input required, input shapes: %s, %s" % (x.shape,
+                                                                       t.shape)
     return MeanSquareError()(x, t)[0]
 
 
