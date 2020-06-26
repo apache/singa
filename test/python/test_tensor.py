@@ -90,6 +90,8 @@ class TestTensorMethods(unittest.TestCase):
         self.assertEqual(tensor.to_numpy(a)[0, 0], 0)
         a = t >= 3.45
         self.assertEqual(tensor.to_numpy(a)[0, 0], 1)
+        a = t == 3.45
+        self.assertEqual(tensor.to_numpy(a)[0, 0], 1)
         a = tensor.lt(t, 3.45)
         self.assertEqual(tensor.to_numpy(a)[0, 0], 0)
         a = tensor.le(t, 3.45)
@@ -97,6 +99,8 @@ class TestTensorMethods(unittest.TestCase):
         a = tensor.gt(t, 3.45)
         self.assertEqual(tensor.to_numpy(a)[0, 0], 0)
         a = tensor.ge(t, 3.45)
+        self.assertEqual(tensor.to_numpy(a)[0, 0], 1)
+        a = tensor.eq(t, 3.45)
         self.assertEqual(tensor.to_numpy(a)[0, 0], 1)
 
     def test_tensor_copy(self):
@@ -466,6 +470,13 @@ class TestTensorMethods(unittest.TestCase):
     @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
     def test_matmul_transpose_gpu(self):
         self._matmul_transpose_helper(gpu_dev)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_gaussian_gpu(self, dev=gpu_dev):
+        x = tensor.Tensor((3, 5, 3, 5), device=dev)
+        x.gaussian(0, 1)
+        x = tensor.Tensor((4, 5, 3, 2), device=dev)
+        x.gaussian(0, 1)
 
 
 if __name__ == '__main__':

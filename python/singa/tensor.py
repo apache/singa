@@ -59,6 +59,7 @@ from deprecated import deprecated
 from builtins import object
 import numpy as np
 from functools import reduce
+import re
 
 from .proto import core_pb2
 from . import singa_wrap as singa
@@ -154,6 +155,17 @@ class Tensor(object):
             axis_index += 1
 
         return ret
+
+    def is_dummy(self):
+        '''
+        Returns:
+            True if the tensor is a dummy tensor
+        '''
+        match = re.match(r'Dummy#\d+', self.name)
+        if match:
+            return True
+        else:
+            return False
 
     def ndim(self):
         '''
@@ -690,6 +702,12 @@ class Tensor(object):
         else:
             return _call_singa_func(singa.GEFloat, self.data, rhs)
 
+    def __eq__(self, rhs):
+        if isinstance(rhs, Tensor):
+            return from_raw_tensor(singa.__eq__(self.data, rhs.data))
+        else:
+            return _call_singa_func(singa.EQFloat, self.data, rhs)
+
     def __radd__(self, lhs):
         lhs = float(lhs)
         one = Tensor(self.shape, self.device, self.dtype)
@@ -1157,6 +1175,20 @@ def ge(t, x):
         or t[i] >= x[i] ? 1.0f:0.0f
     '''
     return t >= x
+
+
+def eq(t, x):
+    '''Elementi-wise comparison for t == x.
+
+    Args:
+        t (Tensor): left hand side operand
+        x (Tensor or float): right hand side operand
+
+    Returns:
+        a Tensor with each element being t[i] == x ? 1.0f:0.0f,
+        or t[i] == x[i] ? 1.0f:0.0f
+    '''
+    return t == x
 
 
 def add(lhs, rhs, ret=None):

@@ -129,7 +129,7 @@ class TestAPI(unittest.TestCase):
                 tensor.Tensor(device=dev, data=b_0).data, rm_t.data, rv_t.data)
 
             np.testing.assert_array_almost_equal(
-                y_1, tensor.to_numpy(_cTensor_to_pyTensor(y_2_c)))
+                y_1, tensor.to_numpy(_cTensor_to_pyTensor(y_2_c)), decimal=4)
             np.testing.assert_array_almost_equal(
                 bm_1, tensor.to_numpy(_cTensor_to_pyTensor(bm_2_c)))
             np.testing.assert_array_almost_equal(rm_1, tensor.to_numpy(rm_t))
@@ -183,7 +183,7 @@ class TestAPI(unittest.TestCase):
             #print(tensor.to_numpy(_cTensor_to_pyTensor(y_2_c)))
 
             np.testing.assert_array_almost_equal(
-                y_1, tensor.to_numpy(_cTensor_to_pyTensor(y_2_c)), decimal=5)
+                y_1, tensor.to_numpy(_cTensor_to_pyTensor(y_2_c)), decimal=3)
             return
 
         x_0 = np.array([1, 1, 1, 1, 2, 2, 2, 2, 10, 10, 10, 10, 20, 20, 20, 20],
@@ -871,7 +871,32 @@ class TestAPI(unittest.TestCase):
                                                      cx.data, seq_lengths.data,
                                                      rnn_handle)
 
-        pass
+
+    def test_round_cpu(self):
+        self._round(cpu_dev)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_round_gpu(self):
+        self._round(gpu_dev)
+
+    def _round(self, dev=gpu_dev):
+        x = tensor.Tensor(shape=(3,4,5), device=dev).gaussian(0, 1)
+        y = tensor._call_singa_func(singa_api.Round, x.data)
+        np.testing.assert_array_almost_equal(np.round(tensor.to_numpy(x)),
+                                             tensor.to_numpy(y))
+
+    def test_round_even_cpu(self):
+        self._round_even(cpu_dev)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_round_even_gpu(self):
+        self._round_even(gpu_dev)
+
+    def _round_even(self, dev=gpu_dev):
+        x = tensor.Tensor(shape=(2,3,3,2), device=dev).gaussian(0, 5)
+        y = tensor._call_singa_func(singa_api.RoundE, x.data)
+        np.testing.assert_array_almost_equal(np.round(tensor.to_numpy(x)/2)*2,
+                                             tensor.to_numpy(y))
 
 
 if __name__ == '__main__':

@@ -35,6 +35,23 @@ Device::~Device() {
   }
 }
 
+void Device::Reset() {
+  // Sync the device to finished the current calculation
+  graph_enabled_ = false;
+  Sync();
+
+  // Reset Seed
+  seed_ = std::chrono::system_clock::now().time_since_epoch().count();
+  SetRandSeed(seed_);
+
+  // Reset Graph
+  graph_->Reset();
+
+  // Others
+  verbosity_ = 0;
+  skip_iteration_ = 5;
+}
+
 void Device::Exec(function<void(Context*)>&& fn,
                   const vector<Block*> read_blocks,
                   const vector<Block*> write_blocks, string op_name,

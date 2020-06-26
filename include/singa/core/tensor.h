@@ -350,6 +350,8 @@ void RepeatDataToFrom(bool broadcast_flag, const vector<size_t> &repeats,
 Tensor Abs(const Tensor &in);
 Tensor Ceil(const Tensor &in);
 Tensor Floor(const Tensor &in);
+Tensor Round(const Tensor &in);
+Tensor RoundE(const Tensor &in);
 Tensor Exp(const Tensor &in);
 Tensor Log(const Tensor &in);
 Tensor ReLU(const Tensor &in);
@@ -376,6 +378,8 @@ Tensor Transform(const Tensor &in);
 void Abs(const Tensor &in, Tensor *out);
 void Ceil(const Tensor &in, Tensor *out);
 void Floor(const Tensor &in, Tensor *out);
+void Round(const Tensor &in, Tensor *out);
+void RoundE(const Tensor &in, Tensor *out);
 void Exp(const Tensor &in, Tensor *out);
 void Log(const Tensor &in, Tensor *out);
 void ReLU(const Tensor &in, Tensor *out);
@@ -453,6 +457,16 @@ void GE(const Tensor &in, const SType x, Tensor *out);
 /// Element-wise operation, out[i]= (in1[i] >= in2[i]) ? 1.f : 0.f
 Tensor operator>=(const Tensor &in1, const Tensor &in2);
 void GE(const Tensor &in1, const Tensor &in2, Tensor *out);
+
+/// Element-wise operation, out[i]= (in[i] == x) ? 1.f : 0.f
+template <typename SType>
+Tensor operator==(const Tensor &in, const SType x);
+template <typename SType>
+void EQ(const Tensor &in, const SType x, Tensor *out);
+
+/// Element-wise operation, out[i]= (in1[i] == in2[i]) ? 1.f : 0.f
+Tensor operator==(const Tensor &in1, const Tensor &in2);
+void EQ(const Tensor &in1, const Tensor &in2, Tensor *out);
 
 Tensor operator+(const Tensor &lhs, const Tensor &rhs);
 void Add(const Tensor &lhs, const Tensor &rhs, Tensor *out);

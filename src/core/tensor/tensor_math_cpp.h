@@ -266,6 +266,16 @@ void Floor<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
   traverse_unary<float>(in, out, [](float x) { return std::floor(x); });
 }
 
+template <>
+void Round<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
+  traverse_unary<float>(in, out, [](float x) { return std::round(x); });
+}
+
+template <>
+void RoundE<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
+  traverse_unary<float>(in, out, [](float x) { return std::round(x/2)*2; });
+}
+
 #ifdef USE_DNNL
 template <>
 void SoftMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
@@ -408,6 +418,13 @@ void GE<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
 }
 
 template <>
+void GE<int, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
+                          Context *ctx) {
+  auto ge_lambda_binary = [](int a, int b) { return (a >= b) ? 1.f : 0.f; };
+  traverse_binary<int>(in1, in2, out, ge_lambda_binary);
+}
+
+template <>
 void GT<float, lang::Cpp>(const Tensor &in, const float x, Tensor *out,
                           Context *ctx) {
   auto gt_lambda = [&x](float a) { return (a > x) ? 1.f : 0.f; };
@@ -422,6 +439,13 @@ void GT<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
 }
 
 template <>
+void GT<int, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
+                          Context *ctx) {
+  auto gt_lambda_binary = [](int a, int b) { return (a > b) ? 1.f : 0.f; };
+  traverse_binary<int>(in1, in2, out, gt_lambda_binary);
+}
+
+template <>
 void LE<float, lang::Cpp>(const Tensor &in, const float x, Tensor *out,
                           Context *ctx) {
   auto le_lambda = [&x](float a) { return (a <= x) ? 1.f : 0.f; };
@@ -433,6 +457,13 @@ void LE<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
                           Context *ctx) {
   auto le_lambda_binary = [](float a, float b) { return (a <= b) ? 1.f : 0.f; };
   traverse_binary<float>(in1, in2, out, le_lambda_binary);
+}
+
+template <>
+void LE<int, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
+                          Context *ctx) {
+  auto le_lambda_binary = [](int a, int b) { return (a <= b) ? 1.f : 0.f; };
+  traverse_binary<int>(in1, in2, out, le_lambda_binary);
 }
 
 template <>
@@ -456,6 +487,34 @@ void LT<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
                           Context *ctx) {
   auto lt_lambda_binary = [](float a, float b) { return (a < b) ? 1.f : 0.f; };
   traverse_binary<float>(in1, in2, out, lt_lambda_binary);
+}
+
+template <>
+void LT<int, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
+                          Context *ctx) {
+  auto lt_lambda_binary = [](int a, int b) { return (a < b) ? 1.f : 0.f; };
+  traverse_binary<int>(in1, in2, out, lt_lambda_binary);
+}
+
+template <>
+void EQ<float, lang::Cpp>(const Tensor &in, const float x, Tensor *out,
+                          Context *ctx) {
+  auto eq_lambda = [&x](float a) { return (a == x) ? 1.f : 0.f; };
+  traverse_unary<float>(in, out, eq_lambda);
+}
+
+template <>
+void EQ<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
+                          Context *ctx) {
+  auto eq_lambda_binary = [](float a, float b) { return (a == b) ? 1.f : 0.f; };
+  traverse_binary<float>(in1, in2, out, eq_lambda_binary);
+}
+
+template <>
+void EQ<int, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
+                          Context *ctx) {
+  auto eq_lambda_binary = [](int a, int b) { return (a == b) ? 1.f : 0.f; };
+  traverse_binary<int>(in1, in2, out, eq_lambda_binary);
 }
 
 template <>

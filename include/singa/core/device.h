@@ -62,6 +62,8 @@ class Device {
   /// max mem size to use (in MB)
   Device(int id, int num_executors);
 
+  void Reset();
+
   virtual void SetRandSeed(unsigned seed) = 0;
 
   void EnableGraph(bool enable) { graph_enabled_ = enable; }
@@ -122,14 +124,16 @@ class Device {
 
   void PrintTimeProfiling();
   void SetVerbosity(int verbosity) { verbosity_ = verbosity; };
-  void SetSkipIteration(int skip_iteration) { skip_iteration_ = skip_iteration; };
+  void SetSkipIteration(int skip_iteration) {
+    skip_iteration_ = skip_iteration;
+  };
 
  protected:
   /// Execute one operation on one executor.
   virtual void DoExec(function<void(Context*)>&& fn, int executor) = 0;
-  virtual void TimeProfilingDoExec(function<void(Context*)>&& fn,
-                            int executor, Node *node) = 0;
-  virtual void EvaluateTimeElapsed(Node *node) = 0;
+  virtual void TimeProfilingDoExec(function<void(Context*)>&& fn, int executor,
+                                   Node* node) = 0;
+  virtual void EvaluateTimeElapsed(Node* node) = 0;
 
   virtual void CopyToFrom(void* dst, const void* src, size_t nBytes,
                           CopyDirection direction, Context* ctx) = 0;
@@ -184,9 +188,9 @@ class CppCPU : public Device {
 
  protected:
   void DoExec(function<void(Context*)>&& fn, int executor) override;
-  void TimeProfilingDoExec(function<void(Context*)>&& fn,
-                            int executor, Node *node) override;
-  void EvaluateTimeElapsed(Node *node) override;
+  void TimeProfilingDoExec(function<void(Context*)>&& fn, int executor,
+                           Node* node) override;
+  void EvaluateTimeElapsed(Node* node) override;
 
   void CopyToFrom(void* dst, const void* src, size_t nBytes,
                   CopyDirection direction, Context* ctx) override;
@@ -217,9 +221,9 @@ class CudaGPU : public Device {
 
  protected:
   void DoExec(function<void(Context*)>&& fn, int executor) override;
-  void TimeProfilingDoExec(function<void(Context*)>&& fn,
-                            int executor, Node *node) override;
-  void EvaluateTimeElapsed(Node *node) override;
+  void TimeProfilingDoExec(function<void(Context*)>&& fn, int executor,
+                           Node* node) override;
+  void EvaluateTimeElapsed(Node* node) override;
 
   void SyncBeforeCountingTime();
 
@@ -306,7 +310,10 @@ class OpenclDevice : public singa::Device {
 class Platform {
  public:
   /// Return the default host device
-  static std::shared_ptr<Device> GetDefaultDevice() { return defaultDevice; }
+  static std::shared_ptr<Device> GetDefaultDevice() {
+    defaultDevice->Reset();
+    return defaultDevice;
+  }
 
 #ifdef USE_CUDA
   /// Return the number of total available GPUs
