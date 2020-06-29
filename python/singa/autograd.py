@@ -117,7 +117,11 @@ def gradients(y, dy=None):
     """
     grads = {}  # mapping: x->dx if x.stores_grad
     for p, dp in backward(y, dy):
-        grads[p] = dp
+        # TODO: this fn is only helper for test case for now.
+        #   1. could implement __hash__ or
+        #   2. make grad as a attribute of tensor class
+        #      p.grad = dp
+        grads[id(p)] = dp
     return grads
 
 
