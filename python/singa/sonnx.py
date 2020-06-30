@@ -1689,8 +1689,7 @@ class SingaBackend(Backend):
         """
         onnx_tensor = onnx_node.getattr('value')
         np_dtype = mapping.TENSOR_TYPE_TO_NP_TYPE[onnx_tensor.data_type]
-        np_tensor = np.frombuffer(onnx_tensor.raw_data, dtype=np_dtype)
-        return tensor.from_numpy(np_tensor)
+        return np.frombuffer(onnx_tensor.raw_data, dtype=np_dtype)
 
     @classmethod
     def _onnx_node_to_singa_op(cls, onnx_node, opset_version=_opset_version):
