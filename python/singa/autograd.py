@@ -2824,7 +2824,14 @@ class Sub(Operator):
         """
         Return `a-b`, where x is CTensor.
         """
+        ori_type = None
+        if a.data_type() != singa.kFloat32:
+            ori_type = a.data_type()
+            a = a.AsType(singa.kFloat32)
+            b = b.AsType(singa.kFloat32)
         res = singa.__sub__(a, b)
+        if ori_type is not None:
+            res = res.AsType(ori_type)
         if training:
             self.shape0 = list(a.shape())
             self.shape1 = list(b.shape())
@@ -3115,8 +3122,15 @@ class Div(Operator):
         """
         Return `np.div(a,b)`, where a and b are CTensor.
         """
+        ori_type = None
+        if a.data_type() != singa.kFloat32:
+            ori_type = a.data_type()
+            a = a.AsType(singa.kFloat32)
+            b = b.AsType(singa.kFloat32)
         res = singa.__mul__(a, singa.PowFloat(b, -1.0))
         # res = singa.__div__(a, b)
+        if ori_type is not None:
+            res = res.AsType(ori_type)
         if training:
             self.input = (singa.MultFloat(a, -1.0), singa.PowFloat(b, -1.0)
                          )  # -a, 1/b
@@ -4209,10 +4223,10 @@ class Gather(Operator):
         xs = []
         for indice in self.indices:
             # each indice is a sub-indice
-            if isinstance(indice, tuple) or isinstance(indice, list):
+            if isinstance(indice, (tuple, list, np.ndarray)):
                 sub_xs = []
                 for idx in indice:
-                    idx = idx % _shape
+                    idx = int(idx % _shape)
                     tmp_tensor = singa.SliceOn(x, idx, idx + 1, self.axis)
                     sub_xs.append(tmp_tensor)
                 sub_xs = singa.VecTensor(sub_xs)
