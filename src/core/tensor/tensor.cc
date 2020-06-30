@@ -1621,6 +1621,20 @@ void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p) {
   });
 }
 
+Tensor &Tensor::Contiguous() {
+  if (transpose()) {
+    Tensor t(shape_, device_, data_type_);
+    singa::Transform(*this, &t);
+    std::swap(t.block_, block_);
+  }
+  return *this;
+}
+
+Tensor Contiguous(const Tensor &in) {
+  Tensor out(in);
+  return out.Contiguous();
+}
+
 // if tensor is not transposed yet, we change the shape and generate new stride
 // if tensor is already transposed, we reallocate the memory and generate stride
 Tensor &Tensor::Reshape(const Shape &shape) {

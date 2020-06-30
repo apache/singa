@@ -629,11 +629,11 @@ class Conv2d(Layer):
         # sanitize the device of params/states, TODO: better to decorate forward()
         self.device_check(x, *[s for k, s in self.get_states().items()])
 
-        assert (self.group >= 1 and self.in_channels %
-                self.group == 0), "please set reasonable group."
+        assert (self.group >= 1 and self.in_channels % self.group
+                == 0), "please set reasonable group."
 
-        assert (self.nb_kernels >= self.group and self.nb_kernels %
-                self.group == 0), "nb_kernels and group dismatched."
+        assert (self.nb_kernels >= self.group and self.nb_kernels % self.group
+                == 0), "nb_kernels and group dismatched."
 
         y = autograd.conv2d(self.handle, x, self.W, self.b, self.odd_padding)
 
@@ -1418,6 +1418,7 @@ class CudnnRNN(Layer):
                  dropout=0,
                  bidirectional=False,
                  rnn_mode="lstm",
+                 use_mask=False,
                  return_sequences=False):
         """
             Args:
@@ -1425,6 +1426,8 @@ class CudnnRNN(Layer):
                 rnn_mode: accepted value: "vanilla", "tanh", "relu",  "lstm", "gru"
         """
         assert singa.USE_CUDA, "Not able to run without CUDA"
+        assert num_layers > 0, "num layers should be > 0"
+        assert 0 <= dropout < 1, "dropout shouldbe >=0 and <1"
         super(CudnnRNN, self).__init__()
 
         self.rnn_mode = rnn_mode
@@ -1434,6 +1437,7 @@ class CudnnRNN(Layer):
         self.bidirectional = 1 if bidirectional else 0
         self.return_sequences = return_sequences
         self.batch_first = batch_first
+        self.use_mask = use_mask
 
         # GPU parameter
         # cudnn_rnn_mode: 0 - RNN RELU, 1 - RNN TANH, 2 - LSTM, 3 - GRU
@@ -1446,7 +1450,7 @@ class CudnnRNN(Layer):
         elif self.rnn_mode == "gru":
             self.cudnn_rnn_mode = 3
 
-    def initialize(self, x, hx=None, cx=None):
+    def initialize(self, x, hx=None, cx=None, seq_lengths=None):
         if self.batch_first:
             x = x.transpose((1, 0, 2))
         self.input_size = x.shape[1]
@@ -1465,7 +1469,7 @@ class CudnnRNN(Layer):
                         device=x.device)
         self.W.gaussian(0, 1)
 
-    def forward(self, x, hx=None, cx=None):
+    def forward(self, x, hx=None, cx=None, seq_lengths=None):
 
         self.device_check(x, self.W)
         if self.batch_first:
@@ -1488,9 +1492,18 @@ class CudnnRNN(Layer):
 
         # outputs returned is list
         #   inputs has shape of {sequence length, batch size, feature size}
-        y = autograd._RNN(self.handle,
-                          return_sequences=self.return_sequences)(x, hx, cx,
-                                                                  self.W)[0]
+        if self.use_mask:
+            assert type(seq_lengths) == Tensor, "wrong type for seq_lengths"
+            y = autograd._RNN(self.handle,
+                              return_sequences=self.return_sequences,
+                              batch_first=self.batch_first,
+                              use_mask=self.use_mask,
+                              seq_lengths=seq_lengths)(x, hx, cx, self.W)[0]
+        else:
+            y = autograd._RNN(self.handle,
+                              return_sequences=self.return_sequences,
+                              batch_first=self.batch_first)(x, hx, cx,
+                                                            self.W)[0]
         if self.return_sequences and self.batch_first:
             #   outputs has shape of {sequence length, batch size, hidden size}
             y = y.transpose((1, 0, 2))  # to {bs, seq, hid}

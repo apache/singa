@@ -832,6 +832,46 @@ class TestAPI(unittest.TestCase):
 
         dW = singa_api.GpuRNNBackwardW(x.data, hx.data, y, rnn_handle)
 
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_rnn_with_seq_lengths(self):
+        dev = gpu_dev
+
+        # params
+        hidden_size = 7
+        seq_length = 5
+        batch_size = 6
+        feature_size = 3
+        directions = 2
+        num_layers = 2
+
+        # shapes
+        x_s = (seq_length, batch_size, feature_size)
+        y_s = (seq_length, batch_size, hidden_size)
+        states_s = (num_layers * directions, batch_size, hidden_size)
+
+        # tensors
+        x = tensor.Tensor(x_s, dev).gaussian(0, 1)
+        y = tensor.Tensor(y_s, dev).gaussian(0, 1)
+        dy = tensor.Tensor(y_s, dev).gaussian(0, 1)
+        dhy = tensor.Tensor(states_s, dev).gaussian(0, 1)
+        dcy = tensor.Tensor(states_s, dev).gaussian(0, 1)
+        hx = tensor.Tensor(states_s, dev).gaussian(0, 1)
+        cx = tensor.Tensor(states_s, dev).gaussian(0, 1)
+
+        # handle
+        rnn_handle = singa_api.CudnnRNNHandle(x.data, hidden_size, 2)
+        w = tensor.Tensor((rnn_handle.weights_size,), dev).gaussian(0, 1)
+
+        # seq lengths
+        seq_lengths = tensor.from_numpy(np.array([seq_length] * batch_size))
+
+        # operations
+        (dx, dhx, dcx) = singa_api.GpuRNNBackwardxEx(y.data, dy.data, dhy.data,
+                                                     dcy.data, w.data, hx.data,
+                                                     cx.data, seq_lengths.data,
+                                                     rnn_handle)
+
+
     def test_round_cpu(self):
         self._round(cpu_dev)
 
