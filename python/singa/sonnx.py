@@ -1088,6 +1088,7 @@ class SingaBackend(Backend):
         'NonZero': 'NonZero',
         'Ceil': 'Ceil',
         # # special op
+        'ScatterElements':'ScatterElements',
         'Cast': 'Cast',
         'Split': 'Split',
         'Squeeze': 'Squeeze',
@@ -1154,6 +1155,7 @@ class SingaBackend(Backend):
         'Expand': '_create_expand',
         'Pad': '_create_pad',
         'Upsample': '_create_upsample',
+        'ScatterElements': '_create_scatter_elements',
     }
 
 
@@ -1220,6 +1222,7 @@ class SingaBackend(Backend):
             return operator(tensor.float32)
         else:
             return operator(tensor.int32)
+        
 
     @classmethod
     def _create_split(cls, onnx_node, operator, opset_version=_opset_version):
@@ -1663,6 +1666,20 @@ class SingaBackend(Backend):
         return operator(kernel_size, stride, padding, is_max, auto_pad)
 
     @classmethod
+    def _create_scatter_elements(cls,onnx_node,operator,opset_version=_opset_version):
+        """
+        get the ScatterElements from the onnx node
+        Args:
+            onnx_node(OnnxNode): a given onnx node
+            operator (Operator Class): a singa operator class
+            opset_version(int): the opset version
+        Returns: 
+            singa operator instance      
+        """
+        axis = onnx_node.getattr("axis",0)
+        return operator(axis)
+
+    @classmethod
     def _onnx_constant_to_np(cls, onnx_node, opset_version=_opset_version):
         """
         parse onnx constatn node to numpy array
@@ -1676,6 +1693,8 @@ class SingaBackend(Backend):
         np_dtype = mapping.TENSOR_TYPE_TO_NP_TYPE[onnx_tensor.data_type]
         np_tensor = np.frombuffer(onnx_tensor.raw_data, dtype=np_dtype)
         return tensor.from_numpy(np_tensor)
+    
+    
 
     @classmethod
     def _onnx_node_to_singa_op(cls, onnx_node, opset_version=_opset_version):

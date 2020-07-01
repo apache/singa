@@ -1370,6 +1370,125 @@ def flatten(x, axis=1):
     """
     return Flatten(axis)(x)[0]
 
+class ScatterElements(Operator):
+    """
+    ScatterElements takes 3 input tensors `data`,`source`,`index` and an optional parameter 
+    `axis`.The function scatter the values of tensor `source` into tensor `data` using indices specified by `index` along  `axis`.
+    The values are scattered along the `dimension=axis`. For a 3D tensor the `data` tensor is updated as
+    ```
+    data[index[i][j][k]][j][k]=source[i][j][k] #axis=0
+    data[i][index[i][j][k]][k]=source[i][j][k] #axis=1
+    data[i][j][index[i][j][k]]=source[i][j][k] #axis=2
+    ```   
+    """
+    def __init__(self,axis=0):
+        """
+        Args:
+            axis(int): Which axis to scatter on. A negative value means 
+            counting dimension from the back. Accepted range is [-r,r-1]
+            where r=rank(destination_tensor) 
+        """
+        super(ScatterElements,self).__init__()
+        self.axis=axis
+    def forward(self,data,indices,updates):
+        """
+        The numpy implementation is from https://stackoverflow.com/a/46204790/11767360
+
+        Args:
+            d(CTensor)  : data tensor
+            ind(CTensor): index tensor
+            src(CTensor): source tensor
+        Returns:
+            the result CTensor
+        """
+        assert data.nDim() == indices.nDim(),"Index should have the same number of dimensions as output"
+        assert (self.axis < data.nDim() and self.axis> (-data.nDim())),"Axis is out of range"
+        
+        #Converting tensors into numpy arrays for advanced indexing
+        darr = tensor.to_numpy(tensor.from_raw_tensor(data))
+        darr = darr.astype(np.float32)
+        indarr = tensor.to_numpy(tensor.from_raw_tensor(indices))
+        indarr = indarr.astype(np.int32)
+        srcarr = tensor.to_numpy(tensor.from_raw_tensor(updates))
+        srcarr.astype(np.float32)
+        assert indarr.shape[self.axis]>srcarr.shape[self.axis],"The dimension of input and index should be same"
+        if self.axis<0:
+            self.axis = darr.ndim+self.axis
+        idx_xsection_shape = indarr.shape[:self.axis] + indarr.shape[self.axis+1:] 
+        dest_xsection_shape = darr.shape[:self.axis] + darr.shape[self.axis+1:]
+        src_xsection_shape = srcarr.shape[:self.axis]+srcarr.shape[self.axis:]
+        assert idx_xsection_shape==src_xsection_shape,f"The dimensions except for {self.axis} for index and update should be same"
+        assert idx_xsection_shape==dest_xsection_shape,f"The dimension except for {self.axis} should be same for source and destination"
+        #setting the negative indices as positive 
+        if (indarr<0).any():
+            indarr[indarr<0] = darr.shape[self.axis]+indarr[indarr<0]
+        assert (indarr>=darr.shape[self.axis]).any(),f"The values of the indexes should be between {-darr.shape[self.axis]} and {darr.shape[self.axis]-1}"
+        #slicing function
+        def make_slice(arr,axis,i):
+            """
+            Args: 
+                arr(array): index array
+                axis(int): axis along which to scatter
+                i(int) : index value
+            Returns:
+                list for indexing      
+            """
+            slc = [slice(None,None,None)]*arr.ndim
+            slc[axis] = i
+            return slc
+        #use of slicing for advanced indexing
+        idx = [[*np.indices(idx_xsection_shape).reshape(indarr.ndim-1,-1),indarr[make_slice(indarr,self.axis,i)].reshape(1,-1)[0]] for i in range(indarr.shape[self.axis])]
+        idx = list(np.concatenate(idx,axis=1))
+        idx.insert(self.axis,idx.pop())
+        src_idx = list(idx)
+        src_idx.pop(self.axis)
+        src_idx.insert(self.axis,np.repeat(np.arange(indarr.shape[self.axis]),np.prod(idx_xsection_shape)))
+        if training:
+            self.src_shape= srcarr.shape
+            self.dest_shape = darr.shape
+            self.idx = idx
+            self.src_idx = src_idx
+        darr[idx] = srcarr[src_idx]
+        result = tensor.from_numpy(darr)
+        result.to_device(updates.device())
+        return result.data
+    
+    def backward(self,dy):
+        """
+        Args: 
+            dy (CTensor): dL / dy
+        Returns:
+            dx (CTensor): dL / dx
+        """
+        assert hasattr(self,"idx"),"Please support training as true before BackPropogation"
+        #numpy conversion for supporting advanced indexing.
+        dyarr = tensor.to_numpy(tensor.from_raw_tensors(dy))
+        dyarr = dyarr.astype(np.float32)
+        dxarr = np.zeros(self.src_shape)
+        dxarr[self.src_idx] = dyarr[self.idx]
+        dx = tensor.from_numpy(dxarr)
+        dx.to_device(dy.device())
+        return dx.data
+
+def scatter_elements(dest,index,src,axis=0):
+    """
+    ScatterElements takes 3 input tensors `data`,`source`,`index` and an optional parameter 
+    `axis`.The function scatter the values of tensor `source` into tensor `data` using indices specified by `index` along  `axis`.
+    The values are scattered along the `dimension=axis`. For a 3D tensor the `data` tensor is updated as
+    ```
+    data[index[i][j][k]][j][k]=source[i][j][k] #axis=0
+    data[i][index[i][j][k]][k]=source[i][j][k] #axis=1
+    data[i][j][index[i][j][k]]=source[i][j][k] #axis=2
+    ```
+    Args:
+        dest (Tensor): tensor element where the data needs to be scattered
+        index (Tensor): indices for scattering the source data
+        src (Tensor): tensor data used for scattering data into dest tensor     
+        axis(int): Dimension along which the data is scattered
+    """
+    return ScatterElements(axis)(dest,index,src)[0]
+
+
 
 class Concat(Operator):
     """
