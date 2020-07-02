@@ -5093,6 +5093,61 @@ def upsample(x, mode, scales):
     return UpSample(mode, scales)(x)[0]
 
 
+class Round(Operator):
+    """
+    Element-wise round the input
+    """
+
+    def __init__(self):
+        super(Round, self).__init__()
+
+    def forward(self, x):
+        return singa.Round(x)
+
+    def backward(self, dy):
+        dy = singa.Tensor(dy.shape(), dy.device())
+        dy.SetFloatValue(0.)
+        return dy
+
+
+def round(x):
+    """
+    Element-wise round the input
+    Args:
+        x (Tensor): input tensor.
+    Returns:
+        the output Tensor.
+    """
+    return Round()(x)[0]
+
+
+class Rounde(Operator):
+    """
+    Element-wise round the input, In case of halfs, round to the nearest even integer
+    """
+
+    def __init__(self):
+        super(Rounde, self).__init__()
+
+    def forward(self, x):
+        return singa.RoundE(x)
+
+    def backward(self, dy):
+        dy = singa.Tensor(dy.shape(), dy.device())
+        dy.SetFloatValue(0.)
+        return dy
+
+
+def rounde(x):
+    """
+    Element-wise round the input, In case of halfs, round to the nearest even integer
+    Args:
+        x (Tensor): input tensor.
+    Returns:
+        the output Tensor.
+    """
+    return Rounde()(x)[0]
+
 ''' alias for Operator and Layers
 '''
 Operation = Operator
