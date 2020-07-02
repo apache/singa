@@ -1,0 +1,108 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# Always prefer setuptools over distutils
+from setuptools import setup
+
+
+setup(
+    name='singa',
+    
+    # PACKAGE_VERSION will be substituted by cmake with the real version
+    version='${PACKAGE_VERSION}',
+
+    description='A General Deep Learning System',
+
+    url='https://github.com/apache/singa',
+
+    author='Apache SINGA',
+    author_email='dev@singa.apache.org',
+
+    license='Apache 2',
+
+    classifiers=[
+        #   3 - Alpha
+        #   4 - Beta
+        #   5 - Production/Stable
+        'Development Status :: 3 - Alpha',
+
+        'Intended Audience :: Developers',
+        'Topic :: Deep Learning System ',
+
+        'License :: Apache License',
+
+        # Specify the Python versions you support here. In particular, ensure
+        # that you indicate whether you support Python 2, Python 3 or both.
+        #'Programming Language :: Python :: 2',
+        #'Programming Language :: Python :: 2.6',
+        #'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        ],
+
+    keywords='deep learning singa apache',
+
+    packages=['singa', 'singa.proto'],
+
+    # py_modules=["singa"],
+
+    #install_requires=[
+    #    'numpy>=1.11.0',
+    #    'protobuf==3.6.1',
+    #    'unittest-xml-reporting',
+    #    'flask>=0.10.1',
+    #    'flask_cors>=3.0.2',
+    #    'pillow>=2.3.0',
+    #    'future',
+    #    'tqdm',
+    #    'openblas==0.2.19',
+    #    'glog==0.3.4',
+    #    ],
+
+    #List additional groups of dependencies here (e.g. development
+    #dependencies). You can install these using the following syntax,
+    #for example:
+    #$ pip install -e .[dev,test]
+    #extras_require={
+    #   'dev': ['check-manifest'],
+    #   'test': ['coverage'],
+    #},
+
+    #If there are data files included in your packages that need to be
+    #installed, specify them here.  If using Python 2.6 or less, then these
+    #have to be included in MANIFEST.in as well.
+
+    package_data={
+        'singa': ['_singa_wrap.so'],
+    },
+
+    #Although 'package_data' is the preferred approach, in some case you may
+    #need to place data files outside of your packages. See:
+    #http://docs.python.org/3.4/distutils/setupscript.html#installing-additional-files # noqa
+    #In this case, 'data_file' will be installed into '<sys.prefix>/my_data'
+    #data_files=[('my_data', ['data/data_file'])],
+
+    #To provide executable scripts, use entry points in preference to the
+    #"scripts" keyword. Entry points provide cross-platform support and allow
+    #pip to create the appropriate form of executable for the target platform.
+
+    entry_points={
+        'console_scripts': [
+            'singa=singa.command:main',
+        ],
+    },
+)
