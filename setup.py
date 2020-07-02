@@ -36,12 +36,12 @@ import shutil
 from copy import deepcopy
 from pathlib import Path
 
-import conda.cli.python_api as conda
+# import conda.cli.python_api as conda
 import numpy as np
 
 NAME = 'singa'
 # Update the version ID for new release following semantic version
-VERSION='3.0.0.dev0'
+VERSION='3.0.0.dev1'
 CUDNN_VERSION = '7.6.5'
 CUDA_VERSION = '10.2'
 
@@ -305,12 +305,12 @@ def test_cuda_libs(build_ext, prefix, cpp_flags):
     return cuda_include_dirs, cuda_lib_dirs
 
 
-def generate_proto_files(prefix):
+def generate_proto_files():
     print('----------------------')
     print('Generating proto files')
     print('----------------------')
     proto_src = SINGA_SRC/'proto'
-    cmd = "{}/bin/protoc --proto_path={} --cpp_out={} {}".format(prefix, proto_src, proto_src,  proto_src/'core.proto')
+    cmd = "/usr/bin/protoc --proto_path={} --cpp_out={} {}".format(proto_src, proto_src,  proto_src/'core.proto')
     subprocess.run(cmd, shell=True, check=True)
 
     proto_hdr_dir = SINGA_HDR/'singa/proto'
@@ -332,23 +332,28 @@ def path_to_str(path_list):
 
 def prepare_extension_options():
     with_cuda, with_nccl, with_test, with_debug = parse_compile_options()
-    prefix = Path(SINGA_PY/'singa/thirdparty')
-    prefix.mkdir(exist_ok=True)
-    link_libs, extra_libs = install_dep_lib(prefix, with_cuda, with_nccl)
-    print(link_libs, extra_libs)
-    package_data = ['thirdparty/lib/lib{}.so.[0-9]'.format(x) for x in link_libs + extra_libs]
+    # prefix = Path(SINGA_PY/'singa/thirdparty')
+    # prefix.mkdir(exist_ok=True)
+    # link_libs, extra_libs = install_dep_lib(prefix, with_cuda, with_nccl)
+    link_libs = ['glog', 'protobuf', 'openblas', 'dnnl']
+    # print(link_libs, extra_libs)
+    # package_data = ['thirdparty/lib/lib{}.so.[0-9]'.format(x) for x in link_libs + extra_libs]
+    package_data = []
     generate_singa_config(with_cuda, with_nccl)
-    generate_proto_files(prefix)
+    # prefix = Path('/usr/lib64/')
+    generate_proto_files()
 
     sources = path_to_str([*list((SINGA_SRC/'core').rglob('*.cc')), 
                            *list((SINGA_SRC/'model/operation').glob('*.cc')), 
                            *list((SINGA_SRC/'utils').glob('*.cc')),
                             SINGA_SRC/'proto/core.pb.cc',
                             SINGA_SRC/'api/singa.i'])
-    include_dirs = path_to_str([SINGA_HDR, SINGA_HDR/'singa/proto', np.get_include(), prefix/'include'])
-    library_dirs = path_to_str([prefix/'lib'])
+    include_dirs = path_to_str([SINGA_HDR, SINGA_HDR/'singa/proto', 
+                                np.get_include(), '/usr/include', '/usr/include/openblas', 
+                                '/usr/local/include'])
+    library_dirs = path_to_str(['/usr/lib64', '/usr/local/lib'])
     libraries = link_libs
-    runtime_library_dirs = path_to_str(['.', prefix/'lib'])
+    runtime_library_dirs = ['.'] + library_dirs
 
     extra_compile_args = get_cpp_flags()
     extra_link_args = get_link_flags()
@@ -392,10 +397,14 @@ singa_wrap = Extension('singa._singa_wrap', **options)
 class custom_build_ext (build_ext):
     def finalize_options(self):
         self.swig_cpp = True
-        self.swig_opts = '-outdir {}'.format(SINGA_PY/'singa')
-        self.rpath = '$ORIGIN/thirdparty/lib'
+        print('build temp', self.build_temp)
+        print('build lib', self.build_lib)
+        # self.rpath = '$ORIGIN/thirdparty/lib'
         super(custom_build_ext, self).finalize_options()
-
+        self.swig_opts = '-outdir {}/singa/'.format(self.build_lib).split()
+        print('build temp', self.build_temp)
+        print('build lib', self.build_lib)
+ 
 try:
     with io.open('README.md', encoding='utf-8') as f:
         long_description = '\n' + f.read()
@@ -411,6 +420,7 @@ setup(
     author='Apache SINGA Community',
     author_email='dev@singa.apache.org',
     url='http://singa.apache.org',
+    python_requires = '>=3',
     install_requires=[
         'numpy >=1.16,<2.0', #1.16
         'onnx==1.6',
