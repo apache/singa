@@ -32,7 +32,7 @@
 #include "singa/core/tensor.h"
 #include "singa/core/device.h"
 #include "singa/proto/core.pb.h"
-#include "singa/proto/model.pb.h"
+// #include "singa/proto/model.pb.h"
 using singa::DataType;
 %}
 %shared_ptr(singa::Device)
