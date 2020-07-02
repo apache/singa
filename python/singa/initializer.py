@@ -17,6 +17,9 @@
 # =============================================================================
 '''Popular initialization methods for parameter values (Tensor objects).
 
+credit: this module is adapted from keras
+https://github.com/keras-team/keras/blob/master/keras/initializers.py
+
 All functions in this module change the input tensor in-place.
 
 Example usages::
@@ -32,9 +35,7 @@ Example usages::
 from __future__ import division
 import math
 import numpy as np
-import deprecated
-# credit: this module is adapted from keras
-# https://github.com/keras-team/keras/blob/master/keras/initializers.py
+from deprecated import deprecated
 
 
 def eye(t):
@@ -144,7 +145,6 @@ def he_normal(t):
     """
     _random_fill(t, scale=2., mode='fan_in', distribution='normal')
 
-
 def lecun_normal(t):
     """LeCun normal initializer.
 
@@ -178,6 +178,71 @@ def he_uniform(t):
            ImageNet Classification](http://arxiv.org/abs/1502.01852)
     '''
     _random_fill(t, scale=2., mode='fan_in', distribution='uniform')
+
+
+@deprecated(reason="Use he_normal or glorot_normal")
+def gaussian(t, fan_in=0, fan_out=0):
+    '''Initialize the values of the input tensor following a Gaussian
+    distribution with specific std.
+
+    Args:
+        fan_in(int): for the weight Tensor of a convolution layer,
+            fan_in = nb_channel * kh * kw; for dense layer,
+            fan_in = input_feature_length
+        fan_out(int): for the convolution layer weight Tensor,
+            fan_out = nb_filter * kh * kw; for the weight Tensor of a dense
+            layer, fan_out = output_feature_length
+
+    Ref Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun: Delving Deep into
+    Rectifiers: Surpassing Human-Level Performance on ImageNet Classification
+    '''
+    assert fan_in > 0 or fan_out > 0, \
+        'fan_in and fan_out cannot be 0 at the same time'
+    avg = 2
+    if fan_in * fan_out == 0:
+        avg = 1
+    std = math.sqrt(2.0 * avg / (fan_in + fan_out))
+    t.gaussian(0, std)
+
+
+@deprecated(reason="Use glorot_normal")
+def xavier(t):
+    '''Initialize the matrix parameter follow a Uniform distribution from
+    [-sqrt(6/(fan_in + fan_out)), sqrt(6/(fan_in + fan_out))].
+
+    Args:
+        t (Tensor): the parater tensor
+    '''
+
+    scale = math.sqrt(6.0 / (t.shape[0] + t.shape[1]))
+    t.uniform(-scale, scale)
+
+
+@deprecated(reason="Use glorot_uniform")
+def glorot(t):
+    '''Initialize the matrix parameter follow a Gaussian distribution with
+    mean = 0 and std = sqrt(2.0 / (nb_row + nb_col))
+
+    Args:
+        t (Tensor): the parater tensor
+    '''
+    scale = math.sqrt(2.0 / (t.shape[0] + t.shape[1]))
+    t.gaussian(0, 1)
+    t *= scale
+
+
+@deprecated(reason="Use he_normal")
+def msra(t):
+    '''Initialize the matrix parameter follow a Guassian distribution with
+    mean = 0, std = math.sqrt(2.0 / nb_row).
+
+    Ref [He, Zhang, Ren and Sun 2015]: Specifically accounts for ReLU
+    nonlinearities.
+
+    Args:
+        t (Tensor): the parater tensor
+    '''
+    t.gaussian(0, math.sqrt(2.0 / t.shape[0]))
 
 
 def _compute_fans(shape, data_format='channels_first'):
@@ -269,68 +334,3 @@ def _random_fill(t, scale, mode, distribution):
     else:
         limit = np.sqrt(3. * scale)
         t.uniform(-limit, limit)
-
-
-@deprecated
-def gaussian(t, fan_in=0, fan_out=0):
-    '''Initialize the values of the input tensor following a Gaussian
-    distribution with specific std.
-
-    Args:
-        fan_in(int): for the weight Tensor of a convolution layer,
-            fan_in = nb_channel * kh * kw; for dense layer,
-            fan_in = input_feature_length
-        fan_out(int): for the convolution layer weight Tensor,
-            fan_out = nb_filter * kh * kw; for the weight Tensor of a dense
-            layer, fan_out = output_feature_length
-
-    Ref Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun: Delving Deep into
-    Rectifiers: Surpassing Human-Level Performance on ImageNet Classification
-    '''
-    assert fan_in > 0 or fan_out > 0, \
-        'fan_in and fan_out cannot be 0 at the same time'
-    avg = 2
-    if fan_in * fan_out == 0:
-        avg = 1
-    std = math.sqrt(2.0 * avg / (fan_in + fan_out))
-    t.gaussian(0, std)
-
-
-@deprecated
-def xavier(t):
-    '''Initialize the matrix parameter follow a Uniform distribution from
-    [-sqrt(6/(fan_in + fan_out)), sqrt(6/(fan_in + fan_out))].
-
-    Args:
-        t (Tensor): the parater tensor
-    '''
-
-    scale = math.sqrt(6.0 / (t.shape[0] + t.shape[1]))
-    t.uniform(-scale, scale)
-
-
-@deprecated
-def glorot(t):
-    '''Initialize the matrix parameter follow a Gaussian distribution with
-    mean = 0 and std = sqrt(2.0 / (nb_row + nb_col))
-
-    Args:
-        t (Tensor): the parater tensor
-    '''
-    scale = math.sqrt(2.0 / (t.shape[0] + t.shape[1]))
-    t.gaussian(0, 1)
-    t *= scale
-
-
-@deprecated
-def msra(t):
-    '''Initialize the matrix parameter follow a Guassian distribution with
-    mean = 0, std = math.sqrt(2.0 / nb_row).
-
-    Ref [He, Zhang, Ren and Sun 2015]: Specifically accounts for ReLU
-    nonlinearities.
-
-    Args:
-        t (Tensor): the parater tensor
-    '''
-    t.gaussian(0, math.sqrt(2.0 / t.shape[0]))
