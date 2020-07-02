@@ -18,7 +18,7 @@
  * under the License.
  *
  ************************************************************/
-#include "../layer/convolution.h"
+// #include "../layer/convolution.h"
 
 #include <cctype>
 

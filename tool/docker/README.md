@@ -38,7 +38,7 @@ Run the docker container using
 
     docker run -it apache/singa:1.2.0-cpu-devel-ubuntu18.04 /bin/bash
     # or
-    docker run -it apache/singa:1.2.0-cuda10.0-cudnn7.4.2-devel-ubuntu18.04 /bin/bash
+    nvidia-docker run -it apache/singa:1.2.0-cuda10.0-cudnn7.4.2-devel-ubuntu18.04 /bin/bash
 
 The latest SINGA code is under the `singa` folder.
 
@@ -49,12 +49,13 @@ The latest SINGA code is under the `singa` folder.
 New Docker images could be created by executing the following command within the
 Dockerfile folder, e.g., tool/docker/devel/
 
-    docker build -t singa:<TAG> -f Dockerfile
+    docker build -t apache/singa:<TAG> -f Dockerfile
 
 The `<TAG>` is named as
 
-    devel|runtime[-CUDA|CPU][-CUDNN]
+    VERSION-devel|runtime[-CUDA|CPU][-CUDNN]
 
+* VERSION: e.g., 3.0.0
 * devel: development images with all dependent libs' header files installed and SINGA's source code; runtime: the minimal images which can run SINGA programs.
 * CUDA: cuda10.0, cuda9.0
 * CUDNN: cudnn7
