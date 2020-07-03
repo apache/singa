@@ -140,7 +140,12 @@ __global__ void KernelRound(const size_t n, const float *in, float *out) {
 __global__ void KernelRoundE(const size_t n, const float *in, float *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
-    out[i] = roundf(in[i]/2)*2;
+    float doub = in[i]*2;
+    if (ceilf(doub) == doub) {
+      out[i] = roundf(in[i]/2)*2;
+    } else {
+      out[i] = roundf(in[i]);
+    }
   }
 }
 
