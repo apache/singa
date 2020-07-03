@@ -274,7 +274,7 @@ void Round<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
 template <>
 void RoundE<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
   traverse_unary<float>(in, out, [](float x) {
-    auto doub = x*2;
+    float doub = x*2;
     if (ceilf(doub) == doub) {
       return std::round(x/2)*2;
     } else {
