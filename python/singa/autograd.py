@@ -1411,33 +1411,24 @@ class ScatterElements(Operator):
         indarr = indarr.astype(np.int32)
         srcarr = tensor.to_numpy(tensor.from_raw_tensor(updates))
         srcarr.astype(np.float32)
-        assert indarr.shape[self.axis]>srcarr.shape[self.axis],"The dimension of input and index should be same"
+        assert indarr.shape[self.axis]<=srcarr.shape[self.axis],"The dimension of input and index should be same"
         if self.axis<0:
             self.axis = darr.ndim+self.axis
         idx_xsection_shape = indarr.shape[:self.axis] + indarr.shape[self.axis+1:] 
         dest_xsection_shape = darr.shape[:self.axis] + darr.shape[self.axis+1:]
-        src_xsection_shape = srcarr.shape[:self.axis]+srcarr.shape[self.axis:]
+        src_xsection_shape = srcarr.shape[:self.axis]+srcarr.shape[self.axis+1:]
         assert idx_xsection_shape==src_xsection_shape,f"The dimensions except for {self.axis} for index and update should be same"
         assert idx_xsection_shape==dest_xsection_shape,f"The dimension except for {self.axis} should be same for source and destination"
         #setting the negative indices as positive 
         if (indarr<0).any():
             indarr[indarr<0] = darr.shape[self.axis]+indarr[indarr<0]
-        assert (indarr>=darr.shape[self.axis]).any(),f"The values of the indexes should be between {-darr.shape[self.axis]} and {darr.shape[self.axis]-1}"
-        #slicing function
-        def make_slice(arr,axis,i):
-            """
-            Args: 
-                arr(array): index array
-                axis(int): axis along which to scatter
-                i(int) : index value
-            Returns:
-                list for indexing      
-            """
-            slc = [slice(None,None,None)]*arr.ndim
-            slc[axis] = i
-            return slc
+        assert (indarr<=darr.shape[self.axis]).all(),f"The values of the indexes should be between {-darr.shape[self.axis]} and {darr.shape[self.axis]-1}"
         #use of slicing for advanced indexing
-        idx = [[*np.indices(idx_xsection_shape).reshape(indarr.ndim-1,-1),indarr[make_slice(indarr,self.axis,i)].reshape(1,-1)[0]] for i in range(indarr.shape[self.axis])]
+        idx=[]
+        for i in range(indarr.shape[self.axis]):
+            slc = [np.arange(i) for i in list(indarr.shape)]
+            slc[self.axis]=i
+            idx.append([*np.indices(idx_xsection_shape).reshape(indarr.ndim-1,-1),indarr[tuple(slc)]])
         idx = list(np.concatenate(idx,axis=1))
         idx.insert(self.axis,idx.pop())
         src_idx = list(idx)
@@ -1448,7 +1439,7 @@ class ScatterElements(Operator):
             self.dest_shape = darr.shape
             self.idx = idx
             self.src_idx = src_idx
-        darr[idx] = srcarr[src_idx]
+        darr[tuple(idx)] = srcarr[tuple(src_idx)]
         result = tensor.from_numpy(darr)
         result.to_device(updates.device())
         return result.data
@@ -1462,7 +1453,7 @@ class ScatterElements(Operator):
         """
         assert hasattr(self,"idx"),"Please support training as true before BackPropogation"
         #numpy conversion for supporting advanced indexing.
-        dyarr = tensor.to_numpy(tensor.from_raw_tensors(dy))
+        dyarr = tensor.to_numpy(tensor.from_raw_tensor(dy))
         dyarr = dyarr.astype(np.float32)
         dxarr = np.zeros(self.src_shape)
         dxarr[self.src_idx] = dyarr[self.idx]
@@ -1559,7 +1550,12 @@ def cat(xs, axis=0):
         a Tensor for the result
     """
     return Concat(axis)(*xs)[0]
-
+"""
+def make_slice(arr, axis, i):  # type: ignore
+        slc = [slice(None)] * arr.ndim
+        slc[axis] = i
+        return slc
+"""
 
 class _Conv2d(Operator):
     """
