@@ -455,6 +455,38 @@ class TestPythonOperation(unittest.TestCase):
 
             self.gradients_check(valinna_rnn_forward, param, auto_grad, dev=dev)
 
+    def _gradient_check_cudnn_rnn(self, mode="vanilla", dev=gpu_dev):
+        seq=10;bs=2;fea=10;hid=10
+        x = np.random.random((seq,bs,fea)).astype(np.float32)
+        tx = tensor.Tensor(device=dev, data=x)
+        y = np.random.random((seq,bs,hid)).astype(np.float32)
+        y = np.reshape(y, (-1,hid))
+        ty = tensor.Tensor(device=dev, data=y)
+        rnn = layer.CudnnRNN(hid, rnn_mode=mode, return_sequences=True)
+
+        def vanilla_rnn_forward():
+            out = rnn(tx)
+            out = autograd.reshape(out,(-1,hid))
+            loss = autograd.softmax_cross_entropy(out, ty)
+            return loss
+
+        loss = vanilla_rnn_forward()
+        auto_grads = autograd.gradients(loss)
+
+        params = rnn.get_params()
+        for key, param in params.items():
+            auto_grad = tensor.to_numpy(auto_grads[id(param)])
+            self.gradients_check(vanilla_rnn_forward, param, auto_grad,
+                                 dev=dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_gradient_check_cudnn_rnn_vanilla(self):
+        self._gradient_check_cudnn_rnn(mode="vanilla", dev=gpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_gradient_check_cudnn_rnn_lstm(self):
+        self._gradient_check_cudnn_rnn(mode="lstm", dev=gpu_dev)
+
     def test_numerical_gradients_check_for_vallina_rnn_cpu(self):
         self._numerical_gradients_check_for_vallina_rnn_helper(cpu_dev)
 
