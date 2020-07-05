@@ -1204,42 +1204,44 @@ def cross_entropy(y, t):
     return CrossEntropy()(y, t)[0]
 
 
-class QALSTMLoss(Operator):
+class RankingLoss(Operator):
 
     def __init__(self, M=0.2):
-        super(QALSTMLoss, self).__init__()
+        super().__init__()
+        # margin
         self.M = M
 
     def forward(self, pos, neg):
-        # L = max{0, M - cosine(q, a+) + cosine(q, a-)}
+        # L = max{0, M - fn(pos) + fn(neg)}
         zero = singa.Tensor(list(pos.shape()), pos.device())
         zero.SetFloatValue(0.0)
         val = singa.AddFloat(singa.__sub__(neg, pos), self.M)
         gt_zero = singa.__gt__(val, zero)
-        self.inputs = (gt_zero,)  # (BS,)
+        if training:
+            self.inputs = (gt_zero,)  # (BS,)
         all_loss = singa.__mul__(gt_zero, val)
         loss = singa.SumAll(all_loss)
         loss /= (pos.shape()[0])
-        # assert loss.shape(0) == 1
         return loss
 
     def backward(self, dy=1.0):
+        assert training, "enable training mode to do backward"
         # dpos = -1 if M-pos+neg > 0 else 0
         # dneg =  1 if M-pos+neg > 0 else 0
         gt_zero = self.inputs[0]
         dpos_factor = singa.Tensor(list(gt_zero.shape()), gt_zero.device())
-        dpos_factor.SetFloatValue(-1.0)
+        dpos_factor.SetFloatValue(-1.0 / gt_zero.Size())
         dneg_factor = singa.Tensor(list(gt_zero.shape()), gt_zero.device())
-        dneg_factor.SetFloatValue(1.0)
+        dneg_factor.SetFloatValue(1.0 / gt_zero.Size())
         dpos = singa.__mul__(gt_zero, dpos_factor)
         dneg = singa.__mul__(gt_zero, dneg_factor)
         return dpos, dneg
 
 
-def qa_lstm_loss(pos, neg, M=0.2):
+def ranking_loss(pos, neg, M=0.2):
     assert pos.shape == neg.shape, "input and target shape different: %s, %s" % (
         pos.shape, neg.shape)
-    return QALSTMLoss(M)(pos, neg)[0]
+    return RankingLoss(M)(pos, neg)[0]
 
 
 class SoftMaxCrossEntropy(Operator):
@@ -1279,12 +1281,15 @@ class MeanSquareError(Operator):
         self.err = singa.__sub__(x, t)
         sqr = singa.Square(self.err)
         loss = singa.SumAll(sqr)
-        loss /= (x.shape()[0] * 2)
+        self.n = 1
+        for s in x.shape():
+            self.n *= s
+        loss /= self.n
         return loss
 
     def backward(self, dy=1.0):
         dx = self.err
-        dx *= float(1 / self.err.shape()[0])
+        dx *= float(2 / self.n)
         dx *= dy
         return dx, None
 
@@ -1292,10 +1297,6 @@ class MeanSquareError(Operator):
 def mse_loss(x, t):
     assert x.shape == t.shape, "input and target shape different: %s, %s" % (
         x.shape, t.shape)
-    assert x.ndim() == 2, "2d input required, input shapes: %s, %s" % (x.shape,
-                                                                       t.shape)
-    assert t.ndim() == 2, "2d input required, input shapes: %s, %s" % (x.shape,
-                                                                       t.shape)
     return MeanSquareError()(x, t)[0]
 
 
@@ -3930,6 +3931,7 @@ class ReduceMean(Operator):
             _x = tensor.reshape(_x, x_shape)
         self.cache = (x_shape, x)
         scale = np.prod(x_shape) / np.prod(x.shape())
+        self.scale = scale
         _x = singa.MultFloat(_x.data, scale)
         return _x
 
@@ -3946,6 +3948,7 @@ class ReduceMean(Operator):
         mask = singa.Tensor(list(x.shape()), x.device())
         mask.SetFloatValue(1.0)
         dy = singa.__mul__(mask, dy)
+        dy = singa.MultFloat(dy, self.scale)
         return dy
 
 
@@ -4585,17 +4588,17 @@ class _RNN(Operator):
     """ RNN operation with c++ backend
     """
 
-    def __init__(self,
-                 handle,
-                 return_sequences=False,
-                 batch_first=True,
-                 use_mask=False,
-                 seq_lengths=None):
+    def __init__(
+            self,
+            handle,
+            return_sequences=False,
+            #  batch_first=True,
+            use_mask=False,
+            seq_lengths=None):
         assert singa.USE_CUDA, "Not able to run without CUDA"
         super(_RNN, self).__init__()
         self.handle = handle
         self.return_sequences = return_sequences
-        self.batch_first = batch_first
         self.use_mask = use_mask
         if use_mask:
             assert type(seq_lengths) == Tensor, "wrong type for seq_lengths"
@@ -4631,10 +4634,11 @@ class _RNN(Operator):
                  cy) = singa.GpuRNNForwardInference(x, hx, cx, w, self.handle)
 
         if self.return_sequences:
-            # return full y {seq, bs, data_size}
+            # (seq, bs, data)
             return y
         else:
             # return last time step of y
+            # (seq, bs, data)[-1] -> (bs, data)
             last_y_shape = (y.shape()[1], y.shape()[2])
             last_y = singa.Tensor(list(last_y_shape), x.device())
 
@@ -4647,19 +4651,16 @@ class _RNN(Operator):
         assert training is True and hasattr(
             self, "inputs"), "Please set training as True before do BP. "
 
+        # (seq, bs, hid)
         dy = None
         if self.return_sequences:
-            # from: dy shape {bs, seq, ..}
-            # to:   dy shape {seq, bs, ..}
             assert grad.shape() == self.inputs['y'].shape(), (
                 "grad shape %s != y shape %s" %
                 (grad.shape(), self.inputs['y'].shape()))
             dy = grad
-            dy = singa.Transpose(dy, (1, 0, 2))
         else:
-            # from: grad shape (bs, directions*hidden)
-            # to:     dy shape (seq, bs, directions*hidden)
-            #                  empty space filled by zeros
+            # grad (bs, directions*hidden) -> dy (seq, bs, directions*hidden)
+            #   empty space filled by zeros
             assert grad.shape() == (self.inputs['y'].shape()[1],
                                     self.inputs['y'].shape()[2]), (
                                         "grad y shape %s != last y shape %s" %
@@ -4694,9 +4695,6 @@ class _RNN(Operator):
             dW = singa.GpuRNNBackwardW(self.inputs['x'], self.inputs['hx'],
                                        self.inputs['y'], self.handle)
 
-        # dx {seq, bs, ..} => {bat, seq, ..}
-        if self.batch_first:
-            dx = singa.Transpose(dx, list((1, 0, 2)))
 
         return dx, dhx, dcx, dW
 
@@ -4764,10 +4762,13 @@ class CosSim(Operator):
         ad = singa.Reshape(ad, list(ad.shape()) + [1])  # b * 1
         bd = singa.Reshape(bd, list(bd.shape()) + [1])  # b * 1
         ret = singa.Reshape(ret, list(ret.shape()) + [1])  # b * 1
+        dy = singa.Reshape(dy, list(dy.shape()) + [1])  # boardcast
         da = singa.__sub__(singa.__div__(b, ab),
-                           singa.__mul__(ret, singa.__div__(a, ad)))
+                           singa.__div__(singa.__mul__(ret, a), ad))
         db = singa.__sub__(singa.__div__(a, ab),
-                           singa.__mul__(ret, singa.__div__(b, bd)))
+                           singa.__div__(singa.__mul__(ret, b), bd))
+        da = singa.__mul__(dy, da)
+        db = singa.__mul__(dy, db)
         return da, db
 
 
@@ -4780,6 +4781,9 @@ def cossim(a, b):
     Returns:
         the output Tensor.
     """
+    assert a.shape == b.shape, "shape not match for cossim"
+    assert a.ndim() == 2, "shape should be in 2d for cossim"
+    assert b.ndim() == 2, "shape should be in 2d for cossim"
     return CosSim()(a, b)[0]
 
 
