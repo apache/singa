@@ -3233,29 +3233,6 @@ class TestPythonOperation(unittest.TestCase):
         self.assertRaises(AssertionError, autograd.qa_lstm_loss, _2d,
                           _1d)
 
-    def rounde_helper(self, dev):
-        X = np.array([0.1, 0.5, 0.9, 1.2, 1.5,
-                    1.8, 2.3, 2.5, 2.7, -1.1,
-                    -1.5, -1.9, -2.2, -2.5, -2.8]).astype(np.float32)
-        x = tensor.from_numpy(X)
-        x.to_device(dev)
-
-        y_t = np.array([0., 0., 1., 1., 2.,
-                    2., 2., 2., 3., -1.,
-                    -2., -2., -2., -2., -3.]).astype(np.float32)
-        dy = tensor.from_numpy(y_t)
-        dy.to_device(dev)
-
-        y = autograd.rounde(x)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), y_t)
-
-    def test_rounde_cpu(self):
-        self.rounde_helper(cpu_dev)
-
-    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
-    def test_rounde_gpu(self):
-        self.rounde_helper(gpu_dev)
-
     def round_helper(self, dev):
         X = np.array([0.1, 0.5, 0.9, 1.2, 1.5,
                     1.8, 2.3, 2.5, 2.7, -1.1,
@@ -3278,6 +3255,35 @@ class TestPythonOperation(unittest.TestCase):
     @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_round_gpu(self):
         self.round_helper(gpu_dev)
+
+    def where_helper(self, dev):
+        X = np.array([[1, 2], [3, 4]], dtype=np.float32)
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        X2 = np.array([[9, 8], [7, 6]], dtype=np.float32)
+        x2 = tensor.from_numpy(X2)
+        x2.to_device(dev)
+
+        condition = [[True, False], [True, True]]
+        y_t = np.where(condition, X, X2)
+        dx1_t = np.array([[1, 0], [3, 4]], dtype=np.float32)
+        dx2_t = np.array([[0, 8], [0, 0]], dtype=np.float32)
+        dy = tensor.from_numpy(y_t)
+        dy.to_device(dev)
+
+        y = autograd.where(x, x2, condition)
+        dx1, dx2 = y.creator.backward(dy.data)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), y_t)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), dx1_t)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx2)), dx2_t)
+
+    def test_where_cpu(self):
+        self.where_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_where_gpu(self):
+        self.where_helper(gpu_dev)
 
 if __name__ == '__main__':
     unittest.main()
