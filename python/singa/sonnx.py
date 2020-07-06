@@ -1113,6 +1113,7 @@ class SingaBackend(Backend):
         'Expand': 'Expand',
         'Pad': 'Pad',
         'Upsample': 'UpSample',
+        'Where': 'Where',
         'Gemm': 'layer.Gemm',  # layer
         'BatchNormalization': 'layer.BatchNorm2d',  # layer
         'Conv': 'layer.Conv2d',  # layer
@@ -1154,8 +1155,22 @@ class SingaBackend(Backend):
         'Expand': '_create_expand',
         'Pad': '_create_pad',
         'Upsample': '_create_upsample',
+        'Where': '_create_where',
     }
 
+    @classmethod
+    def _create_where(cls, onnx_node, operator, opset_version=_opset_version):
+        """
+        get the Where operator from onnx node
+        Args:
+            onnx_node (OnnxNode): a given onnx node
+            operator (Operator Class): a singa operator class
+            opset_version (int): the opset version
+        Returns: 
+            singa operator instance
+        """
+        onnx_node.set_attr_inputs(onnx_node.inputs[0], 'condition')
+        return operator(None)
 
     @classmethod
     def _create_pad(cls, onnx_node, operator, opset_version=_opset_version):

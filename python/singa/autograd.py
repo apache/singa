@@ -600,9 +600,16 @@ class Matmul(Operator):
         """
         Return `np.matmul(x,w)`, where x and w are CTensor.
         """
+        # todo, cannot do Mult for dims more than 2
+        raw_shape = x.shape()
+        if raw_shape[:2] == (1, 1):
+            x = singa.Reshape(x, raw_shape[2:])
         if training:
             self.input = (x, w)
-        return singa.Mult(x, w)
+        res = singa.Mult(x, w)
+        if raw_shape[:2] == (1, 1):
+            res = singa.Reshape(res, (1, 1) + res.shape())
+        return res
 
     def backward(self, dy):
         """
@@ -711,8 +718,10 @@ def add_bias(x, b, axis=0):
     Return:
         the result Tensor
     """
-    assert x.ndim() == 2, "1st arg required 2d tensor. got shape: %s" % (x.shape)
-    assert b.ndim() == 1, "2nd arg required 1d tensor. got shape: %s" % (b.shape)
+    assert x.ndim() == 2, "1st arg required 2d tensor. got shape: %s" % (
+        x.shape)
+    assert b.ndim() == 1, "2nd arg required 1d tensor. got shape: %s" % (
+        b.shape)
     assert axis in [0, 1], "allowed axis: 0 or 1"
     return AddBias(axis)(x, b)[0]
 
@@ -4599,8 +4608,8 @@ class _RNN(Operator):
             if self.use_mask:
                 (y, hy,
                  cy) = singa.GpuRNNForwardInferenceEx(x, hx, cx, w,
-                                                     self.seq_lengths.data,
-                                                     self.handle)
+                                                      self.seq_lengths.data,
+                                                      self.handle)
             else:
                 (y, hy,
                  cy) = singa.GpuRNNForwardInference(x, hx, cx, w, self.handle)
@@ -4665,9 +4674,9 @@ class _RNN(Operator):
             (dx, dhx,
              dcx) = singa.GpuRNNBackwardx(self.inputs['y'], dy, dhy, dcy,
                                           self.inputs['w'], self.inputs['hx'],
-                                                self.inputs['cx'], self.handle)
+                                          self.inputs['cx'], self.handle)
             dW = singa.GpuRNNBackwardW(self.inputs['x'], self.inputs['hx'],
-                                    self.inputs['y'], self.handle)
+                                       self.inputs['y'], self.handle)
 
         # dx {seq, bs, ..} => {bat, seq, ..}
         if self.batch_first:
@@ -4850,6 +4859,7 @@ class Expand(Operator):
                     dy = singa.ConcatOn(dxs, axis)
         dy = singa.Reshape(dy, self.x_shape)
         return dy
+
 
 def expand(x, shape):
     """
@@ -5087,6 +5097,74 @@ def upsample(x, mode, scales):
         the output Tensor.
     """
     return UpSample(mode, scales)(x)[0]
+
+
+class Where(Operator):
+    """
+    Where operator following ONNX Operator Schemas
+    https://github.com/onnx/onnx/blob/master/docs/Operators.md#Where
+    and Numpy
+    https://numpy.org/doc/stable/reference/generated/numpy.where.html
+    Example usage::
+    condition = [[True, False], 
+              [True, True]]
+    x = [[1, 2], 
+        [3, 4]]
+    y =  [[9, 8], 
+        [7, 6]]
+
+    output = [[1, 8],
+            [3, 4]]
+    """
+
+    def __init__(self, condition):
+        """
+        Args:
+            condition (Tensor): When True (nonzero), yield X, otherwise yield Y
+        """
+        super(Where, self).__init__()
+        self.condition = condition
+
+    def forward(self, a, b):
+        if isinstance(self.condition, list):
+            self.condition = np.array(self.condition)
+        if isinstance(self.condition, np.ndarray):
+            self.condition = self.condition.astype(np.float32)
+            self.condition = tensor.from_numpy(self.condition)
+            self.condition.to_device(a.device())
+            self.condition = self.condition.data
+        self.neg_condition = singa.AddFloat(singa.MultFloat(self.condition, -1.), 1.)
+        _a, _b = a, b
+        dtype0 = _a.data_type()
+        dtype1 = _b.data_type()
+        if dtype0 == singa.kInt or dtype1 == singa.kInt:
+            _a = a.AsType(singa.kFloat32)
+            _b = b.AsType(singa.kFloat32)
+            res = singa.__add__(singa.__mul__(self.condition, _a),
+                             singa.__mul__(self.neg_condition, _b))
+            res = res.AsType(singa.kInt)
+        else:
+            res = singa.__add__(singa.__mul__(self.condition, _a),
+                             singa.__mul__(self.neg_condition, _b))
+        return res
+
+    def backward(self, dy):
+        da = singa.__mul__(self.condition, dy)
+        db = singa.__mul__(self.neg_condition, dy)
+        return da, db
+
+
+def where(x, y, condition):
+    """
+    Produces a Where operator
+    Args:
+        x (Tensor): input tensor.
+        y (Tensor): input tensor.
+        condition (Tensor): When True (nonzero), yield X, otherwise yield Y
+    Returns:
+        the output Tensor.
+    """
+    return Where(condition)(x, y)[0]
 
 
 ''' alias for Operator and Layers
