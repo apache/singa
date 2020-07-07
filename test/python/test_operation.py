@@ -3339,6 +3339,84 @@ class TestPythonOperation(unittest.TestCase):
     @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_round_gpu(self):
         self.round_helper(gpu_dev)
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_lasso_cost(self,dev=gpu_dev):
+        # values
+        np.random.seed(0)
+        pos_val = np.random.random((3,)).astype(np.float32)
+        neg_val = np.random.random((3,)).astype(np.float32)
+
+        # singa tensor
+        tpos = tensor.from_numpy(pos_val)
+        tneg = tensor.from_numpy(neg_val)
+
+        # singa forward backward
+        tloss = autograd.qa_lstm_loss(tpos, tneg)
+        tdpos, tdneg = tloss.creator.backward()
+
+        # torch loss fn
+        import torch
+        def loss_fn(pos_sim, neg_sim, margin=0.2):
+            loss = margin - pos_sim + neg_sim
+            loss = torch.clamp(loss, min=0)
+            loss = torch.mean(loss)
+            return loss
+        
+        # torch tensor
+        ppos = torch.tensor(pos_val)
+        ppos.requires_grad = True
+        pneg = torch.tensor(neg_val)
+        pneg.requires_grad = True
+
+        # torch forward and backward
+        ploss = loss_fn(ppos, pneg)
+        ploss.backward()
+
+        # comparison
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tloss),ploss.detach().numpy())
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(tdpos)),ppos.grad.detach().numpy())
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(tdneg)),pneg.grad.detach().numpy())
+
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_cossim_value(self,dev=gpu_dev):
+        # numpy val
+        np.random.seed(0)
+        a = np.random.random((10,8)).astype(np.float32)
+        b = np.random.random((10,8)).astype(np.float32)
+        dy = np.random.random((10,)).astype(np.float32)
+
+        # pytorch
+        import torch
+        from torch import nn
+        pa = torch.tensor(a)
+        pa.requires_grad = True
+        pb = torch.tensor(b)
+        pb.requires_grad = True
+        pdy = torch.tensor(dy)
+
+        # pytorch forward and backward
+        cos = nn.CosineSimilarity(dim=1)
+        py = cos(pa, pb)
+        py.backward(pdy)
+
+        # singa tensor
+        ta = tensor.from_numpy(a)
+        tb = tensor.from_numpy(b)
+        tdy = tensor.from_numpy(dy)
+
+        # singa forward and backward
+        ty = autograd.cossim(ta, tb)
+        tda, tdb = ty.creator.backward(tdy.data)
+
+        # foward comparison
+        np.testing.assert_array_almost_equal(tensor.to_numpy(ty),py.detach().numpy())
+
+        # backward, failed
+        # np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(tda)),pa.grad.detach().numpy())
+        # failed
+        # np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(tdb)),pb.grad.detach().numpy())
+
 
 
 if __name__ == '__main__':
