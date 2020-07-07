@@ -973,8 +973,6 @@ GenBinaryTensorFn(ReLUBackward, ReLUBackward);
 #define EltwiseTensorScalarFn(fn, t, x, ret)                            \
   do {                                                                  \
     TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, {  \
-      static_assert(std::is_same<SType, DType>::value,                  \
-                    "The Scalar type must match the Tensor data type"); \
       Tensor &retRef = *ret;                                            \
       ret->device()->Exec(                                              \
           [t, x, retRef](Context *ctx) mutable {                        \
@@ -994,9 +992,9 @@ GenBinaryTensorFn(ReLUBackward, ReLUBackward);
   template <typename SType>                                   \
   void fn(const Tensor &in, const SType x, Tensor *ret) {     \
     EltwiseTensorScalarFn(fn, in, x, ret);                    \
-  }                                                           
-  // template Tensor op<float>(const Tensor &in, const float x); \
-  // template void fn<float>(const Tensor &in, const float x, Tensor *ret)
+  }                                                           \
+template Tensor op<float>(const Tensor &in, const float x);   \
+template void fn<float>(const Tensor &in, const float x, Tensor *ret)
 
 GenTensorScalarFn(operator+, Add);
 GenTensorScalarFn(operator-, Sub);
