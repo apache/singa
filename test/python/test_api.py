@@ -893,10 +893,17 @@ class TestAPI(unittest.TestCase):
         self._round_even(gpu_dev)
 
     def _round_even(self, dev=gpu_dev):
-        x = tensor.Tensor(shape=(2,3,3,2), device=dev).gaussian(0, 5)
+        q=np.array([0.1, 0.5, 0.9, 1.2, 1.5,
+                    1.8, 2.3, 2.5, 2.7, -1.1,
+                    -1.5, -1.9, -2.2, -2.5, -2.8]).astype(np.float32)
+        ans = np.array([0., 0., 1., 1., 2.,
+                    2., 2., 2., 3., -1.,
+                    -2., -2., -2., -2., -3.]).astype(np.float32)
+
+        x = tensor.Tensor(shape=q.shape, device=dev)
+        x.copy_from_numpy(q)
         y = tensor._call_singa_func(singa_api.RoundE, x.data)
-        np.testing.assert_array_almost_equal(np.round(tensor.to_numpy(x)/2)*2,
-                                             tensor.to_numpy(y))
+        np.testing.assert_array_almost_equal(ans, tensor.to_numpy(y))
 
 
 if __name__ == '__main__':

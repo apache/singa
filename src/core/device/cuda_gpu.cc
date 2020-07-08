@@ -46,7 +46,8 @@ CudaGPU::~CudaGPU() {
 
   // Explicitly destroys and cleans up all resources associated with current
   // device
-  CUDA_CHECK(cudaDeviceReset());
+  cudaDeviceReset();
+  // the returned code incidate "driver shutting down" after reset
 }
 const int kNumCudaStream = 1;
 

@@ -117,7 +117,11 @@ def gradients(y, dy=None):
     """
     grads = {}  # mapping: x->dx if x.stores_grad
     for p, dp in backward(y, dy):
-        grads[p] = dp
+        # TODO: this fn is only helper for test case for now.
+        #   1. could implement __hash__ or
+        #   2. make grad as a attribute of tensor class
+        #      p.grad = dp
+        grads[id(p)] = dp
     return grads
 
 
@@ -5179,6 +5183,62 @@ def where(x, y, condition):
         the output Tensor.
     """
     return Where(condition)(x, y)[0]
+
+
+class Round(Operator):
+    """
+    Element-wise round the input
+    """
+
+    def __init__(self):
+        super(Round, self).__init__()
+
+    def forward(self, x):
+        return singa.Round(x)
+
+    def backward(self, dy):
+        dy = singa.Tensor(dy.shape(), dy.device())
+        dy.SetFloatValue(0.)
+        return dy
+
+
+def round(x):
+    """
+    Element-wise round the input
+    Args:
+        x (Tensor): input tensor.
+    Returns:
+        the output Tensor.
+    """
+    return Round()(x)[0]
+
+
+class Rounde(Operator):
+    """
+    Element-wise round the input, In case of halfs, round to the nearest even integer
+    """
+
+    def __init__(self):
+        super(Rounde, self).__init__()
+
+    def forward(self, x):
+        return singa.RoundE(x)
+
+    def backward(self, dy):
+        dy = singa.Tensor(dy.shape(), dy.device())
+        dy.SetFloatValue(0.)
+        return dy
+
+
+def rounde(x):
+    """
+    Element-wise round the input, In case of halfs, round to the nearest even integer
+    Args:
+        x (Tensor): input tensor.
+    Returns:
+        the output Tensor.
+    """
+    return Rounde()(x)[0]
 
 
 ''' alias for Operator and Layers

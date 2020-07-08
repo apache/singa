@@ -451,7 +451,7 @@ class TestPythonOperation(unittest.TestCase):
 
         params = rnn.get_params()
         for key, param in params.items():
-            auto_grad = tensor.to_numpy(auto_grads[param])
+            auto_grad = tensor.to_numpy(auto_grads[id(param)])
 
             self.gradients_check(valinna_rnn_forward, param, auto_grad, dev=dev)
 
@@ -483,7 +483,7 @@ class TestPythonOperation(unittest.TestCase):
 
         params = rnn.get_params()
         for key, param in params.items():
-            auto_grad = tensor.to_numpy(auto_grads[param])
+            auto_grad = tensor.to_numpy(auto_grads[id(param)])
 
             self.gradients_check(lstm_forward, param, auto_grad, dev=dev)
 
@@ -3261,6 +3261,53 @@ class TestPythonOperation(unittest.TestCase):
     @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_where_gpu(self):
         self.where_helper(gpu_dev)
+
+    def rounde_helper(self, dev):
+        X = np.array([0.1, 0.5, 0.9, 1.2, 1.5,
+                    1.8, 2.3, 2.5, 2.7, -1.1,
+                    -1.5, -1.9, -2.2, -2.5, -2.8]).astype(np.float32)
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        y_t = np.array([0., 0., 1., 1., 2.,
+                    2., 2., 2., 3., -1.,
+                    -2., -2., -2., -2., -3.]).astype(np.float32)
+        dy = tensor.from_numpy(y_t)
+        dy.to_device(dev)
+
+        y = autograd.rounde(x)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), y_t)
+
+    def test_rounde_cpu(self):
+        self.rounde_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_rounde_gpu(self):
+        self.rounde_helper(gpu_dev)
+
+    def round_helper(self, dev):
+        X = np.array([0.1, 0.5, 0.9, 1.2, 1.5,
+                    1.8, 2.3, 2.5, 2.7, -1.1,
+                    -1.5, -1.9, -2.2, -2.5, -2.8]).astype(np.float32)
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        y_t = np.array([0., 1., 1., 1., 2.,
+                    2., 2., 3., 3., -1.,
+                    -2., -2., -2., -3., -3.]).astype(np.float32)
+        dy = tensor.from_numpy(y_t)
+        dy.to_device(dev)
+
+        y = autograd.round(x)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), y_t)
+
+    def test_round_cpu(self):
+        self.round_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_round_gpu(self):
+        self.round_helper(gpu_dev)
+
 
 if __name__ == '__main__':
     unittest.main()
