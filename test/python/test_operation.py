@@ -451,7 +451,7 @@ class TestPythonOperation(unittest.TestCase):
 
         params = rnn.get_params()
         for key, param in params.items():
-            auto_grad = tensor.to_numpy(auto_grads[param])
+            auto_grad = tensor.to_numpy(auto_grads[id(param)])
 
             self.gradients_check(valinna_rnn_forward, param, auto_grad, dev=dev)
 
@@ -483,7 +483,7 @@ class TestPythonOperation(unittest.TestCase):
 
         params = rnn.get_params()
         for key, param in params.items():
-            auto_grad = tensor.to_numpy(auto_grads[param])
+            auto_grad = tensor.to_numpy(auto_grads[id(param)])
 
             self.gradients_check(lstm_forward, param, auto_grad, dev=dev)
 
