@@ -311,7 +311,8 @@ class Platform {
  public:
   /// Return the default host device
   static std::shared_ptr<Device> GetDefaultDevice() {
-    defaultDevice->Reset();
+    // cannot reset cpu device, which leads to error
+    // defaultDevice->Reset();
     return defaultDevice;
   }
 
