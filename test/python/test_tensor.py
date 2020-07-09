@@ -478,6 +478,46 @@ class TestTensorMethods(unittest.TestCase):
         x = tensor.Tensor((4, 5, 3, 2), device=dev)
         x.gaussian(0, 1)
 
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_int_add(self, dev=cpu_dev):
+        a = np.random.randint(10,size=(2,3))
+        ta = tensor.from_numpy(a)
+
+        tb=ta+ta
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tb), a+a)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_mix_type(self, dev=gpu_dev):
+    # def test_mix_type(self, dev=cpu_dev):
+        # arithmetic between float and int
+        x1 = tensor.Tensor((2, 5), device=dev)
+        x1.gaussian(0, 10)
+        x2 = x1.as_type('int')
+
+        print(x1)
+        print(x2)
+
+        # nan
+        # y = x1+x2
+        # print("int tensor + float tensor", y)
+
+        # add not implemented
+        # y2 = x2 + 1.8
+        # print("int tensor + float", y2)
+
+        # ok
+        # y2 = x1 + 3
+        # print("float tensor + int", y2)
+
+        print("int tensor + int", x2+x2)
+
+        # tensor ops that only return float
+        # ok
+        # print("float tensor nrm2", x1.l2())
+
+        # nrm2 ok
+        # print("int tensor nrm2", x2.l2())
+
 
 if __name__ == '__main__':
     unittest.main()

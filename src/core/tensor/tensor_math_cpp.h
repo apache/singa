@@ -341,12 +341,28 @@ void Add<float, lang::Cpp>(const Tensor &in, const float x, Tensor *out,
   traverse_unary<float>(in, out, add_lambda);
 }
 
+// template <>
+// void Add<int, lang::Cpp>(const Tensor &in, const float x, Tensor *out,
+//                            Context *ctx) {
+//   auto tmp = int(x);
+//   auto add_lambda = [&x](int a) { return (a + x); };
+//   traverse_unary<int>(in, out, add_lambda);
+// }
+
 template <>
 void Add<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
                            Context *ctx) {
   // CHECK_EQ(ctx->stream, nullptr);
   auto add_lambda_binary = [](float a, float b) { return (a + b); };
   traverse_binary<float>(in1, in2, out, add_lambda_binary);
+}
+
+template <>
+void Add<int, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
+                           Context *ctx) {
+  // CHECK_EQ(ctx->stream, nullptr);
+  auto add_lambda_binary = [](int a, int b) { return (a + b); };
+  traverse_binary<int>(in1, in2, out, add_lambda_binary);
 }
 
 template <>
@@ -635,6 +651,12 @@ void Transform<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
 }
 
 template <>
+void Transform<int, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
+  auto identity = [](int a) { return a; };
+  traverse_unary<int>(in, out, identity);
+}
+
+template <>
 void Bernoulli<float, lang::Cpp>(const float p, Tensor *out, Context *ctx) {
   std::bernoulli_distribution distribution(p);
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
@@ -792,6 +814,13 @@ template <>
 void Nrm2<float, lang::Cpp>(const Tensor &in, float *out, Context *ctx) {
   const float *inPtr = static_cast<const float *>(in.block()->data());
   *out = cblas_snrm2(in.Size(), inPtr, 1);  // not using strided traversal
+}
+
+template <>
+void Nrm2<int, lang::Cpp>(const Tensor &in, float *out, Context *ctx) {
+  auto tmp = in.Clone().AsType(kFloat32);
+  const float *inPtr = static_cast<const float *>(tmp.block()->data());
+  *out = cblas_snrm2(tmp.Size(), inPtr, 1);  // not using strided traversal
 }
 
 template <>
