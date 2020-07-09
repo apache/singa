@@ -1253,13 +1253,11 @@ class SoftMaxCrossEntropy(Operator):
 
 
 def softmax_cross_entropy(x, t):
-    assert x.shape == t.shape, "input and target shape different: %s, %s" % (
-        x.shape, t.shape)
     assert x.ndim() == 2, "1st arg required 2d tensor. got shape: %s" % (
         x.shape)
-    assert t.ndim() == 2, "2nd arg required 2d tensor. got shape: %s" % (
+    assert t.ndim() <= 2, "2nd arg required <=2d tensor. got shape: %s" % (
         t.shape)
-    # x is the logits and t is the ground truth; both are 2D.
+    # x is the logits and t is the ground truth.
     return SoftMaxCrossEntropy(t)(x)[0]
 
 
