@@ -635,6 +635,12 @@ void Transform<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
 }
 
 template <>
+void Transform<int, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
+  auto identity = [](int a) { return a; };
+  traverse_unary<int>(in, out, identity);
+}
+
+template <>
 void Bernoulli<float, lang::Cpp>(const float p, Tensor *out, Context *ctx) {
   std::bernoulli_distribution distribution(p);
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
