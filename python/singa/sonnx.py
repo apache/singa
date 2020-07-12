@@ -1087,8 +1087,8 @@ class SingaBackend(Backend):
         'Unsqueeze': 'Unsqueeze',
         'NonZero': 'NonZero',
         'Ceil': 'Ceil',
-        # # special op
-        'ScatterElements':'ScatterElements',
+        # special op
+        'ScatterElements': 'ScatterElements',
         'Cast': 'Cast',
         'Split': 'Split',
         'Squeeze': 'Squeeze',
@@ -1158,7 +1158,6 @@ class SingaBackend(Backend):
         'ScatterElements': '_create_scatter_elements',
     }
 
-
     @classmethod
     def _create_pad(cls, onnx_node, operator, opset_version=_opset_version):
         """
@@ -1177,7 +1176,10 @@ class SingaBackend(Backend):
         return operator(mode, None, None)
 
     @classmethod
-    def _create_upsample(cls, onnx_node, operator, opset_version=_opset_version):
+    def _create_upsample(cls,
+                         onnx_node,
+                         operator,
+                         opset_version=_opset_version):
         """
         get the UpSample operator from onnx node
         Args:
@@ -1222,7 +1224,6 @@ class SingaBackend(Backend):
             return operator(tensor.float32)
         else:
             return operator(tensor.int32)
-        
 
     @classmethod
     def _create_split(cls, onnx_node, operator, opset_version=_opset_version):
@@ -1666,7 +1667,10 @@ class SingaBackend(Backend):
         return operator(kernel_size, stride, padding, is_max, auto_pad)
 
     @classmethod
-    def _create_scatter_elements(cls,onnx_node,operator,opset_version=_opset_version):
+    def _create_scatter_elements(cls,
+                                 onnx_node,
+                                 operator,
+                                 opset_version=_opset_version):
         """
         get the ScatterElements from the onnx node
         Args:
@@ -1676,8 +1680,10 @@ class SingaBackend(Backend):
         Returns: 
             singa operator instance      
         """
-        axis = onnx_node.getattr("axis",0)
-        return operator(axis)
+        axis = onnx_node.getattr("axis", 0)
+        onnx_node.set_attr_inputs(onnx_node.inputs[1], 'indices')
+        onnx_node.set_attr_inputs(onnx_node.inputs[2], 'updates')
+        return operator(None, None, axis)
 
     @classmethod
     def _onnx_constant_to_np(cls, onnx_node, opset_version=_opset_version):
@@ -1693,8 +1699,6 @@ class SingaBackend(Backend):
         np_dtype = mapping.TENSOR_TYPE_TO_NP_TYPE[onnx_tensor.data_type]
         np_tensor = np.frombuffer(onnx_tensor.raw_data, dtype=np_dtype)
         return tensor.from_numpy(np_tensor)
-    
-    
 
     @classmethod
     def _onnx_node_to_singa_op(cls, onnx_node, opset_version=_opset_version):
