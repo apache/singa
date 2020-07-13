@@ -116,6 +116,11 @@ class TestPythonOperation(unittest.TestCase):
     def test_Greater_gpu(self):
         self._greater_helper(gpu_dev)
 
+    def test_l2_cpu(self):
+        l2 = autograd.L2()
+        v = tensor.random((3,))
+        print(l2(v))
+
     def _conv2d_helper(self, dev):
         # (out_channels, kernel_size)
         conv_0 = layer.Conv2d(1, 2)
@@ -486,6 +491,39 @@ class TestPythonOperation(unittest.TestCase):
     @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_gradient_check_cudnn_rnn_lstm(self):
         self._gradient_check_cudnn_rnn(mode="lstm", dev=gpu_dev)
+
+    # Cos Sim Gradient Check
+    def _gradient_check_cossim(self, dev=gpu_dev):
+        bs=2;vec=3
+        ta = tensor.random((bs,vec),dev)
+        tb = tensor.random((bs,vec),dev)
+        # treat ta, tb as params
+        ta.stores_grad = True
+        tb.stores_grad = True
+        ty = tensor.random((bs,),dev)
+
+        def _forward():
+            out = autograd.cossim(ta,tb)
+            loss = autograd.mse_loss(out, ty)
+            return loss
+
+        loss = _forward()
+        auto_grads = autograd.gradients(loss)
+
+        params = { id(ta):ta, id(tb):tb }
+
+        for key, param in params.items():
+            auto_grad = tensor.to_numpy(auto_grads[id(param)])
+            self.gradients_check(_forward, param, auto_grad,
+                                 dev=dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_gradient_check_cossim_gpu(self):
+        self._gradient_check_cossim(dev=gpu_dev)
+
+    def test_gradient_check_cossim_cpu(self):
+        self._gradient_check_cossim(dev=cpu_dev)
+
 
     def test_numerical_gradients_check_for_vallina_rnn_cpu(self):
         self._numerical_gradients_check_for_vallina_rnn_helper(cpu_dev)
@@ -3287,7 +3325,7 @@ class TestPythonOperation(unittest.TestCase):
             loss = torch.clamp(loss, min=0)
             loss = torch.mean(loss)
             return loss
-        
+
         # torch tensor
         ppos = torch.tensor(pos_val)
         ppos.requires_grad = True
@@ -3304,45 +3342,53 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(tdneg)),pneg.grad.detach().numpy())
 
 
-    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
-    def test_cossim_value(self,dev=gpu_dev):
+    def _cossim_value(self,dev=gpu_dev):
         # numpy val
         np.random.seed(0)
-        a = np.random.random((10,8)).astype(np.float32)
-        b = np.random.random((10,8)).astype(np.float32)
-        dy = np.random.random((10,)).astype(np.float32)
-
-        # pytorch
-        import torch
-        from torch import nn
-        pa = torch.tensor(a)
-        pa.requires_grad = True
-        pb = torch.tensor(b)
-        pb.requires_grad = True
-        pdy = torch.tensor(dy)
-
-        # pytorch forward and backward
-        cos = nn.CosineSimilarity(dim=1)
-        py = cos(pa, pb)
-        py.backward(pdy)
+        bs = 1000;vec_s = 1200
+        a = np.random.random((bs,vec_s)).astype(np.float32)
+        b = np.random.random((bs,vec_s)).astype(np.float32)
+        dy = np.random.random((bs,)).astype(np.float32)
 
         # singa tensor
         ta = tensor.from_numpy(a)
         tb = tensor.from_numpy(b)
         tdy = tensor.from_numpy(dy)
+        ta.to_device(dev)
+        tb.to_device(dev)
+        tdy.to_device(dev)
 
         # singa forward and backward
         ty = autograd.cossim(ta, tb)
         tda, tdb = ty.creator.backward(tdy.data)
 
-        # foward comparison
-        np.testing.assert_array_almost_equal(tensor.to_numpy(ty),py.detach().numpy())
+        np_forward = list()
+        for i in range(len(a)):
+            a_norm = np.linalg.norm(a[i])
+            b_norm = np.linalg.norm(b[i])
+            ab_dot = np.dot(a[i],b[i])
+            out = ab_dot/(a_norm*b_norm)
+            np_forward.append(out)
 
-        # backward, failed
-        # np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(tda)),pa.grad.detach().numpy())
-        # failed
-        # np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(tdb)),pb.grad.detach().numpy())
+        np_backward_a = list()
+        np_backward_b = list()
+        for i in range(len(a)):
+            a_norm = np.linalg.norm(a[i])
+            b_norm = np.linalg.norm(b[i])
+            da = dy[i]*(b[i]/(a_norm*b_norm)- (np_forward[i] * a[i]) / (a_norm * a_norm))
+            db = dy[i]*(a[i]/(a_norm*b_norm)- (np_forward[i] * b[i]) / (b_norm * b_norm))
+            np_backward_a.append(da)
+            np_backward_b.append(db)
 
+        np.testing.assert_array_almost_equal(tensor.to_numpy(ty),np.array(np_forward))
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(tda)),np_backward_a)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_cossim_value_gpu(self):
+        self._cossim_value(gpu_dev)
+
+    def test_cossim_value_cpu(self):
+        self._cossim_value(cpu_dev)
 
 
 if __name__ == '__main__':

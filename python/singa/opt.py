@@ -105,6 +105,7 @@ class Optimizer(object):
 
     def call(self, loss):
         for p, g in autograd.backward(loss):
+            # print("param name: ", p.name, " grad ", g)
             if p.name is None:
                 p.name = id(p)
             self.apply(p.name, p, g)

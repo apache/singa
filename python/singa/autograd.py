@@ -117,7 +117,7 @@ def gradients(y, dy=None):
     """
     grads = {}  # mapping: x->dx if x.stores_grad
     for p, dp in backward(y, dy):
-        grads[p] = dp
+        grads[id(p)] = dp
     return grads
 
 
@@ -136,6 +136,7 @@ def backward(y, dy=None):
     op_dep, tensor_dep = infer_dependency(y.creator)
     assert y.size() == 1, ("y must be a Tensor with a single value;"
                            "size of y is % d" % y.size())
+    # print("backward starts..........................")
 
     # by default the dy is a tensor with 1.0 for each sample;
     if dy is None:
@@ -359,6 +360,20 @@ class Dummy(Operator):
     def __getattr__(self, name):
         return self.tensor.__getattribute__(name)
 
+class L2(Operator):
+    def __init__(self):
+        super(L2, self).__init__()
+    def forward(self, v):
+        assert v.nDim() == 2, "shape should be in 2d"
+        ret = singa.Tensor([v.Size()],v.device())
+        ret.SetFloatValue(v.L2())
+        if training:
+            self.v = v
+            self.l2 = ret
+        return ret
+    def backward(self, dv):
+        # singa.__mul__()
+        pass
 
 class Mean(Operator):
     """
@@ -1190,6 +1205,14 @@ class CrossEntropy(Operator):
 def cross_entropy(y, t):
     return CrossEntropy()(y, t)[0]
 
+def print_t(t1):
+    d = t1.device()
+    t1.ToHost()
+    if t1.data_type() == singa.kInt:
+        print(t1.GetIntValue(t1.Size()))
+    elif t1.data_type() == singa.kFloat32:
+        print(t1.GetFloatValue(t1.Size()))
+    t1.ToDevice(d)
 
 class QALSTMLoss(Operator):
 
@@ -1203,7 +1226,8 @@ class QALSTMLoss(Operator):
         zero.SetFloatValue(0.0)
         val = singa.AddFloat(singa.__sub__(neg, pos), self.M)
         gt_zero = singa.__gt__(val, zero)
-        self.inputs = (gt_zero,)  # (BS,)
+        if training:
+            self.inputs = (gt_zero,)  # (BS,)
         all_loss = singa.__mul__(gt_zero, val)
         loss = singa.SumAll(all_loss)
         loss /= (pos.shape()[0])
@@ -1211,15 +1235,19 @@ class QALSTMLoss(Operator):
         return loss
 
     def backward(self, dy=1.0):
+        # print("qa lstm loss doing backward......")
+        assert training, "enable training mode to do backward"
         # dpos = -1 if M-pos+neg > 0 else 0
         # dneg =  1 if M-pos+neg > 0 else 0
         gt_zero = self.inputs[0]
         dpos_factor = singa.Tensor(list(gt_zero.shape()), gt_zero.device())
-        dpos_factor.SetFloatValue(-1.0)
+        dpos_factor.SetFloatValue(-1.0/gt_zero.Size())
         dneg_factor = singa.Tensor(list(gt_zero.shape()), gt_zero.device())
-        dneg_factor.SetFloatValue(1.0)
+        dneg_factor.SetFloatValue( 1.0/gt_zero.Size())
         dpos = singa.__mul__(gt_zero, dpos_factor)
         dneg = singa.__mul__(gt_zero, dneg_factor)
+        # print("dpos")
+        # print_t(dpos) # ok
         return dpos, dneg
 
 
@@ -1281,10 +1309,10 @@ class MeanSquareError(Operator):
 def mse_loss(x, t):
     assert x.shape == t.shape, "input and target shape different: %s, %s" % (
         x.shape, t.shape)
-    assert x.ndim() == 2, "2d input required, input shapes: %s, %s" % (x.shape,
-                                                                       t.shape)
-    assert t.ndim() == 2, "2d input required, input shapes: %s, %s" % (x.shape,
-                                                                       t.shape)
+    # assert x.ndim() == 2, "2d input required, input shapes: %s, %s" % (x.shape,
+    #                                                                    t.shape)
+    # assert t.ndim() == 2, "2d input required, input shapes: %s, %s" % (x.shape,
+    #                                                                    t.shape)
     return MeanSquareError()(x, t)[0]
 
 
@@ -4144,6 +4172,8 @@ class Split(Operator):
         """
         dys = singa.VecTensor(dys)
         dy = singa.ConcatOn(dys, self.axis)
+        # print("split backward")
+        # print_t(dy)
         return dy
 
 
@@ -4577,7 +4607,9 @@ class _RNN(Operator):
         self.seq_lengths = seq_lengths
 
     def forward(self, x, hx, cx, w):
+        # print("_rnn forward")
         if training:
+            # print("_rnn forward is training")
             if self.use_mask:
                 (y, hy,
                  cy) = singa.GpuRNNForwardTrainingEx(x, hx, cx, w,
@@ -4606,10 +4638,11 @@ class _RNN(Operator):
                  cy) = singa.GpuRNNForwardInference(x, hx, cx, w, self.handle)
 
         if self.return_sequences:
-            # return full y {seq, bs, data_size}
+            # (seq, bs, data)
             return y
         else:
             # return last time step of y
+            # (seq, bs, data)[-1] -> (bs, data)
             last_y_shape = (y.shape()[1], y.shape()[2])
             last_y = singa.Tensor(list(last_y_shape), x.device())
 
@@ -4619,22 +4652,23 @@ class _RNN(Operator):
             return last_y
 
     def backward(self, grad):
+        # print("start cudnnrnn back")
         assert training is True and hasattr(
             self, "inputs"), "Please set training as True before do BP. "
 
+        # (seq, bs, hid)
         dy = None
         if self.return_sequences:
-            # from: dy shape {bs, seq, ..}
-            # to:   dy shape {seq, bs, ..}
             assert grad.shape() == self.inputs['y'].shape(), (
                 "grad shape %s != y shape %s" %
                 (grad.shape(), self.inputs['y'].shape()))
             dy = grad
-            dy = dy.transpose((1, 0, 2))
+            # grad (bs, seq, hid) -> dy (seq, bs, hid)
+            if self.batch_first:
+                dy = singa.Transpose(dy, [1, 0, 2])
         else:
-            # from: grad shape (bs, directions*hidden)
-            # to:     dy shape (seq, bs, directions*hidden)
-            #                  empty space filled by zeros
+            # grad (bs, directions*hidden) -> dy (seq, bs, directions*hidden)
+            #   empty space filled by zeros
             assert grad.shape() == (self.inputs['y'].shape()[1],
                                     self.inputs['y'].shape()[2]), (
                                         "grad y shape %s != last y shape %s" %
@@ -4669,10 +4703,12 @@ class _RNN(Operator):
             dW = singa.GpuRNNBackwardW(self.inputs['x'], self.inputs['hx'],
                                     self.inputs['y'], self.handle)
 
-        # dx {seq, bs, ..} => {bat, seq, ..}
+        # dx (seq, bs, data) => (bs, seq, data)
         if self.batch_first:
-            dx = singa.Transpose(dx, list((1, 0, 2)))
+            dx = singa.Transpose(dx, [1, 0, 2])
 
+        # print("rnn dw")
+        # print_t(dW)
         return dx, dhx, dcx, dW
 
 
@@ -4739,10 +4775,13 @@ class CosSim(Operator):
         ad = singa.Reshape(ad, list(ad.shape()) + [1])  # b * 1
         bd = singa.Reshape(bd, list(bd.shape()) + [1])  # b * 1
         ret = singa.Reshape(ret, list(ret.shape()) + [1])  # b * 1
+        dy = singa.Reshape(dy, list(dy.shape())+[1]) # boardcast
         da = singa.__sub__(singa.__div__(b, ab),
-                           singa.__mul__(ret, singa.__div__(a, ad)))
+                           singa.__div__(singa.__mul__(ret, a), ad))
         db = singa.__sub__(singa.__div__(a, ab),
-                           singa.__mul__(ret, singa.__div__(b, bd)))
+                           singa.__div__(singa.__mul__(ret, b), bd))
+        da = singa.__mul__(dy, da)
+        db = singa.__mul__(dy, db)
         return da, db
 
 
@@ -4755,6 +4794,9 @@ def cossim(a, b):
     Returns:
         the output Tensor.
     """
+    assert a.shape == b.shape, "shape not match for cossim"
+    assert a.ndim() == 2, "shape should be in 2d for cossim"
+    assert b.ndim() == 2, "shape should be in 2d for cossim"
     return CosSim()(a, b)[0]
 
 
