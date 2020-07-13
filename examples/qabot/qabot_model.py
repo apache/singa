@@ -17,12 +17,7 @@
 # under the License.
 #
 
-from singa import autograd
-from singa import layer
-from singa import model
-from singa import tensor
-from singa import device
-
+from singa import autograd, layer, model, tensor, device, opt
 
 class QAModel(model.Model):
 
@@ -30,32 +25,25 @@ class QAModel(model.Model):
                  hidden_size,
                  num_layers=1,
                  rnn_mode="lstm",
-                 batch_first=True):
+                 batch_first=True,
+                 return_sequences=True):
         super(QAModel, self).__init__()
-        return_sequences = False
-        self.lstm_q = layer.CudnnRNN(hidden_size=hidden_size,
-                                     num_layers=num_layers,
-                                     bidirectional=True,
-                                     return_sequences=return_sequences,
-                                     rnn_mode=rnn_mode,
-                                     batch_first=batch_first)
-        self.lstm_a = layer.CudnnRNN(hidden_size=hidden_size,
-                                     num_layers=num_layers,
-                                     bidirectional=True,
-                                     return_sequences=return_sequences,
-                                     rnn_mode=rnn_mode,
-                                     batch_first=batch_first)
+        self.hidden_size = hidden_size
+        self.lstm_q = layer.CudnnRNN(hidden_size=hidden_size,return_sequences=return_sequences)
+        self.lstm_a = layer.CudnnRNN(hidden_size=hidden_size,return_sequences=return_sequences)
+        self.optimizer = opt.SGD()
 
     def forward(self, q, a_batch):
-        q = self.lstm_q(q)  # BS, Hidden*2
-        a_batch = self.lstm_a(a_batch)  # {2, hidden*2}
-
-        # full sequences {2bs, seqlength, hidden*2}
-        # a_batch = autograd.reduce_mean(a_batch, [1]) # to {2bs, hidden*2}
-
-        bs_a = int(a_batch.shape[0] / 2)  # cut concated a-a+ to half and half
+        q = self.lstm_q(q)  # bs, seq, Hidden*2
+        a_batch = self.lstm_a(a_batch)  # 2bs, seq, hidden*2
+        bs_a = q.shape[0]
         a_pos, a_neg = autograd.split(a_batch, 0, [bs_a, bs_a])
-
+        q = autograd.reshape(q, (-1,self.hidden_size))
+        a_pos = autograd.reshape(a_pos, (-1,self.hidden_size))
+        a_neg = autograd.reshape(a_neg, (-1,self.hidden_size))
+        # a_pos = autograd.mul(q,a_pos)
+        # a_neg = autograd.mul(q,a_neg)
+        # return a_pos, a_neg
         sim_pos = autograd.cossim(q, a_pos)
         sim_neg = autograd.cossim(q, a_neg)
         return sim_pos, sim_neg
@@ -63,8 +51,7 @@ class QAModel(model.Model):
     def train_one_batch(self, q, a):
         out = self.forward(q, a)
         loss = autograd.qa_lstm_loss(out[0], out[1])
-        self.optimizer.backward_and_update(loss)
-
+        self.optimizer(loss)
         return out, loss
 
 
@@ -75,6 +62,7 @@ class MLP(model.Model):
         self.linear1 = layer.Linear(500)
         self.relu = layer.ReLU()
         self.linear2 = layer.Linear(2)
+        self.optimizer=opt.SGD()
 
     def forward(self, q, a):
         q = autograd.reshape(q, (q.shape[0], -1))
@@ -88,5 +76,20 @@ class MLP(model.Model):
     def train_one_batch(self, q, a, y):
         out = self.forward(q, a)
         loss = autograd.softmax_cross_entropy(out, y)
-        self.optimizer.backward_and_update(loss)
+        self.optimizer(loss)
         return out, loss
+
+
+if __name__ == "__main__":
+    m = QAModel(2,return_sequences=False)
+    dev = device.create_cuda_gpu_on(7)
+
+    tq = tensor.random((2, 3, 4),dev)
+    ta = tensor.random((2 * 2, 3, 4),dev)
+
+    m.train()
+    for i in range(10):
+        out = m.forward(tq, ta)
+        loss = autograd.qa_lstm_loss(out[0], out[1])
+        m.optimizer(loss)
+        print(loss)

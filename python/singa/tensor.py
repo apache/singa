@@ -1774,3 +1774,17 @@ def concatenate(tensors, axis):
     for t in tensors:
         ctensors.append(t.data)
     return _call_singa_func(singa.ConcatOn, ctensors, axis)
+
+def random(shape,device=get_default_device()):
+    ''' return a random tensor with given shape
+
+    Args:
+        shape: shape of generated tensor
+        device: device of generated tensor, default is cpu
+
+    Returns:
+        new tensor generated
+    '''
+    ret = Tensor(shape, device=device)
+    ret.uniform(0,1)
+    return ret
