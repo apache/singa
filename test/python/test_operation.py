@@ -451,7 +451,7 @@ class TestPythonOperation(unittest.TestCase):
 
         params = rnn.get_params()
         for key, param in params.items():
-            auto_grad = tensor.to_numpy(auto_grads[param])
+            auto_grad = tensor.to_numpy(auto_grads[id(param)])
 
             self.gradients_check(valinna_rnn_forward, param, auto_grad, dev=dev)
 
@@ -483,7 +483,7 @@ class TestPythonOperation(unittest.TestCase):
 
         params = rnn.get_params()
         for key, param in params.items():
-            auto_grad = tensor.to_numpy(auto_grads[param])
+            auto_grad = tensor.to_numpy(auto_grads[id(param)])
 
             self.gradients_check(lstm_forward, param, auto_grad, dev=dev)
 
@@ -2815,50 +2815,65 @@ class TestPythonOperation(unittest.TestCase):
     def test_ceil_gpu(self):
         self.ceil_test(gpu_dev)
 
-    def _test_scatter_elements(self,dev):
-        #testing witout axis
-        d1 = np.zeros((3,3),dtype=np.float32)
-        ind1 = np.array([[1,0,2],[0,2,1]],dtype=np.int32)
-        upd1 = np.array([[1.0,1.1,1.2],[2.0,2.1,2.2]],dtype=np.float32)
-        out1 = np.array([[2.0,1.1,0.0],[1.0,0.0,2.2],[0.0,2.1,1.2]],dtype=np.float32)
+    def _test_scatter_elements(self, dev):
+        # testing witout axis
+        data = np.zeros((3, 3), dtype=np.float32)
+        indices = np.array([[1, 0, 2], [0, 2, 1]], dtype=np.int32)
+        updates = np.array([[1.0, 1.1, 1.2], [2.0, 2.1, 2.2]], dtype=np.float32)
+        output = np.array([[2.0, 1.1, 0.0], [1.0, 0.0, 2.2], [0.0, 2.1, 1.2]],
+                        dtype=np.float32)
 
-        d1 = tensor.from_numpy(d1)
-        ind1 = tensor.from_numpy(ind1) 
-        upd1 = tensor.from_numpy(upd1)
-        d1.to_device(dev)
-        ind1.to_device(dev)
-        upd1.to_device(dev)
+        data = tensor.from_numpy(data)
+        indices = tensor.from_numpy(indices)
+        updates = tensor.from_numpy(updates)
+        data.to_device(dev)
+        indices.to_device(dev)
+        updates.to_device(dev)
 
-        result = autograd.scatter_elements(d1,ind1,upd1)
-        DX = np.ones(upd1.shape,dtype=np.float32)
-        dx1 = result.creator.backward(dy1.data)
-        np.testing.assert_almost_equal(tensor.to_numpy(result),out1,decimal=5)
-        np.testing.assert_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)),DX,decimal=5)
+        result = autograd.scatter_elements(data, indices, updates)
+        dy = tensor.from_numpy(np.ones(data.shape, dtype=np.float32))
+        dx = result.creator.backward(dy.data)
+        np.testing.assert_almost_equal(tensor.to_numpy(result), output, decimal=5)
+        self.check_shape(dx.shape(), data.shape)
 
-        #testing with axis
-        data = tensor.from_numpy(np.array([[1.0,2.0,3.0,4.0,5.0]],dtype=np.float32))
-        indices = tensor.from_numpy(np.array([[1,3]],dtype=np.int32))
-        updates = tensor.from_numpy(np.array([[1.1,2.1]],dtype=np.float32))
-        output = np.array([[1.0,1.1,3.0,2.1,5.0]],dtype=np.float32)
-        result = autograd.scatter_elements(data,indices,updates,axis=1)
-        DX = np.ones(updates.shape,dtype=np.float32)
-        dy1 = tensor.from_numpy(np.ones(data.shape,dtype=np.float32))
-        dx1 = result.creator.backward(dy1.data)
-        np.testing.assert_almost_equal(tensor.to_numpy(result),output,decimal=5)
-        np.testing.assert_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)),DX,decimal=5) 
+        # testing with axis
+        data =  np.array([[1.0, 2.0, 3.0, 4.0, 5.0]], dtype=np.float32)
+        indices = np.array([[1, 3]], dtype=np.int32)
+        updates = np.array([[1.1, 2.1]], dtype=np.float32)
+        output = np.array([[1.0, 1.1, 3.0, 2.1, 5.0]], dtype=np.float32)
 
-        #testing with negative  indices:
-        data = tensor.from_numpy(np.array([[1.0, 2.0, 3.0, 4.0, 5.0]], dtype=np.float32))
-        indices = tensor.from_numpy(np.array([[1, -3]], dtype=np.int64))
-        updates = tensor.from_numpy(np.array([[1.1, 2.1]], dtype=np.float32))
-        output = np.array([[1.0,1.1,2.1,4.0,5.0]],dtype=np.float32)
-        result = autograd.scatter_elements(data,indices,updates,axis=1)
-        
-        DX = np.ones(updates.shape,dtype=np.float32)
-        dy1 = tensor.from_numpy(np.ones(data.shape,dtype=np.float32))
-        dx1 = result.creator.backward(dy1.data)
-        np.testing.assert_almost_equal(tensor.to_numpy(result),output,decimal=5)
-        np.testing.assert_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)),DX,decimal=5) 
+        data = tensor.from_numpy(data)
+        indices = tensor.from_numpy(indices)
+        updates = tensor.from_numpy(updates)
+        data.to_device(dev)
+        indices.to_device(dev)
+        updates.to_device(dev)
+
+        result = autograd.scatter_elements(data, indices, updates, axis=1)
+        dy = tensor.from_numpy(np.ones(data.shape, dtype=np.float32))
+        dx = result.creator.backward(dy.data)
+        np.testing.assert_almost_equal(tensor.to_numpy(result), output, decimal=5)
+        self.check_shape(dx.shape(), data.shape)
+
+        # testing with negative indices:
+        data = np.array([[1.0, 2.0, 3.0, 4.0, 5.0]], dtype=np.float32)
+        indices = np.array([[1, -3]], dtype=np.int64)
+        updates = np.array([[1.1, 2.1]], dtype=np.float32)
+        output = np.array([[1.0, 1.1, 2.1, 4.0, 5.0]], dtype=np.float32)
+
+        data = tensor.from_numpy(data)
+        indices = tensor.from_numpy(indices)
+        updates = tensor.from_numpy(updates)
+        data.to_device(dev)
+        indices.to_device(dev)
+        updates.to_device(dev)
+
+        result = autograd.scatter_elements(data, indices, updates, axis=1)
+        dy = tensor.from_numpy(np.ones(data.shape, dtype=np.float32))
+        dx = result.creator.backward(dy.data)
+        np.testing.assert_almost_equal(tensor.to_numpy(result), output, decimal=5)
+        self.check_shape(dx.shape(), data.shape)
+       
 
     def test_cpu_scatter_elements(self):
         self._test_scatter_elements(cpu_dev)
@@ -3286,6 +3301,51 @@ class TestPythonOperation(unittest.TestCase):
         self.assertRaises(AssertionError, autograd.qa_lstm_loss, _2d,
                           _1d)
 
+    def rounde_helper(self, dev):
+        X = np.array([0.1, 0.5, 0.9, 1.2, 1.5,
+                    1.8, 2.3, 2.5, 2.7, -1.1,
+                    -1.5, -1.9, -2.2, -2.5, -2.8]).astype(np.float32)
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        y_t = np.array([0., 0., 1., 1., 2.,
+                    2., 2., 2., 3., -1.,
+                    -2., -2., -2., -2., -3.]).astype(np.float32)
+        dy = tensor.from_numpy(y_t)
+        dy.to_device(dev)
+
+        y = autograd.rounde(x)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), y_t)
+
+    def test_rounde_cpu(self):
+        self.rounde_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_rounde_gpu(self):
+        self.rounde_helper(gpu_dev)
+
+    def round_helper(self, dev):
+        X = np.array([0.1, 0.5, 0.9, 1.2, 1.5,
+                    1.8, 2.3, 2.5, 2.7, -1.1,
+                    -1.5, -1.9, -2.2, -2.5, -2.8]).astype(np.float32)
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        y_t = np.array([0., 1., 1., 1., 2.,
+                    2., 2., 3., 3., -1.,
+                    -2., -2., -2., -3., -3.]).astype(np.float32)
+        dy = tensor.from_numpy(y_t)
+        dy.to_device(dev)
+
+        y = autograd.round(x)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), y_t)
+
+    def test_round_cpu(self):
+        self.round_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_round_gpu(self):
+        self.round_helper(gpu_dev)
 
 if __name__ == '__main__':
     unittest.main()

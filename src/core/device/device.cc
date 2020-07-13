@@ -41,8 +41,8 @@ void Device::Reset() {
   Sync();
 
   // Reset Seed
-  seed_ = std::chrono::system_clock::now().time_since_epoch().count();
-  SetRandSeed(seed_);
+  // seed_ = std::chrono::system_clock::now().time_since_epoch().count();
+  // SetRandSeed(seed_);
 
   // Reset Graph
   graph_->Reset();
