@@ -29,8 +29,8 @@ class QAModel(model.Model):
                  return_sequences=True):
         super(QAModel, self).__init__()
         self.hidden_size = hidden_size
-        self.lstm_q = layer.CudnnRNN(hidden_size=hidden_size,return_sequences=return_sequences)
-        self.lstm_a = layer.CudnnRNN(hidden_size=hidden_size,return_sequences=return_sequences)
+        self.lstm_q = layer.CudnnRNN(hidden_size=hidden_size,bidirectional=True,return_sequences=return_sequences)
+        self.lstm_a = layer.CudnnRNN(hidden_size=hidden_size,bidirectional=True,return_sequences=return_sequences)
         self.optimizer = opt.SGD()
 
     def forward(self, q, a_batch):
@@ -38,12 +38,9 @@ class QAModel(model.Model):
         a_batch = self.lstm_a(a_batch)  # 2bs, seq, hidden*2
         bs_a = q.shape[0]
         a_pos, a_neg = autograd.split(a_batch, 0, [bs_a, bs_a])
-        q = autograd.reshape(q, (-1,self.hidden_size))
-        a_pos = autograd.reshape(a_pos, (-1,self.hidden_size))
-        a_neg = autograd.reshape(a_neg, (-1,self.hidden_size))
-        # a_pos = autograd.mul(q,a_pos)
-        # a_neg = autograd.mul(q,a_neg)
-        # return a_pos, a_neg
+        # q = autograd.reshape(q, (-1,self.hidden_size))
+        # a_pos = autograd.reshape(a_pos, (-1,self.hidden_size))
+        # a_neg = autograd.reshape(a_neg, (-1,self.hidden_size))
         sim_pos = autograd.cossim(q, a_pos)
         sim_neg = autograd.cossim(q, a_neg)
         return sim_pos, sim_neg
@@ -51,31 +48,6 @@ class QAModel(model.Model):
     def train_one_batch(self, q, a):
         out = self.forward(q, a)
         loss = autograd.qa_lstm_loss(out[0], out[1])
-        self.optimizer(loss)
-        return out, loss
-
-
-class MLP(model.Model):
-
-    def __init__(self):
-        super(MLP, self).__init__()
-        self.linear1 = layer.Linear(500)
-        self.relu = layer.ReLU()
-        self.linear2 = layer.Linear(2)
-        self.optimizer=opt.SGD()
-
-    def forward(self, q, a):
-        q = autograd.reshape(q, (q.shape[0], -1))
-        a = autograd.reshape(a, (q.shape[0], -1))
-        qa = autograd.cat([q, a], 1)
-        y = self.linear1(qa)
-        y = self.relu(y)
-        y = self.linear2(y)
-        return y
-
-    def train_one_batch(self, q, a, y):
-        out = self.forward(q, a)
-        loss = autograd.softmax_cross_entropy(out, y)
         self.optimizer(loss)
         return out, loss
 
