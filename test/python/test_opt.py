@@ -101,7 +101,7 @@ class TestOptimizer(unittest.TestCase):
         g = tensor.Tensor(w_shape, device=dev).set_value(0.1)
 
         w_step1 = w-0.1*g
-        sgd1.apply(w, w, g)
+        sgd1.apply(w.name, w, g)
 
         assertTensorEqual(w, w_step1)
 
@@ -115,7 +115,7 @@ class TestOptimizer(unittest.TestCase):
         w_step1 = w-0.1*g
         buf = g
 
-        sgd1.apply(w, w, g)
+        sgd1.apply(w.name, w, g)
         sgd1.step()
 
         assertTensorEqual(w,w_step1)
@@ -123,7 +123,7 @@ class TestOptimizer(unittest.TestCase):
         buf = g + buf*0.9
         w_step2 = w-0.1*buf
 
-        sgd1.apply(w, w, g)
+        sgd1.apply(w.name, w, g)
 
         assertTensorEqual(w, w_step2)
 
@@ -136,7 +136,7 @@ class TestOptimizer(unittest.TestCase):
 
         w_step1 = w-0.1*(g+0.2*w)
 
-        sgd1.apply(w, w, g)
+        sgd1.apply(w.name, w, g)
 
         assertTensorEqual(w,w_step1)
 
@@ -150,7 +150,7 @@ class TestOptimizer(unittest.TestCase):
         buf = g
         w_step1 = w-0.1*(g+0.9*buf)
 
-        sgd1.apply(w, w, g)
+        sgd1.apply(w.name, w, g)
 
         assertTensorEqual(w,w_step1)
 
