@@ -201,7 +201,7 @@ def get_idx2word(data_dir):
 
     return idx2word
 
-def get_train_raw(data_dir):
+def get_train_raw(data_dir, data_filename):
     ''' deserialize training data file
         args:
             data_dir: dir of data file
@@ -217,7 +217,7 @@ def get_train_raw(data_dir):
     '''
     train_raw = []
     import gzip
-    with gzip.open(data_dir+insuranceqa_train_filename) as fin:
+    with gzip.open(data_dir+data_filename) as fin:
         for line in fin:
             tpl = line.decode().strip().split("\t")
             question = [int(idx.replace("idx_","")) for idx in tpl[1].split(" ")]
@@ -226,7 +226,7 @@ def get_train_raw(data_dir):
             train_raw.append((question,ans,candis))
     return train_raw
 
-def get_filtered_crop_data(train_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec):
+def limit_encode_train(train_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec):
     ''' prepare train data to embedded word vector sequence given sequence limit
         return:
             questions_encoded: np ndarray, shape
@@ -269,10 +269,11 @@ def get_idx2vec_weights(wv, idx2word):
     return idx2vec
 
 
-def prepare_data():
+def prepare_data(use_cache=True):
     import pickle
-    if not os.path.isfile(insuranceQA_cache_fp):
+    if not os.path.isfile(insuranceQA_cache_fp) or not use_cache:
         # no cache is found, preprocess data from scratch
+        print("prepare data from scratch")
 
         # get pretained word vector
         from gensim.models.keyedvectors import KeyedVectors
@@ -287,19 +288,19 @@ def prepare_data():
         idx2word = get_idx2word(data_dir)
         idx2vec = get_idx2vec_weights(wv, idx2word)
 
-        train_raw = get_train_raw(data_dir)
+        train_raw = get_train_raw(data_dir, insuranceqa_train_filename)
+        test_raw = get_train_raw(data_dir,insuranceqa_test_filename)
         with open(insuranceQA_cache_fp, 'wb') as handle:
-            pickle.dump((train_raw, label2answer, idx2word, idx2vec), handle, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump((train_raw, test_raw, label2answer, idx2word, idx2vec), handle, protocol=pickle.HIGHEST_PROTOCOL)
     else:
         # load from cached pickle
         with open(insuranceQA_cache_fp, 'rb') as handle:
-            (train_raw, label2answer, idx2word, idx2vec) = pickle.load(handle)
+            (train_raw, test_raw, label2answer, idx2word, idx2vec) = pickle.load(handle)
 
-    return train_raw, label2answer, idx2word, idx2vec
-    # return get_filtered_crop_data(train_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, wv)
+    return train_raw, test_raw, label2answer, idx2word, idx2vec
 
 
-def get_filtered_crop_data_training_eval(train_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec, top_k_candi_limit = 6):
+def limit_encode_eval(train_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec, top_k_candi_limit = 6):
     ''' prepare train data to embedded word vector sequence given sequence limit for testing
         return:
             questions_encoded: np ndarray, shape
@@ -348,7 +349,7 @@ def get_filtered_crop_data_training_eval(train_raw, label2answer, idx2word, q_se
 if __name__ == "__main__":
     q_seq_limit = 10
     ans_seq_limit = 12
-    train_raw, label2answer, idx2word, idx2vec = prepare_data()
-    questions_encoded, poss_encoded, negs_encoded = get_filtered_crop_data(
-        train_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec)
-    questions_encoded, candi_pools_encoded, ans_count = get_filtered_crop_data_training_eval(train_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec)
+    train_raw, test_raw, label2answer, idx2word, idx2vec = prepare_data()
+    questions_encoded, poss_encoded, negs_encoded = limit_encode_train( train_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec)
+    questions_encoded, candi_pools_encoded, ans_count = limit_encode_eval(train_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec)
+    questions_encoded, candi_pools_encoded, ans_count = limit_encode_eval(test_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec)
