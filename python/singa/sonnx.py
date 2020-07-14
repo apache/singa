@@ -1733,7 +1733,7 @@ class SingaBackend(Backend):
                 weights[key] = val
             else:
                 x = tensor.from_numpy(val)
-                if device == 'CPU':
+                if device != 'CPU':
                     assert singa.USE_CUDA, "Your SINGA doesn't compile GPU module."
                     dev = device.create_cuda_gpu()
                 else:
