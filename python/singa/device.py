@@ -132,5 +132,5 @@ def get_default_device():
     return default_device
 
 
-def enbale_lazy_alloc(enable):
+def enable_lazy_alloc(enable):
     singa.Device.EnableLazyAlloc(enable)

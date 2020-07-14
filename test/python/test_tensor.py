@@ -534,10 +534,10 @@ class TestTensorMethods(unittest.TestCase):
         y = ta - tb
         np.testing.assert_array_almost_equal(tensor.to_numpy(y), a_np - b_np)
 
-    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
     def test_kint_kint_cpu(self, dev=cpu_dev):
         self._kint_kint(cpu_dev)
 
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
     def test_kint_kint_gpu(self, dev=gpu_dev):
         self._kint_kint(gpu_dev)
 
@@ -559,10 +559,10 @@ class TestTensorMethods(unittest.TestCase):
         y = ta - tb
         np.testing.assert_array_almost_equal(tensor.to_numpy(y), a_np - b_np)
 
-    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
     def test_kint_kint_bc_cpu(self, dev=cpu_dev):
         self._kint_kint_bc(cpu_dev)
 
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
     def test_kint_kint_bc_gpu(self, dev=gpu_dev):
         self._kint_kint_bc(gpu_dev)
 
