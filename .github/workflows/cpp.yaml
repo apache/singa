@@ -47,3 +47,20 @@ jobs:
       - name: C++ test
         run: build/bin/test_singa
  
+  build-ubuntu-oneDNN:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: get-oneDNN
+        run: wget https://github.com/oneapi-src/oneDNN/releases/download/v1.1/dnnl_lnx_1.1.0_cpu_gomp.tgz -P /tmp/ && tar zxf /tmp/dnnl_lnx_1.1.0_cpu_gomp.tgz
+      - name: install-build-dependencies
+        run: sudo apt-get install -y libgoogle-glog-dev libprotobuf-dev protobuf-compiler libncurses-dev libopenblas-dev gfortran libblas-dev liblapack-dev libatlas-base-dev swig libcurl3-dev cmake dh-autoreconf && wget https://github.com/oneapi-src/oneDNN/releases/download/v1.1/dnnl_lnx_1.1.0_cpu_gomp.tgz -P /tmp/ \ && tar zxf /tmp/dnnl_lnx_1.1.0_cpu_gomp.tgz -C /root
+      - name: configure
+        run: mkdir build && cd build && cmake -DUSE_PYTHON=NO -DENABLE_TEST=YES -DUSE_DNNL=YES ..
+        env:
+         DNNL_ROOT: /tmp/dnnl_lnx_1.1.0_cpu_gomp/
+      - name: build
+        run: cd build && make
+      - name: C++ test
+        run: build/bin/test_singa
