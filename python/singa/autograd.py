@@ -1253,13 +1253,11 @@ class SoftMaxCrossEntropy(Operator):
 
 
 def softmax_cross_entropy(x, t):
-    assert x.shape == t.shape, "input and target shape different: %s, %s" % (
-        x.shape, t.shape)
-    assert x.ndim() == 2, "1st arg required 2d tensor. got shape: %s" % (
+    assert x.ndim() == 2, "1st arg required 2d tensor. got shape: " + str(
         x.shape)
-    assert t.ndim() == 2, "2nd arg required 2d tensor. got shape: %s" % (
+    assert t.ndim() <= 2, "2nd arg required <=2d tensor. got shape: " + str(
         t.shape)
-    # x is the logits and t is the ground truth; both are 2D.
+    # x is the logits and t is the ground truth.
     return SoftMaxCrossEntropy(t)(x)[0]
 
 
@@ -4634,7 +4632,7 @@ class _RNN(Operator):
                 "grad shape %s != y shape %s" %
                 (grad.shape(), self.inputs['y'].shape()))
             dy = grad
-            dy = dy.transpose((1, 0, 2))
+            dy = singa.Transpose(dy, (1, 0, 2))
         else:
             # from: grad shape (bs, directions*hidden)
             # to:     dy shape (seq, bs, directions*hidden)

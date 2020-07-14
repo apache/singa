@@ -478,6 +478,94 @@ class TestTensorMethods(unittest.TestCase):
         x = tensor.Tensor((4, 5, 3, 2), device=dev)
         x.gaussian(0, 1)
 
+    def _kfloat32_int(self, dev=gpu_dev):
+        np.random.seed(0)
+        x_val = np.random.random((2, 3)).astype(np.float32) * 10
+        x = tensor.from_numpy(x_val)
+        x.to_device(dev)
+        scalar = np.random.random((1,))[0] * 100
+        y = x + scalar
+        self.assertEqual(y.dtype, core_pb2.kFloat32)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), x_val + scalar)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_kfloat32_int_gpu(self):
+        self._kfloat32_int(gpu_dev)
+
+    def test_kfloat32_int_cpu(self):
+        self._kfloat32_int(cpu_dev)
+
+    def _kint_float(self, dev=gpu_dev):
+        np.random.seed(0)
+        x_val = np.random.randint(0, 10, (2, 3))
+        x = tensor.from_numpy(x_val)
+        x.to_device(dev)
+        scalar = np.random.random((1,))[0] * 100
+        y = x + scalar
+        self.assertEqual(y.dtype, core_pb2.kFloat32)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), x_val + scalar)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_kint_float_gpu(self):
+        self._kint_float(gpu_dev)
+
+    def test_kint_float_cpu(self):
+        self._kint_float(cpu_dev)
+
+    def _kint_kint(self, dev=gpu_dev):
+        a_np = np.array([[[17, 4, 9, 22, 18], [-9, 9, -1, -1, 4],
+                          [1, 14, 7, 1, 4], [3, 14, -2, 3, -8]],
+                         [[-25, 6, 8, -7, 22], [-14, 0, -1, 15, 14],
+                          [1, 3, -8, -19, -3], [1, 12, 12, -3, -3]],
+                         [[-10, -14, -17, 19, -5], [-4, -12, 7, -16, -2],
+                          [-8, 3, -5, -11, 0], [4, 0, 3, -6, -3]]],
+                        dtype=np.int32)
+        b_np = np.array([[[-6, -3, -8, -17, 1], [-4, -16, 4, -9, 0],
+                          [7, 1, 11, -12, 4], [-6, -8, -5, -3, 0]],
+                         [[-11, 9, 4, -15, 14], [18, 11, -1, -10, 10],
+                          [-4, 12, 2, 9, 3], [7, 0, 17, 1, 4]],
+                         [[18, -13, -12, 9, -11], [19, -4, -7, 19, 14],
+                          [18, 9, -8, 19, -2], [8, 9, -1, 6, 9]]],
+                        dtype=np.int32)
+        ta = tensor.from_numpy(a_np)
+        tb = tensor.from_numpy(b_np)
+        ta.to_device(dev)
+        tb.to_device(dev)
+        y = ta - tb
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), a_np - b_np)
+
+    def test_kint_kint_cpu(self, dev=cpu_dev):
+        self._kint_kint(cpu_dev)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_kint_kint_gpu(self, dev=gpu_dev):
+        self._kint_kint(gpu_dev)
+
+    def _kint_kint_bc(self, dev=gpu_dev):
+        a_np = np.array([[[17, 4, 9, 22, 18], [-9, 9, -1, -1, 4],
+                          [1, 14, 7, 1, 4], [3, 14, -2, 3, -8]],
+                         [[-25, 6, 8, -7, 22], [-14, 0, -1, 15, 14],
+                          [1, 3, -8, -19, -3], [1, 12, 12, -3, -3]],
+                         [[-10, -14, -17, 19, -5], [-4, -12, 7, -16, -2],
+                          [-8, 3, -5, -11, 0], [4, 0, 3, -6, -3]]],
+                        dtype=np.int32)
+        b_np = np.array([[-6, -3, -8, -17, 1], [-4, -16, 4, -9, 0],
+                          [7, 1, 11, -12, 4], [-6, -8, -5, -3, 0]],
+                        dtype=np.int32)
+        ta = tensor.from_numpy(a_np)
+        tb = tensor.from_numpy(b_np)
+        ta.to_device(dev)
+        tb.to_device(dev)
+        y = ta - tb
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), a_np - b_np)
+
+    def test_kint_kint_bc_cpu(self, dev=cpu_dev):
+        self._kint_kint_bc(cpu_dev)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_kint_kint_bc_gpu(self, dev=gpu_dev):
+        self._kint_kint_bc(gpu_dev)
+
 
 if __name__ == '__main__':
     unittest.main()

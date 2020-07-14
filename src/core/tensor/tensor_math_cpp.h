@@ -331,7 +331,26 @@ void SoftMaxBackward<float, lang::Cpp>(const Tensor &in, Tensor *out,
                                         {DNNL_ARG_DST, fdout_mem}});
   ctx->dnnl_stream.wait();
 }
+#else
+// native Softmax without DNNL
+template <>
+void SoftMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context* ctx) {
+  CHECK_LE(in.nDim(), 2u) << "Axis is required for SoftMax on multi dimemsional tensor";
+  out->CopyData(in);
+  size_t nrow = 1, ncol = in.Size(), size = ncol;
+  if (in.nDim() == 2u) {
+    nrow = in.shape(0);
+    ncol = size / nrow;
+    out->Reshape(Shape{nrow, ncol});
+  }
+  Tensor tmp = RowMax(*out);
+  SubColumn(tmp, out);
+  Exp(*out, out);
 
+  SumColumns(*out, &tmp);
+  DivColumn(tmp, out);
+  out->Reshape(in.shape());
+}
 #endif  // USE_DNNL
 
 template <>
@@ -632,6 +651,12 @@ template <>
 void Transform<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
   auto identity = [](float a) { return a; };
   traverse_unary<float>(in, out, identity);
+}
+
+template <>
+void Transform<int, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
+  auto identity = [](int a) { return a; };
+  traverse_unary<int>(in, out, identity);
 }
 
 template <>

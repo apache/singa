@@ -705,6 +705,8 @@ class Tensor(object):
     def __eq__(self, rhs):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(singa.__eq__(self.data, rhs.data))
+        elif rhs is None:
+            return False
         else:
             return _call_singa_func(singa.EQFloat, self.data, rhs)
 

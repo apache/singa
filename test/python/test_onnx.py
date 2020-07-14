@@ -2031,7 +2031,7 @@ class TestPythonOnnx(unittest.TestCase):
         # backward
         sgd = opt.SGD(lr=0.01)
         for p, gp in autograd.backward(loss):
-            sgd.update(p, gp)
+            sgd.apply(p.name, p, gp)
         sgd.step()
 
         # frontend
@@ -2047,7 +2047,7 @@ class TestPythonOnnx(unittest.TestCase):
         loss = autograd.MeanSquareError()(y_o, y_t)[0]
         sgd = opt.SGD(lr=0.01)
         for p, gp in autograd.backward(loss):
-            sgd.update(p, gp)
+            sgd.apply(p.name, p, gp)
         sgd.step()
 
     def test_retraining_cpu(self):
@@ -2080,7 +2080,7 @@ class TestPythonOnnx(unittest.TestCase):
         # backward
         sgd = opt.SGD(lr=0.01)
         for p, gp in autograd.backward(loss):
-            sgd.update(p, gp)
+            sgd.apply(p.name, p, gp)
         sgd.step()
 
         # frontend
@@ -2113,7 +2113,7 @@ class TestPythonOnnx(unittest.TestCase):
         loss = autograd.MeanSquareError()(y_o, y_ot)[0]
         sgd = opt.SGD(lr=0.01)
         for p, gp in autograd.backward(loss):
-            sgd.update(p, gp)
+            sgd.apply(p.name, p, gp)
         sgd.step()
 
     def test_transfer_learning_cpu(self):
