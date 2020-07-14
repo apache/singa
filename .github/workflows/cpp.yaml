@@ -55,7 +55,7 @@ jobs:
       - name: get-oneDNN
         run: wget https://github.com/oneapi-src/oneDNN/releases/download/v1.1/dnnl_lnx_1.1.0_cpu_gomp.tgz -P /tmp/ && tar zxf /tmp/dnnl_lnx_1.1.0_cpu_gomp.tgz
       - name: install-build-dependencies
-        run: sudo apt-get install -y libgoogle-glog-dev libprotobuf-dev protobuf-compiler libncurses-dev libopenblas-dev gfortran libblas-dev liblapack-dev libatlas-base-dev swig libcurl3-dev cmake dh-autoreconf && wget https://github.com/oneapi-src/oneDNN/releases/download/v1.1/dnnl_lnx_1.1.0_cpu_gomp.tgz -P /tmp/ \ && tar zxf /tmp/dnnl_lnx_1.1.0_cpu_gomp.tgz -C /root
+        run: sudo apt-get install -y libgoogle-glog-dev libprotobuf-dev protobuf-compiler libncurses-dev libopenblas-dev gfortran libblas-dev liblapack-dev libatlas-base-dev swig libcurl3-dev cmake dh-autoreconf
       - name: configure
         run: mkdir build && cd build && cmake -DUSE_PYTHON=NO -DENABLE_TEST=YES -DUSE_DNNL=YES ..
         env:
