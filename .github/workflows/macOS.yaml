@@ -20,7 +20,7 @@ name: macOS
 on:
   push:
   pull_request:
-    
+
 jobs:
   build-macOS-cpu:
     runs-on: macos-latest
@@ -29,16 +29,17 @@ jobs:
       - uses: actions/checkout@v1
       - uses: actions/setup-python@v2
         with:
-          python-version: '3.7' 
-      - name: install-build-dependencies  
+          python-version: "3.7"
+      - name: install-build-dependencies
         run: brew install protobuf swig opencv glog lmdb numpy && pip3 install numpy
-      - name: configure        
-        run: mkdir build && cd build && cmake -DUSE_PYTHON3=YES ..
+      - name: configure
+        run: mkdir build && cd build && cmake -DUSE_PYTHON3=YES -DENABLE_TEST=YES ..
         env:
           CMAKE_INCLUDE_PATH: /usr/local/opt/openblas/include:$CMAKE_INCLUDE_PATH
           CMAKE_LIBRARY_PATH: /usr/local/opt/openblas/lib:$CMAKE_LIBRARY_PATH
       - name: build
         run: cd build && make
         env:
-          CXXFLAGS: -I  /Users/runner/hostedtoolcache/Python/3.7.8/x64/lib/python3.7/site-packages/numpy/core/include $CXXFLAGS 
-       
+          CXXFLAGS: -I  /Users/runner/hostedtoolcache/Python/3.7.8/x64/lib/python3.7/site-packages/numpy/core/include $CXXFLAGS
+      - name: C++ test
+        run: build/bin/test_singa
