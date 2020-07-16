@@ -130,6 +130,26 @@ __global__ void KernelFloor(const size_t n, const float *in, float *out) {
   }
 }
 
+__global__ void KernelRound(const size_t n, const float *in, float *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = roundf(in[i]);
+  }
+}
+
+__global__ void KernelRoundE(const size_t n, const float *in, float *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    float doub = in[i]*2;
+    if (ceilf(doub) == doub) {
+      out[i] = roundf(in[i]/2)*2;
+    } else {
+      out[i] = roundf(in[i]);
+    }
+  }
+}
+
+
 __global__ void KernelLog(const size_t n, const float *in, float *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
@@ -307,6 +327,23 @@ __global__ void KernelBGE(const size_t num, const float *in1, const float *in2,
     out[idx] = in1[idx] >= in2[idx] ? 1.0f : 0.0f;
   }
 }
+
+__global__ void KernelEQ(const size_t num, const float *in, const float x,
+                         float *out) {
+  for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
+       idx += blockDim.x * gridDim.x) {
+    out[idx] = in[idx] == x ? 1.0f : 0.0f;
+  }
+}
+
+__global__ void KernelBEQ(const size_t num, const float *in1, const float *in2,
+                         float *out) {
+  for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
+       idx += blockDim.x * gridDim.x) {
+    out[idx] = in1[idx] == in2[idx] ? 1.0f : 0.0f;
+  }
+}
+
 __global__ void KernelGT(const size_t num, const float *in, const float x,
                          float *out) {
   for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
@@ -553,6 +590,14 @@ void floor(const size_t n, const float *in, float *out, cudaStream_t s) {
   KernelFloor <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
 }
 
+void round(const size_t n, const float *in, float *out, cudaStream_t s) {
+  KernelRound <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
+}
+
+void rounde(const size_t n, const float *in, float *out, cudaStream_t s) {
+  KernelRoundE <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
+}
+
 void log(const size_t n, const float *in, float *out, cudaStream_t s) {
   KernelLog <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
 }
@@ -634,6 +679,14 @@ void ge(const size_t num, const float *in, const float x, float *out,
 void ge(const size_t num, const float *in1, const float *in2, float *out,
         cudaStream_t s) {
   KernelBGE <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (num, in1, in2, out);
+}
+void eq(const size_t num, const float *in, const float x, float *out,
+        cudaStream_t s) {
+  KernelEQ <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (num, in, x, out);
+}
+void eq(const size_t num, const float *in1, const float *in2, float *out,
+        cudaStream_t s) {
+  KernelBEQ <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (num, in1, in2, out);
 }
 void lt(const size_t num, const float *in, const float x, float *out,
         cudaStream_t s) {

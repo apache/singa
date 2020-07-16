@@ -48,6 +48,7 @@ typedef std::vector<Edge *> EdgeVec;
 typedef std::vector<Block *> BlockVec;
 typedef std::function<void(Context *)> OpFunc;
 typedef std::unordered_map<Block *, BlkInfo *> Blk2InfoMap;
+typedef std::chrono::high_resolution_clock::time_point TimePoint;
 
 enum BlockType { kUnknow, kInput, kParam, kInter, kEnd };
 
@@ -152,6 +153,7 @@ class Graph {
   void Debug();
   void RunGraph();
   void RunInSerial();
+  void PrintTimeProfiling();
   void AddOperation(OpFunc &&op, const BlockVec &read_blocks,
                     const BlockVec &write_blocks, string op_name = "no_name");
 
@@ -178,19 +180,18 @@ class Graph {
   const NodeVec &next_nodes(const size_t idx) const;
   const BlockVec &free_blocks(const size_t idx) const;
 
-  void PrintTimeProfiling();
-  void EvaluateTimeElapsed();
-
  private:
   void Analyze();
   void FreeLoop();
   void AnalyzeNodes();
   void AnalyzeEdges();
-  void AddSyncOp(function<void(Context *)> &&op, string op_name = "no_name");
   void TimeProfilingDoExec(Node *curNode);
-  void TakeStartTime();
+  void AddSyncOp(function<void(Context *)> &&op, string op_name = "no_name");
+
   void step() { iteration_++; }
   void time_elapsed_inc(float time) { time_elapsed_ += time; }
+  void TakeStartTime(TimePoint &start);
+  void EvaluateTimeElapsed(const TimePoint &start);
 
   // static void CUDART_CB Callback(cudaStream_t stream, cudaError_t status,
   //                                void *data);
@@ -212,12 +213,12 @@ class Graph {
   NodeVec begin_nodes_;
   std::vector<NodeVec> next_nodes_;
   std::vector<BlockVec> free_blocks_;
+
+  // Time Profiling
   int iteration_ = 0;
   float time_elapsed_ = 0;
-  std::chrono::high_resolution_clock::time_point t_start_;
 
   SafeQueue<int> free_queue_;
-
 };
 
 /// Scheduling Tensor operations with dependency detection.

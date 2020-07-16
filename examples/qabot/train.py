@@ -17,7 +17,6 @@
 # under the License.
 #
 
-import os
 import sys
 build_path = r'build/python'
 sys.path.append(build_path)
@@ -25,8 +24,6 @@ model_path = r'examples/qabot'
 sys.path.append(model_path)
 
 import time
-from singa import autograd
-from singa import layer
 from singa import model
 from singa import tensor
 from singa import device
@@ -34,7 +31,6 @@ from singa import opt
 
 from gensim.models.keyedvectors import KeyedVectors
 import numpy as np
-import random
 
 from data import parse_file, parse_test_file, load_vocabulary, generate_qa_triplets, words_text_to_fixed_seqlen_vec, triplet_text_to_vec, train_data_gen_fn
 from model import QAModel

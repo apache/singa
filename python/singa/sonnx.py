@@ -65,7 +65,7 @@ def onnx_type_to_singa_type(onnx_type):
 
 gpu_dev = None
 if singa.USE_CUDA:
-    gpu_dev = device.create_cuda_gpu(set_default=False)
+    gpu_dev = device.create_cuda_gpu()
 cpu_dev = device.get_default_device()
 
 
@@ -1110,6 +1110,10 @@ class SingaBackend(Backend):
         'Reshape': 'Reshape',
         'Slice': 'Slice',
         'Clip': 'Clip',
+        'Expand': 'Expand',
+        'Pad': 'Pad',
+        'Upsample': 'UpSample',
+        'Where': 'Where',
         'Gemm': 'layer.Gemm',  # layer
         'BatchNormalization': 'layer.BatchNorm2d',  # layer
         'Conv': 'layer.Conv2d',  # layer
@@ -1148,7 +1152,71 @@ class SingaBackend(Backend):
         'Conv': '_create_conv',
         'MaxPool': '_create_max_avg_pool',
         'AveragePool': '_create_max_avg_pool',
+        'Expand': '_create_expand',
+        'Pad': '_create_pad',
+        'Upsample': '_create_upsample',
+        'Where': '_create_where',
     }
+
+    @classmethod
+    def _create_where(cls, onnx_node, operator, opset_version=_opset_version):
+        """
+        get the Where operator from onnx node
+        Args:
+            onnx_node (OnnxNode): a given onnx node
+            operator (Operator Class): a singa operator class
+            opset_version (int): the opset version
+        Returns: 
+            singa operator instance
+        """
+        onnx_node.set_attr_inputs(onnx_node.inputs[0], 'condition')
+        return operator(None)
+
+    @classmethod
+    def _create_pad(cls, onnx_node, operator, opset_version=_opset_version):
+        """
+        get the Pad operator from onnx node
+        Args:
+            onnx_node (OnnxNode): a given onnx node
+            operator (Operator Class): a singa operator class
+            opset_version (int): the opset version
+        Returns: 
+            singa operator instance
+        """
+        mode = onnx_node.getattr("mode", "constant")
+        onnx_node.set_attr_inputs(onnx_node.inputs[1], 'pads')
+        if len(onnx_node.inputs) == 3:
+            onnx_node.set_attr_inputs(onnx_node.inputs[2], 'constant')
+        return operator(mode, None, None)
+
+    @classmethod
+    def _create_upsample(cls, onnx_node, operator, opset_version=_opset_version):
+        """
+        get the UpSample operator from onnx node
+        Args:
+            onnx_node (OnnxNode): a given onnx node
+            operator (Operator Class): a singa operator class
+            opset_version (int): the opset version
+        Returns: 
+            singa operator instance
+        """
+        mode = utils.force_unicode(onnx_node.getattr("mode", None))
+        onnx_node.set_attr_inputs(onnx_node.inputs[1], 'scales')
+        return operator(mode, None)
+
+    @classmethod
+    def _create_expand(cls, onnx_node, operator, opset_version=_opset_version):
+        """
+        get the Expand operator from onnx node
+        Args:
+            onnx_node (OnnxNode): a given onnx node
+            operator (Operator Class): a singa operator class
+            opset_version (int): the opset version
+        Returns: 
+            singa operator instance
+        """
+        onnx_node.set_attr_inputs(onnx_node.inputs[1], 'shape')
+        return operator(None)
 
     @classmethod
     def _create_cast(cls, onnx_node, operator, opset_version=_opset_version):
@@ -1621,8 +1689,7 @@ class SingaBackend(Backend):
         """
         onnx_tensor = onnx_node.getattr('value')
         np_dtype = mapping.TENSOR_TYPE_TO_NP_TYPE[onnx_tensor.data_type]
-        np_tensor = np.frombuffer(onnx_tensor.raw_data, dtype=np_dtype)
-        return tensor.from_numpy(np_tensor)
+        return np.frombuffer(onnx_tensor.raw_data, dtype=np_dtype)
 
     @classmethod
     def _onnx_node_to_singa_op(cls, onnx_node, opset_version=_opset_version):
@@ -1680,9 +1747,9 @@ class SingaBackend(Backend):
                 weights[key] = val
             else:
                 x = tensor.from_numpy(val)
-                if device == 'CPU':
+                if device != 'CPU':
                     assert singa.USE_CUDA, "Your SINGA doesn't compile GPU module."
-                    dev = device.create_cuda_gpu(set_default=False)
+                    dev = device.create_cuda_gpu()
                 else:
                     dev = device.get_default_device()
                 x.to_device(dev)
@@ -1757,7 +1824,10 @@ class SingaBackend(Backend):
         return inputs, outputs
 
     @classmethod
-    def _onnx_model_to_singa_ops(cls, graph, device, opset_version=_opset_version):
+    def _onnx_model_to_singa_ops(cls,
+                                 graph,
+                                 device,
+                                 opset_version=_opset_version):
         """
         get all intermediate params, operators, and input info from onnx model
         Args:
@@ -1975,13 +2045,16 @@ class SingaRep(BackendRep):
             if isinstance(x[0], tensor.Tensor):
                 self.dev = x[0].device
 
-        outputs_dict = OrderedDict([(outp.name, None) for outp in self.outputs])
+        outputs_dict = OrderedDict([])
 
         # last_layers means we run this model until the last #N layers
         last_layers = kwargs.get('last_layers', len(self._layers))
         if last_layers != len(self._layers):
             for outp in self._layers[last_layers - 1].outputs:
                 outputs_dict[outp] = None
+        else:
+            for outp in self.outputs:
+                outputs_dict[outp.name] = None
 
         aux_output = kwargs.get('aux_output', ())
         for outp in aux_output:
@@ -2025,11 +2098,11 @@ class SingaRep(BackendRep):
             for key, name in node.attr_inputs.items():
                 if key in tensor_dict:
                     ts = tensor_dict[key]
-                    if isinstance(ts, tensor.Tensor):
-                        ts = tensor.to_numpy(ts)
-                    states[name] = ts
                 elif key in self.states:
-                    states[name] = self.states[key]
+                    ts = self.states[key]
+                if isinstance(ts, tensor.Tensor):
+                    ts = tensor.to_numpy(ts)
+                states[name] = ts
             # set states
             if states:
                 if callable(getattr(op, "set_states", None)):
@@ -2081,16 +2154,17 @@ class SONNXModel(model.Model):
             self.__dict__[node.name] = operator
         self.sg_ir.is_graph = True
 
-    def forward(self, *input, aux_output=()):
+    def forward(self, *input, aux_output=(), **kwargs):
         """
         The forward of the SINGA model
         Args:
             input (Tensors[]): a list of Tensor
             aux_output (string()): a set of required output name
+
         Returns:
             a OrderedDict of Tensor
         """
-        return self.sg_ir.run(input, aux_output=aux_output)
+        return self.sg_ir.run(input, aux_output=aux_output, **kwargs)
 
 
 run_node = SingaBackend.run_node

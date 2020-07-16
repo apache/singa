@@ -171,6 +171,7 @@ namespace singa{
                         Tensor *dst, const Tensor &src, const size_t num);
 
   Tensor Reshape(const Tensor &in, const std::vector<size_t> &s);
+  Tensor Contiguous(const Tensor &in);
   Tensor Transpose(const Tensor &in, const std::vector<size_t> &axes);
 
   %rename(DefaultTranspose) Transpose(const Tensor &in);
@@ -179,6 +180,8 @@ namespace singa{
   Tensor Abs(const Tensor &t);
   Tensor Ceil(const Tensor &t);
   Tensor Floor(const Tensor &t);
+  Tensor Round(const Tensor &t);
+  Tensor RoundE(const Tensor &t);
   Tensor Exp(const Tensor &t);
   Tensor Log(const Tensor &t);
   Tensor ReLU(const Tensor &t);
@@ -228,10 +231,12 @@ namespace singa{
   %rename(__le__) operator<=(const Tensor &lhs, const Tensor &rhs);
   %rename(__gt__) operator>(const Tensor &lhs, const Tensor &rhs);
   %rename(__ge__) operator>=(const Tensor &lhs, const Tensor &rhs);
+  %rename(__eq__) operator==(const Tensor &lhs, const Tensor &rhs);
   Tensor operator<(const Tensor &lhs, const Tensor &rhs);
   Tensor operator<=(const Tensor &lhs, const Tensor &rhs);
   Tensor operator>(const Tensor &lhs, const Tensor &rhs);
   Tensor operator>=(const Tensor &lhs, const Tensor &rhs);
+  Tensor operator==(const Tensor &lhs, const Tensor &rhs);
 
 
   %rename(LTFloat) operator<(const Tensor &t, const float x);
@@ -250,6 +255,10 @@ namespace singa{
   %rename(GEFloat) operator>=(const Tensor &t, const float x);
   template <typename DType> Tensor operator>=(const Tensor &t, const DType x);
   %template(opge) operator>= <float>;
+
+  %rename(EQFloat) operator==(const Tensor &t, const float x);
+  template <typename DType> Tensor operator==(const Tensor &t, const DType x);
+  %template(opeq) operator== <float>;
 
   Tensor ConcatOn(const std::vector<Tensor> &in, int axis);
   Tensor SliceOn(const Tensor&in, const size_t start, const size_t end, int axis);
