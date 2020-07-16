@@ -64,7 +64,7 @@ from . import singa_wrap as singa
 from .device import get_default_device
 
 int32 = 2  #core.proto.kInt32
-float32 = 0 #core.proto.kFloat32
+float32 = 0  #core.proto.kFloat32
 CTensor = singa.Tensor
 
 

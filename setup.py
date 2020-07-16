@@ -15,60 +15,67 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+'''Script for building wheel package for installing singa via pip.
+
+This script must be launched at the root dir of the singa project 
+inside the docker container created via tool/docker/devel/centos/cudaxx/Dockerfile.manylinux2014.
+
+    # launch docker container
+    $ nvidia-docker run -v <local singa dir>:/root/singa -it apache/singa:manylinux2014-cuda10.2
+    # build the wheel packag; replace cp36-cp36m to compile singa for other py version
+    $ /opt/python/cp36-cp36m/bin/python setup.py bdist_wheel
+    $ /opt/python/cp37-cp37m/bin/python setup.py bdist_wheel
+    $ /opt/python/cp38-cp38/bin/python setup.py bdist_wheel
+
+The generted wheel file should be repaired by the auditwheel tool to make it 
+compatible with PEP513. Otherwise, the dependent libs will not be included in
+the wheel package and the wheel file will be rejected by PYPI website during
+uploading due to file name error.
+
+    # repair the wheel pakage and upload to pypi
+    $ /opt/python/cp36-cp36m/bin/python setup.py upload
+
+For the Dockerfile with CUDA and CUDNN installed, the CUDA version and 
+CUDNN version are exported as environment variable: CUDA_VERSION, CUDNN_VERSION.
+We can control the script to build CUDA enabled singa package by exporting
+SINGA_CUDA=ON; otherwise the CPU only package will be built.
+
+
+Ref: 
+[1] https://github.com/bytedance/byteps/blob/master/setup.py
+[2] https://setuptools.readthedocs.io/en/latest/setuptools.html
+[3] https://packaging.python.org/tutorials/packaging-projects/ 
+'''
 
 from setuptools import find_packages, setup, Command, Extension
 from setuptools.command.build_ext import build_ext
-from distutils.errors import CompileError, DistutilsError, DistutilsPlatformError, LinkError, DistutilsSetupError
-from distutils import log as distutils_logger
-from distutils.version import LooseVersion
+from distutils.errors import CompileError, DistutilsSetupError
 
 import os
 import io
 import sys
-import re
-import shlex
 import subprocess
 import textwrap
 import traceback
-import pipes
-import warnings
 import shutil
-from copy import deepcopy
+import shlex
 from pathlib import Path
 
-# import conda.cli.python_api as conda
 import numpy as np
 
 NAME = 'singa'
 # Update the version ID for new release following semantic version
-VERSION='3.0.0.dev1'
-CUDNN_VERSION = '7.6.5'
-CUDA_VERSION = '10.2'
+VERSION = '3.0.0.dev1'
 
-SINGA_PY = Path('python') #Path(__file__).parent
+SINGA_PY = Path('python')
 SINGA_SRC = Path('src')
 SINGA_HDR = Path('include')
-
-singa_extension = Extension(NAME, [])
-
-def is_build_action():
-    if len(sys.argv) <= 1:
-        return False
-
-    if sys.argv[1].startswith('build'):
-        return True
-
-    if sys.argv[1].startswith('bdist'):
-        return True
-
-    if sys.argv[1].startswith('install'):
-        return True
 
 
 class UploadCommand(Command):
     """Support setup.py upload."""
 
-    description = 'Build and publish the package.'
+    description = 'Repair and upload the package.'
     user_options = []
 
     @staticmethod
@@ -83,25 +90,16 @@ class UploadCommand(Command):
         pass
 
     def run(self):
-        try:
-            self.status('Removing previous builds…')
-            shutil.rmtree(os.path.join(SINGA_PY, 'dist'))
-        except OSError:
-            pass
-
-        self.status('Building Source and Wheel (universal) distribution…')
-        os.system(
-            '{0} setup.py sdist bdist_wheel'.format(sys.executable))
+        self.status('Removing previous wheel files under wheelhouse')
+        shutil.rmtree('wheelhouse', ignore_errors=True)
+        for wheel in os.listdir('dist'):
+            self.status('Repair the dist/{} via auditwheel'.format(wheel))
+            os.system('auditwheel repair dist/{}'.format(wheel))
 
         self.status('Uploading the package to PyPI via Twine…')
-        os.system('twine upload dist/*')
-
-        if 'dev' not in VERSION:
-            self.status('Pushing git tags…')
-            os.system('git tag v{0}'.format(VERSION))
-            os.system('git push --tags')
-
+        os.system('{} -m twine upload dist/*'.format(sys.executable))
         sys.exit()
+
 
 def parse_compile_options():
     '''Read the environment variables to parse the compile options.
@@ -109,15 +107,10 @@ def parse_compile_options():
     Returns:
         a tuple of bool values as the indicators
     '''
-    with_cuda = os.environ.get('SINGA_CUDA', False) 
-    with_nccl = os.environ.get('SINGA_NCCL', False) 
-
-    with_test = False
-    if 'SINGA_TEST' in os.environ and os.environ['SINGA_TEST'].lower() == 'true':
-        with_test = True
-    with_debug = False
-    if 'SINGA_DEBUG' in os.environ and os.environ['SINGA_DEBUG'].lower() == 'true':
-        with_debug = True
+    with_cuda = os.environ.get('SINGA_CUDA', False)
+    with_nccl = os.environ.get('SINGA_NCCL', False)
+    with_test = os.environ.get('SINGA_TEST', False)
+    with_debug = os.environ.get('SINGA_DEBUG', False)
 
     return with_cuda, with_nccl, with_test, with_debug
 
@@ -134,22 +127,39 @@ def generate_singa_config(with_cuda, with_nccl):
         config.append('#define CPU_ONLY')
     else:
         config.append('#define USE_CUDA')
+        config.append('#define USE_CUDNN')
 
     if with_nccl:
         config.append('#define ENABLE_DIST')
         config.append('#define USE_DIST')
 
-    cpp_conf_path = SINGA_HDR/'singa/singa_config.h'
+    # singa_config.h to be included by cpp code
+    cpp_conf_path = SINGA_HDR / 'singa/singa_config.h'
     print('Writing configs to {}'.format(cpp_conf_path))
     with cpp_conf_path.open('w') as fd:
         for line in config:
             fd.write(line + '\n')
+        versions = [int(x) for x in VERSION.split('.')[:3]]
+        fd.write('#define SINGA_MAJOR_VERSION {}\n'.format(versions[0]))
+        fd.write('#define SINGA_MINOR_VERSION {}\n'.format(versions[1]))
+        fd.write('#define SINGA_PATCH_VERSION {}\n'.format(versions[2]))
+        fd.write('#define SINGA_VERSION "{}"\n'.format(VERSION))
 
-    swig_conf_path = SINGA_SRC/'api/config.i'
+    # config.i to be included by swig files
+    swig_conf_path = SINGA_SRC / 'api/config.i'
     with swig_conf_path.open('w') as fd:
         for line in config:
             fd.write(line + ' 1 \n')
-        fd.write('#define CUDNN_VERSION "{}"\n'.format(CUDNN_VERSION))
+
+        fd.write('#define USE_PYTHON 1\n')
+        if not with_nccl:
+            fd.write('#define USE_DIST 0\n')
+        if not with_cuda:
+            fd.write('#define USE_CUDA 0\n')
+            fd.write('#define USE_CUDNN 0\n')
+        else:
+            fd.write('#define CUDNN_VERSION "{}"\n'.format(
+                os.environ.get('CUDNN_VERSION')))
         versions = [int(x) for x in VERSION.split('.')[:3]]
         fd.write('#define SINGA_MAJOR_VERSION {}\n'.format(versions[0]))
         fd.write('#define SINGA_MINOR_VERSION {}\n'.format(versions[1]))
@@ -157,254 +167,219 @@ def generate_singa_config(with_cuda, with_nccl):
         fd.write('#define SINGA_VERSION "{}"\n'.format(VERSION))
 
 
-def install_dep_lib(prefix, with_cuda, with_nccl):
-    '''Install dependent libs via conda.
-
-    Args:
-        prefix(str): location to put the libs
-        with_cuda(bool): indicator for cudnn and cuda lib
-        with_nccl(bool): indicator for nccl lib
-
-    Returns:
-        a list of link names of dependent libs; 
-        and a list of extra libs with indirect dependency
-    '''
-    # stdout, stderr, _ = conda.run_command(conda.Commands.INFO)
-    deps = ['glog=0.3.5', 'openblas=0.3.9', 'dnnl=1.1', 'protobuf=3.9.2']
-    link_libs = [x.split('=')[0] for x in deps]
-
-    if with_nccl:
-        deps.append('nccl=2.6.4.1')
-        deps.append('mpich=3.3.2')
-        link_libs +=['nccl', 'mpi', 'mpicxx']
-
-    if with_cuda:
-        deps.append('cudnn=7.6.5=cuda10.2_0')
-        link_libs += ['cudnn', 'cudart', 'curand', 'cnmem']
-
-
-    for dep in deps:
-        print('-------------------------------')
-        print('Install  {} '.format(dep))
-        print('-------------------------------')
-        stdout, stderr, _ = conda.run_command(conda.Commands.INSTALL, 
-            '--prefix', str(prefix), '-c', 'conda-forge', '-c', 'nusdbsystem', dep)
-        print(stderr)
-        print(stdout)
-    conda.run_command(conda.Commands.INSTALL, '-c', 'conda-forge', 'swig=3.0.12')
-
-    extra_libs = ['gflags', 'gomp', 'gfortran', 'quadmath']
-    return link_libs, extra_libs
-
-
-def test_compile(build_ext, name, code, libraries=None, include_dirs=None, library_dirs=None,
-                 macros=None, extra_compile_preargs=None, extra_link_preargs=None):
-    test_compile_dir = os.path.join(build_ext.build_temp, 'test_compile')
-    if not os.path.exists(test_compile_dir):
-        os.makedirs(test_compile_dir)
-
-    source_file = os.path.join(test_compile_dir, '%s.cc' % name)
-    with open(source_file, 'w') as f:
-        f.write(code)
-
-    compiler = build_ext.compiler
-    [object_file] = compiler.object_filenames([source_file])
-    shared_object_file = compiler.shared_object_filename(
-        name, output_dir=test_compile_dir)
-
-    compiler.compile([source_file], extra_preargs=extra_compile_preargs,
-                     include_dirs=include_dirs, macros=macros)
-    compiler.link_shared_object(
-        [object_file], shared_object_file, libraries=libraries, library_dirs=library_dirs,
-        extra_preargs=extra_link_preargs)
-
-    return shared_object_file
-
-def get_cpp_flags(build_ext=None):
+def get_cpp_flags():
     last_err = None
     default_flags = ['-std=c++11', '-fPIC', '-g', '-O2', '-Wall', '-pthread']
     # avx_flags = [ '-mavx'] #'-mf16c',
     flags_to_try = []
     if sys.platform == 'darwin':
         # Darwin most likely will have Clang, which has libc++.
-        flags_to_try = [default_flags + ['-stdlib=libc++'],
-                        default_flags]
+        return default_flags + ['-stdlib=libc++']
     else:
-        flags_to_try = [default_flags,
-                        default_flags + ['-stdlib=libc++']]
-    return flags_to_try[0]
-    for cpp_flags in flags_to_try:
-        try:
-            test_compile(build_ext, 'test_cpp_flags', extra_compile_preargs=cpp_flags,
-                         code=textwrap.dedent('''\
-                    #include <unordered_map>
-                    void test() {
-                    }
-                    '''))
-
-            return cpp_flags
-        except (CompileError, LinkError):
-            last_err = 'Unable to determine C++ compilation flags (see error above).'
-        except Exception:
-            last_err = 'Unable to determine C++ compilation flags.  ' \
-                       'Last error:\n\n%s' % traceback.format_exc()
-
-    raise DistutilsPlatformError(last_err)
-
-
-def get_link_flags(build_ext=None):
-    last_err = None
-    libtool_flags = []
-    ld_flags = []
-    flags_to_try = []
-    if sys.platform == 'darwin':
-        flags_to_try = [libtool_flags, ld_flags]
-    else:
-        flags_to_try = [ld_flags, libtool_flags]
-    return flags_to_try[0]
-    for link_flags in flags_to_try:
-        try:
-            test_compile(build_ext, 'test_link_flags', extra_link_preargs=link_flags,
-                         code=textwrap.dedent('''\
-                    void test() {
-                    }
-                    '''))
-
-            return link_flags
-        except (CompileError, LinkError):
-            last_err = 'Unable to determine C++ link flags (see error above).'
-        except Exception:
-            last_err = 'Unable to determine C++ link flags.  ' \
-                       'Last error:\n\n%s' % traceback.format_exc()
-
-    raise DistutilsPlatformError(last_err)
-
-
-def test_cuda_libs(build_ext, prefix, cpp_flags):
-    cuda_include_dirs = [prefix/'include']
-    cuda_lib_dirs = [prefix/'lib', prefix/'lib64']
-    cuda_libs = ['cudart']
-
-    try:
-        test_compile(build_ext, 'test_cuda', libraries=cuda_libs,
-                     include_dirs=cuda_include_dirs,
-                     library_dirs=cuda_lib_dirs,
-                     extra_compile_preargs=cpp_flags,
-                     code=textwrap.dedent('''\
-            #include <cuda_runtime.h>
-            void test() {
-                cudaSetDevice(0);
-            }
-            '''))
-    except (CompileError, LinkError):
-        raise DistutilsPlatformError(
-            'CUDA library was not found (see error above).\n'
-            'Please specify correct CUDA location with the CUDA_HOME '
-            'HOROVOD_CUDA_HOME - path where CUDA include and lib directories can be found\n')
-
-    return cuda_include_dirs, cuda_lib_dirs
+        return default_flags
 
 
 def generate_proto_files():
     print('----------------------')
     print('Generating proto files')
     print('----------------------')
-    proto_src = SINGA_SRC/'proto'
-    cmd = "/usr/bin/protoc --proto_path={} --cpp_out={} {}".format(proto_src, proto_src,  proto_src/'core.proto')
+    proto_src = SINGA_SRC / 'proto'
+    cmd = "/usr/bin/protoc --proto_path={} --cpp_out={} {}".format(
+        proto_src, proto_src, proto_src / 'core.proto')
     subprocess.run(cmd, shell=True, check=True)
 
-    proto_hdr_dir = SINGA_HDR/'singa/proto'
-    proto_hdr_file = proto_hdr_dir/'core.pb.h'
+    proto_hdr_dir = SINGA_HDR / 'singa/proto'
+    proto_hdr_file = proto_hdr_dir / 'core.pb.h'
     if proto_hdr_dir.exists():
         if proto_hdr_file.exists():
             proto_hdr_file.unlink()
     else:
         proto_hdr_dir.mkdir()
 
-    shutil.copyfile(Path(proto_src/'core.pb.h'), proto_hdr_file)
-    return proto_hdr_file, proto_src/'core.pb.cc'
+    shutil.copyfile(Path(proto_src / 'core.pb.h'), proto_hdr_file)
+    return proto_hdr_file, proto_src / 'core.pb.cc'
 
-def compile_cuda_kernel():
-    pass
 
 def path_to_str(path_list):
     return [str(x) if not isinstance(x, str) else x for x in path_list]
 
+
 def prepare_extension_options():
     with_cuda, with_nccl, with_test, with_debug = parse_compile_options()
-    # prefix = Path(SINGA_PY/'singa/thirdparty')
-    # prefix.mkdir(exist_ok=True)
-    # link_libs, extra_libs = install_dep_lib(prefix, with_cuda, with_nccl)
-    link_libs = ['glog', 'protobuf', 'openblas', 'dnnl']
-    # print(link_libs, extra_libs)
-    # package_data = ['thirdparty/lib/lib{}.so.[0-9]'.format(x) for x in link_libs + extra_libs]
-    package_data = []
+
+    global VERSION
+    if with_cuda:
+        cuda_version = os.environ.get('CUDA_VERSION')
+        cuda_major = int(cuda_version.split('.')[0])
+        cuda_minor = int(cuda_version.split('.')[1])
+        # local label '+cuda10.2'. Ref: https://www.python.org/dev/peps/pep-0440/
+        VERSION = VERSION + '+cuda{}.{}'.format(cuda_major, cuda_minor)
+    else:
+        VERSION = VERSION + '+cpu'
+
     generate_singa_config(with_cuda, with_nccl)
-    # prefix = Path('/usr/lib64/')
     generate_proto_files()
 
-    sources = path_to_str([*list((SINGA_SRC/'core').rglob('*.cc')), 
-                           *list((SINGA_SRC/'model/operation').glob('*.cc')), 
-                           *list((SINGA_SRC/'utils').glob('*.cc')),
-                            SINGA_SRC/'proto/core.pb.cc',
-                            SINGA_SRC/'api/singa.i'])
-    include_dirs = path_to_str([SINGA_HDR, SINGA_HDR/'singa/proto', 
-                                np.get_include(), '/usr/include', '/usr/include/openblas', 
-                                '/usr/local/include'])
-    library_dirs = path_to_str(['/usr/lib64', '/usr/local/lib'])
-    libraries = link_libs
-    runtime_library_dirs = ['.'] + library_dirs
+    link_libs = ['glog', 'protobuf', 'openblas', 'dnnl']
 
-    extra_compile_args = get_cpp_flags()
-    extra_link_args = get_link_flags()
-    options = {'sources':sources, 
-               'include_dirs':include_dirs, 
-               'library_dirs':library_dirs,
-               'libraries':libraries,
-               'runtime_library_dirs':runtime_library_dirs,
-               'extra_compile_args':extra_compile_args,
-               'extra_link_args':extra_link_args}
+    sources = path_to_str([
+        *list((SINGA_SRC / 'core').rglob('*.cc')), *list(
+            (SINGA_SRC / 'model/operation').glob('*.cc')), *list(
+                (SINGA_SRC / 'utils').glob('*.cc')),
+        SINGA_SRC / 'proto/core.pb.cc', SINGA_SRC / 'api/singa.i'
+    ])
+    include_dirs = path_to_str([
+        SINGA_HDR, SINGA_HDR / 'singa/proto',
+        np.get_include(), '/usr/include', '/usr/include/openblas',
+        '/usr/local/include'
+    ])
 
-    classifiers = [
-        # Trove classifiers
-        # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
-        'License :: OSI Approved :: Apache Software License',
-        'Development Status :: 3 - Alpha',
-        'Intended Audience :: Developers',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Topic :: Scientific/Engineering :: Artificial Intelligence'
-    ]
+    try:
+        np_include = np.get_include()
+    except AttributeError:
+        np_include = np.get_numpy_include()
+    include_dirs.append(np_include)
 
-    if sys.platform == 'darwin':
-        classifiers.append('Operating System :: MacOS :: MacOS X')
-    elif sys.platform == 'linux':
-        'Operating System :: POSIX :: Linux'
-    else:
-        raise DistutilsSetupError('Building on Windows is not supported currently.')
+    library_dirs = []  # path_to_str(['/usr/lib64', '/usr/local/lib'])
 
     if with_cuda:
-        classifiers.append('Environment :: GPU :: NVIDIA CUDA')
+        link_libs.extend(['cudart', 'cudnn', 'curand', 'cublas', 'cnmem'])
+        include_dirs.append('/usr/local/cuda/include')
+        library_dirs.append('/usr/local/cuda/lib64')
+        sources.append(str(SINGA_SRC / 'core/tensor/math_kernel.cu'))
         if with_nccl:
-            classifiers.append('Topic :: System :: Distributed Computing')
-    return options, package_data, classifiers
+            link_libs.extend(['nccl', 'cusparse', 'mpicxx', 'mpi'])
+            sources.append(str(SINGA_SRC / 'io/communicator.cc'))
+    # print(link_libs, extra_libs)
 
-options, package_data, classifiers = prepare_extension_options()
-singa_wrap = Extension('singa._singa_wrap', **options)
+    libraries = link_libs
+    runtime_library_dirs = ['.'] + library_dirs
+    extra_compile_args = {'gcc': get_cpp_flags()}
+
+    if with_cuda:
+        cuda9_gencode = (' -gencode arch=compute_35,code=sm_35'
+                         ' -gencode arch=compute_50,code=sm_50'
+                         ' -gencode arch=compute_60,code=sm_60'
+                         ' -gencode arch=compute_70,code=sm_70')
+        cuda10_gencode = ' -gencode arch=compute_75,code=sm_75'
+        cuda11_gencode = ' -gencode arch=compute_80,code=sm_80'
+        cuda9_ptx = ' -gencode arch=compute_70,code=compute_70'
+        cuda10_ptx = ' -gencode arch=compute_75,code=compute_75'
+        cuda11_ptx = ' -gencode arch=compute_80,code=compute_80'
+        if cuda_major >= 11:
+            gencode = cuda9_gencode + cuda10_gencode + cuda11_gencode + cuda11_ptx
+        elif cuda_major >= 10:
+            gencode = cuda9_gencode + cuda10_gencode + cuda10_ptx
+        elif cuda_major >= 9:
+            gencode = cuda9_gencode + cuda9_ptx
+        else:
+            raise CompileError(
+                'CUDA version must be >=9.0, the current version is {}'.format(
+                    cuda_major))
+
+        extra_compile_args['nvcc'] = shlex.split(gencode) + [
+            '-Xcompiler', '-fPIC'
+        ]
+    options = {
+        'sources': sources,
+        'include_dirs': include_dirs,
+        'library_dirs': library_dirs,
+        'libraries': libraries,
+        'runtime_library_dirs': runtime_library_dirs,
+        'extra_compile_args': extra_compile_args
+    }
+
+    return options
 
 
-class custom_build_ext (build_ext):
+singa_wrap = Extension('singa._singa_wrap', [])
+classifiers = [
+    # Trove classifiers
+    # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
+    'License :: OSI Approved :: Apache Software License',
+    'Development Status :: 3 - Alpha',
+    'Intended Audience :: Developers',
+    'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
+    'Topic :: Scientific/Engineering :: Artificial Intelligence'
+]
+if sys.platform == 'darwin':
+    classifiers.append('Operating System :: MacOS :: MacOS X')
+elif sys.platform == 'linux':
+    'Operating System :: POSIX :: Linux'
+else:
+    raise DistutilsSetupError('Building on Windows is not supported currently.')
+with_cuda, with_nccl, _, _ = parse_compile_options()
+if with_cuda:
+    classifiers.append('Environment :: GPU :: NVIDIA CUDA')
+    if with_nccl:
+        classifiers.append('Topic :: System :: Distributed Computing')
+
+
+# credit: https://github.com/rmcgibbo/npcuda-example/blob/master/cython/setup.py#L55
+def customize_compiler_for_nvcc(self):
+    """Inject deep into distutils to customize how the dispatch
+    to gcc/nvcc works.
+    If you subclass UnixCCompiler, it's not trivial to get your subclass
+    injected in, and still have the right customizations (i.e.
+    distutils.sysconfig.customize_compiler) run on it. So instead of going
+    the OO route, I have this. Note, it's kindof like a wierd functional
+    subclassing going on.
+    """
+
+    # Tell the compiler it can processes .cu
+    self.src_extensions.append('.cu')
+
+    # Save references to the default compiler_so and _comple methods
+    default_compiler_so = self.compiler_so
+    super = self._compile
+
+    # Now redefine the _compile method. This gets executed for each
+    # object but distutils doesn't have the ability to change compilers
+    # based on source extension: we add it.
+    def _compile(obj, src, ext, cc_args, extra_postargs, pp_opts):
+        if os.path.splitext(src)[1] == '.cu':
+            # use the cuda for .cu files
+            self.set_executable('compiler_so', 'nvcc')
+            # use only a subset of the extra_postargs, which are 1-1
+            # translated from the extra_compile_args in the Extension class
+            postargs = extra_postargs['nvcc']
+        else:
+            postargs = extra_postargs['gcc']
+
+        super(obj, src, ext, cc_args, postargs, pp_opts)
+        # Reset the default compiler_so, which we might have changed for cuda
+        self.compiler_so = default_compiler_so
+
+    # Inject our redefined _compile method into the class
+    self._compile = _compile
+
+
+class custom_build_ext(build_ext):
+    '''Customize the process for building the extension by chaning 
+    the options for compiling swig files and cu files.
+
+    Ref: https://github.com/python/cpython/blob/master/Lib/distutils/command/build_ext.py
+    '''
+
     def finalize_options(self):
         self.swig_cpp = True
         print('build temp', self.build_temp)
         print('build lib', self.build_lib)
-        # self.rpath = '$ORIGIN/thirdparty/lib'
         super(custom_build_ext, self).finalize_options()
-        self.swig_opts = '-outdir {}/singa/'.format(self.build_lib).split()
+        self.swig_opts = '-py3 -outdir {}/singa/'.format(self.build_lib).split()
         print('build temp', self.build_temp)
         print('build lib', self.build_lib)
- 
+
+    def build_extensions(self):
+        options = prepare_extension_options()
+        for key, val in options.items():
+            singa_wrap.__dict__[key] = val
+        customize_compiler_for_nvcc(self.compiler)
+        build_ext.build_extensions(self)
+
+
 try:
     with io.open('README.md', encoding='utf-8') as f:
         long_description = '\n' + f.read()
@@ -420,41 +395,24 @@ setup(
     author='Apache SINGA Community',
     author_email='dev@singa.apache.org',
     url='http://singa.apache.org',
-    python_requires = '>=3',
+    python_requires='>=3',
     install_requires=[
-        'numpy >=1.16,<2.0', #1.16
+        'numpy >=1.16,<2.0',  #1.16
         'onnx==1.6',
         'deprecated',
         'unittest-xml-reporting',
         'future',
         'pillow',
         'tqdm',
-        ],
+    ],
     include_package_data=True,
     license='Apache 2',
     classifiers=classifiers,
     keywords='deep learning singa apache',
-    #List additional groups of dependencies here (e.g. development
-    #dependencies). You can install these using the following syntax,
-    #for example:
-    #$ pip install -e .[dev,test]
-    #extras_require={
-    #   'dev': ['check-manifest'],
-    #   'test': ['coverage'],
-    #},
-
-    #If there are data files included in your packages that need to be
-    #installed, specify them here.  If using Python 2.6 or less, then these
-    #have to be included in MANIFEST.in as well.
     packages=find_packages('python'),
-    package_dir = {'':'python'},
-    package_data={
-        'singa': package_data,
-    },
+    package_dir={'': 'python'},
     ext_modules=[singa_wrap],
-    # $ setup.py publish support.
     cmdclass={
-        'upload': UploadCommand,
-        'build_ext': custom_build_ext
-    },
-)
+        'build_ext': custom_build_ext,
+        'upload': UploadCommand
+    })
