@@ -15,12 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
+import sys
 import unittest
 # import xmlrunner
+def main():
+    loader = unittest.TestLoader()
+    tests = loader.discover('.')
+    testRunner = unittest.runner.TextTestRunner()
+    # testRunner = xmlrunner.XMLTestRunner(output='.')
+    ret = not testRunner.run(tests).wasSuccessful()
+    sys.exit(ret)
 
-loader = unittest.TestLoader()
-tests = loader.discover('.')
-testRunner = unittest.runner.TextTestRunner()
-# testRunner = xmlrunner.XMLTestRunner(output='.')
-testRunner.run(tests)
+
+if __name__ == "__main__":
+    main()
