@@ -39,9 +39,7 @@ Example usage::
     dev = device.get_default_device()
     x.to_device(dev)  # move the data to a gpu device
 
-    r = tensor.relu(x)
-
-    s = tensor.to_numpy(r)  # tensor -> numpy array
+    s = tensor.to_numpy(x)  # tensor -> numpy array
 
 There are two sets of tensor functions,
 
@@ -57,6 +55,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
+from deprecated import deprecated
 from builtins import object
 import numpy as np
 from functools import reduce
@@ -64,7 +63,6 @@ from functools import reduce
 from .proto import core_pb2
 from . import singa_wrap as singa
 from .device import get_default_device
-
 
 int32 = core_pb2.kInt
 float32 = core_pb2.kFloat32
@@ -88,9 +86,16 @@ class Tensor(object):
                      then it must require grad.
     '''
     tensor_count = 0
-    def __init__(self, shape=(), device=None, dtype=float32,
-                 data=None, requires_grad=True, stores_grad=False,
-                 creator=None,name=None):
+
+    def __init__(self,
+                 shape=(),
+                 device=None,
+                 dtype=float32,
+                 data=None,
+                 requires_grad=True,
+                 stores_grad=False,
+                 creator=None,
+                 name=None):
         if device is None:
             device = get_default_device()
         if isinstance(data, np.ndarray):
@@ -114,9 +119,41 @@ class Tensor(object):
             self.name = name
         if creator is None:
             from . import autograd
-            self.creator = autograd.Dummy(self,name)
+            self.creator = autograd.Dummy(self, name)
         else:
             self.creator = creator
+
+    def __getitem__(self, keys):
+        if type(keys) != tuple:
+            keys = (keys,)
+
+        ret = self.clone()
+        axis_index = 0
+        for key in keys:
+            if type(key) == int:
+                key += self.shape[axis_index] if key < 0 else 0
+
+                if not (key >= 0 and key < self.shape[axis_index]):
+                    raise ValueError("Invalid Index")
+
+                ret.data = singa.SliceOn(ret.data, key, key + 1, axis_index)
+            elif type(key) == slice:
+                start = key.start if key.start else 0
+                end = key.stop if key.stop else self.shape[axis_index]
+
+                start += self.shape[axis_index] if start < 0 else 0
+                end += self.shape[axis_index] if end < 0 else 0
+
+                if not (start >= 0 and start < end and
+                        end <= self.shape[axis_index]):
+                    raise ValueError("Invalid Index")
+
+                ret.data = singa.SliceOn(ret.data, start, end, axis_index)
+            else:
+                raise ValueError("Invalid Index")
+            axis_index += 1
+
+        return ret
 
     def ndim(self):
         '''
@@ -140,16 +177,21 @@ class Tensor(object):
         return self.data.transpose()
 
     def transpose(self, axes=None):
-        '''
-        To transpose the tensor
+        ''' To transpose the tensor
+
+        Args:
+            axes: axes to transpose
+
+        Returns:
+            new transposed tensor
         '''
         t = Tensor(self.shape, self.device, self.dtype)
-        if axes == None:
+        if axes is None:
             tshape = [self.shape[x] for x in range(len(t.shape))]
             t.shape = tuple(tshape)
             t.data = singa.DefaultTranspose(self.data)
         else:
-            if(len(axes) != len(self.shape)):
+            if (len(axes) != len(self.shape)):
                 raise ValueError('dimensions do not match')
             tshape = [self.shape[x] for x in axes]
             t.shape = tuple(tshape)
@@ -171,12 +213,15 @@ class Tensor(object):
         return self.data.MemSize()
 
     def reshape(self, shape):
-        '''Return a new tensor with the given shape, and the original 
-        tensor is not changed.
+        '''Return a new tensor with the given shape, and the original
+            tensor is not changed.
 
         Args:
-            shape (list<int>): new shape, which should have the same 
-            volumn as the original shape.
+            shape (list<int>): new shape, which should have the same
+                volumn as the original shape.
+
+        Returns:
+            new tensor reshaped
         '''
         t = Tensor(self.shape, self.device, self.dtype)
         assert product(self.shape) == product(shape), \
@@ -189,21 +234,35 @@ class Tensor(object):
         '''Reset the shape, dtype and device as the given tensor.
 
         Args:
-            t (Tensor)
+            t (Tensor): a tensor
         '''
         self.data.ResetLike(t.data)
         self.shape = t.shape
         self.device = t.device
         self.dtype = t.dtype
 
-    '''
     def as_type(self, dtype):
-        Change the data type.
+        '''Change the data type.
 
         Args:
-            dtype:
-        self.data.AsType(dtype)
-    '''
+            dtype: accepts 'int', 'float', 'singa.kFloat32', 'singa.kInt'
+
+        Returns:
+            new tensor with new type
+        '''
+        if dtype == singa.kInt:
+            pass
+        elif dtype == singa.kFloat32:
+            pass
+        elif dtype == 'int':
+            dtype = singa.kInt
+        elif dtype == 'float':
+            dtype = singa.kFloat32
+        else:
+            raise TypeError("invalid data type %s" % dtype)
+        t = Tensor(self.shape, self.device, dtype)
+        t.data = self.data.AsType(dtype)
+        return t
 
     def to_device(self, device):
         '''Move the tensor data onto a given device.
@@ -234,15 +293,24 @@ class Tensor(object):
         '''
         return self.data.L1()
 
-    def set_value(self, x):
+    def set_value(self, x, inplace=True):
         '''Set all elements of the tensor to be the give value.
 
         Args:
-            x (float), a float value to be set to all elements.
+            x (float): a float value to be set to all elements.
+            inplace: inplace flag
+
+        Returns:
+            this tensor
         '''
         # assert type(x) == float, 'set value only accepts float input'
         # if isinstance(x, float):
+        if not inplace:
+            # return new tensor filled with value
+            raise NotImplementedError
+
         self.data.SetFloatValue(float(x))
+        return self
 
     def copy_from_numpy(self, np_array, offset=0):
         ''' Copy the data from the numpy array.
@@ -279,7 +347,7 @@ class Tensor(object):
         return _call_singa_func(self.data.Clone)
 
     def repeat(self, repeats, axis):
-        '''Repeat data of a tensor 
+        '''Repeat data of a tensor
 
         Args:
             repeats(int or a sequence): the number that the tensor need to repeat for
@@ -287,43 +355,48 @@ class Tensor(object):
                        If it is None, then the repeated tensor will be flattened.If it isn't None,
                        the repeats could be sequence, but it's size should match the axis's shape
 
-        Return:
+        Returns:
             the tensor which has been repeated
 
         '''
         t = Tensor()
         t_ndim = self.ndim()
-        if isinstance(repeats, int) or isinstance(repeats, long):
+        if isinstance(repeats, int) or isinstance(repeats, complex):
             if repeats < 0:
                 raise ValueError(
                     "'repeats' should not be negative: {}".format(repeats))
             if axis != None and axis < 0:
                 axis += t_ndim
             # broadcast = True
-            if axis == None:
+            if axis is None:
                 axis = 9999
                 t.shape = (product(self.shape) * repeats,)
-                Repeats = [repeats, ]
+                Repeats = [
+                    repeats,
+                ]
                 t.data = self.data.Repeat(Repeats, axis)
             elif axis >= 0:
                 t_shape = list(self.shape)
                 t_shape[axis] = self.shape[axis] * repeats
                 t.shape = tuple(t_shape)
-                Repeats = [repeats, ]
+                Repeats = [
+                    repeats,
+                ]
                 t.data = self.data.Repeat(Repeats, axis)
 
         elif isinstance(repeats, tuple) or isinstance(repeats, list):
             for rep in repeats:
                 if rep < 0:
                     raise ValueError(
-                        "'repeats' should be int or sequence: {}".format(repeats))
+                        "'repeats' should be int or sequence: {}".format(
+                            repeats))
 
             if axis != None and axis < 0:
                 axis += t_ndim
-            if axis == None:
-                axis = 9999
+            if axis is None:
                 raise ValueError(
-                    "when axis us None, 'repeats' should be int: {}".format(repeats))
+                    "when axis us None, 'repeats' should be int: {}".format(
+                        repeats))
             elif axis >= 0:
                 t_shape = list(self.shape)
                 t_shape[axis] = sum(repeats)
@@ -344,6 +417,9 @@ class Tensor(object):
 
     def copy(self):
         '''shallow copy calls copy constructor of singa::Tensor
+
+        Returns:
+            new tensor copied
         '''
         return _call_singa_func(CTensor, self.data)
 
@@ -355,74 +431,107 @@ class Tensor(object):
         '''
         return self.clone()
 
-    def bernoulli(self, p):
+    def bernoulli(self, p, inplace=True):
         '''Sample 0/1 for each element according to the given probability.
 
         Args:
             p (float): with probability p, each element is sample to 1.
-        '''
-        singa.Bernoulli(float(p), self.data)
+            inplace: inplace flag
 
-    def gaussian(self, mean, std):
+        Returns:
+            this tensor
+        '''
+        if not inplace:
+            # return new tensor
+            raise NotImplementedError
+
+        singa.Bernoulli(float(p), self.data)
+        return self
+
+    def gaussian(self, mean, std, inplace=True):
         '''Generate a value for each element following a Gaussian distribution.
 
         Args:
             mean (float): mean of the distribution
             std (float): standard variance of the distribution
-        '''
-        singa.Gaussian(float(mean), float(std), self.data)
+            inplace: inplace flag
 
-    def uniform(self, low, high):
+        Returns:
+            this tensor
+        '''
+        if not inplace:
+            # return new tensor
+            raise NotImplementedError
+
+        singa.Gaussian(float(mean), float(std), self.data)
+        return self
+
+    def uniform(self, low, high, inplace=True):
         '''Generate a value for each element following a uniform distribution.
 
         Args:
             low (float): the lower bound
             high (float): the hight bound
-        '''
-        singa.Uniform(float(low), float(high), self.data)
+            inplace: inplace flag
 
+        Returns:
+            this tensor
+        '''
+        if not inplace:
+            # return new tensor
+            raise NotImplementedError
+
+        singa.Uniform(float(low), float(high), self.data)
+        return self
+
+    @deprecated(reason="use broadcast instead")
     def add_column(self, v):
-        '''Add a tensor to each column of this tensor.
+        '''(DEPRECATED, use broadcast)Add a tensor to each column of this tensor.
 
         Args:
             v (Tensor): a Tensor to be added as a column to this tensor.
         '''
         singa.AddColumn(v.data, self.data)
 
+    @deprecated(reason="use broadcast instead")
     def add_row(self, v):
-        '''Add a tensor to each row of this tensor.
+        '''(DEPRECATED, use broadcast)Add a tensor to each row of this tensor.
 
         Args:
             v (Tensor): a Tensor to be added as a row to this tensor.
         '''
         singa.AddRow(v.data, self.data)
 
+    @deprecated(reason="use broadcast instead")
     def div_column(self, v):
-        '''Divide each column of this tensor by v.
+        '''(DEPRECATED, use broadcast)Divide each column of this tensor by v.
 
         Args:
             v (Tensor): 1d tensor of the same length the column of self.
         '''
         singa.DivColumn(v.data, self.data)
 
+    @deprecated(reason="use broadcast instead")
     def div_row(self, v):
-        '''Divide each row of this tensor by v.
+        '''(DEPRECATED, use broadcast)Divide each row of this tensor by v.
 
         Args:
             v (Tensor): 1d tensor of the same length the row of self.
         '''
         singa.DivRow(v.data, self.data)
 
+    @deprecated(reason="use broadcast instead")
     def mult_column(self, v):
-        '''Multiply each column of this tensor by v element-wisely.
+        '''(DEPRECATED, use broadcast)Multiply each column of this tensor by v element-wisely.
 
         Args:
             v (Tensor): 1d tensor of the same length the column of self.
         '''
         singa.MultColumn(v.data, self.data)
 
+    @deprecated(reason="use broadcast instead")
     def mult_row(self, v):
-        '''Multiply each row of this tensor by v element-wisely.
+        '''(DEPRECATED, use broadcast)Multiply each row of this tensor by v element-wisely.
 
         Args:
             v (Tensor): 1d tensor of the same length the row of self.
@@ -437,7 +546,10 @@ class Tensor(object):
         ''' inplace element-wise addition with a tensor or a float value.
 
         Args:
-            x (float or Tensor):
+            x (float or Tensor): input value
+
+        Returns:
+            this tensor
         '''
         if isinstance(x, Tensor):
             self.data += x.data
@@ -449,7 +561,10 @@ class Tensor(object):
         ''' inplace element-wise subtraction with a tensor or a float value.
 
         Args:
-            x (float or Tensor):
+            x (float or Tensor): input value
+
+        Returns:
+            this tensor
         '''
 
         if isinstance(x, Tensor):
@@ -462,7 +577,10 @@ class Tensor(object):
         ''' inplace element-wise multiplication with a tensor or a float value.
 
         Args:
-            x (float or Tensor):
+            x (float or Tensor): input value
+
+        Returns:
+            this tensor
         '''
         if isinstance(x, Tensor):
             self.data *= x.data
@@ -470,16 +588,19 @@ class Tensor(object):
             self.data *= float(x)
         return self
 
-    def __idiv__(self, x):
+    def __itruediv__(self, x):
         ''' inplace element-wise division by a tensor or a float value.
 
         Args:
-            x (float or Tensor):
+            x (float or Tensor): input value
+
+        Returns:
+            this tensor
         '''
         if isinstance(x, Tensor):
-            self.data *= (1.0/x.data)
+            self.data /= x.data
         else:
-            self.data *= (1.0/float(x))
+            self.data /= float(x)
         return self
 
     '''
@@ -489,69 +610,55 @@ class Tensor(object):
 
     def __add__(self, rhs):
         if isinstance(rhs, Tensor):
-            return from_raw_tensor(
-                singa.__add__(self.data, rhs.data))
+            return from_raw_tensor(singa.__add__(self.data, rhs.data))
         else:
-            return _call_singa_func(singa.AddFloat,
-                                    self.data, rhs)
+            return _call_singa_func(singa.AddFloat, self.data, rhs)
 
     def __sub__(self, rhs):
         if isinstance(rhs, Tensor):
-            return from_raw_tensor(
-                singa.__sub__(self.data, rhs.data))
+            return from_raw_tensor(singa.__sub__(self.data, rhs.data))
         else:
-            return _call_singa_func(singa.SubFloat,
-                                    self.data, rhs)
+            return _call_singa_func(singa.SubFloat, self.data, rhs)
 
     def __mul__(self, rhs):
         if isinstance(rhs, Tensor):
-            return from_raw_tensor(
-                singa.__mul__(self.data, rhs.data))
+            return from_raw_tensor(singa.__mul__(self.data, rhs.data))
         else:
-            return _call_singa_func(singa.MultFloat,
-                                    self.data, rhs)
+            return _call_singa_func(singa.MultFloat, self.data, rhs)
 
     def __div__(self, rhs):
         if isinstance(rhs, Tensor):
-            return from_raw_tensor(
-                singa.__div__(self.data, rhs.data))
+            return from_raw_tensor(singa.__div__(self.data, rhs.data))
         else:
-            return _call_singa_func(singa.DivFloat,
-                                    self.data, rhs)
+            return _call_singa_func(singa.DivFloat, self.data, rhs)
 
     def __truediv__(self, rhs):
         if isinstance(rhs, Tensor):
-            return from_raw_tensor(
-                singa.__div__(self.data, rhs.data))
+            return from_raw_tensor(singa.__div__(self.data, rhs.data))
         else:
-            return _call_singa_func(singa.DivFloat,
-                                    self.data, rhs)
+            return _call_singa_func(singa.DivFloat, self.data, rhs)
 
     def __lt__(self, rhs):
         if isinstance(rhs, Tensor):
-            return from_raw_tensor(
-                singa.__lt__(self.data, rhs.data))
+            return from_raw_tensor(singa.__lt__(self.data, rhs.data))
         else:
             return _call_singa_func(singa.LTFloat, self.data, rhs)
 
     def __le__(self, rhs):
         if isinstance(rhs, Tensor):
-            return from_raw_tensor(
-                singa.__le__(self.data, rhs.data))
+            return from_raw_tensor(singa.__le__(self.data, rhs.data))
         else:
             return _call_singa_func(singa.LEFloat, self.data, rhs)
 
     def __gt__(self, rhs):
         if isinstance(rhs, Tensor):
-            return from_raw_tensor(
-                singa.__gt__(self.data, rhs.data))
+            return from_raw_tensor(singa.__gt__(self.data, rhs.data))
         else:
             return _call_singa_func(singa.GTFloat, self.data, rhs)
 
     def __ge__(self, rhs):
         if isinstance(rhs, Tensor):
-            return from_raw_tensor(
-                singa.__ge__(self.data, rhs.data))
+            return from_raw_tensor(singa.__ge__(self.data, rhs.data))
         else:
             return _call_singa_func(singa.GEFloat, self.data, rhs)
 
@@ -590,6 +697,10 @@ class Tensor(object):
         one /= self
         return one
 
+    def __repr__(self):
+        return np.array2string(to_numpy(self))
+
+
 ''' python functions for global functions in Tensor.h
 '''
 
@@ -624,7 +735,11 @@ def product(shape):
 
 
 def sizeof(dtype):
-    '''
+    '''Get size of datatype
+
+    Args:
+        dtype: singa datatype
+
     Returns:
         the number of bytes of the given SINGA data type defined in core.proto
     '''
@@ -632,12 +747,12 @@ def sizeof(dtype):
 
 
 def reshape(tensor, shape):
-    '''Reshape the input tensor with the given shape and 
+    '''Reshape the input tensor with the given shape and
     the original tensor is not changed
 
     Args:
-        t (Tensor): the tensor to be changed
-        s (list<int>): the new shape, which should have the same volumn as the
+        tensor (Tensor): the tensor to be changed
+        shape (list<int>): the new shape, which should have the same volumn as the
             old shape.
 
     Returns:
@@ -647,9 +762,14 @@ def reshape(tensor, shape):
 
 
 def transpose(t, axes=None):
-    '''
+    '''To transpose the tensor
+
+    Args:
+        t: input tensor
+        axes: axes to transpose
+
     Returns:
-        the transposed tensor 
+        the transposed tensor
     '''
     ret = t.transpose(axes)
     return ret
@@ -666,8 +786,7 @@ def copy_data_to_from(dst, src, size, dst_offset=0, src_offset=0):
         dst_offset (int): offset in terms of elements to the start of dst
         src_offset (int): offset in terms of elements to the start of src
     '''
-    singa.CopyDataToFrom(dst.data, src.data, size,
-                         dst_offset, src_offset)
+    singa.CopyDataToFrom(dst.data, src.data, size, dst_offset, src_offset)
 
 
 def from_numpy(np_array):
@@ -701,6 +820,12 @@ def from_numpy(np_array):
 
 def to_host(t):
     '''Copy the data to a host tensor.
+
+    Args:
+        t (Tensor): a Tensor
+
+    Returns:
+        new Tensor at host
     '''
     ret = t.clone()
     ret.to_host()
@@ -711,7 +836,7 @@ def to_numpy(t):
     '''Copy the tensor into a numpy array.
 
     Args:
-        t (Tensor), a Tensor
+        t (Tensor): a Tensor
 
     Returns:
         a numpy array
@@ -746,6 +871,17 @@ def exp(t):
         a new Tensor whose element y = exp(x), x is an element of t
     '''
     return _call_singa_func(singa.Exp, t.data)
+
+
+def ceil(t):
+    '''
+    Args:
+        t (Tensor): input Tensor
+
+    Returns:
+        a new Tensor whose element y = ceil(x), x is an element of t
+    '''
+    return _call_singa_func(singa.Ceil, t.data)
 
 
 def log(t):
@@ -831,7 +967,7 @@ def sum(t, axis=None, out=None):
             It must have the same shape as the expected output,
             but the type of the output values will be cast if necessary.
 
-    Return: sum_along_axis: tensor
+    Returns:
         A tensor with the same shape as t, with the specified axis removed.
         If a is a 0-d array, or if axis is None, a scalar is returned.
         If an output array is specified, a reference to out is returned
@@ -851,7 +987,7 @@ def sum(t, axis=None, out=None):
 
         axis_shape = t_shape[axis]
         axis_shape = int(axis_shape)
-        one = Tensor(shape=(axis_shape, ), device=t.device)
+        one = Tensor(shape=(axis_shape,), device=t.device)
         one.set_value(1.0)
         ret = tensordot(t, one, axes=([axis], [0]))
 
@@ -917,9 +1053,11 @@ def average(t, axis=None):
 
 def softmax(t, out=None):
     '''Apply SoftMax for each row of the Tensor.
+
     Args:
         t (Tensor): the input 1d or 2d tensor
         out (Tensor, optional): if not None, it is used to store the result
+
     Returns:
         the result Tensor
     '''
@@ -990,8 +1128,8 @@ def add(lhs, rhs, ret=None):
     '''Elementi-wise addition.
 
     Args:
-        lhs (Tensor)
-        rhs (Tensor)
+        lhs (Tensor): lhs tensor
+        rhs (Tensor): rhs tensor
         ret (Tensor, optional): if not None, the result is stored in it;
             otherwise, a new Tensor would be created for the result.
 
@@ -1013,8 +1151,8 @@ def sub(lhs, rhs, ret=None):
     '''Elementi-wise subtraction.
 
     Args:
-        lhs (Tensor)
-        rhs (Tensor)
+        lhs (Tensor): lhs tensor
+        rhs (Tensor): rhs tensor
         ret (Tensor, optional): if not None, the result is stored in it;
             otherwise, a new Tensor would be created for the result.
 
@@ -1036,8 +1174,8 @@ def eltwise_mult(lhs, rhs, ret=None):
     '''Elementi-wise multiplication.
 
     Args:
-        lhs (Tensor)
-        rhs (Tensor)
+        lhs (Tensor): lhs tensor
+        rhs (Tensor): rhs tensor
         ret (Tensor, optional): if not None, the result is stored in it;
             otherwise, a new Tensor would be created for the result.
 
@@ -1050,27 +1188,34 @@ def eltwise_mult(lhs, rhs, ret=None):
         return lhs * rhs
     else:
         if isinstance(rhs, Tensor):
-            singa.EltwiseMult(lhs.data, rhs.data,
-                              ret.data)
+            singa.EltwiseMult(lhs.data, rhs.data, ret.data)
         else:
-            singa.EltwiseMultFloatWithRet(lhs.data, rhs,
-                                          ret.data)
+            singa.EltwiseMultFloatWithRet(lhs.data, rhs, ret.data)
         return ret
 
 
 def mult(A, B, C=None, alpha=1.0, beta=0.0):
     '''Do matrix-matrix or matrix-vector multiplication.
-
     This function returns C = alpha * A * B + beta * C
+    Currently below cases are supported
+        case 1 - matrix * vector:
+            A (Tensor): 2d Tensor
+            B (Tensor): 1d Tensor, GEMV would be invoked
+        case 2 - matrix * matrix:
+            A (Tensor): 2d Tensor
+            B (Tensor): 2d Tensor, GEMM would be invoked
+        case 3 - batched matrix * batched matrix:
+            A (Tensor): 3/4d Tensor
+            B (Tensor): 3/4d Tensor, batched GEMM would be invoked
+            Where first/first and second dimension(s) of A, B should be exactly the same
+            e.g. C{2,3,4,6} = A{2,3,4,5} * B{2,3,5,6}
 
     Args:
-        A (Tensor): 2d Tensor
-        B (Tensor): If B is a 1d Tensor, GEMV would be invoked for matrix-vector
-            multiplication; otherwise GEMM would be invoked.
-        C (Tensor, optional): for storing the result; If None, a new Tensor
-            would be created.
-        alpha (float)
-        beta (float)
+        A: n-d tensor
+        B: n-d tensor
+        C (Tensor, optional): for storing the result; If None, a new Tensor would be created.
+        alpha (float): scaling factor
+        beta (float): scaling factor
 
     Returns:
         the result Tensor
@@ -1078,27 +1223,27 @@ def mult(A, B, C=None, alpha=1.0, beta=0.0):
     if C is None:
         return _call_singa_func(singa.Mult, A.data, B.data)
     else:
-        singa.MultWithScale(alpha, A.data, B.data,
-                            beta, C.data)
+        singa.MultWithScale(alpha, A.data, B.data, beta, C.data)
         return C
 
 
 def einsum(ops, *args):
-    '''
-    function TODO list to finish the function in cpp(just like numpy function):
+    ''' function TODO list to finish the function in cpp(just like numpy function):
     1.sum(A,axis = None)
     2.repeat(A,repeats)
     3.transpose(A,axes = None)
     Do the matrix to matrix einsum calculation according to the operands
     Warning : this function could only support two matrix' einsum calcultion
+
     Args:
-        ops(string):
-            the string specifies the subscripts for summation such as 'ki,kj->kij'
-            Here all the 26 lowercase letter can be used here.
-        arg(list of array_like):
-                These are the tensors for the operation,but here only support two tensors.
-    Returns: Singa.Tensor
-        the output matirx of the einsum calculation
+        ops(string): the string specifies the subscripts for summation such as
+            'ki,kj->kij' Here all the 26 lowercase letter can be used here.
+        args(list of array_like): These are the tensors for the operation,
+            but here only support two tensors.
+
+    Returns:
+        Singa.Tensor the output matirx of the einsum calculation
+
     The best way to understand this function is to try the examples below:
     A_ = [0,1,2,3,4,5,6,7,8,9,10,11]
     A = A_.reshape(4,3)
@@ -1188,10 +1333,10 @@ def einsum(ops, *args):
 
     # get the the transpose and reshape parameter used in the elementwise
     # calculation
-    transpose_A = [(list(inputops[0]) + broadcast_A).index(x)
-                   for x in outputall]
-    transpose_B = [(list(inputops[1]) + broadcast_B).index(x)
-                   for x in outputall]
+    transpose_A = [(list(inputops[0]) + broadcast_A).index(x) for x in outputall
+                  ]
+    transpose_B = [(list(inputops[1]) + broadcast_B).index(x) for x in outputall
+                  ]
 
     reshape_A = list(A.shape) + broadcast_a
     reshape_B = list(B.shape) + broadcast_b
@@ -1221,6 +1366,7 @@ def einsum(ops, *args):
 
 def repeat(t, repeats, axis=None):
     '''Return the repeated tensor
+
     Args:
         t(tensor): the tensor to be repeated
         repeats(int or a sequence): the number that the tensor need to repeat for
@@ -1228,7 +1374,7 @@ def repeat(t, repeats, axis=None):
                     If it is None, then the repeated tensor will be flattened.If it isn't None,
                     the repeats could be sequence, but it's size should match the axis's shape
 
-    Return:
+    Returns:
         the tensor which has been repeated
     '''
     ret = t.repeat(repeats, axis)
@@ -1251,7 +1397,7 @@ def tensordot(A, B, axes=2):
               sequences specify the list of axes for ''a'' and ''b''. The
               corresponding axes are paired for sum-product.
 
-    Return:
+    Returns:
         singa.tensor: The tensor  product of ''A'' and ''B'' along the
         axes specified by ''axes''.
 
@@ -1267,7 +1413,6 @@ def tensordot(A, B, axes=2):
     if type(axes) == int:
         axes_A = list(range(-axes, 0))
         axes_B = list(range(0, axes))
-        axes_B = axes_B
     else:
         axes_A, axes_B = axes
     # when axes is a pair of sequences of integers.For example, A is in shape(3,2,4),
@@ -1356,8 +1501,8 @@ def div(lhs, rhs, ret=None):
     '''Elementi-wise division.
 
     Args:
-        lhs (Tensor)
-        rhs (Tensor)
+        lhs (Tensor): lhs tensor
+        rhs (Tensor): rhs tensor
         ret (Tensor, optional): if not None, the result is stored in it;
             otherwise, a new Tensor would be created for the result.
 
@@ -1379,9 +1524,9 @@ def axpy(alpha, x, y):
     '''Element-wise operation for y += alpha * x.
 
     Args:
-        alpha (float)
-        x (Tensor)
-        y (Tensor)
+        alpha (float): scaling factor
+        x (Tensor): a tensor
+        y (Tensor): a tensor
 
     Returns:
         y
@@ -1424,7 +1569,7 @@ def uniform(low, high, t):
 
     Args:
         low (float): the lower bound
-        hight (float): the higher bound
+        high (float): the higher bound
         t (Tensor): the results are put into t
 
     Returns:
@@ -1440,15 +1585,15 @@ def add_column(alpha, v, beta, M):
     Denote each column of M as m, m = alpha * v + beta * m
 
     Args:
-        alpha (float)
-        v (Tensor)
-        beta (float)
+        alpha (float): scalar factor
+        v (Tensor): a tensor
+        beta (float): scalar factor
         M (Tensor): 2d tensor
+
     Returns:
-        M
+        Resulted tensor M
     '''
-    singa.AddColumnWithScale(float(alpha), float(beta), v.data,
-                             M.data)
+    singa.AddColumnWithScale(float(alpha), float(beta), v.data, M.data)
     return M
 
 
@@ -1458,12 +1603,13 @@ def add_row(alpha, v, beta, M):
     Denote each row of M as m, m = alpha * v + beta * m
 
     Args:
-        alpha (float)
-        v (Tensor)
-        beta (float)
+        alpha (float): scaling factor
+        v (Tensor): a tensor
+        beta (float): scaling factor
         M (Tensor): 2d tensor
+
     Returns:
-        M
+        Resulted tensor M
     '''
     singa.AddRowWithScale(alpha, beta, v.data, M.data)
     return M
@@ -1507,6 +1653,13 @@ def _call_singa_func(_singa_func, *args):
     ''' this function calls singa global functions that returns Tensor
         and create new python Tensor instance
         e.g., Tensor [singa_func](args...)
+
+    Args:
+        _singa_func: singa CPP API
+        args: args for singa CPP API
+
+    Returns:
+        new singa tensor
     '''
     new_t = Tensor()
     new_t.data = _singa_func(*args)
@@ -1517,8 +1670,12 @@ def _call_singa_func(_singa_func, *args):
 
 
 def copy_from_numpy(data, np_array):
-    '''
-    Copy the data from the numpy array.
+    ''' Copy the data from the numpy array.
+        used as static method
+
+    Args:
+        data: singa ctensor
+        np_array: source numpy array
     '''
     assert np_array.size == data.Size(), \
         'tensor shape should be the same'
@@ -1531,3 +1688,20 @@ def copy_from_numpy(data, np_array):
         data.CopyIntDataFromHostPtr(np_array)
     else:
         print('Not implemented yet for ', dt)
+
+
+def concatenate(tensors, axis):
+    '''concatenate list of tensors together based on given axis
+
+    Args:
+        tensors: list of tensors.
+        axis: number of axis to cancatenate on, all the dim should be the same
+            except the axis to be concatenated.
+
+    Returns:
+        new tensor concatenated
+    '''
+    ctensors = singa.VecTensor()
+    for t in tensors:
+        ctensors.append(t.data)
+    return _call_singa_func(singa.ConcatOn, ctensors, axis)

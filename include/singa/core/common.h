@@ -18,30 +18,30 @@
 
 #ifndef SINGA_CORE_COMMON_H_
 #define SINGA_CORE_COMMON_H_
-#include <random>
-#include <chrono>
-#include "singa/singa_config.h"
 #include <atomic>
+#include <chrono>
 #include <memory>
+#include <random>
+
+#include "singa/singa_config.h"
 #include "singa/utils/logging.h"
 
 #ifdef USE_CUDA
-#include <cuda_runtime.h>
 #include <cublas_v2.h>
+#include <cuda_runtime.h>
 #include <curand.h>
 #ifdef USE_CUDNN
 #include <cudnn.h>
 #endif
-#endif // USE_CUDA
+#endif  // USE_CUDA
 
+#ifdef USE_DNNL
+#include <dnnl.hpp>
+#endif  // USE_DNNL
 
 #ifdef USE_OPENCL
 #include "singa/utils/opencl_utils.h"
 #endif  // USE_OPENCL
-
-#ifdef USE_MKLDNN
-#include <mkldnn.hpp>
-#endif  // USE_MKLDNN
 
 using std::atomic;
 
@@ -49,44 +49,40 @@ namespace singa {
 
 namespace lang {
 /// To implemente functions using cpp libraries
-typedef struct _Cpp { } Cpp;
+typedef struct _Cpp {
+} Cpp;
 /// To implemente functions using cuda libraries
-typedef struct _Cuda { } Cuda;
+typedef struct _Cuda {
+} Cuda;
 /// To implement function using opencl libraries
-typedef struct _Opencl { } Opencl;
+typedef struct _Opencl {
+} Opencl;
 }  // namespace lang
 
+class Device;
 /// Block represent a chunk of memory (on device or host).
 class Block {
  public:
-  Block(void* ptr, size_t size, size_t offset = 0)
-      : data_(ptr), size_(size), offset_(offset) {
+  Block(void* ptr, size_t size, Device* device = nullptr, size_t offset = 0)
+      : data_(ptr), size_(size), offset_(offset), device_(device) {
     ref_count_ = 1;  // std::make_shared<std::atomic<int>>(1);
   }
   // Disabled as it is not used currently.
   // Block(void* ptr, size_t size, size_t offset, std::shared_ptr<atomic<int>>
   //  ref) : data_(ptr), size_(size), offset_(offset), ref_count_(ref) {}
-  void* mutable_data() {
-    initialized_ = true;
-    return static_cast<char*>(data_) + offset_;
-  }
-  const void* data() const {
-    CHECK(initialized_) << "Must initialize data before reading it";
-    return static_cast<char*>(data_) + offset_;
-  }
+  void* mutable_data();
+  const void* data() const;
+  void free_data();
+
   size_t size() const { return size_; }
   size_t offset() const { return offset_; }
   int IncRefCount() {
     return ++ref_count_;  // Note do not use ref_count_++;
   }
-  int DecRefCount() {
-    return --ref_count_;
-  }
+  int DecRefCount() { return --ref_count_; }
   int ref_count() const { return ref_count_.load(); }
 
-  bool initialized() const {
-    return initialized_;
-  }
+  bool initialized() const { return initialized_; }
 
  private:
   Block() {}
@@ -94,6 +90,7 @@ class Block {
   size_t size_ = 0;
   size_t offset_ = 0;
   bool initialized_ = false;
+  Device* device_ = nullptr;
   // Disabled as it is not used currently.
   // std::shared_ptr<std::atomic<int>> ref_count_ = nullptr;
   std::atomic<int> ref_count_;
@@ -108,16 +105,17 @@ typedef struct _Context {
 #ifdef USE_CUDNN
   cudnnHandle_t cudnn_handle;
 #endif
-#endif // USE_CUDA
+#endif  // USE_CUDA
+
+#ifdef USE_DNNL
+  dnnl::engine dnnl_engine;
+  dnnl::stream dnnl_stream;
+#endif  // USE_DNNL
 
 #ifdef USE_OPENCL
   // This stores the context ID of the OpenCL context controlled by ViennaCL.
   long vcl_ctx_id;
 #endif
-
-#ifdef USE_MKLDNN
-  mkldnn::engine *engine;
-#endif  // USE_MKLDNN
 
 } Context;
 

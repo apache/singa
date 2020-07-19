@@ -3579,9 +3579,9 @@ def IsRValueType(typenames, clean_lines, nesting_state, linenum, column):
     # Opening parenthesis.  Need to check what's to the left of the
     # parenthesis.  Look back one extra line for additional context.
     before_text = match_symbol.group(1)
-    if linenum > 1:
-      before_text = clean_lines.elided[linenum - 1] + before_text
-    before_text = match_symbol.group(1)
+    # if linenum > 1:
+    #   before_text = clean_lines.elided[linenum - 1] + before_text
+    # before_text = match_symbol.group(1)
 
     # Patterns that are likely to be types:
     #   [](type&&
@@ -4415,7 +4415,7 @@ def CheckStyle(filename, clean_lines, linenum, file_extension, nesting_state,
   # if(match(prev, " +for \\(")) complain = 0;
   # if(prevodd && match(prevprev, " +for \\(")) complain = 0;
   scope_or_label_pattern = r'\s*\w+\s*:\s*\\?$'
-  classinfo = nesting_state.InnermostClass()
+  # classinfo = nesting_state.InnermostClass()
   initial_spaces = 0
   cleansed_line = clean_lines.elided[linenum]
   while initial_spaces < len(line) and line[initial_spaces] == ' ':
@@ -4797,7 +4797,7 @@ def CheckLanguage(filename, clean_lines, linenum, file_extension,
     include_state.ResetSection(match.group(1))
 
   # Make Windows paths like Unix.
-  fullname = os.path.abspath(filename).replace('\\', '/')
+  # fullname = os.path.abspath(filename).replace('\\', '/')
 
   # Perform other checks now that we are sure that this is not an include line
   CheckCasts(filename, clean_lines, linenum, error)

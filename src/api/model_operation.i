@@ -66,11 +66,10 @@ class BatchNormHandle{
     BatchNormHandle(const float momentum, const Tensor& input);
 
     size_t batchsize;
+    float factor;
 };
 
-#if USE_MKLDNN
-
-
+#if USE_DNNL
 Tensor CpuBatchNormForwardInference(const BatchNormHandle &bnh,
                                     const Tensor &x,
                                     const Tensor &bnScale,
@@ -90,8 +89,7 @@ const std::vector<Tensor> CpuBatchNormBackwardx(const BatchNormHandle &bnh,
                                                 const Tensor &x,
                                                 const Tensor &bnScale, const Tensor &bnBias,
                                                 const Tensor &mean, const Tensor &var);
-
-#endif  //USE_MKLDNN
+#endif //USE_DNNL
 
 
 class PoolingHandle {
@@ -112,12 +110,12 @@ class PoolingHandle {
   bool is_max_pooling;
 };
 
-#if USE_MKLDNN
-
+#if USE_DNNL
 Tensor CpuPoolingForward(const PoolingHandle &ph, const Tensor &x);
 Tensor CpuPoolingBackward(const PoolingHandle &ph, const Tensor &dy,
-                            const Tensor& x, const Tensor& y);
-#endif  //USE_MKLDNN
+                              const Tensor& x, const Tensor& y);
+#endif //USE_DNNL
+
 
 #if USE_CUDNN
 class CudnnConvHandle: public ConvHandle {

@@ -272,7 +272,7 @@ class Layer(object):
     def __copy__(self):
         pass
 
-    def __deepcopy__(self):
+    def __deepcopy__(self, memo):
         pass
 
 
@@ -336,10 +336,20 @@ class Conv2D(Layer):
             (height, width, channel)
     """
 
-    def __init__(self, name, nb_kernels, kernel=3, stride=1, border_mode='same',
-                 cudnn_prefer='fastest', workspace_byte_limit=1024,
-                 data_format='NCHW', use_bias=True, W_specs=None, b_specs=None,
-                 pad=None, input_sample_shape=None):
+    def __init__(self,
+                 name,
+                 nb_kernels,
+                 kernel=3,
+                 stride=1,
+                 border_mode='same',
+                 cudnn_prefer='fastest',
+                 workspace_byte_limit=1024,
+                 data_format='NCHW',
+                 use_bias=True,
+                 W_specs=None,
+                 b_specs=None,
+                 pad=None,
+                 input_sample_shape=None):
         super(Conv2D, self).__init__(name)
         assert data_format == 'NCHW', 'Not supported data format: %s ' \
             'only "NCHW" is enabled currently' % (data_format)
@@ -400,22 +410,36 @@ class Conv1D(Conv2D):
     length
     """
 
-    def __init__(self, name, nb_kernels, kernel=3, stride=1,
-                 border_mode='same', cudnn_prefer='fastest',
+    def __init__(self,
+                 name,
+                 nb_kernels,
+                 kernel=3,
+                 stride=1,
+                 border_mode='same',
+                 cudnn_prefer='fastest',
                  workspace_byte_limit=1024,
-                 use_bias=True, W_specs={'init': 'Xavier'},
-                 b_specs={'init': 'Constant', 'value': 0}, pad=None,
+                 use_bias=True,
+                 W_specs={'init': 'Xavier'},
+                 b_specs={
+                     'init': 'Constant',
+                     'value': 0
+                 },
+                 pad=None,
                  input_sample_shape=None):
         pad = None
         if pad is not None:
             pad = (0, pad)
         if input_sample_shape is not None:
             input_sample_shape = (1, 1, input_sample_shape[0])
-        super(Conv1D, self).__init__(name, nb_kernels, (1, kernel), (0, stride),
-                                     border_mode, cudnn_prefer,
+        super(Conv1D, self).__init__(name,
+                                     nb_kernels, (1, kernel), (0, stride),
+                                     border_mode,
+                                     cudnn_prefer,
                                      workspace_byte_limit,
-                                     use_bias=use_bias, pad=pad,
-                                     W_specs=W_specs, b_specs=b_specs,
+                                     use_bias=use_bias,
+                                     pad=pad,
+                                     W_specs=W_specs,
+                                     b_specs=b_specs,
                                      input_sample_shape=input_sample_shape)
 
     def get_output_sample_shape(self):
@@ -436,8 +460,15 @@ class Pooling2D(Layer):
 
     '''
 
-    def __init__(self, name, mode, kernel=3, stride=2, border_mode='same',
-                 pad=None, data_format='NCHW', input_sample_shape=None):
+    def __init__(self,
+                 name,
+                 mode,
+                 kernel=3,
+                 stride=2,
+                 border_mode='same',
+                 pad=None,
+                 data_format='NCHW',
+                 input_sample_shape=None):
         super(Pooling2D, self).__init__(name)
         assert data_format == 'NCHW', 'Not supported data format: %s ' \
             'only "NCHW" is enabled currently' % (data_format)
@@ -469,26 +500,44 @@ class Pooling2D(Layer):
 
 class MaxPooling2D(Pooling2D):
 
-    def __init__(self, name, kernel=3, stride=2, border_mode='same', pad=None,
-                 data_format='NCHW', input_sample_shape=None):
-        super(MaxPooling2D, self).__init__(name, model_pb2.PoolingConf.MAX,
-                                           kernel, stride, border_mode,
-                                           pad, data_format, input_sample_shape)
+    def __init__(self,
+                 name,
+                 kernel=3,
+                 stride=2,
+                 border_mode='same',
+                 pad=None,
+                 data_format='NCHW',
+                 input_sample_shape=None):
+        super(MaxPooling2D,
+              self).__init__(name, model_pb2.PoolingConf.MAX, kernel, stride,
+                             border_mode, pad, data_format, input_sample_shape)
 
 
 class AvgPooling2D(Pooling2D):
 
-    def __init__(self, name, kernel=3, stride=2, border_mode='same', pad=None,
-                 data_format='NCHW', input_sample_shape=None):
-        super(AvgPooling2D, self).__init__(name, model_pb2.PoolingConf.AVE,
-                                           kernel, stride, border_mode,
-                                           pad, data_format, input_sample_shape)
+    def __init__(self,
+                 name,
+                 kernel=3,
+                 stride=2,
+                 border_mode='same',
+                 pad=None,
+                 data_format='NCHW',
+                 input_sample_shape=None):
+        super(AvgPooling2D,
+              self).__init__(name, model_pb2.PoolingConf.AVE, kernel, stride,
+                             border_mode, pad, data_format, input_sample_shape)
 
 
 class MaxPooling1D(MaxPooling2D):
 
-    def __init__(self, name, kernel=3, stride=2, border_mode='same', pad=None,
-                 data_format='NCHW', input_sample_shape=None):
+    def __init__(self,
+                 name,
+                 kernel=3,
+                 stride=2,
+                 border_mode='same',
+                 pad=None,
+                 data_format='NCHW',
+                 input_sample_shape=None):
         """Max pooling for 1D feature.
 
         Args:
@@ -503,9 +552,9 @@ class MaxPooling1D(MaxPooling2D):
             input_sample_shape = (1, 1, input_sample_shape[0])
         else:
             input_sample_shape = None
-        super(MaxPooling1D, self).__init__(name, (1, kernel), (0, stride),
-                                           border_mode, pad,
-                                           data_format, input_sample_shape)
+        super(MaxPooling1D,
+              self).__init__(name, (1, kernel), (0, stride), border_mode, pad,
+                             data_format, input_sample_shape)
 
     def get_output_sample_shape(self):
         shape = self.layer.GetOutputSampleShape()
@@ -514,8 +563,14 @@ class MaxPooling1D(MaxPooling2D):
 
 class AvgPooling1D(AvgPooling2D):
 
-    def __init__(self, name, kernel=3, stride=2, border_mode='same', pad=None,
-                 data_format='NCHW', input_sample_shape=None):
+    def __init__(self,
+                 name,
+                 kernel=3,
+                 stride=2,
+                 border_mode='same',
+                 pad=None,
+                 data_format='NCHW',
+                 input_sample_shape=None):
         """input_feature_length is a scalar value"""
         pad2 = None
         if pad is not None:
@@ -527,9 +582,9 @@ class AvgPooling1D(AvgPooling2D):
         else:
             input_sample_shape = None
 
-        super(AvgPooling1D, self).__init__(name, (kernel, 1), (0, stride),
-                                           border_mode, pad2,
-                                           data_format, input_sample_shape)
+        super(AvgPooling1D,
+              self).__init__(name, (kernel, 1), (0, stride), border_mode, pad2,
+                             data_format, input_sample_shape)
 
     def get_output_sample_shape(self):
         shape = self.layer.GetOutputSampleShape()
@@ -556,8 +611,12 @@ class BatchNormalization(Layer):
         input_sample_shape (tuple): with at least one integer
     """
 
-    def __init__(self, name, momentum=0.9,
-                 beta_specs=None, gamma_specs=None, input_sample_shape=None):
+    def __init__(self,
+                 name,
+                 momentum=0.9,
+                 beta_specs=None,
+                 gamma_specs=None,
+                 input_sample_shape=None):
         super(BatchNormalization, self).__init__(name)
         conf = self.conf.batchnorm_conf
         conf.factor = momentum
@@ -579,8 +638,8 @@ class BatchNormalization(Layer):
         self.param_specs.append(_construct_param_specs_from_dict(beta_specs))
         self.param_specs.append(_construct_param_specs_from_dict(mean_specs))
         self.param_specs.append(_construct_param_specs_from_dict(var_specs))
-        _check_engine(engine, ['cudnn', 'singa', 'singacpp', 'singacuda',
-                               'singacl'])
+        _check_engine(engine,
+                      ['cudnn', 'singa', 'singacpp', 'singacuda', 'singacl'])
         self.layer = _create_layer(engine, 'BatchNorm')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -630,8 +689,14 @@ class LRN(Layer):
         input_sample_shape (tuple): 3d tuple, (channel, height, width)
     """
 
-    def __init__(self, name, size=5, alpha=1, beta=0.75, mode='cross_channel',
-                 k=1, input_sample_shape=None):
+    def __init__(self,
+                 name,
+                 size=5,
+                 alpha=1,
+                 beta=0.75,
+                 mode='cross_channel',
+                 k=1,
+                 input_sample_shape=None):
         super(LRN, self).__init__(name)
         conf = self.conf.lrn_conf
         conf.local_size = size
@@ -641,8 +706,8 @@ class LRN(Layer):
         # TODO(wangwei) enable mode = 'within_channel'
         assert mode == 'cross_channel', 'only support mode="across_channel"'
         conf.norm_region = model_pb2.LRNConf.ACROSS_CHANNELS
-        _check_engine(engine, ['cudnn', 'singa', 'singacpp', 'singacuda',
-                               'singacl'])
+        _check_engine(engine,
+                      ['cudnn', 'singa', 'singacpp', 'singacuda', 'singacl'])
         self.layer = _create_layer(engine, 'LRN')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -669,9 +734,14 @@ class Dense(Layer):
         input_sample_shape (tuple): input feature length
     """
 
-    def __init__(self, name, num_output, use_bias=True,
-                 W_specs=None, b_specs=None,
-                 W_transpose=False, input_sample_shape=None):
+    def __init__(self,
+                 name,
+                 num_output,
+                 use_bias=True,
+                 W_specs=None,
+                 b_specs=None,
+                 W_transpose=False,
+                 input_sample_shape=None):
         """Apply linear/affine transformation, also called inner-product or
         fully connected layer.
 
@@ -737,8 +807,8 @@ class Dropout(Layer):
             myengine = 'singacuda'
         else:
             myengine = engine
-        _check_engine(myengine, ['cudnn', 'singa', 'singacpp', 'singacuda',
-                                 'singacl'])
+        _check_engine(myengine,
+                      ['cudnn', 'singa', 'singacpp', 'singacuda', 'singacl'])
         self.layer = _create_layer(myengine, 'Dropout')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -775,8 +845,8 @@ class Softmax(Layer):
         super(Softmax, self).__init__(name)
         # conf = self.conf.softmax_conf
         # conf.axis = axis
-        _check_engine(engine, ['cudnn', 'singa', 'singacpp', 'singacl',
-                               'singacuda'])
+        _check_engine(engine,
+                      ['cudnn', 'singa', 'singacpp', 'singacl', 'singacuda'])
         self.layer = _create_layer(engine, 'Softmax')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -1043,9 +1113,16 @@ class RNN(Layer):
             feature size.
     '''
 
-    def __init__(self, name, hidden_size, rnn_mode='lstm', dropout=0.0,
-                 num_stacks=1, input_mode='linear', bidirectional=False,
-                 param_specs=None, input_sample_shape=None):
+    def __init__(self,
+                 name,
+                 hidden_size,
+                 rnn_mode='lstm',
+                 dropout=0.0,
+                 num_stacks=1,
+                 input_mode='linear',
+                 bidirectional=False,
+                 param_specs=None,
+                 input_sample_shape=None):
         assert cudnn_version >= 5005, 'RNN is supported since CUDNN V5.0.5; '\
             'This version is %d' % cudnn_version
         super(RNN, self).__init__(name)
@@ -1064,8 +1141,12 @@ class RNN(Layer):
         # currently only has rnn layer implemented using cudnn
         _check_engine(engine, ['cudnn'])
         if param_specs is None:
-            param_specs = {'name': name + '/weight',
-                           'init': 'uniform', 'low': 0, 'high': 1}
+            param_specs = {
+                'name': name + '/weight',
+                'init': 'uniform',
+                'low': 0,
+                'high': 1
+            }
         self.conf.param.extend([_construct_param_specs_from_dict(param_specs)])
         self.param_specs.append(_construct_param_specs_from_dict(param_specs))
 
@@ -1149,22 +1230,34 @@ class RNN(Layer):
 
 class LSTM(RNN):
 
-    def __init__(self, name, hidden_size, dropout=0.0, num_stacks=1,
-                 input_mode='linear', bidirectional=False,
-                 param_specs=None, input_sample_shape=None):
-        super(LSTM, self).__init__(name, hidden_size,  'lstm',  dropout,
+    def __init__(self,
+                 name,
+                 hidden_size,
+                 dropout=0.0,
+                 num_stacks=1,
+                 input_mode='linear',
+                 bidirectional=False,
+                 param_specs=None,
+                 input_sample_shape=None):
+        super(LSTM, self).__init__(name, hidden_size, 'lstm', dropout,
                                    num_stacks, input_mode, bidirectional,
                                    param_specs, input_sample_shape)
 
 
 class GRU(RNN):
 
-    def __init__(self, name, hidden_size, dropout=0.0, num_stacks=1,
-                 input_mode='linear', bidirectional=False, param_specs=None,
+    def __init__(self,
+                 name,
+                 hidden_size,
+                 dropout=0.0,
+                 num_stacks=1,
+                 input_mode='linear',
+                 bidirectional=False,
+                 param_specs=None,
                  input_sample_shape=None):
-        super(GRU, self).__init__(name,  hidden_size, 'gru',  dropout,
-                                  num_stacks, input_mode, bidirectional,
-                                  param_specs, input_sample_shape)
+        super(GRU, self).__init__(name, hidden_size, 'gru', dropout, num_stacks,
+                                  input_mode, bidirectional, param_specs,
+                                  input_sample_shape)
 
 
 def _check_engine(engine, allowed_engines):

@@ -30,11 +30,17 @@ AUX_SOURCE_DIRECTORY(io io_source)
 AUX_SOURCE_DIRECTORY(io/network io_source)
 LIST(APPEND singa_sources ${io_source})
 
+AUX_SOURCE_DIRECTORY(core/common core_source)
 AUX_SOURCE_DIRECTORY(core/device core_source)
 AUX_SOURCE_DIRECTORY(core/memory core_source)
 AUX_SOURCE_DIRECTORY(core/scheduler core_source)
 AUX_SOURCE_DIRECTORY(core/tensor core_source)
 LIST(APPEND singa_sources ${core_source})
+
+IF (USE_DIST)
+    AUX_SOURCE_DIRECTORY(dist dist_source)
+    LIST(APPEND singa_sources ${dist_source})
+ENDIF (USE_DIST)
 
 IF (USE_CUDA)
     FILE(GLOB_RECURSE cuda_source core "*.cu")

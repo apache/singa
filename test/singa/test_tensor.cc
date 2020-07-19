@@ -18,9 +18,9 @@
 
 #include "gtest/gtest.h"
 #include "singa/core/tensor.h"
-using singa::Tensor;
-using singa::Shape;
 using singa::Device;
+using singa::Shape;
+using singa::Tensor;
 
 TEST(TensorClass, Constructor) {
   singa::Tensor float_t(singa::Shape{2, 3});
@@ -68,11 +68,101 @@ TEST(TensorClass, Reshape) {
   EXPECT_TRUE(o.shape() != t.shape());
 }
 
-TEST(TensorClass, AsType) {
-  Tensor t;
+#ifdef USE_CUDA
+
+TEST(TensorClass, FloatAsTypeIntCuda) {
+  auto cuda = std::make_shared<singa::CudaGPU>();
+
+  Tensor t(Shape{3}, cuda);
+  float data[] = {1.0f, 2.0f, 3.0f};
+  t.CopyDataFromHostPtr(data, 3);
   EXPECT_EQ(singa::kFloat32, t.data_type());
-  t.AsType(singa::kFloat16);
-  EXPECT_EQ(singa::kFloat16, t.data_type());
+
+  t = t.AsType(singa::kInt);
+
+  EXPECT_EQ(singa::kInt, t.data_type());
+
+  t.ToHost();
+  const int* dptr2 = static_cast<const int*>(t.block()->data());
+  EXPECT_EQ(1, dptr2[0]);
+  EXPECT_EQ(2, dptr2[1]);
+  EXPECT_EQ(3, dptr2[2]);
+}
+
+TEST(TensorClass, IntAsTypeFloatCuda) {
+  auto cuda = std::make_shared<singa::CudaGPU>();
+
+  Tensor t(Shape{3}, cuda, singa::kInt);
+  int data[] = {1, 2, 3};
+  t.CopyDataFromHostPtr(data, 3);
+  EXPECT_EQ(singa::kInt, t.data_type());
+
+  t = t.AsType(singa::kFloat32);
+
+  EXPECT_EQ(singa::kFloat32, t.data_type());
+
+  t.ToHost();
+  const float* dptr2 = static_cast<const float*>(t.block()->data());
+  EXPECT_EQ(1.0f, dptr2[0]);
+  EXPECT_EQ(2.0f, dptr2[1]);
+  EXPECT_EQ(3.0f, dptr2[2]);
+}
+
+#endif  // USE_CUDA
+
+TEST(TensorClass, FloatAsTypeFloatCPU) {
+  Tensor t(Shape{3});
+  float data[] = {1.0f, 2.0f, 3.0f};
+  t.CopyDataFromHostPtr(data, 3);
+  EXPECT_EQ(singa::kFloat32, t.data_type());
+  const float* dptr = static_cast<const float*>(t.block()->data());
+  EXPECT_FLOAT_EQ(1.0f, dptr[0]);
+  EXPECT_FLOAT_EQ(2.0f, dptr[1]);
+  EXPECT_FLOAT_EQ(3.0f, dptr[2]);
+
+  Tensor t2 = t.AsType(singa::kFloat32);
+
+  EXPECT_EQ(singa::kFloat32, t2.data_type());
+
+  const float* dptr2 = static_cast<const float*>(t2.block()->data());
+  EXPECT_EQ(1.0f, dptr2[0]);
+  EXPECT_EQ(2.0f, dptr2[1]);
+  EXPECT_EQ(3.0f, dptr2[2]);
+}
+
+TEST(TensorClass, FloatAsTypeIntCPU) {
+  Tensor t(Shape{3});
+  float data[] = {1.0f, 2.0f, 3.0f};
+  t.CopyDataFromHostPtr(data, 3);
+  EXPECT_EQ(singa::kFloat32, t.data_type());
+  const float* dptr = static_cast<const float*>(t.block()->data());
+  EXPECT_FLOAT_EQ(1.0f, dptr[0]);
+  EXPECT_FLOAT_EQ(2.0f, dptr[1]);
+  EXPECT_FLOAT_EQ(3.0f, dptr[2]);
+
+  Tensor t2 = t.AsType(singa::kInt);
+
+  EXPECT_EQ(singa::kInt, t2.data_type());
+  const int* dptr2 = static_cast<const int*>(t2.block()->data());
+  EXPECT_EQ(1, dptr2[0]);
+  EXPECT_EQ(2, dptr2[1]);
+  EXPECT_EQ(3, dptr2[2]);
+}
+
+TEST(TensorClass, IntAsTypeFloatCPU) {
+  Tensor t(Shape{3}, singa::kInt);
+  int data[] = {1, 2, 3};
+  t.CopyDataFromHostPtr(data, 3);
+  EXPECT_EQ(singa::kInt, t.data_type());
+
+  auto t2 = t.AsType(singa::kFloat32);
+
+  EXPECT_EQ(singa::kFloat32, t2.data_type());
+
+  const float* dptr2 = static_cast<const float*>(t2.block()->data());
+  EXPECT_EQ(1.0f, dptr2[0]);
+  EXPECT_EQ(2.0f, dptr2[1]);
+  EXPECT_EQ(3.0f, dptr2[2]);
 }
 
 TEST(TensorClass, ToDevice) {
@@ -121,13 +211,13 @@ TEST(TensorClass, Clone) {
 TEST(TensorClass, T) {
   Tensor t(Shape{2, 3});
   EXPECT_FALSE(t.transpose());
-  Tensor o = t.T(); // o = t = {3,2}
-  t.T(); // t = {2,3}
+  Tensor o = t.T();  // o = t = {3,2}
+  t.T();             // t = {2,3}
   EXPECT_EQ(true, o.transpose());
   EXPECT_EQ(t.block(), o.block());
   EXPECT_EQ(t.data_type(), o.data_type());
-  EXPECT_EQ(t.shape()[0],  o.shape()[1]);
-  EXPECT_EQ(t.shape()[1],  o.shape()[0]);
+  EXPECT_EQ(t.shape()[0], o.shape()[1]);
+  EXPECT_EQ(t.shape()[1], o.shape()[0]);
 }
 
 TEST(TensorClass, Repeat) {
@@ -135,7 +225,7 @@ TEST(TensorClass, Repeat) {
   Tensor t(Shape{3});
   t.CopyDataFromHostPtr(data, 3);
 
-  Tensor o = t.Repeat(vector <size_t> {2}, 9999);
+  Tensor o = t.Repeat(vector<size_t>{2}, 9999);
   const float* dptr = static_cast<const float*>(o.block()->data());
   EXPECT_FLOAT_EQ(1.0f, dptr[0]);
   EXPECT_FLOAT_EQ(1.0f, dptr[1]);
@@ -194,7 +284,7 @@ TEST(TensorClass, Broadcast) {
     Tensor a1(Shape{1, 4, 5}), b1(Shape{2, 3, 1, 1});
     auto c1 = Broadcast(a1, b1.shape()).shape();
     auto c2 = Broadcast(b1, a1.shape()).shape();
- 
+
     EXPECT_EQ(c1[0], 2);
     EXPECT_EQ(c1[1], 3);
     EXPECT_EQ(c1[2], 4);
@@ -209,7 +299,7 @@ TEST(TensorClass, Broadcast) {
     Tensor a1(Shape{3, 4, 5}), b1(Shape{2, 1, 1, 1});
     auto c1 = Broadcast(a1, b1.shape()).shape();
     auto c2 = Broadcast(b1, a1.shape()).shape();
- 
+
     EXPECT_EQ(c1[0], 2);
     EXPECT_EQ(c1[1], 3);
     EXPECT_EQ(c1[2], 4);

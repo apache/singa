@@ -44,7 +44,7 @@ class Split : public Layer {
   const std::pair<vector<Tensor>, vector<Tensor> >
   Backward(int flag, const vector<Tensor> &grads) override;
 
-  const size_t output_size() const { return output_size_; }
+  size_t output_size() const { return output_size_; }
 
  protected:
   // To store the input and output(of forward) tensors

@@ -40,7 +40,7 @@ class TestPythonOperation(unittest.TestCase):
         dy = singa_wrap.Tensor(dy_shape)
         dy.CopyFloatDataFromHostPtr([0.1, 0.2, 0.3, 0.4, 0.1, 0.2, 0.3, 0.4])
 
-        handle = singa_wrap.ConvHandle(x, (3, 3), (2, 2), (1, 1), 1, 1, True)
+        handle = singa_wrap.ConvHandle(x, (3, 3), (2, 2), (1, 1), 1, 1, True, 1)
         y = singa_wrap.CpuConvForward(x, W, b, handle)
 
         self.assertListEqual([2, 1, 2, 2], list(y.shape()))
@@ -159,10 +159,10 @@ class TestPythonOperation(unittest.TestCase):
         self.assertListEqual([2], list(var_updated.shape()))
 
         # 2D Backward dx
-        (dx, dscale, dbias) = singa_wrap.CpuBatchNormBackwardx(handle, y, dy, x,
-                                                               scale, bias,
-                                                               mean_updated,
-                                                               var_updated)
+        (dx, dscale,
+         dbias) = singa_wrap.CpuBatchNormBackwardx(handle, y, dy, x, scale,
+                                                   bias, mean_updated,
+                                                   var_updated)
         self.assertListEqual([2, 2], list(dx.shape()))
         self.assertListEqual([2], list(dscale.shape()))
         self.assertListEqual([2], list(dbias.shape()))
@@ -171,13 +171,14 @@ class TestPythonOperation(unittest.TestCase):
 
         x2_shape = [1, 2, 4, 4]
         x2 = singa_wrap.Tensor(x2_shape)
-        x2.CopyFloatDataFromHostPtr(
-            [0.0736655, 0.0459045, 0.0779517, 0.0771059, 0.0586862, 0.0561263,
-             0.0708457, 0.0977273, 0.0405025, -0.170897, 0.0208982, 0.136865,
-             -0.0367905, -0.0618205, -0.0103908, -0.0522777, -0.122161,
-             -0.025427, -0.0718576, -0.185941, 0.0166533, 0.178679, -0.0576606,
-             -0.137817, 0.150676, 0.153442, -0.0929899, -0.148675, -0.112459,
-             -0.106284, -0.103074, -0.0668811])
+        x2.CopyFloatDataFromHostPtr([
+            0.0736655, 0.0459045, 0.0779517, 0.0771059, 0.0586862, 0.0561263,
+            0.0708457, 0.0977273, 0.0405025, -0.170897, 0.0208982, 0.136865,
+            -0.0367905, -0.0618205, -0.0103908, -0.0522777, -0.122161,
+            -0.025427, -0.0718576, -0.185941, 0.0166533, 0.178679, -0.0576606,
+            -0.137817, 0.150676, 0.153442, -0.0929899, -0.148675, -0.112459,
+            -0.106284, -0.103074, -0.0668811
+        ])
 
         handle = singa_wrap.BatchNormHandle(0.9, x)
         y2 = singa_wrap.CpuBatchNormForwardInference(handle, x2, scale, bias,

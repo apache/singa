@@ -22,15 +22,16 @@ from setuptools import setup
 
 setup(
     name='singa',
-
+    
+    # PACKAGE_VERSION will be substituted by cmake with the real version
     version='${PACKAGE_VERSION}',
 
     description='A General Deep Learning System',
 
-    url='https://github.com/apache/incubator-singa',
+    url='https://github.com/apache/singa',
 
-    author='Apache SINGA (incubating)',
-    author_email='dev@singa.incubator.apache.org',
+    author='Apache SINGA',
+    author_email='dev@singa.apache.org',
 
     license='Apache 2',
 
@@ -55,7 +56,7 @@ setup(
 
     keywords='deep learning singa apache',
 
-    packages=['rafiki', 'singa', 'singa.proto'],
+    packages=['singa', 'singa.proto'],
 
     # py_modules=["singa"],
 

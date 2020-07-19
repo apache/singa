@@ -25,15 +25,13 @@ from singa import tensor
 
 
 class TestLoss(unittest.TestCase):
-    def setUp(self):
-        self.x_np = np.asarray([[0.9, 0.2, 0.1],
-                                [0.1, 0.4, 0.5],
-                                [0.2, 0.4, 0.4]],
-                               dtype=np.float32)
 
-        self.y_np = np.asarray([[1, 0, 1],
-                                [0, 1, 1],
-                                [1, 0, 0]],
+    def setUp(self):
+        self.x_np = np.asarray(
+            [[0.9, 0.2, 0.1], [0.1, 0.4, 0.5], [0.2, 0.4, 0.4]],
+            dtype=np.float32)
+
+        self.y_np = np.asarray([[1, 0, 1], [0, 1, 1], [1, 0, 0]],
                                dtype=np.float32)
 
         self.x = tensor.from_numpy(self.x_np)
@@ -45,8 +43,8 @@ class TestLoss(unittest.TestCase):
         sig.backward()
         l2 = sig.evaluate(True, self.x, self.y)
 
-        p = 1.0 / (1 + np.exp(-self.x_np))
-        l = - (self.y_np * np.log(p) + (1 - self.y_np) * np.log(1 - p))
+        p = 1.0 / (1 + np.exp(np.negative(self.x_np)))
+        l = -(self.y_np * np.log(p) + (1 - self.y_np) * np.log(1 - p))
         self.assertAlmostEqual(l1.l1(), l2)
         self.assertAlmostEqual(l1.l1(), np.average(l))
 
@@ -56,10 +54,10 @@ class TestLoss(unittest.TestCase):
         sqe.backward()
         l2 = sqe.evaluate(True, self.x, self.y)
 
-        l = 0.5 * (self.y_np - self.x_np) ** 2
-        self.assertAlmostEqual(l1.l1(), l2)
+        l = 0.5 * (self.y_np - self.x_np)**2
+        self.assertAlmostEqual(l1.l1(), tensor.to_numpy(l2).flatten()[0])
         self.assertAlmostEqual(l1.l1(), np.average(l))
-        
+
     def test_softmax_cross_entropy(self):
         sce = loss.SoftmaxCrossEntropy()
         l1 = sce.forward(True, self.x, self.y)

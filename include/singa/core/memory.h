@@ -19,15 +19,15 @@
 #ifndef SINGA_CORE_MEMORY_H_
 #define SINGA_CORE_MEMORY_H_
 
-#include <mutex>
 #include <atomic>
+#include <mutex>
+
 #include "singa/proto/core.pb.h"
 #include "singa/singa_config.h"
 
 #ifdef USE_CUDA
 #include "cnmem.h"
 #endif
-
 
 namespace singa {
 
@@ -36,18 +36,21 @@ class VirtualMemory {};
 
 class DeviceMemPool {
  public:
-  virtual void Malloc(void** ptr, const size_t size)  = 0;
-  virtual void Free(void* ptr)  = 0;
+  virtual void Malloc(void** ptr, const size_t size) = 0;
+  virtual void Free(void* ptr) = 0;
 
   /// Return a pair for free and total memory managed by this pool.
   virtual std::pair<size_t, size_t> GetMemUsage() {
+    return std::make_pair(0u, 0u);
+  }
+  virtual std::pair<size_t, size_t> GetMemUsage(int id) {
     return std::make_pair(0u, 0u);
   }
   virtual ~DeviceMemPool(){};
 
  protected:
   size_t usage_;
-//  size_t init_size_ = 0, max_size_ = 0;
+  //  size_t init_size_ = 0, max_size_ = 0;
 };
 
 #ifdef USE_CUDA
@@ -62,6 +65,7 @@ class CnMemPool : public DeviceMemPool {
   void Free(void* ptr);
 
   std::pair<size_t, size_t> GetMemUsage() override;
+  std::pair<size_t, size_t> GetMemUsage(int id) override;
 
   // release all memory and set cnmem manager to unintialized
   ~CnMemPool();
@@ -69,16 +73,12 @@ class CnMemPool : public DeviceMemPool {
  protected:
   void Init();
 
-
  private:
-
   MemPoolConf conf_;
   // whether the (global) memory pool has been initialized
   bool initialized_ = false;
   // lock on the initialized variable
   std::mutex mtx_;
-
-  static std::atomic<int> pool_count;
 };
 
 class CudaMemPool : public DeviceMemPool {

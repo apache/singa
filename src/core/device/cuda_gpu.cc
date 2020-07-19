@@ -21,8 +21,10 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <curand.h>
+
 #include <chrono>
 #include <iostream>
+
 #include "singa/core/device.h"
 #include "singa/utils/cuda_utils.h"
 namespace singa {
@@ -61,21 +63,28 @@ CudaGPU::CudaGPU(int id, std::shared_ptr<DeviceMemPool> pool)
 void CudaGPU::Setup() {
   lang_ = kCuda;
   ctx_.stream = NULL;  // use the default sync stream
+
   // TODO(wangwei) create one handle for each steam?
+  // Preserse for future use instead of default sync stream, for concurrency
+  // cudaStreamCreate(&ctx_.stream);
+
   CUDA_CHECK(cudaSetDevice(id_));
   // use curandCreateGeneratorHost for CudaHost device
   CURAND_CHECK(
       curandCreateGenerator(&ctx_.curand_generator, CURAND_RNG_PSEUDO_DEFAULT));
+  CURAND_CHECK(curandSetStream(ctx_.curand_generator, ctx_.stream));
   auto seed = std::chrono::system_clock::now().time_since_epoch().count();
   SetRandSeed(seed);
   // TODO(wangwei) if one generator per stream, then need diff offset per gen?
   CURAND_CHECK(curandSetGeneratorOffset(ctx_.curand_generator, 0));
   CUBLAS_CHECK(cublasCreate(&(ctx_.cublas_handle)));
+  CUBLAS_CHECK(cublasSetStream(ctx_.cublas_handle, ctx_.stream));
 
 #ifdef USE_CUDNN
   // TODO(wangwei) create one handle for each stream?
   auto status = cudnnCreate(&ctx_.cudnn_handle);
   CHECK_EQ(status, CUDNN_STATUS_SUCCESS) << cudnnGetErrorString(status);
+  cudnnSetStream(ctx_.cudnn_handle, ctx_.stream);
 #endif  // USE_CUDNN
 }
 
@@ -88,9 +97,8 @@ void CudaGPU::DoExec(function<void(Context*)>&& fn, int executor) { fn(&ctx_); }
 
 void CudaGPU::CopyToFrom(void* dst, const void* src, size_t nBytes,
                          CopyDirection direction, Context* ctx) {
-  cudaMemcpy(dst, src, nBytes, copyKind[direction]);
-  // TODO(wangwei) use async copy
-  // cudaMemcpyAsync(dst, src, nBytes,cudaMemcpyDefault, ctx_.stream);
+  // cudaMemcpy(dst, src, nBytes, copyKind[direction]);
+  cudaMemcpyAsync(dst, src, nBytes, copyKind[direction], ctx_.stream);
 }
 
 size_t CudaGPU::GetAllocatedMem() {
@@ -108,8 +116,8 @@ void* CudaGPU::Malloc(int size) {
   if (size > 0) {
     CUDA_CHECK(cudaSetDevice(id_));
     pool_->Malloc((void**)&ptr, size);
-    // TODO(wangwei) remove the memset.
-    CUDA_CHECK(cudaMemset(ptr, 0, size));
+    // Comment out for future analysis: without cnmem
+    // CUDA_CHECK(cudaMemsetAsync(ptr, 0, size, ctx_.stream));
   }
   return ptr;
 }
@@ -120,6 +128,11 @@ void CudaGPU::Free(void* ptr) {
     CUDA_CHECK(cudaSetDevice(id_));
     pool_->Free(ptr);
   }
+}
+
+void CudaGPU::Sync() {
+  Exec([this](Context* ctx) { CUDA_CHECK(cudaStreamSynchronize(ctx_.stream)); },
+       {}, {});
 }
 
 }  // namespace singa

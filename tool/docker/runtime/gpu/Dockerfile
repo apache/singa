@@ -19,7 +19,7 @@
 # Base unbuntu 16.04 image
 FROM nvidia/cuda:9.0-devel-ubuntu16.04
 
-MAINTAINER incubator-singa dev@singa.incubator.apache.org
+MAINTAINER singa dev@singa.apache.org
 
 # install dependencies
 RUN apt-get update \
@@ -28,11 +28,13 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # install conda
-RUN wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-4.5.12-Linux-x86_64.sh -O miniconda.sh;
+RUN wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-py37_4.8.2-Linux-x86_64.sh -O miniconda.sh;
 RUN bash miniconda.sh -b -p /root/miniconda
 ENV PATH /root/miniconda/bin:${PATH}
 RUN conda config --set always_yes yes --set changeps1 no
-RUN conda install -c nusdbsystem singa-gpu
+RUN conda config --add channels conda-forge
+RUN conda config --add channels nusdbsystem
+RUN conda install -c conda-forge -c nusdbsystem singa-gpu
 RUN conda install -c conda-forge sphinx
 RUN conda install -c conda-forge sphinx_rtd_theme
 RUN conda install -c conda-forge recommonmark

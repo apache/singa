@@ -44,7 +44,7 @@ class Activation : public Layer {
 
   const std::string Mode() const { return mode_; }
 
-  const float Negative_slope() const { return neg_slope_; }
+  float Negative_slope() const { return neg_slope_; }
 
  protected:
   std::string mode_;

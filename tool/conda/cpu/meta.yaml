@@ -17,15 +17,21 @@
 # under the License.
 #
 
-
 package:
   name: singa-cpu
-  version: 1.2.0
+  version: {{ environ.get('GIT_DESCRIBE_TAG', '') | replace("-", ".") }}
+
+source:
+  path: ../../../
 
 requirements:
   run:
-    - singa 1.2.0 cpu
+    - singa {{ environ.get('GIT_DESCRIBE_TAG', '') | replace("-", ".") }} cpu_py{{ py }}
 
+build:
+  number: 0
+  string: py{{ py }}
+ 
 about:
   home: http://singa.apache.org/
   license: Apache V2

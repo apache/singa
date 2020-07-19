@@ -16,5 +16,5 @@
 # limitations under the License.
 #
 
-ADD_SUBDIRECTORY(cifar10)
-ADD_SUBDIRECTORY(imagenet/alexnet)
+ADD_SUBDIRECTORY(cpp/imagenet)
+ADD_SUBDIRECTORY(cpp/cifar10)

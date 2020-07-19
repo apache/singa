@@ -1,27 +1,28 @@
 /*********************************************************
-*
-* Licensed to the Apache Software Foundation (ASF) under one
-* or more contributor license agreements.  See the NOTICE file
-* distributed with this work for additional information
-* regarding copyright ownership.  The ASF licenses this file
-* to you under the Apache License, Version 2.0 (the
-* "License"); you may not use this file except in compliance
-* with the License.  You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing,
-* software distributed under the License is distributed on an
-* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-* KIND, either express or implied.  See the License for the
-* specific language governing permissions and limitations
-* under the License.
-*
-************************************************************/
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ ************************************************************/
+
+#include <iostream>
 
 #include "../src/model/layer/batchnorm.h"
 #include "gtest/gtest.h"
-#include <iostream>
 
 using namespace singa;
 
@@ -98,7 +99,7 @@ TEST(BatchNorm, Backward) {
   Tensor out = batchnorm.Forward(kTrain, in);
   auto ret = batchnorm.Backward(kTrain, dy_in);
   Tensor dx = ret.first;
-  const auto & shape = dx.shape();
+  const auto &shape = dx.shape();
   EXPECT_EQ(2u, shape.size());
   EXPECT_EQ(2u, shape[0]);
   EXPECT_EQ(2u, shape[1]);
@@ -110,7 +111,7 @@ TEST(BatchNorm, Backward) {
 
   Tensor dbnScale = ret.second.at(0);
   const float *dbnScaleptr = dbnScale.data<float>();
-  const auto & dbnScaleShape = dbnScale.shape();
+  const auto &dbnScaleShape = dbnScale.shape();
   EXPECT_EQ(1u, dbnScaleShape.size());
   EXPECT_EQ(2u, dbnScaleShape[0]);
 
@@ -119,7 +120,7 @@ TEST(BatchNorm, Backward) {
 
   Tensor dbnBias = ret.second.at(1);
   const float *dbnBiasptr = dbnBias.data<float>();
-  const auto & dbnBiasShape = dbnBias.shape();
+  const auto &dbnBiasShape = dbnBias.shape();
   EXPECT_EQ(1u, dbnBiasShape.size());
   EXPECT_EQ(2u, dbnBiasShape[0]);
 

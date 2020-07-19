@@ -107,7 +107,7 @@ namespace singa{
     size_t MemSize() const;
     
     void ResetLike(const Tensor &t);
-    void AsType(DataType type);
+    Tensor AsType(DataType type);
     void ToDevice(std::shared_ptr<singa::Device> dev);
     void ToHost();
     float L2() const;
@@ -171,6 +171,7 @@ namespace singa{
   Tensor Transpose(const Tensor &in);
 
   Tensor Abs(const Tensor &t);
+  Tensor Ceil(const Tensor &t);
   Tensor Exp(const Tensor &t);
   Tensor Log(const Tensor &t);
   Tensor ReLU(const Tensor &t);
@@ -178,14 +179,30 @@ namespace singa{
   Tensor Sign(const Tensor &t);
   Tensor Sqrt(const Tensor &t);
   Tensor Square(const Tensor &t);
+  Tensor Cos(const Tensor &t);
+  Tensor Cosh(const Tensor &t);
+  Tensor Acos(const Tensor &t);
+  Tensor Acosh(const Tensor &t);
+  Tensor Sin(const Tensor &t);
+  Tensor Sinh(const Tensor &t);
+  Tensor Asin(const Tensor &t);
+  Tensor Asinh(const Tensor &t);
+  Tensor Tan(const Tensor &t);
   Tensor Tanh(const Tensor &t);
+  Tensor Atan(const Tensor &t);
+  Tensor Atanh(const Tensor &t);
+
+  Tensor ReLUBackward(const Tensor &in1, const Tensor& in2);
 
   Tensor Sum(const Tensor &t, int axis);
   template <typename SType> SType Sum(const Tensor &t);
   %template(SumAsFloat) Sum<float>;
+  Tensor SumAll(const Tensor &t);
 
   Tensor Average(const Tensor &t, int axis);
   Tensor SoftMax(const Tensor &t);
+  Tensor SoftMax(const Tensor &t, int axis);
+  Tensor SoftMaxBackward(const Tensor &t, int axis, const Tensor &fdout);
 
   Tensor Pow(const Tensor &base, const Tensor &exp);
 
@@ -331,6 +348,8 @@ namespace singa{
 
   Tensor SoftMax(const Tensor &in);
   void SoftMax(const Tensor &in, Tensor *out);
+  Tensor SoftMax(const Tensor &in, int axis);
+  void SoftMax(const Tensor &in, Tensor *out, int axis);
 
   Tensor CrossEntropyFwd(const Tensor& p, const Tensor& t);
   Tensor SoftmaxCrossEntropyBwd(const Tensor& p, const Tensor& t);

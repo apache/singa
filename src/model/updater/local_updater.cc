@@ -74,4 +74,4 @@ void LocalUpdater::Apply(int step, const string& name, Tensor& grad,
   value.CopyData(param_buffer_[name]);
 }
 
-}  // namesapce singa
+}  // namespace singa

@@ -19,41 +19,38 @@
 
 package test;
 
+import junit.framework.*;
 import org.apache.singa.swig.*;
 
-
-import junit.framework.*;
 import static org.junit.Assert.*;
 
 public class TestTensor extends TestCase {
 
-	 protected void setUp(){
-	     System.loadLibrary("singa_wrap");
-	   }
-	public void testTensorFunc() {
-		Shape s = new Shape(2);
-		s.set(0, 2);
-		s.set(1, 3);
+    protected void setUp() {
+        System.loadLibrary("singa_wrap");
+    }
 
-		Tensor t1 = new Tensor(s);
-		t1.SetFloatValue(0.1f);
-		Tensor t2 = singa_wrap.Square(t1);
-		float[] data = new float[6];
+    public void testTensorFunc() {
+        Shape s = new Shape(2);
+        s.set(0, 2);
+        s.set(1, 3);
 
-		t2.GetFloatValue(data, 6);
-		for(int i = 0; i < 6; i++)
-			assertEquals(data[i], 0.01, 1e-4);
+        Tensor t1 = new Tensor(s);
+        t1.SetFloatValue(0.1f);
+        Tensor t2 = singa_wrap.Square(t1);
+        float[] data = new float[6];
 
-		for (int i =0; i< 6; i++)
-			data[i] = i * 1.0f;
-		Tensor t3 = new Tensor(s);
-		t3.CopyFloatDataFromHostPtr(data, 6);
+        t2.GetFloatValue(data, 6);
+        for (int i = 0; i < 6; i++)
+            assertEquals(data[i], 0.01, 1e-4);
 
+        for (int i = 0; i < 6; i++)
+            data[i] = i * 1.0f;
+        Tensor t3 = new Tensor(s);
+        t3.CopyFloatDataFromHostPtr(data, 6);
 
-		t3.GetFloatValue(data, 6);
-		for(int i = 0; i < 6; i++)
-			assertEquals(data[i], i * 1.0f, 1e-4);
-
-	}
-
+        t3.GetFloatValue(data, 6);
+        for (int i = 0; i < 6; i++)
+            assertEquals(data[i], i * 1.0f, 1e-4);
+    }
 }

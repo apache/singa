@@ -24,11 +24,6 @@ export CMAKE_INCLUDE_PATH=$PREFIX/include:$CMAKE_INCLUDE_PATH
 export CMAKE_LIBRARY_PATH=$PREFIX/lib:$CMAKE_LIBRARY_PATH
 
 
-
-# USE_PYTHON3=OFF
-# PY3K is set by conda
-# if  [ "$PY3K" == "1" ]; then USE_PYTHON3=ON; fi
-
 # if [ -z ${CUDA+x} ]; then
 if [ -z "$CUDA" ]; then
 	USE_CUDA=OFF
@@ -37,9 +32,16 @@ else
 fi
 
 
+if [ $DIST == "ON" ]; then
+	USE_DIST=ON
+else
+	USE_DIST=OFF
+fi
+
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX=$PREFIX -DUSE_CUDA=$USE_CUDA \
-	-DUSE_PYTHON3=ON -DUSE_MKLDNN=ON ..
+	-DUSE_PYTHON3=ON -DUSE_DNNL=ON -DUSE_DIST=$USE_DIST -DCMAKE_OSX_SYSROOT=${CONDA_BUILD_SYSROOT} ..
+
 make
 make install
