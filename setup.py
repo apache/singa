@@ -37,7 +37,7 @@ uploading due to file name error.
 
 For the Dockerfile with CUDA and CUDNN installed, the CUDA version and 
 CUDNN version are exported as environment variable: CUDA_VERSION, CUDNN_VERSION.
-We can control the script to build CUDA enabled singa package by exporting
+You can control the script to build CUDA enabled singa package by exporting
 SINGA_CUDA=ON; otherwise the CPU only package will be built.
 
 
@@ -64,18 +64,42 @@ from pathlib import Path
 import numpy as np
 
 NAME = 'singa'
-# Update the version ID for new release following semantic version
-VERSION = '3.0.0.dev1'
+'''
+Pypi does not allow you to overwrite the uploaded package;
+therefore, you have to bump the version.
+Pypi does not allow [local version label](https://www.python.org/dev/peps/pep-0440/#local-version-segments) 
+to appear in the version, therefore, you have to include the public 
+version label only. Currently, due to the pypi size limit, the package 
+uploaded to pypi is cpu only (without cuda and cudnn), which can be installed via
+    
+    $ pip install singa
+    $ pip install singa=3.0.0.dev1
+
+The cuda and cudnn enabled package's version consists of the public 
+version label + local version label, e.g., 3.0.0.dev1+cuda10.2, which
+can be installed via
+
+    $ pip install singa=3.0.0.dev1+cuda10.2 -f <url of the repo>
+
+'''
+from datetime import date
+
+# stable version
+VERSION = '3.0.0'
+# get the git hash
+# git_hash = subprocess.check_output(["git", "describe"]).strip().split('-')[-1][1:]
+# comment the next line to build wheel for stable version
+# VERSION += '.dev' + date.today().strftime('%y%m%d')
 
 SINGA_PY = Path('python')
 SINGA_SRC = Path('src')
 SINGA_HDR = Path('include')
 
 
-class UploadCommand(Command):
+class AuditCommand(Command):
     """Support setup.py upload."""
 
-    description = 'Repair and upload the package.'
+    description = 'Repair the package via auditwheel tool.'
     user_options = []
 
     @staticmethod
@@ -96,8 +120,8 @@ class UploadCommand(Command):
             self.status('Repair the dist/{} via auditwheel'.format(wheel))
             os.system('auditwheel repair dist/{}'.format(wheel))
 
-        self.status('Uploading the package to PyPI via Twine…')
-        os.system('{} -m twine upload dist/*'.format(sys.executable))
+        # self.status('Uploading the package to PyPI via Twine…')
+        # os.system('{} -m twine upload dist/*'.format(sys.executable))
         sys.exit()
 
 
@@ -139,7 +163,7 @@ def generate_singa_config(with_cuda, with_nccl):
     with cpp_conf_path.open('w') as fd:
         for line in config:
             fd.write(line + '\n')
-        versions = [int(x) for x in VERSION.split('.')[:3]]
+        versions = [int(x) for x in VERSION.split('+')[0].split('.')[:3]]
         fd.write('#define SINGA_MAJOR_VERSION {}\n'.format(versions[0]))
         fd.write('#define SINGA_MINOR_VERSION {}\n'.format(versions[1]))
         fd.write('#define SINGA_PATCH_VERSION {}\n'.format(versions[2]))
@@ -160,7 +184,7 @@ def generate_singa_config(with_cuda, with_nccl):
         else:
             fd.write('#define CUDNN_VERSION "{}"\n'.format(
                 os.environ.get('CUDNN_VERSION')))
-        versions = [int(x) for x in VERSION.split('.')[:3]]
+        versions = [int(x) for x in VERSION.split('+')[0].split('.')[:3]]
         fd.write('#define SINGA_MAJOR_VERSION {}\n'.format(versions[0]))
         fd.write('#define SINGA_MINOR_VERSION {}\n'.format(versions[1]))
         fd.write('#define SINGA_PATCH_VERSION {}\n'.format(versions[2]))
@@ -206,16 +230,6 @@ def path_to_str(path_list):
 
 def prepare_extension_options():
     with_cuda, with_nccl, with_test, with_debug = parse_compile_options()
-
-    global VERSION
-    if with_cuda:
-        cuda_version = os.environ.get('CUDA_VERSION')
-        cuda_major = int(cuda_version.split('.')[0])
-        cuda_minor = int(cuda_version.split('.')[1])
-        # local label '+cuda10.2'. Ref: https://www.python.org/dev/peps/pep-0440/
-        VERSION = VERSION + '+cuda{}.{}'.format(cuda_major, cuda_minor)
-    else:
-        VERSION = VERSION + '+cpu'
 
     generate_singa_config(with_cuda, with_nccl)
     generate_proto_files()
@@ -292,31 +306,6 @@ def prepare_extension_options():
     return options
 
 
-singa_wrap = Extension('singa._singa_wrap', [])
-classifiers = [
-    # Trove classifiers
-    # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
-    'License :: OSI Approved :: Apache Software License',
-    'Development Status :: 3 - Alpha',
-    'Intended Audience :: Developers',
-    'Programming Language :: Python :: 3.6',
-    'Programming Language :: Python :: 3.7',
-    'Programming Language :: Python :: 3.8',
-    'Topic :: Scientific/Engineering :: Artificial Intelligence'
-]
-if sys.platform == 'darwin':
-    classifiers.append('Operating System :: MacOS :: MacOS X')
-elif sys.platform == 'linux':
-    'Operating System :: POSIX :: Linux'
-else:
-    raise DistutilsSetupError('Building on Windows is not supported currently.')
-with_cuda, with_nccl, _, _ = parse_compile_options()
-if with_cuda:
-    classifiers.append('Environment :: GPU :: NVIDIA CUDA')
-    if with_nccl:
-        classifiers.append('Topic :: System :: Distributed Computing')
-
-
 # credit: https://github.com/rmcgibbo/npcuda-example/blob/master/cython/setup.py#L55
 def customize_compiler_for_nvcc(self):
     """Inject deep into distutils to customize how the dispatch
@@ -386,6 +375,43 @@ try:
 except OSError:
     long_description = ''
 
+classifiers = [
+    # Trove classifiers
+    # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
+    'License :: OSI Approved :: Apache Software License',
+    'Development Status :: 3 - Alpha',
+    'Intended Audience :: Developers',
+    'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
+    'Topic :: Scientific/Engineering :: Artificial Intelligence'
+]
+if sys.platform == 'darwin':
+    classifiers.append('Operating System :: MacOS :: MacOS X')
+elif sys.platform == 'linux':
+    'Operating System :: POSIX :: Linux'
+else:
+    raise DistutilsSetupError('Building on Windows is not supported currently.')
+
+keywords = 'deep learning, apache singa'
+with_cuda, with_nccl, _, _ = parse_compile_options()
+if with_cuda:
+    classifiers.append('Environment :: GPU :: NVIDIA CUDA')
+    cuda_version = os.environ.get('CUDA_VERSION')
+    cudnn_version = os.environ.get('CUDNN_VERSION')
+    keywords += ', cuda{}, cudnn{}'.format(cuda_version, cudnn_version)
+    cuda_major = int(cuda_version.split('.')[0])
+    cuda_minor = int(cuda_version.split('.')[1])
+    # local label '+cuda10.2'. Ref: https://www.python.org/dev/peps/pep-0440/
+    VERSION = VERSION + '+cuda{}.{}'.format(cuda_major, cuda_minor)
+    if with_nccl:
+        classifiers.append('Topic :: System :: Distributed Computing')
+        keywords += ', distributed'
+else:
+    keywords += ', cpu-only'
+
+singa_wrap = Extension('singa._singa_wrap', [])
+
 setup(
     name=NAME,
     version=VERSION,
@@ -408,11 +434,11 @@ setup(
     include_package_data=True,
     license='Apache 2',
     classifiers=classifiers,
-    keywords='deep learning singa apache',
+    keywords=keywords,
     packages=find_packages('python'),
     package_dir={'': 'python'},
     ext_modules=[singa_wrap],
     cmdclass={
         'build_ext': custom_build_ext,
-        'upload': UploadCommand
+        'audit': AuditCommand
     })
