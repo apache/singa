@@ -15,7 +15,8 @@
 # limitations under the License.
 
 
-# Change tags to build with different cuda/cudnn versions:
+# The latest tag uses gcc 9, which is too high nvcc.
+# The following tag uses gcc 8, which works with nvcc.
 FROM quay.io/pypa/manylinux2014_x86_64:2020-05-01-b37d76b
 
 # install dependencies
@@ -34,27 +35,29 @@ RUN yum install -y \
 RUN wget https://github.com/google/glog/archive/v0.3.5.tar.gz -P /tmp/\
     && tar zxf /tmp/v0.3.5.tar.gz  -C /tmp/ \
     && cd /tmp/glog-0.3.5 \
-    && ./configure && make && make install
+    && ./configure && make && make install && cd .. && rm -rf glog-0.3.5
 
 # install dnnl into /usr/local/include  /usr/local/lib
 RUN wget https://github.com/intel/mkl-dnn/releases/download/v1.1/dnnl_lnx_1.1.0_cpu_gomp.tgz -P /tmp/ \
     && tar zxf /tmp/dnnl_lnx_1.1.0_cpu_gomp.tgz  -C /tmp/ \
     && cp -r -H /tmp/dnnl_lnx_1.1.0_cpu_gomp/lib/lib* /usr/local/lib/ \
-    && cp -r -H /tmp/dnnl_lnx_1.1.0_cpu_gomp/include/* /usr/local/include/ 
+    && cp -r -H /tmp/dnnl_lnx_1.1.0_cpu_gomp/include/* /usr/local/include/  \
+    && rm -rf /tmp/dnnl_lnx_1.1.0_cpu_gomp
 # ENV DNNL_ROOT /root/dnnl_lnx_1.1.0_cpu_gomp/
 
 # install swig into /usr/local/bin
 RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.12.tar.gz -P /tmp/ \
     && tar zxf /tmp/swig-3.0.12.tar.gz -C /tmp/ \
-    && cd /tmp/swig-3.0.12 && ./configure && make && make install
+    && cd /tmp/swig-3.0.12 && ./configure && make && make install && cd .. && rm -rf swig-3.0.12
 
 # numpy and python versions should be matched; 
-# twine and auditwheel work for all python versions
+# twine works for all python versions
 RUN /opt/python/cp36-cp36m/bin/pip install numpy twine
 RUN /opt/python/cp37-cp37m/bin/pip install numpy 
 RUN /opt/python/cp38-cp38/bin/pip install numpy
 
 # install cuda and cudnn
+# Refer to https://gitlab.com/nvidia/container-images/cuda/-/tree/master/dist for other cuda and cudnn versions
 # 10.2-base-centos7
 RUN NVIDIA_GPGKEY_SUM=d1be581509378368edeec8c1eb2958702feedf3bc3d17011adbf24efacce4ab5 && \
     curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64/7fa2af80.pub | sed '/^Version/d' > /etc/pki/rpm-gpg/RPM-GPG-KEY-NVIDIA && \
@@ -118,7 +121,7 @@ RUN CUDNN_DOWNLOAD_SUM=600267f2caaed2fd58eb214ba669d8ea35f396a7d19b94822e6b36f9f
 
 # install cnmem to /usr/local/include  /usr/local/lib
 RUN git clone https://github.com/NVIDIA/cnmem.git cnmem \
-    && cd cnmem && mkdir build && cd build && cmake .. && make && make install
+    && cd cnmem && mkdir build && cd build && cmake .. && make && make install && cd ../.. && rm -rf cnmem
 
 # install mpich /usr/local/include   /usr/local/lib
 RUN wget http://www.mpich.org/static/downloads/3.3.2/mpich-3.3.2.tar.gz -P $HOME \
@@ -126,22 +129,4 @@ RUN wget http://www.mpich.org/static/downloads/3.3.2/mpich-3.3.2.tar.gz -P $HOME
     && tar xfz mpich-3.3.2.tar.gz \
     && cd mpich-3.3.2 \
     && ./configure --prefix=/usr/local --disable-fortran \
-    && make && make install 
-
-# config ssh service
-RUN mkdir /var/run/sshd \
-    && ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key \
-    && ssh-keygen -t dsa -f /etc/ssh/ssh_host_dsa_key \
-    && sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config \
-    && sed -ri 's/#UsePAM no/UsePAM no/g' /etc/ssh/sshd_config \
-    && echo 'root:singa' | chpasswd \
-    #RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
-    # SSH login fix. Otherwise user is kicked off after login
-    #RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
-    # dump environment variables into files, so that ssh can see also
-    && env | grep _ >> /etc/environment
-
-
-EXPOSE 22
-
-CMD ["/usr/sbin/sshd", "-D"]
+    && make && make install  && cd .. && rm -rf mpich-3.3.2
