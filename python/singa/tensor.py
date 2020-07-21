@@ -842,7 +842,7 @@ def copy_data_to_from(dst, src, size, dst_offset=0, src_offset=0):
     singa.CopyDataToFrom(dst.data, src.data, size, dst_offset, src_offset)
 
 
-def from_numpy(np_array):
+def from_numpy(np_array, dev=None):
     '''Create a Tensor instance with the shape, dtype and values from the numpy
     array.
 
@@ -868,6 +868,8 @@ def from_numpy(np_array):
         dtype = core_pb2.kInt
     ret = Tensor(np_array.shape, dtype=dtype)
     ret.copy_from_numpy(np_array)
+    if dev:
+        ret.to_device(dev)
     return ret
 
 
@@ -1785,4 +1787,14 @@ def random(shape,device=get_default_device()):
     '''
     ret = Tensor(shape, device=device)
     ret.uniform(0,1)
+    return ret
+
+def zeros(shape, device=get_default_device()):
+    ret = Tensor(shape, device=device)
+    ret.set_value(0.0)
+    return ret
+
+def ones(shape, device=get_default_device()):
+    ret = Tensor(shape, device=device)
+    ret.set_value(1.0)
     return ret
