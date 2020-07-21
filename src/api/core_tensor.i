@@ -357,6 +357,7 @@ namespace singa{
   void SumColumns(const Tensor &M, Tensor *v);
   void SumRows(const Tensor &M, Tensor *v);
 
+  Tensor RowMax(const Tensor &in);
   Tensor SoftMax(const Tensor &in);
   void SoftMax(const Tensor &in, Tensor *out);
   Tensor SoftMax(const Tensor &in, int axis);
