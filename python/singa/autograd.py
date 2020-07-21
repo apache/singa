@@ -1307,12 +1307,15 @@ class MeanSquareError(Operator):
         self.err = singa.__sub__(x, t)
         sqr = singa.Square(self.err)
         loss = singa.SumAll(sqr)
-        loss /= (x.shape()[0] * 2)
+        self.n = 1
+        for s in x.shape():
+            self.n*=s
+        loss /= self.n
         return loss
 
     def backward(self, dy=1.0):
         dx = self.err
-        dx *= float(1 / self.err.shape()[0])
+        dx *= float(2 / self.n)
         dx *= dy
         return dx, None
 
@@ -1320,10 +1323,6 @@ class MeanSquareError(Operator):
 def mse_loss(x, t):
     assert x.shape == t.shape, "input and target shape different: %s, %s" % (
         x.shape, t.shape)
-    # assert x.ndim() == 2, "2d input required, input shapes: %s, %s" % (x.shape,
-    #                                                                    t.shape)
-    # assert t.ndim() == 2, "2d input required, input shapes: %s, %s" % (x.shape,
-    #                                                                    t.shape)
     return MeanSquareError()(x, t)[0]
 
 
@@ -3958,6 +3957,7 @@ class ReduceMean(Operator):
             _x = tensor.reshape(_x, x_shape)
         self.cache = (x_shape, x)
         scale = np.prod(x_shape) / np.prod(x.shape())
+        self.scale = scale
         _x = singa.MultFloat(_x.data, scale)
         return _x
 
@@ -3974,6 +3974,7 @@ class ReduceMean(Operator):
         mask = singa.Tensor(list(x.shape()), x.device())
         mask.SetFloatValue(1.0)
         dy = singa.__mul__(mask, dy)
+        dy = singa.MultFloat(dy, self.scale)
         return dy
 
 

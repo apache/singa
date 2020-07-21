@@ -36,18 +36,21 @@ from gensim.models.keyedvectors import KeyedVectors
 import numpy as np
 from singa import autograd, layer, model, tensor, device, opt
 from qabot_data import *
-from qabot_model import QAModel
+from qabot_model import *
 
 
 # questions_encoded, poss_encoded, negs_encoded
-def do_train(m, tq, ta, q, ans_p, ans_n, max_epoch=30):
+def do_train(m, tq, ta, q_seq_limit, ans_seq_limit, bs, max_epoch=30):
     '''
     need to be large to see all negative ans
     '''
+    train_raw, test_raw, label2answer, idx2word, idx2vec = prepare_data()
     m.train()
     for epoch in range(max_epoch):
         total_loss = 0
         start = time.time()
+
+        q, ans_p, ans_n = limit_encode_train(train_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec)
 
         for i in range(len(q) // bs):
             tq.copy_from_numpy(q[i * bs:(i + 1) * bs])
@@ -60,7 +63,7 @@ def do_train(m, tq, ta, q, ans_p, ans_n, max_epoch=30):
             m.optimizer(l)
 
             total_loss += tensor.to_numpy(l)
-        if epoch % 5 == 0:
+        if epoch % 1 == 0:
             print(
                 "epoch %d, time used %d sec, loss: " %
                 (epoch, time.time() - start), total_loss * bs / len(q))
@@ -88,43 +91,48 @@ def do_eval(m, tq, ta, q, candis, ans_count):
         if pred_max_idx < ans_count[i]:
             correct += 1
 
-    print("training top %s " % (bs * 2), " accuracy", correct / len(q),
+    print("eval top %s " % (candi_pool_size), " accuracy", correct / len(q),
           " time used %d sec" % (time.time() - start))
 
 
-# parameters
-hidden_size = 32
-bs = 20
-q_seq_limit = 10
-ans_seq_limit = 20
-embed_size = 300
-number_of_candidates = bs * 2
+if __name__ == "__main__":
+    # parameters
+    hidden_size = 64
+    bs = 50
+    q_seq_limit = 10
+    ans_seq_limit = 30
+    embed_size = 300
+    number_of_candidates = bs * 2
+    epochs = 30
 
-# set up model
-dev = device.create_cuda_gpu_on(7)
-tq = tensor.random((bs, q_seq_limit, embed_size), dev)
-ta = tensor.random((bs * 2, ans_seq_limit, embed_size), dev)
-m = QAModel(hidden_size, return_sequences=False)
+    # set up model
+    dev = device.create_cuda_gpu_on(7)
+    tq = tensor.random((bs, q_seq_limit, embed_size), dev)
+    ta = tensor.random((bs * 2, ans_seq_limit, embed_size), dev)
+    m = QAModelv2(hidden_size, q_seq=q_seq_limit, a_seq=ans_seq_limit)
 
-# get data
-train_raw, test_raw, label2answer, idx2word, idx2vec = prepare_data()
-train_questions_encoded, train_poss_encoded, train_negs_encoded = limit_encode_train(
-    train_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec)
-eval_questions_encoded, eval_candi_pools_encoded, eval_ans_count = limit_encode_eval(
-    train_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec,
-    number_of_candidates)
-test_questions_encoded, test_candi_pools_encoded, test_ans_count = limit_encode_eval(
-    test_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec,
-    number_of_candidates)
+    # get data
+    train_raw, test_raw, label2answer, idx2word, idx2vec = prepare_data()
+    # train_raw = train_raw[:1000]
+    # test_raw = test_raw[:100]
 
-# train
-do_train(m, tq, ta, train_questions_encoded, train_poss_encoded,
-      train_negs_encoded)
+    # train
+    train_questions_encoded, train_poss_encoded, train_negs_encoded = limit_encode_train(
+        train_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec)
+    do_train(m, tq, ta, train_questions_encoded, train_poss_encoded,
+        train_negs_encoded, epochs)
 
-# eval on train data
-do_eval(m, tq, ta, eval_questions_encoded, eval_candi_pools_encoded,
-        eval_ans_count)
+    # eval on train data
+    train_raw = train_raw[:1000]
+    eval_questions_encoded, eval_candi_pools_encoded, eval_ans_count = limit_encode_eval(
+        train_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec,
+        number_of_candidates)
+    do_eval(m, tq, ta, eval_questions_encoded, eval_candi_pools_encoded,
+            eval_ans_count)
 
-# eval on test data
-do_eval(m, tq, ta, test_questions_encoded, test_candi_pools_encoded,
-        test_ans_count)
+    # eval on test data
+    test_questions_encoded, test_candi_pools_encoded, test_ans_count = limit_encode_eval(
+        test_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec,
+        number_of_candidates)
+    do_eval(m, tq, ta, test_questions_encoded, test_candi_pools_encoded,
+            test_ans_count)

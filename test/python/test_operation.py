@@ -3464,6 +3464,35 @@ class TestPythonOperation(unittest.TestCase):
     def test_cossim_value_cpu(self):
         self._cossim_value(cpu_dev)
 
+    def _pool1d_gpu(self,dev):
+        bs=10;seq=20;hidden=30
+        x = tensor.random((bs,seq,hidden), dev)
+        x=x.reshape((bs,1,seq,hidden))
+        pool = layer.MaxPool2d((seq,1))
+        y = pool(x)
+        y = y.reshape((bs,hidden))
+        print(y.shape)
+        # print(y)
+
+    def test_pool1d_gpu(self):
+        self._pool1d_gpu(gpu_dev)
+
+    def test_mse_loss_value(self,dev=cpu_dev):
+        y = np.random.random((1000, 1200)).astype(np.float32)
+        tar = np.random.random((1000, 1200)).astype(np.float32)
+        # get singa value
+        sy = tensor.from_numpy(y, dev)
+        starget = tensor.from_numpy(tar, dev)
+        sloss = autograd.mse_loss(sy, starget)
+        sgrad = sloss.creator.backward()[0]
+        # get np value result
+        np_loss = np.mean(np.square(tar - y))
+        np_grad = -2 * (tar - y) / np.prod(tar.shape)
+        # value check
+        np.testing.assert_array_almost_equal(
+            tensor.to_numpy(tensor.from_raw_tensor(sgrad)), np_grad)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(sloss), np_loss)
+
 
 if __name__ == '__main__':
     unittest.main()
