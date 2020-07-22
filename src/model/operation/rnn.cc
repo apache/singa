@@ -396,6 +396,7 @@ Tensor GpuRNNBackwardW(const Tensor &x, const Tensor &hx, const Tensor &y,
   // x shape {seq, bs}
   // y shape {seq, bs}
   dW.SetValue(0.0f);
+  h.workspace.SetValue(0.0f);
   dW.device()->Exec(
       [dW, x, hx, y, &h](Context *ctx) {
         cudnnTensorDescriptor_t *xDesc =

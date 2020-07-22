@@ -1467,8 +1467,9 @@ class CudnnRNN(Layer):
                         requires_grad=True,
                         stores_grad=True,
                         device=x.device)
-        std = math.sqrt( 2.0 / x.shape[2])
-        self.W.gaussian(0.0, std)
+        # std = math.sqrt( 2.0 / x.shape[2])
+        k=1/self.hidden_size
+        self.W.uniform(-math.sqrt(k), math.sqrt(k))
 
     def forward(self, x, hx=None, cx=None, seq_lengths=None):
 
