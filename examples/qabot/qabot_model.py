@@ -19,6 +19,26 @@
 
 from singa import autograd, layer, model, tensor, device, opt
 
+class QAModel_MLP(model.Model):
+    def __init__(self, hidden_size):
+        super().__init__()
+        self.linear_q = layer.Linear(hidden_size)
+        self.linear_a = layer.Linear(hidden_size)
+        self.optimizer = opt.SGD(0.01)
+
+    def forward(self, q, a_batch):
+        q=autograd.reshape(q, (q.shape[0],-1)) # bs, seq_q*data_s
+        a_batch=autograd.reshape(a_batch, (a_batch.shape[0],-1)) # 2bs, seq_a*data_s
+
+        q = self.linear_q(q) # bs, hid_s
+        a_batch = self.linear_a(a_batch) # 2bs, hid_s
+
+        a_pos, a_neg = autograd.split(a_batch, 0, [q.shape[0], q.shape[0]]) # 2*(bs, hid)
+
+        sim_pos = autograd.cossim(q, a_pos)
+        sim_neg = autograd.cossim(q, a_neg)
+        return sim_pos, sim_neg
+
 class QAModel(model.Model):
 
     def __init__(self,
