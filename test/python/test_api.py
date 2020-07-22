@@ -907,16 +907,16 @@ class TestAPI(unittest.TestCase):
     @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
     def test_cudnn_rnn_set_weights(self, dev=gpu_dev):
         np.random.seed(0)
-        hid_s = 3
-        seq = 4
-        bs = 3
-        data_s = 3
+        hid_s = 64
+        seq = 10
+        bs = 50
+        data_s = 300
         dir = 1
         num_lay = 1
-        mode = 0 # relu
-        nonlinearity = 'relu'
-        # mode = 1 # tanh
-        # nonlinearity = 'tanh'
+        # mode = 0 # relu
+        # nonlinearity = 'relu'
+        mode = 1 # tanh
+        nonlinearity = 'tanh'
 
         x_val = np.random.random((seq,bs,data_s)).astype(np.float32)
         # x_val = np.arange(seq*bs*data_s).astype(np.float32).reshape((seq,bs,data_s))
@@ -935,15 +935,16 @@ class TestAPI(unittest.TestCase):
         # weights values
         W_val = np.random.random((rnn_handle.weights_size,)).astype(np.float32)
 
-        Wx_val = np.ones((data_s,hid_s)).astype(np.float32)
-        Wh_val = np.ones((hid_s,hid_s)).astype(np.float32)
-        Bh_val = np.ones((hid_s,)).astype(np.float32)
-        Bx_val = np.ones((hid_s,)).astype(np.float32)
+        # Wx_val = np.ones((data_s,hid_s)).astype(np.float32)
+        # Wh_val = np.ones((hid_s,hid_s)).astype(np.float32)
+        # Bh_val = np.ones((hid_s,)).astype(np.float32)
+        # Bx_val = np.ones((hid_s,)).astype(np.float32)
 
-        Wx_val = np.random.random((data_s,hid_s)).astype(np.float32)
-        Wh_val = np.random.random((hid_s,hid_s)).astype(np.float32)
-        Bh_val = np.random.random((hid_s,)).astype(np.float32) # ok
-        Bx_val = np.random.random((hid_s,)).astype(np.float32) # ok
+        k = 1/np.sqrt(hid_s)
+        Wx_val = np.random.random((hid_s,data_s)).astype(np.float32)*2*k-k
+        Wh_val = np.random.random((hid_s,hid_s)).astype(np.float32)*2*k-k
+        Bh_val = np.random.random((hid_s,)).astype(np.float32)*2*k-k
+        Bx_val = np.random.random((hid_s,)).astype(np.float32)*2*k-k
 
         # weights
         W = tensor.from_numpy(W_val)
@@ -1013,10 +1014,18 @@ class TestAPI(unittest.TestCase):
         px = torch.tensor(x_val)
         pdy = torch.tensor(dy_val)
 
-        prnn.weight_ih_l0 = nn.Parameter(torch.tensor(Wx_val))
-        prnn.weight_hh_l0 = nn.Parameter(torch.tensor(Wh_val))
-        prnn.bias_ih_l0 = nn.Parameter(torch.tensor(Bx_val))
-        prnn.bias_hh_l0 = nn.Parameter(torch.tensor(Bh_val))
+        # prnn.weight_ih_l0 = nn.Parameter(torch.tensor(Wx_val))
+        # prnn.weight_hh_l0 = nn.Parameter(torch.tensor(Wh_val))
+        # prnn.bias_ih_l0 = nn.Parameter(torch.tensor(Bx_val))
+        # prnn.bias_hh_l0 = nn.Parameter(torch.tensor(Bh_val))
+
+        states = {
+            'weight_ih_l0':torch.tensor(Wx_val),
+            'weight_hh_l0':torch.tensor(Wh_val),
+            'bias_ih_l0':torch.tensor(Bx_val),
+            'bias_hh_l0':torch.tensor(Bh_val),
+        }
+        prnn.load_state_dict(states)
 
         py, phn = prnn(px)
         # print("torch y ", py)
@@ -1032,12 +1041,34 @@ class TestAPI(unittest.TestCase):
         # forward comparison
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(y)),py.detach().numpy(),decimal=4)
         # gradient comparison
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dWx)).reshape(Wx_val.shape),pdWx.numpy())
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dWh)).reshape(Wh_val.shape),pdWh.numpy(),decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dBx)).reshape(Bx_val.shape),pdBx.numpy())
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dBh)).reshape(Bx_val.shape),pdBh.numpy(),decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dWx)).reshape(Wx_val.shape),pdWx.numpy(),decimal=4)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dWh)).reshape(Wh_val.shape),pdWh.numpy(),decimal=4)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dBx)).reshape(Bx_val.shape),pdBx.numpy(),decimal=3)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dBh)).reshape(Bx_val.shape),pdBh.numpy(),decimal=4)
 
 
+        _y = tensor.to_numpy(tensor.from_raw_tensor(y)).flatten()
+        _dWx = tensor.to_numpy(tensor.from_raw_tensor(dWx)).flatten()
+        _dWh = tensor.to_numpy(tensor.from_raw_tensor(dWh)).flatten()
+        _dBx = tensor.to_numpy(tensor.from_raw_tensor(dBx)).flatten()
+        _dBh = tensor.to_numpy(tensor.from_raw_tensor(dBh)).flatten()
+
+        _py = py.detach().numpy().flatten()
+        _pdWx = pdWx.numpy().flatten()
+        _pdWh = pdWh.numpy().flatten()
+        _pdBx = pdBx.numpy().flatten()
+        _pdBh = pdBh.numpy().flatten()
+
+        for i in range(len(_y)):
+            np.testing.assert_approx_equal(_y[i], _py[i], significant=2)
+        for i in range(len(_pdWx)):
+            np.testing.assert_approx_equal(_dWx[i], _pdWx[i], significant=6)
+        for i in range(len(_pdWh)):
+            np.testing.assert_approx_equal(_dWh[i], _pdWh[i], significant=4)
+        for i in range(len(_pdBx)):
+            np.testing.assert_approx_equal(_dBx[i], _pdBx[i], significant=5)
+        for i in range(len(_pdBh)):
+            np.testing.assert_approx_equal(_dBh[i], _pdBh[i], significant=5)
 
 
 
