@@ -4599,7 +4599,6 @@ class _RNN(Operator):
         super(_RNN, self).__init__()
         self.handle = handle
         self.return_sequences = return_sequences
-        # self.batch_first = batch_first
         self.use_mask = use_mask
         if use_mask:
             assert type(seq_lengths) == Tensor, "wrong type for seq_lengths"

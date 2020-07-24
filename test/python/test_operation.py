@@ -3370,8 +3370,9 @@ class TestPythonOperation(unittest.TestCase):
     @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_round_gpu(self):
         self.round_helper(gpu_dev)
+
     @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
-    def test_lasso_cost(self,dev=gpu_dev):
+    def test_ranking_loss(self,dev=gpu_dev):
         # values
         np.random.seed(0)
         pos_val = np.random.random((3,)).astype(np.float32)
@@ -3382,7 +3383,7 @@ class TestPythonOperation(unittest.TestCase):
         tneg = tensor.from_numpy(neg_val)
 
         # singa forward backward
-        tloss = autograd.qa_lstm_loss(tpos, tneg)
+        tloss = autograd.ranking_loss(tpos, tneg)
         tdpos, tdneg = tloss.creator.backward()
 
         # torch loss fn
@@ -3409,7 +3410,6 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(tdneg)),pneg.grad.detach().numpy())
 
 
-    def _cossim_value(self,dev=gpu_dev):
     def _cossim_value(self, dev=gpu_dev):
         # numpy val
         np.random.seed(0)
@@ -3462,21 +3462,6 @@ class TestPythonOperation(unittest.TestCase):
 
     def test_cossim_value_cpu(self):
         self._cossim_value(cpu_dev)
-
-    def _pool1d_gpu(self, dev):
-        bs = 10
-        seq = 20
-        hidden = 30
-        x = tensor.random((bs, seq, hidden), dev)
-        x = x.reshape((bs, 1, seq, hidden))
-        pool = layer.MaxPool2d((seq, 1))
-        y = pool(x)
-        y = y.reshape((bs, hidden))
-        print(y.shape)
-        # print(y)
-
-    def test_pool1d_gpu(self):
-        self._pool1d_gpu(gpu_dev)
 
     def test_mse_loss_value(self, dev=cpu_dev):
         y = np.random.random((1000, 1200)).astype(np.float32)
