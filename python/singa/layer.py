@@ -1498,13 +1498,14 @@ class CudnnRNN(Layer):
             assert type(seq_lengths) == Tensor, "wrong type for seq_lengths"
             y = autograd._RNN(self.handle,
                               return_sequences=self.return_sequences,
-                              batch_first=self.batch_first,
+                            #   batch_first=self.batch_first,
                               use_mask=self.use_mask,
                               seq_lengths=seq_lengths)(x, hx, cx, self.W)[0]
         else:
             y = autograd._RNN(self.handle,
                               return_sequences=self.return_sequences,
-                              batch_first=self.batch_first)(x, hx, cx,
+                            #   batch_first=self.batch_first
+                              )(x, hx, cx,
                                                             self.W)[0]
         if self.return_sequences and self.batch_first:
             # (seq, bs, hid) -> (bs, seq, hid)

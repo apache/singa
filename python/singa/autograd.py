@@ -4619,14 +4619,14 @@ class _RNN(Operator):
     def __init__(self,
                  handle,
                  return_sequences=False,
-                 batch_first=True,
+                #  batch_first=True,
                  use_mask=False,
                  seq_lengths=None):
         assert singa.USE_CUDA, "Not able to run without CUDA"
         super(_RNN, self).__init__()
         self.handle = handle
         self.return_sequences = return_sequences
-        self.batch_first = batch_first
+        # self.batch_first = batch_first
         self.use_mask = use_mask
         if use_mask:
             assert type(seq_lengths) == Tensor, "wrong type for seq_lengths"
@@ -4678,6 +4678,7 @@ class _RNN(Operator):
             return last_y
 
     def backward(self, grad):
+        # print("_RNN back", tensor.from_raw_tensor(grad))
         # print("start cudnnrnn back")
         assert training is True and hasattr(
             self, "inputs"), "Please set training as True before do BP. "
@@ -4709,6 +4710,7 @@ class _RNN(Operator):
         dcy = singa.Tensor(list(self.inputs['cy'].shape()), grad.device())
         dcy.SetFloatValue(0.0)
 
+        # print("_RNN back", tensor.from_raw_tensor(dy))
         if self.use_mask:
             (dx, dhx,
              dcx) = singa.GpuRNNBackwardxEx(self.inputs['y'], dy, dhy, dcy,
@@ -4726,12 +4728,12 @@ class _RNN(Operator):
             dW = singa.GpuRNNBackwardW(self.inputs['x'], self.inputs['hx'],
                                        self.inputs['y'], self.handle)
 
-        # dx (seq, bs, data) => (bs, seq, data)
-        if self.batch_first:
-            dx = singa.Transpose(dx, [1, 0, 2])
 
         # print("rnn dw")
-        # print_t(dW)
+        # print("cpp out dx",tensor.from_raw_tensor(dx))
+        # print("cpp out dhx",tensor.from_raw_tensor(dhx))
+        # print("cpp out dcx",tensor.from_raw_tensor(dcx))
+        # print("cpp out dW",tensor.from_raw_tensor(dW))
         return dx, dhx, dcx, dW
 
 
