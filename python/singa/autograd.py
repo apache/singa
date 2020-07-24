@@ -117,7 +117,7 @@ def gradients(y, dy=None):
     """
     grads = {}  # mapping: x->dx if x.stores_grad
     for p, dp in backward(y, dy):
-        grads[id(p)] = dp
+        grads[p] = dp
     return grads
 
 
@@ -136,7 +136,6 @@ def backward(y, dy=None):
     op_dep, tensor_dep = infer_dependency(y.creator)
     assert y.size() == 1, ("y must be a Tensor with a single value;"
                            "size of y is % d" % y.size())
-    # print("backward starts..........................")
 
     # by default the dy is a tensor with 1.0 for each sample;
     if dy is None:
@@ -359,21 +358,6 @@ class Dummy(Operator):
 
     def __getattr__(self, name):
         return self.tensor.__getattribute__(name)
-
-class L2(Operator):
-    def __init__(self):
-        super(L2, self).__init__()
-    def forward(self, v):
-        assert v.nDim() == 2, "shape should be in 2d"
-        ret = singa.Tensor([v.Size()],v.device())
-        ret.SetFloatValue(v.L2())
-        if training:
-            self.v = v
-            self.l2 = ret
-        return ret
-    def backward(self, dv):
-        # singa.__mul__()
-        pass
 
 class Mean(Operator):
     """
@@ -1205,23 +1189,15 @@ class CrossEntropy(Operator):
 def cross_entropy(y, t):
     return CrossEntropy()(y, t)[0]
 
-def print_t(t1):
-    d = t1.device()
-    t1.ToHost()
-    if t1.data_type() == singa.kInt:
-        print(t1.GetIntValue(t1.Size()))
-    elif t1.data_type() == singa.kFloat32:
-        print(t1.GetFloatValue(t1.Size()))
-    t1.ToDevice(d)
-
-class QALSTMLoss(Operator):
+class RankingLoss(Operator):
 
     def __init__(self, M=0.2):
-        super(QALSTMLoss, self).__init__()
+        super().__init__()
+        # margin
         self.M = M
 
     def forward(self, pos, neg):
-        # L = max{0, M - cosine(q, a+) + cosine(q, a-)}
+        # L = max{0, M - fn(pos) + fn(neg)}
         zero = singa.Tensor(list(pos.shape()), pos.device())
         zero.SetFloatValue(0.0)
         val = singa.AddFloat(singa.__sub__(neg, pos), self.M)
@@ -1231,11 +1207,9 @@ class QALSTMLoss(Operator):
         all_loss = singa.__mul__(gt_zero, val)
         loss = singa.SumAll(all_loss)
         loss /= (pos.shape()[0])
-        # assert loss.shape(0) == 1
         return loss
 
     def backward(self, dy=1.0):
-        # print("qa lstm loss doing backward......")
         assert training, "enable training mode to do backward"
         # dpos = -1 if M-pos+neg > 0 else 0
         # dneg =  1 if M-pos+neg > 0 else 0
@@ -1246,15 +1220,13 @@ class QALSTMLoss(Operator):
         dneg_factor.SetFloatValue( 1.0/gt_zero.Size())
         dpos = singa.__mul__(gt_zero, dpos_factor)
         dneg = singa.__mul__(gt_zero, dneg_factor)
-        # print("dpos")
-        # print_t(dpos) # ok
         return dpos, dneg
 
 
-def qa_lstm_loss(pos, neg, M=0.2):
+def ranking_loss(pos, neg, M=0.2):
     assert pos.shape == neg.shape, "input and target shape different: %s, %s" % (
         pos.shape, neg.shape)
-    return QALSTMLoss(M)(pos, neg)[0]
+    return RankingLoss(M)(pos, neg)[0]
 
 
 class SoftMaxCrossEntropy(Operator):
@@ -4173,8 +4145,6 @@ class Split(Operator):
         """
         dys = singa.VecTensor(dys)
         dy = singa.ConcatOn(dys, self.axis)
-        # print("split backward")
-        # print_t(dy)
         return dy
 
 
@@ -4608,9 +4578,7 @@ class _RNN(Operator):
         self.seq_lengths = seq_lengths
 
     def forward(self, x, hx, cx, w):
-        # print("_rnn forward")
         if training:
-            # print("_rnn forward is training")
             if self.use_mask:
                 (y, hy,
                  cy) = singa.GpuRNNForwardTrainingEx(x, hx, cx, w,
@@ -4653,8 +4621,6 @@ class _RNN(Operator):
             return last_y
 
     def backward(self, grad):
-        # print("_RNN back", tensor.from_raw_tensor(grad))
-        # print("start cudnnrnn back")
         assert training is True and hasattr(
             self, "inputs"), "Please set training as True before do BP. "
 
@@ -4685,7 +4651,6 @@ class _RNN(Operator):
         dcy = singa.Tensor(list(self.inputs['cy'].shape()), grad.device())
         dcy.SetFloatValue(0.0)
 
-        # print("_RNN back", tensor.from_raw_tensor(dy))
         if self.use_mask:
             (dx, dhx,
              dcx) = singa.GpuRNNBackwardxEx(self.inputs['y'], dy, dhy, dcy,
@@ -4704,11 +4669,6 @@ class _RNN(Operator):
                                     self.inputs['y'], self.handle)
 
 
-        # print("rnn dw")
-        # print("cpp out dx",tensor.from_raw_tensor(dx))
-        # print("cpp out dhx",tensor.from_raw_tensor(dhx))
-        # print("cpp out dcx",tensor.from_raw_tensor(dcx))
-        # print("cpp out dW",tensor.from_raw_tensor(dW))
         return dx, dhx, dcx, dW
 
 
