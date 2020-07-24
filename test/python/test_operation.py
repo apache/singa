@@ -116,11 +116,6 @@ class TestPythonOperation(unittest.TestCase):
     def test_Greater_gpu(self):
         self._greater_helper(gpu_dev)
 
-    def test_l2_cpu(self):
-        l2 = autograd.L2()
-        v = tensor.random((3,))
-        print(l2(v))
-
     def _conv2d_helper(self, dev):
         # (out_channels, kernel_size)
         conv_0 = layer.Conv2d(1, 2)
@@ -3300,7 +3295,7 @@ class TestPythonOperation(unittest.TestCase):
                           _3d)
         self.assertRaises(AssertionError, autograd.add_bias, _2d,
                           _1d, 3)
-        self.assertRaises(AssertionError, autograd.qa_lstm_loss, _2d,
+        self.assertRaises(AssertionError, autograd.ranking_loss, _2d,
                           _1d)
 
     def where_helper(self, dev):

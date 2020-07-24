@@ -1467,7 +1467,7 @@ class CudnnRNN(Layer):
                         requires_grad=True,
                         stores_grad=True,
                         device=x.device)
-        # std = math.sqrt( 2.0 / x.shape[2])
+
         k=1/self.hidden_size
         self.W.uniform(-math.sqrt(k), math.sqrt(k))
 
@@ -1498,19 +1498,16 @@ class CudnnRNN(Layer):
             assert type(seq_lengths) == Tensor, "wrong type for seq_lengths"
             y = autograd._RNN(self.handle,
                               return_sequences=self.return_sequences,
-                            #   batch_first=self.batch_first,
                               use_mask=self.use_mask,
                               seq_lengths=seq_lengths)(x, hx, cx, self.W)[0]
         else:
             y = autograd._RNN(self.handle,
                               return_sequences=self.return_sequences,
-                            #   batch_first=self.batch_first
                               )(x, hx, cx,
                                                             self.W)[0]
         if self.return_sequences and self.batch_first:
             # (seq, bs, hid) -> (bs, seq, hid)
             y = autograd.transpose(y, (1, 0, 2))
-        # print("lstm layer y creator",y.creator)
         return y
 
     def get_params(self):

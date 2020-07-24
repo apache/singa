@@ -59,7 +59,7 @@ def do_train(m, tq, ta, train, meta_data, args):
             ta.copy_from_numpy(a_batch)
 
             p_sim, n_sim = m.forward(tq, ta)
-            l = autograd.qa_lstm_loss(p_sim, n_sim)
+            l = autograd.ranking_loss(p_sim, n_sim)
             m.optimizer(l)
 
             total_loss += tensor.to_numpy(l)

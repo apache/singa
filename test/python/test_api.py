@@ -905,12 +905,6 @@ class TestAPI(unittest.TestCase):
         y = tensor._call_singa_func(singa_api.RoundE, x.data)
         np.testing.assert_array_almost_equal(ans, tensor.to_numpy(y))
 
-    def test_rowmax(self, dev=gpu_dev):
-        x = tensor.random((2,3), device=dev)
-        print(x)
-        y = singa_api.RowMax(x.data)
-        print(tensor.from_raw_tensor(y))
-
     @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
     def test_cudnn_rnn_set_weights(self, dev=gpu_dev):
         np.random.seed(0)

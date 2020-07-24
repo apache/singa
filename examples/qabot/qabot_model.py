@@ -145,6 +145,6 @@ if __name__ == "__main__":
     m.train()
     for i in range(10):
         out = m.forward(tq, ta)
-        loss = autograd.qa_lstm_loss(out[0], out[1])
+        loss = autograd.ranking_loss(out[0], out[1])
         m.optimizer(loss)
         print(loss)
