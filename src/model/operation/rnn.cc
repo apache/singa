@@ -20,6 +20,7 @@
  ************************************************************/
 
 #include "rnn.h"
+
 #include <map>
 namespace singa {
 #ifdef USE_CUDNN
@@ -127,7 +128,6 @@ void CudnnRNNHandle::init_dropout_desc() {
   CUDNN_CHECK(cudnnSetDropoutDescriptor(dropoutDesc, ctx->cudnn_handle, dropout,
                                         states, stateSize, seed));
 }
-
 
 void init_yDesc(cudnnTensorDescriptor_t *yDesc, CudnnRNNHandle &h) {
   int dimA[] = {h.batch_size,
@@ -445,7 +445,11 @@ void CudnnRNNHandle::init_param_mapping(cudnnTensorDescriptor_t *xDesc) {
   int pseudoLayerRange = (bidirectional ? 2 : 1) * num_layers;
 
   // dummy weights for getting the offset
-  Tensor weights( Shape{ weights_size, }, dev);
+  Tensor weights(
+      Shape{
+          weights_size,
+      },
+      dev);
   weights.SetValue(0.0f);
   const void *W_ptr = weights.block()->data();
 
@@ -497,11 +501,15 @@ void GpuRNNSetParam(int linLayerID, int pseudoLayer, Tensor &weights,
 }
 
 Tensor GpuRNNGetParamCopy(int linLayerID, int pseudoLayer, Tensor &weights,
-                          bool is_bias, CudnnRNNHandle &h){
+                          bool is_bias, CudnnRNNHandle &h) {
   size_t offset, size;
   std::tie(offset, size) =
       h.weights_mapping[std::make_tuple(linLayerID, pseudoLayer, is_bias)];
-  Tensor paramCopy(Shape{size,},weights.device());
+  Tensor paramCopy(
+      Shape{
+          size,
+      },
+      weights.device());
   CopyDataToFrom(&paramCopy, weights, size, 0, offset);
   return paramCopy;
 }

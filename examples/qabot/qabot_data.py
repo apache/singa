@@ -21,9 +21,11 @@ from gensim.models.keyedvectors import KeyedVectors
 import numpy as np
 import random
 
-download_dir="/tmp/"
+download_dir = "/tmp/"
 import os
 import urllib
+
+
 def check_exist_or_download(url):
     ''' download data into tmp '''
     name = url.rsplit('/', 1)[-1]
@@ -32,6 +34,7 @@ def check_exist_or_download(url):
         print("Downloading %s" % url)
         urllib.request.urlretrieve(url, filename)
     return filename
+
 
 def unzip_data(download_dir, data_zip):
     data_dir = download_dir + "insuranceQA-master/V2/"
@@ -42,16 +45,19 @@ def unzip_data(download_dir, data_zip):
             zipObj.extractall(download_dir)
     return data_dir
 
+
 def get_label2answer(data_dir):
     import gzip
-    label2answer=dict()
-    with gzip.open(data_dir+"/InsuranceQA.label2answer.token.encoded.gz") as fin:
+    label2answer = dict()
+    with gzip.open(data_dir +
+                   "/InsuranceQA.label2answer.token.encoded.gz") as fin:
         for line in fin:
             pair = line.decode().strip().split("\t")
             idxs = pair[1].split(" ")
-            idxs = [int(idx.replace("idx_","")) for idx in idxs]
+            idxs = [int(idx.replace("idx_", "")) for idx in idxs]
             label2answer[int(pair[0])] = idxs
     return label2answer
+
 
 pad_idx = 0
 pad_string = "<pad>"
@@ -60,21 +66,23 @@ pad_embed = np.zeros((300,))
 insuranceqa_train_filename = "/InsuranceQA.question.anslabel.token.100.pool.solr.train.encoded.gz"
 insuranceqa_test_filename = "/InsuranceQA.question.anslabel.token.100.pool.solr.test.encoded.gz"
 insuranceQA_url = "https://github.com/shuzi/insuranceQA/archive/master.zip"
-insuranceQA_cache_fp = download_dir+"insuranceQA_cache.pickle"
+insuranceQA_cache_fp = download_dir + "insuranceQA_cache.pickle"
 google_news_pretrain_embeddings_link = "https://s3.amazonaws.com/dl4j-distribution/GoogleNews-vectors-negative300.bin.gz"
+
 
 def get_idx2word(data_dir):
     idx2word = dict()
-    with open(data_dir+"vocabulary") as vc_f:
+    with open(data_dir + "vocabulary") as vc_f:
         for line in vc_f:
-            pair=line.strip().split("\t")
-            idx = int(pair[0].replace("idx_",""))
+            pair = line.strip().split("\t")
+            idx = int(pair[0].replace("idx_", ""))
             idx2word[idx] = pair[1]
 
     # add padding string to idx2word lookup
     idx2word[pad_idx] = pad_string
 
     return idx2word
+
 
 def get_train_raw(data_dir, data_filename):
     ''' deserialize training data file
@@ -92,16 +100,20 @@ def get_train_raw(data_dir, data_filename):
     '''
     train_raw = []
     import gzip
-    with gzip.open(data_dir+data_filename) as fin:
+    with gzip.open(data_dir + data_filename) as fin:
         for line in fin:
             tpl = line.decode().strip().split("\t")
-            question = [int(idx.replace("idx_","")) for idx in tpl[1].split(" ")]
+            question = [
+                int(idx.replace("idx_", "")) for idx in tpl[1].split(" ")
+            ]
             ans = [int(label) for label in tpl[2].split(" ")]
             candis = [int(label) for label in tpl[3].split(" ")]
-            train_raw.append((question,ans,candis))
+            train_raw.append((question, ans, candis))
     return train_raw
 
-def limit_encode_train(train_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec):
+
+def limit_encode_train(train_raw, label2answer, idx2word, q_seq_limit,
+                       ans_seq_limit, idx2vec):
     ''' prepare train data to embedded word vector sequence given sequence limit
         return:
             questions_encoded: np ndarray, shape
@@ -111,19 +123,36 @@ def limit_encode_train(train_raw, label2answer, idx2word, q_seq_limit, ans_seq_l
     '''
     questions = [question for question, answers, candis in train_raw]
     # choose 1 answer from answer pool
-    poss = [label2answer[random.choice(answers)] for question, answers, candis in train_raw]
+    poss = [
+        label2answer[random.choice(answers)]
+        for question, answers, candis in train_raw
+    ]
     # choose 1 candidate from candidate pool
-    negs = [label2answer[random.choice(candis)] for question, answers, candis in train_raw]
+    negs = [
+        label2answer[random.choice(candis)]
+        for question, answers, candis in train_raw
+    ]
 
     # filtered word not in idx2vec
-    questions_filtered = [[idx for idx in q if idx in idx2vec] for q in questions]
+    questions_filtered = [
+        [idx for idx in q if idx in idx2vec] for q in questions
+    ]
     poss_filtered = [[idx for idx in ans if idx in idx2vec] for ans in poss]
     negs_filtered = [[idx for idx in ans if idx in idx2vec] for ans in negs]
 
     # crop to seq limit
-    questions_crop = [q[:q_seq_limit] + [0]*max(0, q_seq_limit - len(q)) for q in questions_filtered]
-    poss_crop = [ans[:ans_seq_limit] + [0]*max(0, ans_seq_limit - len(ans)) for ans in poss_filtered]
-    negs_crop = [ans[:ans_seq_limit] + [0]*max(0, ans_seq_limit - len(ans)) for ans in negs_filtered]
+    questions_crop = [
+        q[:q_seq_limit] + [0] * max(0, q_seq_limit - len(q))
+        for q in questions_filtered
+    ]
+    poss_crop = [
+        ans[:ans_seq_limit] + [0] * max(0, ans_seq_limit - len(ans))
+        for ans in poss_filtered
+    ]
+    negs_crop = [
+        ans[:ans_seq_limit] + [0] * max(0, ans_seq_limit - len(ans))
+        for ans in negs_filtered
+    ]
 
     # encoded, word idx to word vector
     questions_encoded = [[idx2vec[idx] for idx in q] for q in questions_crop]
@@ -131,13 +160,14 @@ def limit_encode_train(train_raw, label2answer, idx2word, q_seq_limit, ans_seq_l
     negs_encoded = [[idx2vec[idx] for idx in ans] for ans in negs_crop]
 
     # make nd array
-    questions_encoded=np.array(questions_encoded).astype(np.float32)
-    poss_encoded=np.array(poss_encoded).astype(np.float32)
-    negs_encoded=np.array(negs_encoded).astype(np.float32)
+    questions_encoded = np.array(questions_encoded).astype(np.float32)
+    poss_encoded = np.array(poss_encoded).astype(np.float32)
+    negs_encoded = np.array(negs_encoded).astype(np.float32)
     return questions_encoded, poss_encoded, negs_encoded
 
+
 def get_idx2vec_weights(wv, idx2word):
-    idx2vec = {k:wv[v] for k,v in idx2word.items() if v in wv}
+    idx2vec = {k: wv[v] for k, v in idx2word.items() if v in wv}
 
     # add padding embedding (all zeros) to idx2vec lookup
     idx2vec[pad_idx] = pad_embed
@@ -152,8 +182,10 @@ def prepare_data(use_cache=True):
 
         # get pretained word vector
         from gensim.models.keyedvectors import KeyedVectors
-        google_news_pretrain_fp = check_exist_or_download(google_news_pretrain_embeddings_link)
-        wv = KeyedVectors.load_word2vec_format(google_news_pretrain_fp, binary=True)
+        google_news_pretrain_fp = check_exist_or_download(
+            google_news_pretrain_embeddings_link)
+        wv = KeyedVectors.load_word2vec_format(google_news_pretrain_fp,
+                                               binary=True)
 
         # prepare insurance QA dataset
         data_zip = check_exist_or_download(insuranceQA_url)
@@ -164,18 +196,27 @@ def prepare_data(use_cache=True):
         idx2vec = get_idx2vec_weights(wv, idx2word)
 
         train_raw = get_train_raw(data_dir, insuranceqa_train_filename)
-        test_raw = get_train_raw(data_dir,insuranceqa_test_filename)
+        test_raw = get_train_raw(data_dir, insuranceqa_test_filename)
         with open(insuranceQA_cache_fp, 'wb') as handle:
-            pickle.dump((train_raw, test_raw, label2answer, idx2word, idx2vec), handle, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump((train_raw, test_raw, label2answer, idx2word, idx2vec),
+                        handle,
+                        protocol=pickle.HIGHEST_PROTOCOL)
     else:
         # load from cached pickle
         with open(insuranceQA_cache_fp, 'rb') as handle:
-            (train_raw, test_raw, label2answer, idx2word, idx2vec) = pickle.load(handle)
+            (train_raw, test_raw, label2answer, idx2word,
+             idx2vec) = pickle.load(handle)
 
     return train_raw, test_raw, label2answer, idx2word, idx2vec
 
 
-def limit_encode_eval(train_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec, top_k_candi_limit = 6):
+def limit_encode_eval(train_raw,
+                      label2answer,
+                      idx2word,
+                      q_seq_limit,
+                      ans_seq_limit,
+                      idx2vec,
+                      top_k_candi_limit=6):
     ''' prepare train data to embedded word vector sequence given sequence limit for testing
         return:
             questions_encoded: np ndarray, shape
@@ -186,28 +227,49 @@ def limit_encode_eval(train_raw, label2answer, idx2word, q_seq_limit, ans_seq_li
     questions = [question for question, answers, candis in train_raw]
 
     # combine truth and candidate answers label,
-    candi_pools = [list(answers+candis)[:top_k_candi_limit] for question, answers, candis in train_raw]
-    assert all([len(pool)==top_k_candi_limit for pool in candi_pools])
+    candi_pools = [
+        list(answers + candis)[:top_k_candi_limit]
+        for question, answers, candis in train_raw
+    ]
+    assert all([len(pool) == top_k_candi_limit for pool in candi_pools])
 
     ans_count = [len(answers) for question, answers, candis in train_raw]
-    assert all([c>0 for c in ans_count])
+    assert all([c > 0 for c in ans_count])
 
     # encode ans
-    candi_pools_encoded = [[label2answer[candi_label] for candi_label in pool] for pool in candi_pools]
+    candi_pools_encoded = [[label2answer[candi_label]
+                            for candi_label in pool]
+                           for pool in candi_pools]
 
     # filtered word not in idx2vec
-    questions_filtered = [[idx for idx in q if idx in idx2vec] for q in questions]
-    candi_pools_filtered = [[[idx for idx in candi_encoded if idx in idx2vec] for candi_encoded in pool] for pool in candi_pools_encoded]
+    questions_filtered = [
+        [idx for idx in q if idx in idx2vec] for q in questions
+    ]
+    candi_pools_filtered = [[[idx
+                              for idx in candi_encoded
+                              if idx in idx2vec]
+                             for candi_encoded in pool]
+                            for pool in candi_pools_encoded]
 
     # crop to seq limit
-    questions_crop = [q[:q_seq_limit] + [0]*max(0, q_seq_limit - len(q)) for q in questions_filtered]
-    candi_pools_crop = [[candi[:ans_seq_limit] + [0]*max(0, ans_seq_limit - len(candi)) for candi in pool] for pool in candi_pools_filtered]
+    questions_crop = [
+        q[:q_seq_limit] + [0] * max(0, q_seq_limit - len(q))
+        for q in questions_filtered
+    ]
+    candi_pools_crop = [[
+        candi[:ans_seq_limit] + [0] * max(0, ans_seq_limit - len(candi))
+        for candi in pool
+    ]
+                        for pool in candi_pools_filtered]
 
     # encoded, word idx to word vector
     questions_encoded = [[idx2vec[idx] for idx in q] for q in questions_crop]
-    candi_pools_encoded = [[[idx2vec[idx] for idx in candi] for candi in pool] for pool in candi_pools_crop]
-    questions_encoded=np.array(questions_encoded).astype(np.float32)
-    candi_pools_encoded=np.array(candi_pools_encoded).astype(np.float32)
+    candi_pools_encoded = [[[idx2vec[idx]
+                             for idx in candi]
+                            for candi in pool]
+                           for pool in candi_pools_crop]
+    questions_encoded = np.array(questions_encoded).astype(np.float32)
+    candi_pools_encoded = np.array(candi_pools_encoded).astype(np.float32)
 
     # candi_pools_encoded shape
     #    (number of sample QnA,
@@ -225,6 +287,9 @@ if __name__ == "__main__":
     q_seq_limit = 10
     ans_seq_limit = 12
     train_raw, test_raw, label2answer, idx2word, idx2vec = prepare_data()
-    questions_encoded, poss_encoded, negs_encoded = limit_encode_train( train_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec)
-    questions_encoded, candi_pools_encoded, ans_count = limit_encode_eval(train_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec)
-    questions_encoded, candi_pools_encoded, ans_count = limit_encode_eval(test_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec)
+    questions_encoded, poss_encoded, negs_encoded = limit_encode_train(
+        train_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec)
+    questions_encoded, candi_pools_encoded, ans_count = limit_encode_eval(
+        train_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec)
+    questions_encoded, candi_pools_encoded, ans_count = limit_encode_eval(
+        test_raw, label2answer, idx2word, q_seq_limit, ans_seq_limit, idx2vec)

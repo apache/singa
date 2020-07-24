@@ -456,17 +456,20 @@ class TestPythonOperation(unittest.TestCase):
             self.gradients_check(valinna_rnn_forward, param, auto_grad, dev=dev)
 
     def _gradient_check_cudnn_rnn(self, mode="vanilla", dev=gpu_dev):
-        seq=10;bs=2;fea=10;hid=10
-        x = np.random.random((seq,bs,fea)).astype(np.float32)
+        seq = 10
+        bs = 2
+        fea = 10
+        hid = 10
+        x = np.random.random((seq, bs, fea)).astype(np.float32)
         tx = tensor.Tensor(device=dev, data=x)
-        y = np.random.random((seq,bs,hid)).astype(np.float32)
-        y = np.reshape(y, (-1,hid))
+        y = np.random.random((seq, bs, hid)).astype(np.float32)
+        y = np.reshape(y, (-1, hid))
         ty = tensor.Tensor(device=dev, data=y)
         rnn = layer.CudnnRNN(hid, rnn_mode=mode, return_sequences=True)
 
         def vanilla_rnn_forward():
             out = rnn(tx)
-            out = autograd.reshape(out,(-1,hid))
+            out = autograd.reshape(out, (-1, hid))
             loss = autograd.softmax_cross_entropy(out, ty)
             return loss
 
@@ -476,8 +479,7 @@ class TestPythonOperation(unittest.TestCase):
         params = rnn.get_params()
         for key, param in params.items():
             auto_grad = tensor.to_numpy(auto_grads[id(param)])
-            self.gradients_check(vanilla_rnn_forward, param, auto_grad,
-                                 dev=dev)
+            self.gradients_check(vanilla_rnn_forward, param, auto_grad, dev=dev)
 
     @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_gradient_check_cudnn_rnn_vanilla(self):
@@ -489,28 +491,28 @@ class TestPythonOperation(unittest.TestCase):
 
     # Cos Sim Gradient Check
     def _gradient_check_cossim(self, dev=gpu_dev):
-        bs=2;vec=3
-        ta = tensor.random((bs,vec),dev)
-        tb = tensor.random((bs,vec),dev)
+        bs = 2
+        vec = 3
+        ta = tensor.random((bs, vec), dev)
+        tb = tensor.random((bs, vec), dev)
         # treat ta, tb as params
         ta.stores_grad = True
         tb.stores_grad = True
-        ty = tensor.random((bs,),dev)
+        ty = tensor.random((bs,), dev)
 
         def _forward():
-            out = autograd.cossim(ta,tb)
+            out = autograd.cossim(ta, tb)
             loss = autograd.mse_loss(out, ty)
             return loss
 
         loss = _forward()
         auto_grads = autograd.gradients(loss)
 
-        params = { id(ta):ta, id(tb):tb }
+        params = {id(ta): ta, id(tb): tb}
 
         for key, param in params.items():
             auto_grad = tensor.to_numpy(auto_grads[id(param)])
-            self.gradients_check(_forward, param, auto_grad,
-                                 dev=dev)
+            self.gradients_check(_forward, param, auto_grad, dev=dev)
 
     @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_gradient_check_cossim_gpu(self):
@@ -518,7 +520,6 @@ class TestPythonOperation(unittest.TestCase):
 
     def test_gradient_check_cossim_cpu(self):
         self._gradient_check_cossim(dev=cpu_dev)
-
 
     def test_numerical_gradients_check_for_vallina_rnn_cpu(self):
         self._numerical_gradients_check_for_vallina_rnn_helper(cpu_dev)
@@ -3285,18 +3286,15 @@ class TestPythonOperation(unittest.TestCase):
     def test_upsample_gpu(self):
         self.upsample_helper(gpu_dev)
 
-    def test_invalid_inputs(self,dev=cpu_dev):
+    def test_invalid_inputs(self, dev=cpu_dev):
         _1d = tensor.Tensor((10,), dev)
-        _2d = tensor.Tensor((10,10), dev)
-        _3d = tensor.Tensor((10,10,10), dev)
+        _2d = tensor.Tensor((10, 10), dev)
+        _3d = tensor.Tensor((10, 10, 10), dev)
         self.assertRaises(AssertionError, autograd.softmax_cross_entropy, _2d,
                           _3d)
-        self.assertRaises(AssertionError, autograd.mse_loss, _2d,
-                          _3d)
-        self.assertRaises(AssertionError, autograd.add_bias, _2d,
-                          _1d, 3)
-        self.assertRaises(AssertionError, autograd.ranking_loss, _2d,
-                          _1d)
+        self.assertRaises(AssertionError, autograd.mse_loss, _2d, _3d)
+        self.assertRaises(AssertionError, autograd.add_bias, _2d, _1d, 3)
+        self.assertRaises(AssertionError, autograd.ranking_loss, _2d, _1d)
 
     def where_helper(self, dev):
         X = np.array([[1, 2], [3, 4]], dtype=np.float32)
@@ -3412,11 +3410,13 @@ class TestPythonOperation(unittest.TestCase):
 
 
     def _cossim_value(self,dev=gpu_dev):
+    def _cossim_value(self, dev=gpu_dev):
         # numpy val
         np.random.seed(0)
-        bs = 1000;vec_s = 1200
-        a = np.random.random((bs,vec_s)).astype(np.float32)
-        b = np.random.random((bs,vec_s)).astype(np.float32)
+        bs = 1000
+        vec_s = 1200
+        a = np.random.random((bs, vec_s)).astype(np.float32)
+        b = np.random.random((bs, vec_s)).astype(np.float32)
         dy = np.random.random((bs,)).astype(np.float32)
 
         # singa tensor
@@ -3435,8 +3435,8 @@ class TestPythonOperation(unittest.TestCase):
         for i in range(len(a)):
             a_norm = np.linalg.norm(a[i])
             b_norm = np.linalg.norm(b[i])
-            ab_dot = np.dot(a[i],b[i])
-            out = ab_dot/(a_norm*b_norm)
+            ab_dot = np.dot(a[i], b[i])
+            out = ab_dot / (a_norm * b_norm)
             np_forward.append(out)
 
         np_backward_a = list()
@@ -3444,13 +3444,17 @@ class TestPythonOperation(unittest.TestCase):
         for i in range(len(a)):
             a_norm = np.linalg.norm(a[i])
             b_norm = np.linalg.norm(b[i])
-            da = dy[i]*(b[i]/(a_norm*b_norm)- (np_forward[i] * a[i]) / (a_norm * a_norm))
-            db = dy[i]*(a[i]/(a_norm*b_norm)- (np_forward[i] * b[i]) / (b_norm * b_norm))
+            da = dy[i] * (b[i] / (a_norm * b_norm) - (np_forward[i] * a[i]) /
+                          (a_norm * a_norm))
+            db = dy[i] * (a[i] / (a_norm * b_norm) - (np_forward[i] * b[i]) /
+                          (b_norm * b_norm))
             np_backward_a.append(da)
             np_backward_b.append(db)
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(ty),np.array(np_forward))
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(tda)),np_backward_a)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(ty),
+                                             np.array(np_forward))
+        np.testing.assert_array_almost_equal(
+            tensor.to_numpy(tensor.from_raw_tensor(tda)), np_backward_a)
 
     @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_cossim_value_gpu(self):
@@ -3459,20 +3463,22 @@ class TestPythonOperation(unittest.TestCase):
     def test_cossim_value_cpu(self):
         self._cossim_value(cpu_dev)
 
-    def _pool1d_gpu(self,dev):
-        bs=10;seq=20;hidden=30
-        x = tensor.random((bs,seq,hidden), dev)
-        x=x.reshape((bs,1,seq,hidden))
-        pool = layer.MaxPool2d((seq,1))
+    def _pool1d_gpu(self, dev):
+        bs = 10
+        seq = 20
+        hidden = 30
+        x = tensor.random((bs, seq, hidden), dev)
+        x = x.reshape((bs, 1, seq, hidden))
+        pool = layer.MaxPool2d((seq, 1))
         y = pool(x)
-        y = y.reshape((bs,hidden))
+        y = y.reshape((bs, hidden))
         print(y.shape)
         # print(y)
 
     def test_pool1d_gpu(self):
         self._pool1d_gpu(gpu_dev)
 
-    def test_mse_loss_value(self,dev=cpu_dev):
+    def test_mse_loss_value(self, dev=cpu_dev):
         y = np.random.random((1000, 1200)).astype(np.float32)
         tar = np.random.random((1000, 1200)).astype(np.float32)
         # get singa value

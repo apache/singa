@@ -1468,13 +1468,13 @@ class CudnnRNN(Layer):
                         stores_grad=True,
                         device=x.device)
 
-        k=1/self.hidden_size
+        k = 1 / self.hidden_size
         self.W.uniform(-math.sqrt(k), math.sqrt(k))
 
     def forward(self, x, hx=None, cx=None, seq_lengths=None):
 
         self.device_check(x, self.W)
-        if self.batch_first: # (bs,seq,data) -> (seq,bs,data)
+        if self.batch_first:  # (bs,seq,data) -> (seq,bs,data)
             x = autograd.transpose(x, (1, 0, 2))
 
         batch_size = x.shape[1]
@@ -1501,10 +1501,10 @@ class CudnnRNN(Layer):
                               use_mask=self.use_mask,
                               seq_lengths=seq_lengths)(x, hx, cx, self.W)[0]
         else:
-            y = autograd._RNN(self.handle,
-                              return_sequences=self.return_sequences,
-                              )(x, hx, cx,
-                                                            self.W)[0]
+            y = autograd._RNN(
+                self.handle,
+                return_sequences=self.return_sequences,
+            )(x, hx, cx, self.W)[0]
         if self.return_sequences and self.batch_first:
             # (seq, bs, hid) -> (bs, seq, hid)
             y = autograd.transpose(y, (1, 0, 2))

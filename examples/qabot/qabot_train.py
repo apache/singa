@@ -41,6 +41,7 @@ from singa import autograd, layer, model, tensor, device, opt
 from qabot_data import *
 from qabot_model import *
 
+
 def do_train(m, tq, ta, train, meta_data, args):
     '''
     batch size need to be large to see all negative ans
@@ -50,12 +51,17 @@ def do_train(m, tq, ta, train, meta_data, args):
         total_loss = 0
         start = time.time()
 
-        q, ans_p, ans_n = limit_encode_train(train, meta_data['label2answer'], meta_data['idx2word'], args.q_seq_limit, args.ans_seq_limit, meta_data['idx2vec'])
+        q, ans_p, ans_n = limit_encode_train(train, meta_data['label2answer'],
+                                             meta_data['idx2word'],
+                                             args.q_seq_limit,
+                                             args.ans_seq_limit,
+                                             meta_data['idx2vec'])
         bs = args.bs
 
         for i in tqdm(range(len(q) // bs)):
             tq.copy_from_numpy(q[i * bs:(i + 1) * bs])
-            a_batch = np.concatenate([ans_p[i * bs:(i + 1) * bs], ans_n[i * bs:(i + 1) * bs]])
+            a_batch = np.concatenate(
+                [ans_p[i * bs:(i + 1) * bs], ans_n[i * bs:(i + 1) * bs]])
             ta.copy_from_numpy(a_batch)
 
             p_sim, n_sim = m.forward(tq, ta)
@@ -64,12 +70,17 @@ def do_train(m, tq, ta, train, meta_data, args):
 
             total_loss += tensor.to_numpy(l)
         print(
-            "epoch %d, time used %d sec, loss: " %
-            (epoch, time.time() - start), total_loss * bs / len(q))
+            "epoch %d, time used %d sec, loss: " % (epoch, time.time() - start),
+            total_loss * bs / len(q))
 
 
 def do_eval(m, tq, ta, test, meta_data, args):
-    q, candis, ans_count = limit_encode_eval(test, meta_data['label2answer'], meta_data['idx2word'], args.q_seq_limit, args.ans_seq_limit, meta_data['idx2vec'], args.number_of_candidates)
+    q, candis, ans_count = limit_encode_eval(test, meta_data['label2answer'],
+                                             meta_data['idx2word'],
+                                             args.q_seq_limit,
+                                             args.ans_seq_limit,
+                                             meta_data['idx2vec'],
+                                             args.number_of_candidates)
     m.eval()
     candi_pool_size = candis.shape[1]
     correct = 0
@@ -138,19 +149,25 @@ if __name__ == "__main__":
     ta = tensor.random((args.bs * 2, args.ans_seq_limit, args.embed_size), dev)
 
     # model
-    m = QAModel_maxpooling(args.hid_s, q_seq=args.q_seq_limit, a_seq=args.ans_seq_limit)
+    m = QAModel_maxpooling(args.hid_s,
+                           q_seq=args.q_seq_limit,
+                           a_seq=args.ans_seq_limit)
     m.compile([tq, ta], is_train=True, use_graph=False, sequential=False)
     m.optimizer = opt.SGD(args.lr, 0.9)
 
     # get data
     train_raw, test_raw, label2answer, idx2word, idx2vec = prepare_data()
-    meta_data = { 'label2answer': label2answer, 'idx2word': idx2word, 'idx2vec': idx2vec }
+    meta_data = {
+        'label2answer': label2answer,
+        'idx2word': idx2word,
+        'idx2vec': idx2vec
+    }
 
     print("training...")
     do_train(m, tq, ta, train_raw, meta_data, args)
 
     print("Eval with train data...")
-    do_eval(m, tq, ta, random.sample(train_raw,2000), meta_data, args)
+    do_eval(m, tq, ta, random.sample(train_raw, 2000), meta_data, args)
 
     print("Eval with test data...")
     do_eval(m, tq, ta, test_raw, meta_data, args)

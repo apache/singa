@@ -85,7 +85,7 @@ class CudnnRNNHandle {
   void init_parameters_desc(cudnnTensorDescriptor_t *xDesc);
   void init_workspace(cudnnTensorDescriptor_t *xDesc);
   void init_param_mapping(cudnnTensorDescriptor_t *xDesc);
-  
+
   // linLayerID, pseudoLayer, is_bias => offset, size
   // e.g. Wx of 1st layer is at <0,0,false> => 0, data_s*hid_s
   std::map<std::tuple<int, int, bool>, std::tuple<size_t, size_t>>
@@ -110,7 +110,7 @@ Tensor GpuRNNBackwardW(const Tensor &x, const Tensor &hx, const Tensor &y,
                        CudnnRNNHandle &h);
 
 void GpuRNNSetParam(int linLayerID, int pseudoLayer, Tensor &weights,
-               Tensor &paramValues, bool is_bias, CudnnRNNHandle &h);
+                    Tensor &paramValues, bool is_bias, CudnnRNNHandle &h);
 Tensor GpuRNNGetParamCopy(int linLayerID, int pseudoLayer, Tensor &weights,
                           bool is_bias, CudnnRNNHandle &h);
 

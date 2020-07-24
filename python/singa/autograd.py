@@ -363,6 +363,7 @@ class Dummy(Operator):
     def __getattr__(self, name):
         return self.tensor.__getattribute__(name)
 
+
 class Mean(Operator):
     """
     Element-wise mean of each of the input CTensors.
@@ -1202,6 +1203,7 @@ class CrossEntropy(Operator):
 def cross_entropy(y, t):
     return CrossEntropy()(y, t)[0]
 
+
 class RankingLoss(Operator):
 
     def __init__(self, M=0.2):
@@ -1228,9 +1230,9 @@ class RankingLoss(Operator):
         # dneg =  1 if M-pos+neg > 0 else 0
         gt_zero = self.inputs[0]
         dpos_factor = singa.Tensor(list(gt_zero.shape()), gt_zero.device())
-        dpos_factor.SetFloatValue(-1.0/gt_zero.Size())
+        dpos_factor.SetFloatValue(-1.0 / gt_zero.Size())
         dneg_factor = singa.Tensor(list(gt_zero.shape()), gt_zero.device())
-        dneg_factor.SetFloatValue( 1.0/gt_zero.Size())
+        dneg_factor.SetFloatValue(1.0 / gt_zero.Size())
         dpos = singa.__mul__(gt_zero, dpos_factor)
         dneg = singa.__mul__(gt_zero, dneg_factor)
         return dpos, dneg
@@ -1281,7 +1283,7 @@ class MeanSquareError(Operator):
         loss = singa.SumAll(sqr)
         self.n = 1
         for s in x.shape():
-            self.n*=s
+            self.n *= s
         loss /= self.n
         return loss
 
@@ -4586,12 +4588,13 @@ class _RNN(Operator):
     """ RNN operation with c++ backend
     """
 
-    def __init__(self,
-                 handle,
-                 return_sequences=False,
-                #  batch_first=True,
-                 use_mask=False,
-                 seq_lengths=None):
+    def __init__(
+            self,
+            handle,
+            return_sequences=False,
+            #  batch_first=True,
+            use_mask=False,
+            seq_lengths=None):
         assert singa.USE_CUDA, "Not able to run without CUDA"
         super(_RNN, self).__init__()
         self.handle = handle
@@ -4760,7 +4763,7 @@ class CosSim(Operator):
         ad = singa.Reshape(ad, list(ad.shape()) + [1])  # b * 1
         bd = singa.Reshape(bd, list(bd.shape()) + [1])  # b * 1
         ret = singa.Reshape(ret, list(ret.shape()) + [1])  # b * 1
-        dy = singa.Reshape(dy, list(dy.shape())+[1]) # boardcast
+        dy = singa.Reshape(dy, list(dy.shape()) + [1])  # boardcast
         da = singa.__sub__(singa.__div__(b, ab),
                            singa.__div__(singa.__mul__(ret, a), ad))
         db = singa.__sub__(singa.__div__(a, ab),
