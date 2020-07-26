@@ -438,6 +438,48 @@ class Gemm(Layer):
             self.b.copy_from(parameters[self.b.name])
 
 
+class Embedding(Layer):
+    """
+    Generate an Embedding operator
+    """
+
+    def __init__(self, input_dim, output_dim, initializer="gaussian"):
+        """init the Embedding operator
+        Args:
+            input_dim (int): the number of different words in the dictionary
+            output_dim (int): the dimendion of a word after the embedding
+            initializer (str, optional): weight initializer, can be [uniform, gaussian]. Defaults to "uniform".
+        """
+        super(Embedding, self).__init__()
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.initializer = initializer
+
+    def initialize(self, x):
+        w_shape = (self.input_dim, self.output_dim)
+        self.W = Tensor(shape=w_shape,
+                        requires_grad=True,
+                        stores_grad=True,
+                        device=x.device)
+        if self.initializer == 'uniform':
+            self.W.uniform(-1., 1.)
+        else:
+            self.W.gaussian(0., 1.)
+
+    def from_pretrained(self, W, freeze=True):
+        self.set_params({self.W.name: W})
+        self.W.requires_grad = not freeze
+
+    def forward(self, x):
+        return autograd.embedding(x, self.W)
+
+    def get_params(self):
+        return {self.W.name: self.W}
+
+    def set_params(self, parameters):
+        self.W.copy_from(parameters[self.W.name])
+
+
 class Conv2d(Layer):
     """
     Generate a Conv 2d operator

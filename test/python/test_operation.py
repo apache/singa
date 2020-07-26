@@ -3308,6 +3308,29 @@ class TestPythonOperation(unittest.TestCase):
     def test_round_gpu(self):
         self.round_helper(gpu_dev)
 
+    def embedding_helper(self, dev):
+        embedding = layer.Embedding(10, 3)
+
+        X = np.array([[0,1,2,3], [9,8,7,6]])
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        dy = tensor.Tensor(shape=(2, 4, 3), device=dev)
+        dy.gaussian(0.0, 1.0)
+
+        y = embedding(x)  # PyTensor
+        dx, dW = y.creator.backward(dy.data)  # CTensor
+
+        self.check_shape(y.shape, (2, 4, 3))
+        self.check_shape(dx.shape(), (2, 4))
+        self.check_shape(dW.shape(), (10, 3))
+
+    def test_embedding_cpu(self):
+        self.embedding_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_embedding_gpu(self):
+        self.embedding_helper(gpu_dev)
 
 if __name__ == '__main__':
     unittest.main()

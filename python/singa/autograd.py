@@ -5239,6 +5239,83 @@ def rounde(x):
     return Rounde()(x)[0]
 
 
+class Embedding(Operator):
+    """
+    Init an embedding operator
+    """
+
+    def __init__(self):
+        super(Embedding, self).__init__()
+
+    def forward(self, x, w):
+        """
+        forward of embedding
+        Args:
+            x (CTensor): input tensor.
+            w (CTensor): weight tensor.
+        Returns:
+            the output CTensor.
+        """
+        x = tensor.to_numpy(tensor.from_raw_tensor(x))
+        if training:
+            self.cache = (x, w.shape())
+
+        xs = []
+        x = x.tolist()
+        for indice in x:
+            sub_xs = []
+            for idx in indice:
+                idx = int(idx)
+                tmp_tensor = singa.SliceOn(w, idx, idx + 1, 0)
+                sub_xs.append(tmp_tensor)
+            sub_xs = singa.VecTensor(sub_xs)
+            tmp_tensor = singa.ConcatOn(sub_xs, 0)
+            tmp_tensor = singa.Reshape(tmp_tensor,
+                                       [1] + list(tmp_tensor.shape()))
+            
+            xs.append(tmp_tensor)
+        xs = singa.VecTensor(xs)
+        xs = singa.ConcatOn(xs, 0)
+        return xs
+
+    def backward(self, dy):
+        """
+        backward of embedding
+        Args:
+            dy (CTensor): gradient tensor.
+        Raises:
+            the gradient tensor over input tensor.
+        """
+        x, w_shape = self.cache
+        dy_shape = dy.shape()
+        # construct the dx
+        dx = tensor.sum(tensor.from_raw_tensor(dy), axis=2)
+
+        # construct the dw
+        dws = []
+        for idx in range(w_shape[0]):
+            tmp_tensor = singa.Tensor((1, w_shape[1]), dy.device())
+            tmp_tensor.SetFloatValue(0.0)
+            dws.append(tmp_tensor)
+        dy = singa.Reshape(dy, [dy_shape[0] * dy_shape[1], dy_shape[2]])
+        x = x.reshape(-1)
+        for idx, val in enumerate(x):
+            tmp_tensor = singa.SliceOn(dy, idx, idx + 1, 0)
+            dws[val] = singa.__add__(dws[val], tmp_tensor)
+        dws = singa.VecTensor(dws)
+        return dx.data, singa.ConcatOn(dws, 0)
+
+
+def embedding(x, w):
+    """
+    Produces an embedding operator.
+    Args:
+    Returns:
+        the output Tensor.
+    """
+    return Embedding()(x, w)[0]
+
+
 ''' alias for Operator and Layers
 '''
 Operation = Operator
