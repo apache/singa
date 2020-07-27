@@ -51,12 +51,11 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
     weight_decay = 0.0002
     hdim = 1000
     vdim = 784
-    from singa import opt
     tweight = tensor.Tensor((vdim, hdim))
     tweight.gaussian(0.0, 0.1)
     tvbias = tensor.from_numpy(np.zeros(vdim, dtype=np.float32))
     thbias = tensor.from_numpy(np.zeros(hdim, dtype=np.float32))
-    opt = opt.SGD(lr=lr, momentum=0.9, weight_decay=weight_decay)
+    sgd = opt.SGD(lr=lr, momentum=0.9, weight_decay=weight_decay)
 
     print('Loading data ..................')
     train_x, valid_x = load_train_data(data_file)
@@ -102,9 +101,9 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
             tgvbias = tensor.sum(tnegdata, 0) - tensor.sum(tdata, 0)
             tghbias = tensor.sum(tneghidprob, 0) - tensor.sum(tposhidprob, 0)
 
-            opt.apply('w', tweight, tgweight)
-            opt.apply('vb', tvbias, tgvbias)
-            opt.apply('hb', thbias, tghbias)
+            sgd.apply('w', tweight, tgweight)
+            sgd.apply('vb', tvbias, tgvbias)
+            sgd.apply('hb', thbias, tghbias)
 
         print('training erroraverage = %f' %
               (tensor.to_numpy(trainerrorsum) / train_x.shape[0]))
