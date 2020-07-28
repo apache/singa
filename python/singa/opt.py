@@ -330,11 +330,7 @@ class RMSProp(Optimizer):
         epsilon (float): small value for preventing numeric error
     '''
 
-    def __init__(self,
-                 lr=0.1,
-                 rho=0.9,
-                 epsilon=1e-8,
-                 weight_decay=0):
+    def __init__(self, lr=0.1, rho=0.9, epsilon=1e-8, weight_decay=0):
         super(RMSProp, self).__init__(lr)
 
         # init weight_decay
@@ -400,13 +396,13 @@ class RMSProp(Optimizer):
         self.running_average[param_name] *= self.rho_value
 
         tmp1 = singa.Square(param_grad.data)
-        tmp2 = 1.0 - self.rho_value       
+        tmp2 = 1.0 - self.rho_value
         singa.Axpy(tmp2.data, tmp1, self.running_average[param_name].data)
 
         minus_lr = 0.0 - self.lr_value
         tmp3 = self.running_average[param_name] + self.epsilon_value
         tmp3 = singa.Sqrt(tmp3.data)
-        tmp3 = singa.__div__(param_grad.data, tmp3)   
+        tmp3 = singa.__div__(param_grad.data, tmp3)
 
         singa.Axpy(minus_lr.data, tmp3, param_value.data)
 
@@ -422,7 +418,7 @@ class RMSProp(Optimizer):
 
     def get_states(self):
         states = super().get_states()
-        states['running_average'] = self.running_average 
+        states['running_average'] = self.running_average
         return states
 
     def set_states(self, states):
@@ -440,10 +436,7 @@ class AdaGrad(Optimizer):
         epsilon (float): small number for preventing numeric error.
     '''
 
-    def __init__(self,
-                 lr=0.1,
-                 epsilon=1e-8,
-                 weight_decay=0):
+    def __init__(self, lr=0.1, epsilon=1e-8, weight_decay=0):
         super(AdaGrad, self).__init__(lr)
 
         # init weight_decay
@@ -497,13 +490,13 @@ class AdaGrad(Optimizer):
         # history = history + param_grad * param_grad
         # param_value = param_value - lr * param_grad / sqrt(history + epsilon)
 
-        tmp = self.history[param_name].data 
+        tmp = self.history[param_name].data
         tmp += singa.Square(param_grad.data)
 
         minus_lr = 0.0 - self.lr_value
         tmp = self.history[param_name] + self.epsilon_value
         tmp = singa.Sqrt(tmp.data)
-        tmp = singa.__div__(param_grad.data, tmp)   
+        tmp = singa.__div__(param_grad.data, tmp)
         singa.Axpy(minus_lr.data, tmp, param_value.data)
 
     def step(self):
@@ -599,7 +592,8 @@ class Adam(Optimizer):
                                                        param_value.shape,
                                                        param_grad.shape)
         self.device_check(param_value, self.step_counter, self.lr_value,
-                        self.beta_1_value, self.beta_2_value, self.epsilon_value, self.decay_value)
+                          self.beta_1_value, self.beta_2_value,
+                          self.epsilon_value, self.decay_value)
 
         # if self.decay_value != 0:
         if self.weight_decay.init_value != 0:
@@ -613,15 +607,15 @@ class Adam(Optimizer):
             param_value.device.EnableGraph(flag)
 
         # overall steps
-        # m := beta_1 * m + (1 - beta_1) * grad 
+        # m := beta_1 * m + (1 - beta_1) * grad
         # v := beta_2 * v + (1 - beta_2) * grad * grad
-        # m_norm = m / (1 - beta_1 ^ step) 
-        # v_norm = v / (1 - beta_2 ^ step) 
+        # m_norm = m / (1 - beta_1 ^ step)
+        # v_norm = v / (1 - beta_2 ^ step)
         # param := param - (lr * m_norm) / ( sqrt(v_norm) + epsilon) )
 
         step = self.step_counter + 1.0
 
-        # m := beta_1 * m + (1 - beta_1) * grad 
+        # m := beta_1 * m + (1 - beta_1) * grad
         tmp = 1.0 - self.beta_1_value
         self.m[param_name] *= self.beta_1_value
         singa.Axpy(tmp.data, param_grad.data, self.m[param_name].data)
@@ -629,7 +623,8 @@ class Adam(Optimizer):
         # v := beta_2 * v + (1 - beta_2) * grad * grad
         tmp = 1.0 - self.beta_2_value
         self.v[param_name] *= self.beta_2_value
-        singa.Axpy(tmp.data, singa.Square(param_grad.data), self.v[param_name].data)    
+        singa.Axpy(tmp.data, singa.Square(param_grad.data),
+                   self.v[param_name].data)
 
         # m_norm = m / (1 - beta_1 ^ step)
         tmp = tensor.pow(self.beta_1_value, step)
@@ -647,7 +642,6 @@ class Adam(Optimizer):
 
         minus_lr = 0.0 - self.lr_value
         singa.Axpy(minus_lr.data, tmp.data, param_value.data)
-        
 
     def step(self):
         # increment step counter, lr and moment

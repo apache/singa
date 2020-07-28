@@ -1328,6 +1328,18 @@ class ReLU(Layer):
         return autograd.relu(x)
 
 
+class Sigmoid(Layer):
+    """
+    Generate a ReLU operator
+    """
+
+    def __init__(self):
+        super(Sigmoid, self).__init__()
+
+    def forward(self, x):
+        return autograd.sigmoid(x)
+
+
 class Add(Layer):
     """
     Generate a Add operator
@@ -1363,6 +1375,30 @@ class SoftMaxCrossEntropy(Layer):
 
     def forward(self, x, t):
         return autograd.softmax_cross_entropy(x, t)
+
+
+class MeanSquareError(Layer):
+    """
+    Generate a MeanSquareError operator
+    """
+
+    def __init__(self):
+        super(MeanSquareError, self).__init__()
+
+    def forward(self, x, t):
+        return autograd.mse_loss(x, t)
+
+
+class CrossEntropy(Layer):
+    """
+    Generate a CrossEntropy operator
+    """
+
+    def __init__(self):
+        super(CrossEntropy, self).__init__()
+
+    def forward(self, x, t):
+        return autograd.cross_entropy(x, t)
 
 
 class Dropout(Layer):
