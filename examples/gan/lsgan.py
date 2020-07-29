@@ -18,7 +18,6 @@
 #
 
 from singa import device
-from singa import layer
 from singa import opt
 from singa import tensor
 
@@ -74,7 +73,8 @@ class LSGAN():
         dev.SetRandSeed(0)
         np.random.seed(0)
 
-        sgd = opt.SGD(lr=self.learning_rate, momentum=0.9, weight_decay=1e-5)
+        #sgd = opt.SGD(lr=self.learning_rate, momentum=0.9, weight_decay=1e-5)
+        sgd = opt.Adam(lr=self.learning_rate)
 
         noise = tensor.Tensor((self.batch_size, self.noise_size), dev,
                               tensor.float32)
@@ -82,6 +82,7 @@ class LSGAN():
                                     tensor.float32)
         real_labels = tensor.Tensor((self.batch_size, 1), dev, tensor.float32)
         fake_labels = tensor.Tensor((self.batch_size, 1), dev, tensor.float32)
+        substrahend_labels = tensor.Tensor((self.batch_size, 1), dev, tensor.float32)
 
         # attached model to graph
         self.model.set_optimizer(sgd)
@@ -91,21 +92,23 @@ class LSGAN():
                            sequential=True)
 
         real_labels.set_value(1.0)
-        fake_labels.set_value(0.0)
+        fake_labels.set_value(-1.0)
+        substrahend_labels.set_value(0.0)
 
         for iteration in range(self.iterations):
-            self.model.training = True
 
             for d_step in range(self.d_steps):
                 idx = np.random.randint(0, train_data.shape[0], self.batch_size)
                 real_images.copy_from_numpy(train_data[idx])
 
-                noise.uniform(-1, 1)
+                self.model.train()
 
-                fake_images = self.model.forward(noise)
-
+                # Training the Discriminative Net
                 _, d_loss_real = self.model.train_one_batch_dis(
                     real_images, real_labels)
+
+                noise.uniform(-1, 1)
+                fake_images = self.model.forward_gen(noise)
                 _, d_loss_fake = self.model.train_one_batch_dis(
                     fake_images, fake_labels)
 
@@ -113,16 +116,15 @@ class LSGAN():
                     d_loss_fake)[0]
 
             for g_step in range(self.g_steps):
-
+                # Training the Generative Net
                 noise.uniform(-1, 1)
-
-                _, g_loss_tensor = self.model.train_one_batch_gen(
-                    noise, real_labels)
+                _, g_loss_tensor = self.model.train_one_batch(
+                    noise, substrahend_labels)
 
                 g_loss = tensor.to_numpy(g_loss_tensor)[0]
 
             if iteration % self.interval == 0:
-                self.model.training = False
+                self.model.eval()
                 self.save_image(iteration)
                 print_log(' The {} iteration, G_LOSS: {}, D_LOSS: {}'.format(
                     iteration, g_loss, d_loss))
@@ -134,7 +136,7 @@ class LSGAN():
             self.demo_noise = tensor.Tensor(
                 (demo_col * demo_row, self.noise_size), dev, tensor.float32)
         self.demo_noise.uniform(-1, 1)
-        gen_imgs = self.model.forward(self.demo_noise)
+        gen_imgs = self.model.forward_gen(self.demo_noise)
         gen_imgs = tensor.to_numpy(gen_imgs)
         show_imgs = np.reshape(
             gen_imgs, (gen_imgs.shape[0], self.rows, self.cols, self.channels))
@@ -158,11 +160,9 @@ if __name__ == '__main__':
     if args.use_gpu:
         print('Using GPU')
         dev = device.create_cuda_gpu()
-        layer.engine = 'cudnn'
     else:
         print('Using CPU')
         dev = device.get_default_device()
-        layer.engine = 'singacpp'
 
     if not os.path.exists('lsgan_images/'):
         os.makedirs('lsgan_images/')
@@ -174,7 +174,7 @@ if __name__ == '__main__':
     hidden_size = 128
     batch = 128
     interval = 1000
-    learning_rate = 0.00005
+    learning_rate = 0.0005
     iterations = 1000000
     d_steps = 3
     g_steps = 1

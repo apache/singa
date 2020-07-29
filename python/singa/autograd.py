@@ -1155,16 +1155,17 @@ def sum(*l):
     return Sum()(*l)[0]
 
 
-class CrossEntropy(Operator):
+class BinaryCrossEntropy(Operator):
 
-    def __init__(self):
-        super(CrossEntropy, self).__init__()
+    def __init__(self, t):
+        super(BinaryCrossEntropy, self).__init__()
+        self.t = t.data
 
     """
     Calculte negative log likelihood loss for a batch of training data.
     """
 
-    def forward(self, x, t):
+    def forward(self, x):
         """
         Args:
             x (CTensor): 1d or 2d tensor, the prediction data(output)
@@ -1173,11 +1174,14 @@ class CrossEntropy(Operator):
         Returns:
             loss (CTensor): scalar.
         """
-        loss = singa.SumAll(singa.__mul__(t, singa.Log(x)))
+        posx = singa.AddFloat(x, 0.0001)
+        loss = singa.SumAll(singa.__mul__(self.t, singa.Log(posx)))
+        negt = singa.AddFloat(singa.MultFloat(self.t,-1.0), 1.0)
+        negx = singa.AddFloat(singa.MultFloat(x,-1.0), 1.0001)
+        negLoss = singa.SumAll(singa.__mul__(negt, singa.Log(negx)))
+        loss += negLoss
         loss /= -x.shape()[0]
-        self.x = x
-        self.t = t
-        self.input = (x, t)
+        self.x = singa.AddFloat(x, 0.0001)
         return loss
 
     def backward(self, dy=1.0):
@@ -1190,18 +1194,76 @@ class CrossEntropy(Operator):
                           of current network. note that this is true for
                           dy = 1.0
         """
+
         dx = singa.__div__(self.t, self.x)
+        negt = singa.AddFloat(self.t, -1.0)
+        negx = singa.AddFloat(self.x, -0.9999)
+        dx -= singa.__div__(negt, negx)          
         dx *= float(-1.0 / self.x.shape()[0])
         if isinstance(dy, float):
             # dtype of dy: float
             dx *= dy
-            return dx, None
+            return dx
         elif isinstance(dy, CTensor):
             pass  # TODO, broadcast elementwise multiply seems not support
 
 
-def cross_entropy(y, t):
-    return CrossEntropy()(y, t)[0]
+def binary_cross_entropy(x, t):
+    return BinaryCrossEntropy(t)(x)[0]
+
+
+class CrossEntropy(Operator):
+
+    def __init__(self, t):
+        super(CrossEntropy, self).__init__()
+        self.t = t.data
+
+    """
+    Calculte negative log likelihood loss for a batch of training data.
+    """
+
+    def forward(self, x):
+        """
+        Args:
+            x (CTensor): 1d or 2d tensor, the prediction data(output)
+                         of current network.
+            t (CTensor): 1d or 2d tensor, the target data for training.
+        Returns:
+            loss (CTensor): scalar.
+        """
+        loss = singa.SumAll(singa.__mul__(self.t, singa.Log(x)))
+        loss /= -x.shape()[0]
+        self.x = x
+        return loss
+
+    def backward(self, dy=1.0):
+        """
+        Args:
+            dy (float or CTensor): scalar, accumulate gradient from outside
+                                of current network, usually equal to 1.0
+        Returns:
+            dx (CTensor): data for the dL /dx, L is the loss, x is the output
+                          of current network. note that this is true for
+                          dy = 1.0
+        """
+
+        dx = singa.__div__(self.t, self.x)       
+        dx *= float(-1.0 / self.x.shape()[0])
+        if isinstance(dy, float):
+            # dtype of dy: float
+            dx *= dy
+            return dx
+        elif isinstance(dy, CTensor):
+            pass  # TODO, broadcast elementwise multiply seems not support
+
+
+def cross_entropy(x, t):
+    assert x.ndim() == 2, "1st arg required 2d tensor. got shape: " + str(
+        x.shape)
+    assert t.ndim() <= 2, "2nd arg required <=2d tensor. got shape: " + str(
+        t.shape)
+    # x is the logits and t is the ground truth.
+    return CrossEntropy(t)(x)[0]
 
 
 class QALSTMLoss(Operator):
@@ -1272,11 +1334,12 @@ def softmax_cross_entropy(x, t):
 
 class MeanSquareError(Operator):
 
-    def __init__(self):
+    def __init__(self, t):
         super(MeanSquareError, self).__init__()
+        self.t = t.data
 
-    def forward(self, x, t):
-        self.err = singa.__sub__(x, t)
+    def forward(self, x):
+        self.err = singa.__sub__(x, self.t)
         sqr = singa.Square(self.err)
         loss = singa.SumAll(sqr)
         loss /= (x.shape()[0] * 2)
@@ -1286,7 +1349,7 @@ class MeanSquareError(Operator):
         dx = self.err
         dx *= float(1 / self.err.shape()[0])
         dx *= dy
-        return dx, None
+        return dx
 
 
 def mse_loss(x, t):
@@ -1296,7 +1359,7 @@ def mse_loss(x, t):
                                                                        t.shape)
     assert t.ndim() == 2, "2d input required, input shapes: %s, %s" % (x.shape,
                                                                        t.shape)
-    return MeanSquareError()(x, t)[0]
+    return MeanSquareError(t)(x)[0]
 
 
 def ctensor2numpy(x):

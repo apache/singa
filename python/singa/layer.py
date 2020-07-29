@@ -1377,6 +1377,18 @@ class SoftMaxCrossEntropy(Layer):
         return autograd.softmax_cross_entropy(x, t)
 
 
+class SoftMax(Layer):
+    """
+    Generate a SoftMax operator
+    """
+
+    def __init__(self):
+        super(SoftMax, self).__init__()
+
+    def forward(self, x):
+        return autograd.softmax(x)
+
+
 class MeanSquareError(Layer):
     """
     Generate a MeanSquareError operator
@@ -1399,6 +1411,18 @@ class CrossEntropy(Layer):
 
     def forward(self, x, t):
         return autograd.cross_entropy(x, t)
+
+
+class BinaryCrossEntropy(Layer):
+    """
+    Generate a BinaryCrossEntropy operator
+    """
+
+    def __init__(self):
+        super(BinaryCrossEntropy, self).__init__()
+
+    def forward(self, x, t):
+        return autograd.binary_cross_entropy(x, t)
 
 
 class Dropout(Layer):

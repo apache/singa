@@ -505,7 +505,7 @@ class TestPythonOperation(unittest.TestCase):
         t.to_device(dev)
 
         loss = autograd.mse_loss(x, t)
-        dx = loss.creator.backward()[0]
+        dx = loss.creator.backward()
 
         loss_np = tensor.to_numpy(loss)[0]
         self.assertAlmostEqual(loss_np, 0.0366666, places=4)

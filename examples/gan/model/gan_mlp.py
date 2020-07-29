@@ -19,6 +19,7 @@
 
 from singa import layer
 from singa import model
+from singa import autograd
 
 
 class GAN_MLP(model.Model):
@@ -30,7 +31,7 @@ class GAN_MLP(model.Model):
         self.hidden_size = hidden_size
 
         # Generative Net
-        self.gen_net_fc_0 = layer.Linear(self.noise_size)
+        self.gen_net_fc_0 = layer.Linear(self.hidden_size)
         self.gen_net_relu_0 = layer.ReLU()
         self.gen_net_fc_1 = layer.Linear(self.feature_size)
         self.gen_net_sigmoid_1 = layer.Sigmoid()
@@ -39,16 +40,13 @@ class GAN_MLP(model.Model):
         self.dis_net_fc_0 = layer.Linear(self.hidden_size)
         self.dis_net_relu_0 = layer.ReLU()
         self.dis_net_fc_1 = layer.Linear(1)
-        self.dis_net_sigmoid_1 = layer.Sigmoid()
-
-        self.cross_entropy = layer.CrossEntropy()
+        self.dis_net_sigmoid_1= layer.Sigmoid()
+        self.binary_cross_entropy = layer.BinaryCrossEntropy()
 
     def forward(self, x):
-        # Generative Net
-        y = self.gen_net_fc_0(x)
-        y = self.gen_net_relu_0(y)
-        y = self.gen_net_fc_1(y)
-        y = self.gen_net_sigmoid_1(y)
+        # Cascaded Net
+        y = self.forward_gen(x)
+        y = self.forward_dis(y)
         return y
 
     def forward_dis(self, x):
@@ -59,27 +57,33 @@ class GAN_MLP(model.Model):
         y = self.dis_net_sigmoid_1(y)
         return y
 
-    def train_one_batch_gen(self, x, y):
+    def forward_gen(self, x):
+        # Generative Net
+        y = self.gen_net_fc_0(x)
+        y = self.gen_net_relu_0(y)
+        y = self.gen_net_fc_1(y)
+        y = self.gen_net_sigmoid_1(y)
+        return y
+
+    def train_one_batch(self, x, y):
         # Training the Generative Net
         out = self.forward(x)
-        out = self.forward_dis(out)
-        loss = self.cross_entropy(out, y)
-        from singa import autograd
+        loss = self.binary_cross_entropy(out, y)
         # Only update the Generative Net
         for p, g in autograd.backward(loss):
             if "gen_net" in p.name:
-                if p.name is None:
-                    p.name = id(p)
                 self.optimizer.apply(p.name, p, g)
-
         return out, loss
 
     def train_one_batch_dis(self, x, y):
         # Training the Discriminative Net
         out = self.forward_dis(x)
-        loss = self.cross_entropy(out, y)
+        loss = self.binary_cross_entropy(out, y)
+        # Only update the Discriminative Net
+        for p, g in autograd.backward(loss):
+            if "dis_net" in p.name:
+                self.optimizer.apply(p.name, p, g)
         self.optimizer(loss)
-
         return out, loss
 
     def set_optimizer(self, optimizer):

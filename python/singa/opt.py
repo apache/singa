@@ -116,7 +116,13 @@ class Optimizer(object):
         self.lr_value.copy_from(lr_value)
 
     def apply(self, param_name, param_value, param_grad):
-        """ update the pvalue inplace using pgrad, lr_value and mom_value
+        """Performs a single optimization step.
+
+        Args:
+                param_name(String): the name of the param
+                param_value(Tensor): param values to be update in-place
+                grad(Tensor): param gradients; the values may be updated
+                        in this function; cannot use it anymore
         """
         raise NotImplementedError
 
@@ -261,7 +267,8 @@ class SGD(Optimizer):
         """Performs a single optimization step.
 
         Args:
-                param(Tensor): param values to be update in-place
+                param_name(String): the name of the param
+                param_value(Tensor): param values to be update in-place
                 grad(Tensor): param gradients; the values may be updated
                         in this function; cannot use it anymore
         """
@@ -370,7 +377,8 @@ class RMSProp(Optimizer):
         """Performs a single optimization step.
 
         Args:
-                param(Tensor): param values to be update in-place
+                param_name(String): the name of the param
+                param_value(Tensor): param values to be update in-place
                 grad(Tensor): param gradients; the values may be updated
                         in this function; cannot use it anymore
         """
@@ -467,7 +475,8 @@ class AdaGrad(Optimizer):
         """Performs a single optimization step.
 
         Args:
-                param(Tensor): param values to be update in-place
+                param_name(String): the name of the param
+                param_value(Tensor): param values to be update in-place
                 grad(Tensor): param gradients; the values may be updated
                         in this function; cannot use it anymore
         """
@@ -584,7 +593,8 @@ class Adam(Optimizer):
         """Performs a single optimization step.
 
         Args:
-                param(Tensor): param values to be update in-place
+                param_name(String): the name of the param
+                param_value(Tensor): param values to be update in-place
                 grad(Tensor): param gradients; the values may be updated
                         in this function; cannot use it anymore
         """
