@@ -1360,10 +1360,6 @@ class MeanSquareError(Operator):
 def mse_loss(x, t):
     assert x.shape == t.shape, "input and target shape different: %s, %s" % (
         x.shape, t.shape)
-    assert x.ndim() == 2, "2d input required, input shapes: %s, %s" % (x.shape,
-                                                                       t.shape)
-    assert t.ndim() == 2, "2d input required, input shapes: %s, %s" % (x.shape,
-                                                                       t.shape)
     return MeanSquareError(t)(x)[0]
 
 

@@ -176,7 +176,7 @@ if __name__ == '__main__':
     interval = 1000
     learning_rate = 0.0005
     iterations = 1000000
-    d_steps = 3
+    d_steps = 1
     g_steps = 1
     dataset_filepath = 'mnist.pkl.gz'
     file_dir = 'lsgan_images/'
