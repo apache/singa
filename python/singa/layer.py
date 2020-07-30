@@ -1328,6 +1328,18 @@ class ReLU(Layer):
         return autograd.relu(x)
 
 
+class Sigmoid(Layer):
+    """
+    Generate a ReLU operator
+    """
+
+    def __init__(self):
+        super(Sigmoid, self).__init__()
+
+    def forward(self, x):
+        return autograd.sigmoid(x)
+
+
 class Add(Layer):
     """
     Generate a Add operator
@@ -1363,6 +1375,54 @@ class SoftMaxCrossEntropy(Layer):
 
     def forward(self, x, t):
         return autograd.softmax_cross_entropy(x, t)
+
+
+class SoftMax(Layer):
+    """
+    Generate a SoftMax operator
+    """
+
+    def __init__(self):
+        super(SoftMax, self).__init__()
+
+    def forward(self, x):
+        return autograd.softmax(x)
+
+
+class MeanSquareError(Layer):
+    """
+    Generate a MeanSquareError operator
+    """
+
+    def __init__(self):
+        super(MeanSquareError, self).__init__()
+
+    def forward(self, x, t):
+        return autograd.mse_loss(x, t)
+
+
+class CrossEntropy(Layer):
+    """
+    Generate a CrossEntropy operator
+    """
+
+    def __init__(self):
+        super(CrossEntropy, self).__init__()
+
+    def forward(self, x, t):
+        return autograd.cross_entropy(x, t)
+
+
+class BinaryCrossEntropy(Layer):
+    """
+    Generate a BinaryCrossEntropy operator
+    """
+
+    def __init__(self):
+        super(BinaryCrossEntropy, self).__init__()
+
+    def forward(self, x, t):
+        return autograd.binary_cross_entropy(x, t)
 
 
 class Dropout(Layer):

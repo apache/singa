@@ -2027,7 +2027,7 @@ class TestPythonOnnx(unittest.TestCase):
         y = MyLayer()(x)
         y_t = tensor.Tensor(shape=(2, 1), device=dev)
         y_t.gaussian(0.0, 1.0)
-        loss = autograd.MeanSquareError()(y, y_t)[0]
+        loss = autograd.MeanSquareError(y_t)(y)[0]
         # backward
         sgd = opt.SGD(lr=0.01)
         for p, gp in autograd.backward(loss):
@@ -2044,7 +2044,7 @@ class TestPythonOnnx(unittest.TestCase):
         # forward
         y_o = sg_ir.run([x])[0]
         # backward
-        loss = autograd.MeanSquareError()(y_o, y_t)[0]
+        loss = autograd.MeanSquareError(y_t)(y_o)[0]
         sgd = opt.SGD(lr=0.01)
         for p, gp in autograd.backward(loss):
             sgd.apply(p.name, p, gp)
@@ -2076,7 +2076,7 @@ class TestPythonOnnx(unittest.TestCase):
         y = MyLayer()(x)
         y_t = tensor.Tensor(shape=(2, 4), device=dev)
         y_t.gaussian(0.0, 1.0)
-        loss = autograd.MeanSquareError()(y, y_t)[0]
+        loss = autograd.MeanSquareError(y_t)(y)[0]
         # backward
         sgd = opt.SGD(lr=0.01)
         for p, gp in autograd.backward(loss):
@@ -2110,7 +2110,7 @@ class TestPythonOnnx(unittest.TestCase):
         # backward
         y_ot = tensor.Tensor(shape=(2, 1), device=dev)
         y_ot.gaussian(0.0, 1.0)
-        loss = autograd.MeanSquareError()(y_o, y_ot)[0]
+        loss = autograd.MeanSquareError(y_ot)(y_o)[0]
         sgd = opt.SGD(lr=0.01)
         for p, gp in autograd.backward(loss):
             sgd.apply(p.name, p, gp)

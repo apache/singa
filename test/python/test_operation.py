@@ -571,7 +571,7 @@ class TestPythonOperation(unittest.TestCase):
         t.to_device(dev)
 
         loss = autograd.mse_loss(x, t)
-        dx = loss.creator.backward()[0]
+        dx = loss.creator.backward()
 
         loss_np = tensor.to_numpy(loss)[0]
         self.assertAlmostEqual(loss_np, 0.0366666, places=4)
@@ -3432,7 +3432,7 @@ class TestPythonOperation(unittest.TestCase):
         sy = tensor.from_numpy(y, dev)
         starget = tensor.from_numpy(tar, dev)
         sloss = autograd.mse_loss(sy, starget)
-        sgrad = sloss.creator.backward()[0]
+        sgrad = sloss.creator.backward()
         # get np value result
         np_loss = np.mean(np.square(tar - y))
         np_grad = -2 * (tar - y) / np.prod(tar.shape)

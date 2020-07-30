@@ -116,7 +116,13 @@ class Optimizer(object):
         self.lr_value.copy_from(lr_value)
 
     def apply(self, param_name, param_value, param_grad):
-        """ update the pvalue inplace using pgrad, lr_value and mom_value
+        """Performs a single optimization step.
+
+        Args:
+                param_name(String): the name of the param
+                param_value(Tensor): param values to be update in-place
+                grad(Tensor): param gradients; the values may be updated
+                        in this function; cannot use it anymore
         """
         raise NotImplementedError
 
@@ -135,6 +141,33 @@ class Optimizer(object):
         if param.name is None:
             param.name = id(param)
         self.apply(param.name, param, grad)
+
+    def device_check(self, *inputs):
+        flag = inputs[0].device.graph_enabled()
+        inputs[0].device.EnableGraph(False)
+        x_device = inputs[0].device
+        x_dev_id = x_device.id()
+        for var in inputs:
+            if var.device.id() != x_dev_id:
+                var.to_device(x_device)
+        inputs[0].device.EnableGraph(flag)
+
+    @deprecated(
+        reason=
+        "backward_and_update is deprecated, use __call__() to do update, refer to __call__ for more details."
+    )
+    def backward_and_update(self, loss):
+        """Performs backward propagation from the loss and parameter update.
+
+        From the loss, it performs backward propagation to get the gradients
+        and do the parameter update.
+
+        Args:
+                loss(Tensor): loss is the objective function of the deep learning model
+                optimization, e.g. for classification problem it can be the output of the
+                softmax_cross_entropy function.
+        """
+        self.__call__(loss)
 
 
 class SGD(Optimizer):
@@ -234,7 +267,8 @@ class SGD(Optimizer):
         """Performs a single optimization step.
 
         Args:
-                param(Tensor): param values to be update in-place
+                param_name(String): the name of the param
+                param_value(Tensor): param values to be update in-place
                 grad(Tensor): param gradients; the values may be updated
                         in this function; cannot use it anymore
         """
@@ -292,32 +326,355 @@ class SGD(Optimizer):
             self.moments = states['moments']
             self.mom_value = self.momentum(self.step_counter)
 
-    def device_check(self, *inputs):
-        flag = inputs[0].device.graph_enabled()
-        inputs[0].device.EnableGraph(False)
-        x_device = inputs[0].device
-        x_dev_id = x_device.id()
-        for var in inputs:
-            if var.device.id() != x_dev_id:
-                var.to_device(x_device)
-        inputs[0].device.EnableGraph(flag)
 
-    @deprecated(
-        reason=
-        "backward_and_update is deprecated, use __call__() to do update, refer to __call__ for more details."
-    )
-    def backward_and_update(self, loss):
-        """Performs backward propagation from the loss and parameter update.
+class RMSProp(Optimizer):
+    '''RMSProp optimizer.
 
-        From the loss, it performs backward propagation to get the gradients
-        and do the parameter update.
+    See the base Optimizer for all constructor args.
+
+    Args:
+        rho (float): float within [0, 1]
+        epsilon (float): small value for preventing numeric error
+    '''
+
+    def __init__(self, lr=0.1, rho=0.9, epsilon=1e-8, weight_decay=0):
+        super(RMSProp, self).__init__(lr)
+
+        # init weight_decay
+        if type(weight_decay) == float or type(weight_decay) == int:
+            if weight_decay < 0.0:
+                raise ValueError(
+                    "Invalid weight_decay value: {}".format(weight_decay))
+            self.weight_decay = Constant(weight_decay)
+        elif isinstance(weight_decay, DecayScheduler):
+            self.weight_decay = weight_decay
+        else:
+            raise TypeError("Wrong weight_decay type")
+        self.decay_value = self.weight_decay(self.step_counter)
+
+        # init rho
+        if type(rho) == float or type(rho) == int:
+            self.rho = Constant(rho)
+        elif isinstance(rho, DecayScheduler):
+            self.rho = rho
+        else:
+            raise TypeError("Wrong rho type")
+        self.rho_value = self.rho(self.step_counter)
+
+        # init epsilon
+        if type(epsilon) == float or type(epsilon) == int:
+            self.epsilon = Constant(epsilon)
+        elif isinstance(rho, DecayScheduler):
+            self.epsilon = epsilon
+        else:
+            raise TypeError("Wrong epsilon type")
+        self.epsilon_value = self.epsilon(self.step_counter)
+
+        # init running average
+        self.running_average = dict()
+
+    def apply(self, param_name, param_value, param_grad):
+        """Performs a single optimization step.
 
         Args:
-                loss(Tensor): loss is the objective function of the deep learning model
-                optimization, e.g. for classification problem it can be the output of the
-                softmax_cross_entropy function.
+                param_name(String): the name of the param
+                param_value(Tensor): param values to be update in-place
+                grad(Tensor): param gradients; the values may be updated
+                        in this function; cannot use it anymore
         """
-        super(SGD, self).__call__(loss)
+        assert param_value.shape == param_grad.shape, ("shape mismatch",
+                                                       param_value.shape,
+                                                       param_grad.shape)
+        self.device_check(param_value, self.step_counter, self.lr_value,
+                          self.rho_value, self.epsilon_value, self.decay_value)
+
+        # if self.decay_value != 0:
+        if self.weight_decay.init_value != 0:
+            singa.Axpy(self.decay_value.data, param_value.data, param_grad.data)
+
+        if param_name not in self.running_average:
+            flag = param_value.device.graph_enabled()
+            param_value.device.EnableGraph(False)
+            self.running_average[param_name] = tensor.zeros_like(param_value)
+            param_value.device.EnableGraph(flag)
+
+        # running_average = running_average * rho + param_grad * param_grad * (1 - rho)
+        # param_value = param_value - lr * param_grad / sqrt(running_average + epsilon)
+
+        self.running_average[param_name] *= self.rho_value
+
+        tmp1 = singa.Square(param_grad.data)
+        tmp2 = 1.0 - self.rho_value
+        singa.Axpy(tmp2.data, tmp1, self.running_average[param_name].data)
+
+        minus_lr = 0.0 - self.lr_value
+        tmp3 = self.running_average[param_name] + self.epsilon_value
+        tmp3 = singa.Sqrt(tmp3.data)
+        tmp3 = singa.__div__(param_grad.data, tmp3)
+
+        singa.Axpy(minus_lr.data, tmp3, param_value.data)
+
+    def step(self):
+        # increment step counter, lr and moment
+        super().step()
+        decay_value = self.weight_decay(self.step_counter)
+        rho_value = self.rho(self.step_counter)
+        epsilon_value = self.epsilon(self.step_counter)
+        self.decay_value.copy_from(decay_value)
+        self.rho_value.copy_from(rho_value)
+        self.epsilon_value.copy_from(epsilon_value)
+
+    def get_states(self):
+        states = super().get_states()
+        states['running_average'] = self.running_average
+        return states
+
+    def set_states(self, states):
+        super().set_states(states)
+        if 'running_average' in states:
+            self.running_average = states['running_average']
+
+
+class AdaGrad(Optimizer):
+    '''AdaGrad optimizer.
+
+    See the base Optimizer for all constructor args.
+
+    Args:
+        epsilon (float): small number for preventing numeric error.
+    '''
+
+    def __init__(self, lr=0.1, epsilon=1e-8, weight_decay=0):
+        super(AdaGrad, self).__init__(lr)
+
+        # init weight_decay
+        if type(weight_decay) == float or type(weight_decay) == int:
+            if weight_decay < 0.0:
+                raise ValueError(
+                    "Invalid weight_decay value: {}".format(weight_decay))
+            self.weight_decay = Constant(weight_decay)
+        elif isinstance(weight_decay, DecayScheduler):
+            self.weight_decay = weight_decay
+        else:
+            raise TypeError("Wrong weight_decay type")
+        self.decay_value = self.weight_decay(self.step_counter)
+
+        # init epsilon
+        if type(epsilon) == float or type(epsilon) == int:
+            self.epsilon = Constant(epsilon)
+        elif isinstance(epsilon, DecayScheduler):
+            self.epsilon = epsilon
+        else:
+            raise TypeError("Wrong epsilon type")
+        self.epsilon_value = self.epsilon(self.step_counter)
+
+        # init history
+        self.history = dict()
+
+    def apply(self, param_name, param_value, param_grad):
+        """Performs a single optimization step.
+
+        Args:
+                param_name(String): the name of the param
+                param_value(Tensor): param values to be update in-place
+                grad(Tensor): param gradients; the values may be updated
+                        in this function; cannot use it anymore
+        """
+        assert param_value.shape == param_grad.shape, ("shape mismatch",
+                                                       param_value.shape,
+                                                       param_grad.shape)
+        self.device_check(param_value, self.step_counter, self.lr_value,
+                          self.epsilon_value, self.decay_value)
+
+        # if self.decay_value != 0:
+        if self.weight_decay.init_value != 0:
+            singa.Axpy(self.decay_value.data, param_value.data, param_grad.data)
+
+        if param_name not in self.history:
+            flag = param_value.device.graph_enabled()
+            param_value.device.EnableGraph(False)
+            self.history[param_name] = tensor.zeros_like(param_value)
+            param_value.device.EnableGraph(flag)
+
+        # history = history + param_grad * param_grad
+        # param_value = param_value - lr * param_grad / sqrt(history + epsilon)
+
+        tmp = self.history[param_name].data
+        tmp += singa.Square(param_grad.data)
+
+        minus_lr = 0.0 - self.lr_value
+        tmp = self.history[param_name] + self.epsilon_value
+        tmp = singa.Sqrt(tmp.data)
+        tmp = singa.__div__(param_grad.data, tmp)
+        singa.Axpy(minus_lr.data, tmp, param_value.data)
+
+    def step(self):
+        # increment step counter, lr and moment
+        super().step()
+        decay_value = self.weight_decay(self.step_counter)
+        epsilon_value = self.epsilon(self.step_counter)
+        self.decay_value.copy_from(decay_value)
+        self.epsilon_value.copy_from(epsilon_value)
+
+    def get_states(self):
+        states = super().get_states()
+        states['history'] = self.history  # a dict for 1st order moments tensors
+        return states
+
+    def set_states(self, states):
+        super().set_states(states)
+        if 'history' in states:
+            self.history = states['history']
+
+
+class Adam(Optimizer):
+    '''Adam optimizer.
+
+    See the base Optimizer for all constructor args.
+
+    Args:
+        beta_1(float): coefficient of momentum
+        beta_2(float): coefficient of aggregated squared gradient
+        epsilon (float): small value for preventing numeric error
+    '''
+
+    def __init__(self,
+                 lr=0.1,
+                 beta_1=0.9,
+                 beta_2=0.999,
+                 epsilon=1e-8,
+                 weight_decay=0):
+        super(Adam, self).__init__(lr)
+
+        # init weight_decay
+        if type(weight_decay) == float or type(weight_decay) == int:
+            if weight_decay < 0.0:
+                raise ValueError(
+                    "Invalid weight_decay value: {}".format(weight_decay))
+            self.weight_decay = Constant(weight_decay)
+        elif isinstance(weight_decay, DecayScheduler):
+            self.weight_decay = weight_decay
+        else:
+            raise TypeError("Wrong weight_decay type")
+        self.decay_value = self.weight_decay(self.step_counter)
+
+        # init beta_1
+        if type(beta_1) == float or type(beta_1) == int:
+            self.beta_1 = Constant(beta_1)
+        elif isinstance(beta_1, DecayScheduler):
+            self.beta_1 = beta_1
+        else:
+            raise TypeError("Wrong beta_1 type")
+        self.beta_1_value = self.beta_1(self.step_counter)
+
+        # init beta_2
+        if type(beta_2) == float or type(beta_2) == int:
+            self.beta_2 = Constant(beta_2)
+        elif isinstance(beta_2, DecayScheduler):
+            self.beta_2 = beta_2
+        else:
+            raise TypeError("Wrong beta_2 type")
+        self.beta_2_value = self.beta_2(self.step_counter)
+
+        # init epsilon
+        if type(epsilon) == float or type(epsilon) == int:
+            self.epsilon = Constant(epsilon)
+        elif isinstance(epsilon, DecayScheduler):
+            self.epsilon = epsilon
+        else:
+            raise TypeError("Wrong epsilon type")
+        self.epsilon_value = self.epsilon(self.step_counter)
+
+        # init m and v
+        self.m = dict()
+        self.v = dict()
+
+    def apply(self, param_name, param_value, param_grad):
+        """Performs a single optimization step.
+
+        Args:
+                param_name(String): the name of the param
+                param_value(Tensor): param values to be update in-place
+                grad(Tensor): param gradients; the values may be updated
+                        in this function; cannot use it anymore
+        """
+        assert param_value.shape == param_grad.shape, ("shape mismatch",
+                                                       param_value.shape,
+                                                       param_grad.shape)
+        self.device_check(param_value, self.step_counter, self.lr_value,
+                          self.beta_1_value, self.beta_2_value,
+                          self.epsilon_value, self.decay_value)
+
+        # if self.decay_value != 0:
+        if self.weight_decay.init_value != 0:
+            singa.Axpy(self.decay_value.data, param_value.data, param_grad.data)
+
+        if param_name not in self.m:
+            flag = param_value.device.graph_enabled()
+            param_value.device.EnableGraph(False)
+            self.m[param_name] = tensor.zeros_like(param_value)
+            self.v[param_name] = tensor.zeros_like(param_value)
+            param_value.device.EnableGraph(flag)
+
+        # overall steps
+        # m := beta_1 * m + (1 - beta_1) * grad
+        # v := beta_2 * v + (1 - beta_2) * grad * grad
+        # m_norm = m / (1 - beta_1 ^ step)
+        # v_norm = v / (1 - beta_2 ^ step)
+        # param := param - (lr * m_norm) / ( sqrt(v_norm) + epsilon) )
+
+        step = self.step_counter + 1.0
+
+        # m := beta_1 * m + (1 - beta_1) * grad
+        tmp = 1.0 - self.beta_1_value
+        self.m[param_name] *= self.beta_1_value
+        singa.Axpy(tmp.data, param_grad.data, self.m[param_name].data)
+
+        # v := beta_2 * v + (1 - beta_2) * grad * grad
+        tmp = 1.0 - self.beta_2_value
+        self.v[param_name] *= self.beta_2_value
+        singa.Axpy(tmp.data, singa.Square(param_grad.data),
+                   self.v[param_name].data)
+
+        # m_norm = m / (1 - beta_1 ^ step)
+        tmp = tensor.pow(self.beta_1_value, step)
+        tmp = 1.0 - tmp
+        m_norm = self.m[param_name] / tmp
+
+        # v_norm = v / (1 - beta_2 ^ step)
+        tmp = tensor.pow(self.beta_2_value, step)
+        tmp = 1.0 - tmp
+        v_norm = self.v[param_name] / tmp
+
+        # param := param - (lr * m_norm) / ( sqrt(v_norm) + epsilon) )
+        a = tensor.sqrt(v_norm) + self.epsilon_value
+        tmp = m_norm / a
+
+        minus_lr = 0.0 - self.lr_value
+        singa.Axpy(minus_lr.data, tmp.data, param_value.data)
+
+    def step(self):
+        # increment step counter, lr and moment
+        super().step()
+        decay_value = self.weight_decay(self.step_counter)
+        beta_1_value = self.beta_1(self.step_counter)
+        beta_2_value = self.beta_2(self.step_counter)
+        self.decay_value.copy_from(decay_value)
+        self.beta_1_value.copy_from(beta_1_value)
+        self.beta_2_value.copy_from(beta_2_value)
+
+    def get_states(self):
+        states = super().get_states()
+        states['m'] = self.m  # a dict for 1st order moments tensors
+        states['v'] = self.v  # a dict for 2nd order moments tensors
+        return states
+
+    def set_states(self, states):
+        super().set_states(states)
+        if 'm' in states:
+            self.m = states['m']
+        if 'v' in states:
+            self.v = states['v']
 
 
 class DistOpt(object):
