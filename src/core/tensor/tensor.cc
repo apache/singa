@@ -119,6 +119,22 @@ Tensor Resize(const Tensor &in, const Shape &shape) {
     int _SwitchHash =                                                          \
         ((ldtype) << _SwitchShift * 2) + ((rdtype) << _SwitchShift) + (ltype); \
     switch (_SwitchHash) {                                                     \
+      case (((kFloat32) << _SwitchShift * 2) + (kFloat16 << _SwitchShift) +        \
+            kCuda): {                                                          \
+        typedef float LDType;                                                  \
+        typedef half RDType;                                                    \
+        typedef lang::Cuda Lang;                                               \
+        { __VA_ARGS__ }                                                        \
+        break;                                                                 \
+      }                                                                        \
+      case (((kFloat16) << _SwitchShift * 2) + (kFloat32 << _SwitchShift) +        \
+            kCuda): {                                                          \
+        typedef half LDType;                                                  \
+        typedef float RDType;                                                    \
+        typedef lang::Cuda Lang;                                               \
+        { __VA_ARGS__ }                                                        \
+        break;                                                                 \
+      }                                                                        \
       case (((kFloat32) << _SwitchShift * 2) + (kInt << _SwitchShift) +        \
             kCuda): {                                                          \
         typedef float LDType;                                                  \
@@ -148,6 +164,22 @@ Tensor Resize(const Tensor &in, const Shape &shape) {
         typedef int LDType;                                                    \
         typedef float RDType;                                                  \
         typedef lang::Cpp Lang;                                                \
+        { __VA_ARGS__ }                                                        \
+        break;                                                                 \
+      }                                                                        \
+      case (((kFloat32) << _SwitchShift * 2) + (kFloat16 << _SwitchShift) +        \
+            kCpp): {                                                          \
+        typedef float LDType;                                                  \
+        typedef half RDType;                                                    \
+        typedef lang::Cpp Lang;                                               \
+        { __VA_ARGS__ }                                                        \
+        break;                                                                 \
+      }                                                                        \
+      case (((kFloat16) << _SwitchShift * 2) + (kFloat32 << _SwitchShift) +        \
+            kCpp): {                                                          \
+        typedef half LDType;                                                  \
+        typedef float RDType;                                                    \
+        typedef lang::Cpp Lang;                                               \
         { __VA_ARGS__ }                                                        \
         break;                                                                 \
       }                                                                        \

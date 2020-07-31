@@ -240,6 +240,29 @@ void Abs<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
   traverse_unary<float>(in, out, [](float x) { return fabs(x); });
 }
 
+// template <typename DTypeSrc, typename DTypeDst>
+// void CastCopy<DTypeSrc, DTypeDst, lang::Cpp>(const Tensor *src, Tensor *dst,
+//                                      Context *ctx) {
+//   DTypeDst *dst_array = static_cast<DTypeDst *>(dst->block()->mutable_data());
+//   const DTypeSrc *src_array = static_cast<const DTypeSrc *>(src->block()->data());
+//   for (int i = 0; i < dst->Size(); ++i) dst_array[i] = src_array[i];
+// }
+template <>
+void CastCopy<float, half, lang::Cpp>(const Tensor *src, Tensor *dst,
+                                     Context *ctx) {
+  half *dst_array = static_cast<half *>(dst->block()->mutable_data());
+  const float *src_array = static_cast<const float *>(src->block()->data());
+  for (int i = 0; i < dst->Size(); ++i) dst_array[i] = src_array[i];
+}
+
+template <>
+void CastCopy<half, float, lang::Cpp>(const Tensor *src, Tensor *dst,
+                                     Context *ctx) {
+  float *dst_array = static_cast<float *>(dst->block()->mutable_data());
+  const half *src_array = static_cast<const half *>(src->block()->data());
+  for (int i = 0; i < dst->Size(); ++i) dst_array[i] = src_array[i];
+}
+
 template <>
 void CastCopy<float, int, lang::Cpp>(const Tensor *src, Tensor *dst,
                                      Context *ctx) {

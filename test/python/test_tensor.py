@@ -478,6 +478,23 @@ class TestTensorMethods(unittest.TestCase):
         x = tensor.Tensor((4, 5, 3, 2), device=dev)
         x.gaussian(0, 1)
 
+    # TODO: failed
+    def test_half_np(self, dev=gpu_dev):
+        x_val = np.random.random((2, 3)).astype(np.half)
+        x = tensor.from_numpy(x_val)
+        x.to_device(dev)
+
+        self.assertEqual(x.dtype, core_pb2.kFloat16)
+        print(x.dtype)
+        print(x_val)
+        print(x)
+
+    def test_half(self, dev=gpu_dev):
+        x = tensor.Tensor((2,3),device=dev,dtype=core_pb2.kFloat16)
+        x.gaussian(0,1)
+        print("created")
+        print(x)
+
     def _kfloat32_int(self, dev=gpu_dev):
         np.random.seed(0)
         x_val = np.random.random((2, 3)).astype(np.float32) * 10

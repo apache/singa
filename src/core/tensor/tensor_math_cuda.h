@@ -170,6 +170,24 @@ void Abs<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
 }
 
 template <>
+void CastCopy<float, half, lang::Cuda>(const Tensor* src, Tensor* dst,
+                                      Context* ctx) {
+  /* cpp half is for labeling only, cuda requires __half */
+  const float* srcPtr = static_cast<const float*>(src->block()->data());
+  __half* dstPtr = static_cast<__half*>(dst->block()->mutable_data());
+  cuda::float2half(dst->Size(), srcPtr, dstPtr, ctx->stream);
+}
+
+template <>
+void CastCopy<half, float, lang::Cuda>(const Tensor* src, Tensor* dst,
+                                      Context* ctx) {
+  /* cpp half is for labeling only, cuda requires __half */
+  const __half* srcPtr = static_cast<const __half*>(src->block()->data());
+  float* dstPtr = static_cast<float*>(dst->block()->mutable_data());
+  cuda::half2float(dst->Size(), srcPtr, dstPtr, ctx->stream);
+}
+
+template <>
 void CastCopy<float, int, lang::Cuda>(const Tensor* src, Tensor* dst,
                                       Context* ctx) {
   const float* srcPtr = static_cast<const float*>(src->block()->data());

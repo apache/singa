@@ -864,6 +864,8 @@ def from_numpy(np_array, dev=None):
 
     if np_array.dtype == np.float32:
         dtype = core_pb2.kFloat32
+    elif np_array.dtype == np.half or np_array.dtype == np.float16:
+        dtype = core_pb2.kFloat16
     else:
         assert np_array.dtype == np.int32, \
             'Only float and int tensors are supported'

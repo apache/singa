@@ -68,7 +68,65 @@ TEST(TensorClass, Reshape) {
   EXPECT_TRUE(o.shape() != t.shape());
 }
 
+TEST(TensorClass, AsTypeHalfCpu) {
+  using half_float::half;
+  using namespace half_float::literal;
+
+  Tensor t(Shape{3});
+  float data[] = {1.0/3, 2.0/3, 3.0/3};
+  half expect[] = {half(1.0/3), half(2.0/3), half(3.0/3)};
+  t.CopyDataFromHostPtr(data, 3);
+  EXPECT_EQ(singa::kFloat32, t.data_type());
+
+  t = t.AsType(singa::kFloat16);
+  EXPECT_EQ(singa::kFloat16, t.data_type());
+
+  const half* dptr1 = static_cast<const half*>(t.block()->data());
+  for(int i=0;i<t.size();i++){
+    EXPECT_EQ(expect[i], dptr1[i]);
+  }
+
+  t = t.AsType(singa::kFloat32);
+
+  EXPECT_EQ(singa::kFloat32, t.data_type());
+
+  const float* dptr2 = static_cast<const float*>(t.block()->data());
+  for(int i=0;i<t.size();i++){
+    EXPECT_EQ(expect[i], dptr2[i]);
+  }
+}
+
 #ifdef USE_CUDA
+TEST(TensorClass, AsTypeHalfCuda) {
+  using half_float::half;
+  auto cuda = std::make_shared<singa::CudaGPU>();
+
+  Tensor t(Shape{3}, cuda);
+  float data[] = {1.0/3, 2.0/3, 3.0/3};
+  half expect[] = {half(1.0/3), half(2.0/3), half(3.0/3)};
+  t.CopyDataFromHostPtr(data, 3);
+  EXPECT_EQ(singa::kFloat32, t.data_type());
+
+  t = t.AsType(singa::kFloat16);
+  EXPECT_EQ(singa::kFloat16, t.data_type());
+
+  t.ToHost();
+  const half* dptr1 = static_cast<const half*>(t.block()->data());
+  for(int i=0;i<t.size();i++){
+    EXPECT_EQ(expect[i], dptr1[i]);
+  }
+
+  t.ToDevice(cuda);
+  t = t.AsType(singa::kFloat32);
+
+  EXPECT_EQ(singa::kFloat32, t.data_type());
+
+  t.ToHost();
+  const float* dptr2 = static_cast<const float*>(t.block()->data());
+  for(int i=0;i<t.size();i++){
+    EXPECT_EQ(expect[i], dptr2[i]);
+  }
+}
 
 TEST(TensorClass, FloatAsTypeIntCuda) {
   auto cuda = std::make_shared<singa::CudaGPU>();
@@ -249,6 +307,17 @@ TEST(TensorClass, RepeatData) {
   EXPECT_FLOAT_EQ(2.0f, dptr[3]);
   EXPECT_FLOAT_EQ(3.0f, dptr[4]);
   EXPECT_FLOAT_EQ(3.0f, dptr[5]);
+}
+
+TEST(TensorClass, HalfConversion) {
+  Tensor a1(Shape{2,3});
+  float data[] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
+  // using half_float::half;
+  // half a(3.4), b(5);
+  // half c = a * b;
+  // c += 3;
+  // if(c > a)
+      // std::cout << c << std::endl;
 }
 
 TEST(TensorClass, Broadcast) {

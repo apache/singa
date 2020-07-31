@@ -26,7 +26,10 @@
 #include "singa/core/device.h"
 #include "singa/proto/core.pb.h"
 #include "singa/utils/logging.h"
+#include "half.hpp"
 
+
+using half_float::half;
 using std::tuple;
 using std::vector;
 namespace singa {
