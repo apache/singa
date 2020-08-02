@@ -69,19 +69,19 @@ TEST(TensorClass, Reshape) {
 }
 
 TEST(TensorClass, AsTypeHalfCpu) {
-  using half_float::half;
-  using namespace half_float::literal;
+  // using half_float::half;
+  // using namespace half_float::literal;
 
   Tensor t(Shape{3});
   float data[] = {1.0/3, 2.0/3, 3.0/3};
-  half expect[] = {half(1.0/3), half(2.0/3), half(3.0/3)};
+  cpphalf expect[] = {cpphalf(1.0/3), cpphalf(2.0/3), cpphalf(3.0/3)};
   t.CopyDataFromHostPtr(data, 3);
   EXPECT_EQ(singa::kFloat32, t.data_type());
 
   t = t.AsType(singa::kFloat16);
   EXPECT_EQ(singa::kFloat16, t.data_type());
 
-  const half* dptr1 = static_cast<const half*>(t.block()->data());
+  const cpphalf* dptr1 = static_cast<const cpphalf*>(t.block()->data());
   for(int i=0;i<t.size();i++){
     EXPECT_EQ(expect[i], dptr1[i]);
   }
@@ -98,12 +98,12 @@ TEST(TensorClass, AsTypeHalfCpu) {
 
 #ifdef USE_CUDA
 TEST(TensorClass, AsTypeHalfCuda) {
-  using half_float::half;
+  // using half_float::half;
   auto cuda = std::make_shared<singa::CudaGPU>();
 
   Tensor t(Shape{3}, cuda);
   float data[] = {1.0/3, 2.0/3, 3.0/3};
-  half expect[] = {half(1.0/3), half(2.0/3), half(3.0/3)};
+  cpphalf expect[] = {cpphalf(1.0/3), cpphalf(2.0/3), cpphalf(3.0/3)};
   t.CopyDataFromHostPtr(data, 3);
   EXPECT_EQ(singa::kFloat32, t.data_type());
 
@@ -111,7 +111,7 @@ TEST(TensorClass, AsTypeHalfCuda) {
   EXPECT_EQ(singa::kFloat16, t.data_type());
 
   t.ToHost();
-  const half* dptr1 = static_cast<const half*>(t.block()->data());
+  const cpphalf* dptr1 = static_cast<const cpphalf*>(t.block()->data());
   for(int i=0;i<t.size();i++){
     EXPECT_EQ(expect[i], dptr1[i]);
   }

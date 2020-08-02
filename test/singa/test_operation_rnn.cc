@@ -35,35 +35,36 @@ TEST(OperationRNN, tranining) {
   size_t feature_size = 3;
   size_t num_layers = 1;
   int bdirect = 0;
+  DataType data_type1 = kFloat16;
 
   Shape s_s{num_layers * (bdirect ? 2 : 1), batch_size, hidden_size};
   Shape y_s{seq_length, batch_size, hidden_size * (bdirect ? 2 : 1)};
 
   // x
-  Tensor x(Shape{seq_length, batch_size, feature_size}, cuda);
+  Tensor x(Shape{seq_length, batch_size, feature_size}, cuda, data_type1);
   Gaussian(0.0f, 1.0f, &x);
 
   // x hidden states and cell states
-  Tensor hx(s_s, cuda);
-  Tensor cx(s_s, cuda);
+  Tensor hx(s_s, cuda, data_type1);
+  Tensor cx(s_s, cuda, data_type1);
   hx.SetValue(0.0f);
   cx.SetValue(0.0f);
 
   // y dy
-  Tensor y(y_s, cuda);
-  Tensor dy(y_s, cuda);
+  Tensor y(y_s, cuda, data_type1);
+  Tensor dy(y_s, cuda, data_type1);
   Gaussian(0.0f, 1.0f, &y);
   Gaussian(0.0f, 1.0f, &dy);
 
   // y hidden states and cell states
-  Tensor dhy(s_s, cuda);
-  Tensor dcy(s_s, cuda);
+  Tensor dhy(s_s, cuda, data_type1);
+  Tensor dcy(s_s, cuda, data_type1);
   Gaussian(0.0f, 1.0f, &dhy);
   Gaussian(0.0f, 1.0f, &dcy);
 
   // init handle and weights
   CudnnRNNHandle rnn_handle(x, hidden_size);
-  Tensor W(Shape{rnn_handle.weights_size}, cuda);
+  Tensor W(Shape{rnn_handle.weights_size}, cuda, data_type1);
   Gaussian(0.0f, 1.0f, &W);
 
   // forward and backward passes
@@ -75,6 +76,7 @@ TEST(OperationRNN, tranining) {
 
 TEST(OperationRNNEx, tranining) {
   auto cuda = std::make_shared<singa::CudaGPU>();
+  DataType data_type1 = kFloat16;
 
   size_t hidden_size = 2;
   size_t seq_length = 6;
@@ -88,24 +90,24 @@ TEST(OperationRNNEx, tranining) {
   Shape x_s{seq_length, batch_size, feature_size};
 
   // x
-  Tensor x(x_s, cuda);
+  Tensor x(x_s, cuda,data_type1);
   Gaussian(0.0f, 1.0f, &x);
 
   // x hidden states and cell states
-  Tensor hx(s_s, cuda);
-  Tensor cx(s_s, cuda);
+  Tensor hx(s_s, cuda,data_type1);
+  Tensor cx(s_s, cuda,data_type1);
   hx.SetValue(0.0f);
   cx.SetValue(0.0f);
 
   // y hidden states and cell states
-  Tensor dhy(s_s, cuda);
-  Tensor dcy(s_s, cuda);
+  Tensor dhy(s_s, cuda,data_type1);
+  Tensor dcy(s_s, cuda,data_type1);
   Gaussian(0.0f, 1.0f, &dhy);
   Gaussian(0.0f, 1.0f, &dcy);
 
   // y dy
-  Tensor y(y_s, cuda);
-  Tensor dy(y_s, cuda);
+  Tensor y(y_s, cuda,data_type1);
+  Tensor dy(y_s, cuda,data_type1);
   Gaussian(0.0f, 1.0f, &y);
   Gaussian(0.0f, 1.0f, &dy);
 
@@ -120,7 +122,7 @@ TEST(OperationRNNEx, tranining) {
 
   // init handle and weights
   CudnnRNNHandle rnn_handle(x, hidden_size, 0);
-  Tensor W(Shape{rnn_handle.weights_size}, cuda);
+  Tensor W(Shape{rnn_handle.weights_size}, cuda, data_type1);
   Gaussian(0.0f, 1.0f, &W);
 
   // forward and backward passes for batch first format

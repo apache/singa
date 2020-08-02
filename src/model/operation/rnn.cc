@@ -51,7 +51,13 @@ CudnnRNNHandle::CudnnRNNHandle(const Tensor &x, const int hidden_size,
   feature_size = x.shape(2);
 
   cudnnRNNAlgo = CUDNN_RNN_ALGO_STANDARD;
-  cudnnDataType = CUDNN_DATA_FLOAT;
+  _dataType = x.data_type();
+  if(_dataType == kFloat32) {
+    cudnnDataType = CUDNN_DATA_FLOAT;
+  }
+  else if(_dataType == kFloat16) {
+    cudnnDataType = CUDNN_DATA_HALF;
+  }
 
   cudnnTensorDescriptor_t *xDesc = new cudnnTensorDescriptor_t[seq_length];
   init_xDesc(xDesc, *this);
@@ -75,8 +81,8 @@ void CudnnRNNHandle::init_workspace(cudnnTensorDescriptor_t *xDesc) {
 
   workspace_size = workspace_size_bytes / sizeof(float);
   reserve_size = reserve_size_bytes / sizeof(float);
-  workspace = Tensor(Shape{workspace_size}, dev);
-  reserve_space = Tensor(Shape{reserve_size}, dev);
+  workspace = Tensor(Shape{workspace_size}, dev, _dataType);
+  reserve_space = Tensor(Shape{reserve_size}, dev, _dataType);
 }
 
 void CudnnRNNHandle::init_parameters_desc(cudnnTensorDescriptor_t *xDesc) {
@@ -175,6 +181,7 @@ vector<Tensor> GpuRNNForwardInference(const Tensor &x, const Tensor &hx,
                                       const Tensor &cx, const Tensor &W,
                                       CudnnRNNHandle &h) {
   CHECK_EQ(h.feature_size, x.shape(2)) << "feature size should not change";
+  // TODO: assert all(_dataType == tensor.data_type())
 
   // in
   // x in shape {seq, bs, ..}
@@ -186,13 +193,13 @@ vector<Tensor> GpuRNNForwardInference(const Tensor &x, const Tensor &hx,
 
   Tensor y(Shape{h.seq_length, h.batch_size,
                  h.hidden_size * (h.bidirectional ? 2 : 1)},
-           x.device());
+           x.device(), h._dataType);
   Tensor hy(Shape{h.num_layers * (h.bidirectional ? 2 : 1), h.batch_size,
                   h.hidden_size},
-            x.device());
+            x.device(), h._dataType);
   Tensor cy(Shape{h.num_layers * (h.bidirectional ? 2 : 1), h.batch_size,
                   h.hidden_size},
-            x.device());
+            x.device(), h._dataType);
   y.SetValue(0.0f);
   hy.SetValue(0.0f);
   cy.SetValue(0.0f);
@@ -255,13 +262,13 @@ vector<Tensor> GpuRNNForwardTraining(const Tensor &x, const Tensor &hx,
 
   Tensor y(Shape{h.seq_length, h.batch_size,
                  h.hidden_size * (h.bidirectional ? 2 : 1)},
-           x.device());
+           x.device(), h._dataType);
   Tensor hy(Shape{h.num_layers * (h.bidirectional ? 2 : 1), h.batch_size,
                   h.hidden_size},
-            x.device());
+            x.device(), h._dataType);
   Tensor cy(Shape{h.num_layers * (h.bidirectional ? 2 : 1), h.batch_size,
                   h.hidden_size},
-            x.device());
+            x.device(), h._dataType);
   y.SetValue(0.0f);
   hy.SetValue(0.0f);
   cy.SetValue(0.0f);
@@ -318,13 +325,13 @@ vector<Tensor> GpuRNNBackwardx(const Tensor &y, const Tensor &dy,
   // in
   // y shape {seq, bs}
   // dy shape {seq, bs}
-  Tensor dx(Shape{h.seq_length, h.batch_size, h.feature_size}, y.device());
+  Tensor dx(Shape{h.seq_length, h.batch_size, h.feature_size}, y.device(), h._dataType);
   Tensor dhx(Shape{h.num_layers * (h.bidirectional ? 2 : 1), h.batch_size,
                    h.hidden_size},
-             y.device());
+             y.device(), h._dataType);
   Tensor dcx(Shape{h.num_layers * (h.bidirectional ? 2 : 1), h.batch_size,
                    h.hidden_size},
-             y.device());
+             y.device(), h._dataType);
   dx.SetValue(0.0f);
   dhx.SetValue(0.0f);
   dcx.SetValue(0.0f);
@@ -449,7 +456,7 @@ void CudnnRNNHandle::init_param_mapping(cudnnTensorDescriptor_t *xDesc) {
       Shape{
           weights_size,
       },
-      dev);
+      dev, _dataType);
   weights.SetValue(0.0f);
   const void *W_ptr = weights.block()->data();
 
@@ -509,7 +516,7 @@ Tensor GpuRNNGetParamCopy(int linLayerID, int pseudoLayer, Tensor &weights,
       Shape{
           size,
       },
-      weights.device());
+      weights.device(), h._dataType);
   CopyDataToFrom(&paramCopy, weights, size, 0, offset);
   return paramCopy;
 }
@@ -581,9 +588,9 @@ vector<Tensor> GpuRNNForwardInferenceEx(const Tensor &x, const Tensor &hx,
                          h.hidden_size};
   }
 
-  y = Tensor(yshape, x.device());
-  hy = Tensor(states_shape, x.device());
-  cy = Tensor(states_shape, x.device());
+  y = Tensor(yshape, x.device(), h._dataType);
+  hy = Tensor(states_shape, x.device(), h._dataType);
+  cy = Tensor(states_shape, x.device(), h._dataType);
 
   y.device()->Exec(
       [y, hy, cy, x, seq_lengths, hx, cx, &W, &h](Context *ctx) {
@@ -646,9 +653,9 @@ vector<Tensor> GpuRNNForwardTrainingEx(const Tensor &x, const Tensor &hx,
                          h.hidden_size};
   }
 
-  y = Tensor(yshape, x.device());
-  hy = Tensor(states_shape, x.device());
-  cy = Tensor(states_shape, x.device());
+  y = Tensor(yshape, x.device(), h._dataType);
+  hy = Tensor(states_shape, x.device(), h._dataType);
+  cy = Tensor(states_shape, x.device(), h._dataType);
 
   y.device()->Exec(
       [y, hy, cy, x, seq_lengths, hx, cx, &W, &h](Context *ctx) {
@@ -708,9 +715,9 @@ vector<Tensor> GpuRNNBackwardxEx(const Tensor &y, const Tensor &dy,
     states_shape = Shape{h.num_layers * (h.bidirectional ? 2 : 1), h.batch_size,
                          h.hidden_size};
   }
-  Tensor dx(xshape, y.device());
-  Tensor dhx(states_shape, y.device());
-  Tensor dcx(states_shape, y.device());
+  Tensor dx(xshape, y.device(), h._dataType);
+  Tensor dhx(states_shape, y.device(), h._dataType);
+  Tensor dcx(states_shape, y.device(), h._dataType);
 
   dx.SetValue(0.0f);
   dhx.SetValue(0.0f);
@@ -768,7 +775,7 @@ vector<Tensor> GpuRNNBackwardxEx(const Tensor &y, const Tensor &dy,
 
 Tensor GpuRNNBackwardWEx(const Tensor &x, const Tensor &hx, const Tensor &y,
                          const Tensor &seq_lengths, CudnnRNNHandle &h) {
-  Tensor dW(Shape{h.weights_size}, x.device());
+  Tensor dW(Shape{h.weights_size}, x.device(), h._dataType);
   dW.SetValue(0.0f);
 
   dW.device()->Exec(

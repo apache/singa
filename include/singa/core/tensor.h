@@ -29,7 +29,8 @@
 #include "half.hpp"
 
 
-using half_float::half;
+// using half_float::half;
+typedef half_float::half cpphalf;
 using std::tuple;
 using std::vector;
 namespace singa {

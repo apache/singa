@@ -53,6 +53,7 @@ class CudnnRNNHandle {
   size_t hidden_size;
   size_t num_layers;
   int batch_first;
+  DataType _dataType;
 
   size_t weights_size_bytes;
   size_t weights_size;

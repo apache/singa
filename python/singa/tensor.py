@@ -271,6 +271,8 @@ class Tensor(object):
             pass
         elif dtype == singa.kFloat32:
             pass
+        elif dtype == singa.kFloat16:
+            pass
         elif dtype == 'int':
             dtype = singa.kInt
         elif dtype == 'float':
@@ -902,6 +904,9 @@ def to_numpy(t):
     '''
     th = to_host(t)
     if th.dtype == core_pb2.kFloat32:
+        np_array = th.data.GetFloatValue(int(th.size()))
+    if th.dtype == core_pb2.kFloat16:
+        th = th.as_type(core_pb2.kFloat32)
         np_array = th.data.GetFloatValue(int(th.size()))
     elif th.dtype == core_pb2.kInt:
         np_array = th.data.GetIntValue(int(th.size()))

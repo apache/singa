@@ -122,14 +122,14 @@ Tensor Resize(const Tensor &in, const Shape &shape) {
       case (((kFloat32) << _SwitchShift * 2) + (kFloat16 << _SwitchShift) +        \
             kCuda): {                                                          \
         typedef float LDType;                                                  \
-        typedef half RDType;                                                    \
+        typedef cpphalf RDType;                                                    \
         typedef lang::Cuda Lang;                                               \
         { __VA_ARGS__ }                                                        \
         break;                                                                 \
       }                                                                        \
       case (((kFloat16) << _SwitchShift * 2) + (kFloat32 << _SwitchShift) +        \
             kCuda): {                                                          \
-        typedef half LDType;                                                  \
+        typedef cpphalf LDType;                                                  \
         typedef float RDType;                                                    \
         typedef lang::Cuda Lang;                                               \
         { __VA_ARGS__ }                                                        \
@@ -170,14 +170,14 @@ Tensor Resize(const Tensor &in, const Shape &shape) {
       case (((kFloat32) << _SwitchShift * 2) + (kFloat16 << _SwitchShift) +        \
             kCpp): {                                                          \
         typedef float LDType;                                                  \
-        typedef half RDType;                                                    \
+        typedef cpphalf RDType;                                                    \
         typedef lang::Cpp Lang;                                               \
         { __VA_ARGS__ }                                                        \
         break;                                                                 \
       }                                                                        \
       case (((kFloat16) << _SwitchShift * 2) + (kFloat32 << _SwitchShift) +        \
             kCpp): {                                                          \
-        typedef half LDType;                                                  \
+        typedef cpphalf LDType;                                                  \
         typedef float RDType;                                                    \
         typedef lang::Cpp Lang;                                               \
         { __VA_ARGS__ }                                                        \
@@ -780,10 +780,25 @@ float Tensor::L2() const { return l2(); }
 
 template <typename SType>
 void Tensor::SetValue(const SType x) {
-  CHECK_EQ(sizeof(SType), SizeOf(data_type_));
-  // auto size = Size();
   auto ptr = block_;
 
+  // TODO: fix hardcode
+  if (data_type_ == kFloat16 && std::is_same<SType, float>::value){
+    Tensor &thisRef = *this;
+    Tensor t(shape_, device_, kFloat32);
+    TYPE_LANG_SWITCH(t.data_type(), DType, device_->lang(), Lang, {
+      device_->Exec(
+          [t, x](Context *ctx) mutable {
+            Set<DType, Lang>(x, &t, ctx);
+          },
+          {}, {ptr}, "SetValue");
+    });
+    t = t.AsType(kFloat16);
+    std::swap(t.block_, block_);
+    return;
+  }
+
+  CHECK_EQ(sizeof(SType), SizeOf(data_type_));
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     // TODO(wangwei) cast x to DType
     Tensor &thisRef = *this;
@@ -1059,6 +1074,7 @@ GenBinaryTensorFn(ReLUBackward, ReLUBackward);
       return ret;                                                          \
     } else {                                                               \
       /* tensor and scalar are not both in float, cast to float */         \
+      /* reuse float implementation */                                     \
       Tensor tmp_in = in.Clone().AsType(kFloat32);                         \
       float tmp_x = x;                                                     \
       Tensor ret(tmp_in.shape(), tmp_in.device(), tmp_in.data_type());     \
@@ -1066,6 +1082,8 @@ GenBinaryTensorFn(ReLUBackward, ReLUBackward);
       /* if tensor and scalar are both int, cast back to int */            \
       if (in.data_type() == kInt && std::is_same<SType, int>::value)       \
         return ret.Clone().AsType(kInt);                                   \
+      if (in.data_type() == kFloat16 && std::is_same<SType, cpphalf>::value)       \
+        return ret.Clone().AsType(kFloat16);                                   \
       return ret;                                                          \
     }                                                                      \
   }                                                                        \
@@ -1497,16 +1515,33 @@ template void Uniform<float>(const float low, const float high, Tensor *out);
 
 template <typename SType>
 void Gaussian(const SType mean, const SType std, Tensor *out) {
-  TYPE_LANG_SWITCH(out->data_type(), DType, out->device()->lang(), Lang, {
-    auto m = TypeCast<SType, DType>(mean);
-    auto s = TypeCast<SType, DType>(std);
-    Tensor &outRef = *out;
-    out->device()->Exec(
-        [m, s, outRef](Context *ctx) mutable {
-          Gaussian<DType, Lang>(m, s, &outRef, ctx);
-        },
-        {}, {out->block()}, "Gaussian", true);
-  });
+  DataType data_type = out->data_type();
+  if (data_type != kFloat32){
+    /* kFloat16 */
+    Tensor* tmp = new Tensor(out->shape(), out->device(), kFloat32);
+    TYPE_LANG_SWITCH(tmp->data_type(), DType, tmp->device()->lang(), Lang, {
+      auto m = TypeCast<SType, DType>(mean);
+      auto s = TypeCast<SType, DType>(std);
+      Tensor &outRef = *tmp;
+      tmp->device()->Exec(
+          [m, s, outRef](Context *ctx) mutable {
+            Gaussian<DType, Lang>(m, s, &outRef, ctx);
+          },
+          {}, {tmp->block()}, "Gaussian", true);
+    });
+    *out = tmp->AsType(data_type);
+  } else {
+    TYPE_LANG_SWITCH(out->data_type(), DType, out->device()->lang(), Lang, {
+      auto m = TypeCast<SType, DType>(mean);
+      auto s = TypeCast<SType, DType>(std);
+      Tensor &outRef = *out;
+      out->device()->Exec(
+          [m, s, outRef](Context *ctx) mutable {
+            Gaussian<DType, Lang>(m, s, &outRef, ctx);
+          },
+          {}, {out->block()}, "Gaussian", true);
+    });
+  }
 }
 template void Gaussian<float>(const float mean, const float std, Tensor *out);
 

@@ -134,7 +134,10 @@ cudnnTensorDescriptor_t generate_tensor_nd_desc(const Tensor& x) {
   // LOG(INFO) << vec2str(shape);
   // LOG(INFO) << vec2str(stride);
   // LOG(INFO) << "";
-  check_cudnn(cudnnSetTensorNdDescriptor(x_desc, CUDNN_DATA_FLOAT,
+  cudnnDataType_t c_data_type = CUDNN_DATA_FLOAT;
+  if (x.data_type() == kFloat16)
+    c_data_type = CUDNN_DATA_HALF;
+  check_cudnn(cudnnSetTensorNdDescriptor(x_desc, c_data_type,
                                          generate_dim_cuda(y), shape.data(),
                                          stride.data()));
 
@@ -170,7 +173,7 @@ void Abs<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
 }
 
 template <>
-void CastCopy<float, half, lang::Cuda>(const Tensor* src, Tensor* dst,
+void CastCopy<float, cpphalf, lang::Cuda>(const Tensor* src, Tensor* dst,
                                       Context* ctx) {
   /* cpp half is for labeling only, cuda requires __half */
   const float* srcPtr = static_cast<const float*>(src->block()->data());
@@ -179,7 +182,7 @@ void CastCopy<float, half, lang::Cuda>(const Tensor* src, Tensor* dst,
 }
 
 template <>
-void CastCopy<half, float, lang::Cuda>(const Tensor* src, Tensor* dst,
+void CastCopy<cpphalf, float, lang::Cuda>(const Tensor* src, Tensor* dst,
                                       Context* ctx) {
   /* cpp half is for labeling only, cuda requires __half */
   const __half* srcPtr = static_cast<const __half*>(src->block()->data());
@@ -205,11 +208,22 @@ void CastCopy<int, float, lang::Cuda>(const Tensor* src, Tensor* dst,
 
 template <>
 void Set<float, lang::Cuda>(const float x, Tensor* out, Context* ctx) {
-  float* outPtr = static_cast<float*>(out->block()->mutable_data());
-
-  check_cudnn(cudnnSetTensor(ctx->cudnn_handle, generate_tensor_nd_desc(*out),
-                             outPtr, (void*)(&x)));
+  if (out->data_type() == kFloat16){
+    __half* outPtr = static_cast<__half*>(out->block()->mutable_data());
+    __half x_tmp = __float2half(x);
+    check_cudnn(cudnnSetTensor(ctx->cudnn_handle, generate_tensor_nd_desc(*out),
+                              outPtr, (void*)(&x_tmp)));
+  } else {
+    float* outPtr = static_cast<float*>(out->block()->mutable_data());
+    check_cudnn(cudnnSetTensor(ctx->cudnn_handle, generate_tensor_nd_desc(*out),
+                              outPtr, (void*)(&x)));
+  }
 }
+
+// template <>
+// ToType TypeCast<float, half>(const FromType &x) {
+//   return static_cast<ToType>(x);
+// }
 
 template <>
 void Add<float, lang::Cuda>(const Tensor& in, const float x, Tensor* out,
