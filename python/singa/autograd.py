@@ -5383,6 +5383,34 @@ def embedding(x, w):
     return Embedding()(x, w)[0]
 
 
+class Erf(Operator):
+    """
+    Apply element-wise math.erf to the input
+    """
+
+    def __init__(self):
+        super(Erf, self).__init__()
+
+    def forward(self, x):
+        return singa.Erf(x)
+
+    def backward(self, dy):
+        dx = singa.MultFloat(singa.PowFloat(dy, 2.0), -1.0)
+        dx = singa.MultFloat(singa.Exp(dx), 2. / np.pi ** 0.5)
+        return dx
+
+
+def erf(x):
+    """
+    Apply element-wise math.erf to the input
+    Args:
+        x (Tensor): input tensor.
+    Returns:
+        the output Tensor.
+    """
+    return Erf()(x)[0]
+
+
 ''' alias for Operator and Layers
 '''
 Operation = Operator

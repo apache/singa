@@ -1114,6 +1114,7 @@ class SingaBackend(Backend):
         'Pad': 'Pad',
         'Upsample': 'UpSample',
         'Where': 'Where',
+        'Erf': 'Erf',
         'Gemm': 'layer.Gemm',  # layer
         'BatchNormalization': 'layer.BatchNorm2d',  # layer
         'Conv': 'layer.Conv2d',  # layer
