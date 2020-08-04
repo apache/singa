@@ -44,6 +44,7 @@ void set(const size_t n, const float v, float *out, cudaStream_t s);
 void abs(const size_t n, const float *in, float *out, cudaStream_t s);
 void sign(const size_t n, const float *in, float *out, cudaStream_t s);
 void exp(const size_t n, const float *in, float *out, cudaStream_t s);
+void erf(const size_t n, const float *in, float *out, cudaStream_t s);
 void ceil2(const size_t n, const float *in, float *out, cudaStream_t s);
 void floor(const size_t n, const float *in, float *out, cudaStream_t s);
 void round(const size_t n, const float *in, float *out, cudaStream_t s);

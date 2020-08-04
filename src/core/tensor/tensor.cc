@@ -807,6 +807,7 @@ template void Tensor::GetValue<int>(int *value, const size_t num) const;
   void fn(const Tensor &in, Tensor *out) { EltwiseUnaryTensorFn(fn, in, out); }
 
 GenUnaryTensorFn(Abs);
+GenUnaryTensorFn(Erf);
 GenUnaryTensorFn(Ceil);
 GenUnaryTensorFn(Floor);
 GenUnaryTensorFn(Round);

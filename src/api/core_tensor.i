@@ -177,6 +177,7 @@ namespace singa{
   Tensor Round(const Tensor &t);
   Tensor RoundE(const Tensor &t);
   Tensor Exp(const Tensor &t);
+  Tensor Erf(const Tensor &t);
   Tensor Log(const Tensor &t);
   Tensor ReLU(const Tensor &t);
   Tensor Sigmoid(const Tensor &t);

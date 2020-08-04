@@ -340,6 +340,19 @@ class TestAPI(unittest.TestCase):
     def test_transpose_and_arithmetic_op_broadcast_cpu(self):
         self._transpose_and_arithmetic_op_broadcast_helper(cpu_dev)
 
+    def _erf(self, dev=cpu_dev):
+        np1 = np.random.random((2, 3)).astype(np.float32)
+
+        x1 = tensor.from_numpy(np1)
+        x1.to_device(dev)
+        y1 = tensor.from_raw_tensor(singa_api.Erf(x1.data))
+
+        # from scipy.special import erf
+        # np.testing.assert_array_almost_equal(erf(np1), tensor.to_numpy(y1))
+
+    def test_erf_cpu(self):
+        self._erf(cpu_dev)
+
     @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
     def test_transpose_and_arithmetic_op_broadcast_gpu(self):
         self._transpose_and_arithmetic_op_broadcast_helper(gpu_dev)
