@@ -1114,6 +1114,7 @@ class SingaBackend(Backend):
         'Expand': 'Expand',
         'Pad': 'Pad',
         'Upsample': 'UpSample',
+        'Where': 'Where',
         'Gemm': 'layer.Gemm',  # layer
         'BatchNormalization': 'layer.BatchNorm2d',  # layer
         'Conv': 'layer.Conv2d',  # layer
@@ -1156,7 +1157,22 @@ class SingaBackend(Backend):
         'Pad': '_create_pad',
         'Upsample': '_create_upsample',
         'ScatterElements': '_create_scatter_elements',
+        'Where': '_create_where',
     }
+
+    @classmethod
+    def _create_where(cls, onnx_node, operator, opset_version=_opset_version):
+        """
+        get the Where operator from onnx node
+        Args:
+            onnx_node (OnnxNode): a given onnx node
+            operator (Operator Class): a singa operator class
+            opset_version (int): the opset version
+        Returns: 
+            singa operator instance
+        """
+        onnx_node.set_attr_inputs(onnx_node.inputs[0], 'condition')
+        return operator(None)
 
     @classmethod
     def _create_pad(cls, onnx_node, operator, opset_version=_opset_version):
@@ -1697,8 +1713,7 @@ class SingaBackend(Backend):
         """
         onnx_tensor = onnx_node.getattr('value')
         np_dtype = mapping.TENSOR_TYPE_TO_NP_TYPE[onnx_tensor.data_type]
-        np_tensor = np.frombuffer(onnx_tensor.raw_data, dtype=np_dtype)
-        return tensor.from_numpy(np_tensor)
+        return np.frombuffer(onnx_tensor.raw_data, dtype=np_dtype)
 
     @classmethod
     def _onnx_node_to_singa_op(cls, onnx_node, opset_version=_opset_version):
@@ -1756,7 +1771,7 @@ class SingaBackend(Backend):
                 weights[key] = val
             else:
                 x = tensor.from_numpy(val)
-                if device == 'CPU':
+                if device != 'CPU':
                     assert singa.USE_CUDA, "Your SINGA doesn't compile GPU module."
                     dev = device.create_cuda_gpu()
                 else:

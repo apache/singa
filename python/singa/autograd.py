@@ -604,9 +604,16 @@ class Matmul(Operator):
         """
         Return `np.matmul(x,w)`, where x and w are CTensor.
         """
+        # todo, cannot do Mult for dims more than 2
+        raw_shape = x.shape()
+        if raw_shape[:2] == (1, 1):
+            x = singa.Reshape(x, raw_shape[2:])
         if training:
             self.input = (x, w)
-        return singa.Mult(x, w)
+        res = singa.Mult(x, w)
+        if raw_shape[:2] == (1, 1):
+            res = singa.Reshape(res, (1, 1) + res.shape())
+        return res
 
     def backward(self, dy):
         """
@@ -715,8 +722,10 @@ def add_bias(x, b, axis=0):
     Return:
         the result Tensor
     """
-    assert x.ndim() == 2, "1st arg required 2d tensor. got shape: %s" % (x.shape)
-    assert b.ndim() == 1, "2nd arg required 1d tensor. got shape: %s" % (b.shape)
+    assert x.ndim() == 2, "1st arg required 2d tensor. got shape: %s" % (
+        x.shape)
+    assert b.ndim() == 1, "2nd arg required 1d tensor. got shape: %s" % (
+        b.shape)
     assert axis in [0, 1], "allowed axis: 0 or 1"
     return AddBias(axis)(x, b)[0]
 
@@ -1146,16 +1155,17 @@ def sum(*l):
     return Sum()(*l)[0]
 
 
-class CrossEntropy(Operator):
+class BinaryCrossEntropy(Operator):
 
-    def __init__(self):
-        super(CrossEntropy, self).__init__()
+    def __init__(self, t):
+        super(BinaryCrossEntropy, self).__init__()
+        self.t = t.data
 
     """
     Calculte negative log likelihood loss for a batch of training data.
     """
 
-    def forward(self, x, t):
+    def forward(self, x):
         """
         Args:
             x (CTensor): 1d or 2d tensor, the prediction data(output)
@@ -1164,11 +1174,14 @@ class CrossEntropy(Operator):
         Returns:
             loss (CTensor): scalar.
         """
-        loss = singa.SumAll(singa.__mul__(t, singa.Log(x)))
+        posx = singa.AddFloat(x, 0.0001)
+        loss = singa.SumAll(singa.__mul__(self.t, singa.Log(posx)))
+        negt = singa.AddFloat(singa.MultFloat(self.t,-1.0), 1.0)
+        negx = singa.AddFloat(singa.MultFloat(x,-1.0), 1.0001)
+        negLoss = singa.SumAll(singa.__mul__(negt, singa.Log(negx)))
+        loss += negLoss
         loss /= -x.shape()[0]
-        self.x = x
-        self.t = t
-        self.input = (x, t)
+        self.x = singa.AddFloat(x, 0.0001)
         return loss
 
     def backward(self, dy=1.0):
@@ -1181,56 +1194,116 @@ class CrossEntropy(Operator):
                           of current network. note that this is true for
                           dy = 1.0
         """
+
         dx = singa.__div__(self.t, self.x)
+        negt = singa.AddFloat(self.t, -1.0)
+        negx = singa.AddFloat(self.x, -0.9999)
+        dx -= singa.__div__(negt, negx)          
         dx *= float(-1.0 / self.x.shape()[0])
         if isinstance(dy, float):
             # dtype of dy: float
             dx *= dy
-            return dx, None
+            return dx
         elif isinstance(dy, CTensor):
             pass  # TODO, broadcast elementwise multiply seems not support
 
 
-def cross_entropy(y, t):
-    return CrossEntropy()(y, t)[0]
+def binary_cross_entropy(x, t):
+    return BinaryCrossEntropy(t)(x)[0]
 
 
-class QALSTMLoss(Operator):
+class CrossEntropy(Operator):
+
+    def __init__(self, t):
+        super(CrossEntropy, self).__init__()
+        self.t = t.data
+
+    """
+    Calculte negative log likelihood loss for a batch of training data.
+    """
+
+    def forward(self, x):
+        """
+        Args:
+            x (CTensor): 1d or 2d tensor, the prediction data(output)
+                         of current network.
+            t (CTensor): 1d or 2d tensor, the target data for training.
+        Returns:
+            loss (CTensor): scalar.
+        """
+        loss = singa.SumAll(singa.__mul__(self.t, singa.Log(x)))
+        loss /= -x.shape()[0]
+        self.x = x
+        return loss
+
+    def backward(self, dy=1.0):
+        """
+        Args:
+            dy (float or CTensor): scalar, accumulate gradient from outside
+                                of current network, usually equal to 1.0
+        Returns:
+            dx (CTensor): data for the dL /dx, L is the loss, x is the output
+                          of current network. note that this is true for
+                          dy = 1.0
+        """
+
+        dx = singa.__div__(self.t, self.x)       
+        dx *= float(-1.0 / self.x.shape()[0])
+        if isinstance(dy, float):
+            # dtype of dy: float
+            dx *= dy
+            return dx
+        elif isinstance(dy, CTensor):
+            pass  # TODO, broadcast elementwise multiply seems not support
+
+
+def cross_entropy(x, t):
+    assert x.ndim() == 2, "1st arg required 2d tensor. got shape: " + str(
+        x.shape)
+    assert t.ndim() <= 2, "2nd arg required <=2d tensor. got shape: " + str(
+        t.shape)
+    # x is the logits and t is the ground truth.
+    return CrossEntropy(t)(x)[0]
+
+
+class RankingLoss(Operator):
 
     def __init__(self, M=0.2):
-        super(QALSTMLoss, self).__init__()
+        super().__init__()
+        # margin
         self.M = M
 
     def forward(self, pos, neg):
-        # L = max{0, M - cosine(q, a+) + cosine(q, a-)}
+        # L = max{0, M - fn(pos) + fn(neg)}
         zero = singa.Tensor(list(pos.shape()), pos.device())
         zero.SetFloatValue(0.0)
         val = singa.AddFloat(singa.__sub__(neg, pos), self.M)
         gt_zero = singa.__gt__(val, zero)
-        self.inputs = (gt_zero,)  # (BS,)
+        if training:
+            self.inputs = (gt_zero,)  # (BS,)
         all_loss = singa.__mul__(gt_zero, val)
         loss = singa.SumAll(all_loss)
         loss /= (pos.shape()[0])
-        # assert loss.shape(0) == 1
         return loss
 
     def backward(self, dy=1.0):
+        assert training, "enable training mode to do backward"
         # dpos = -1 if M-pos+neg > 0 else 0
         # dneg =  1 if M-pos+neg > 0 else 0
         gt_zero = self.inputs[0]
         dpos_factor = singa.Tensor(list(gt_zero.shape()), gt_zero.device())
-        dpos_factor.SetFloatValue(-1.0)
+        dpos_factor.SetFloatValue(-1.0 / gt_zero.Size())
         dneg_factor = singa.Tensor(list(gt_zero.shape()), gt_zero.device())
-        dneg_factor.SetFloatValue(1.0)
+        dneg_factor.SetFloatValue(1.0 / gt_zero.Size())
         dpos = singa.__mul__(gt_zero, dpos_factor)
         dneg = singa.__mul__(gt_zero, dneg_factor)
         return dpos, dneg
 
 
-def qa_lstm_loss(pos, neg, M=0.2):
+def ranking_loss(pos, neg, M=0.2):
     assert pos.shape == neg.shape, "input and target shape different: %s, %s" % (
         pos.shape, neg.shape)
-    return QALSTMLoss(M)(pos, neg)[0]
+    return RankingLoss(M)(pos, neg)[0]
 
 
 class SoftMaxCrossEntropy(Operator):
@@ -1253,9 +1326,9 @@ class SoftMaxCrossEntropy(Operator):
 
 
 def softmax_cross_entropy(x, t):
-    assert x.ndim() == 2, "1st arg required 2d tensor. got shape: %s" % (
+    assert x.ndim() == 2, "1st arg required 2d tensor. got shape: " + str(
         x.shape)
-    assert t.ndim() <= 2, "2nd arg required <=2d tensor. got shape: %s" % (
+    assert t.ndim() <= 2, "2nd arg required <=2d tensor. got shape: " + str(
         t.shape)
     # x is the logits and t is the ground truth.
     return SoftMaxCrossEntropy(t)(x)[0]
@@ -1263,31 +1336,31 @@ def softmax_cross_entropy(x, t):
 
 class MeanSquareError(Operator):
 
-    def __init__(self):
+    def __init__(self, t):
         super(MeanSquareError, self).__init__()
+        self.t = t.data
 
-    def forward(self, x, t):
-        self.err = singa.__sub__(x, t)
+    def forward(self, x):
+        self.err = singa.__sub__(x, self.t)
         sqr = singa.Square(self.err)
         loss = singa.SumAll(sqr)
-        loss /= (x.shape()[0] * 2)
+        self.n = 1
+        for s in x.shape():
+            self.n *= s
+        loss /= self.n
         return loss
 
     def backward(self, dy=1.0):
         dx = self.err
-        dx *= float(1 / self.err.shape()[0])
+        dx *= float(2 / self.n)
         dx *= dy
-        return dx, None
+        return dx
 
 
 def mse_loss(x, t):
     assert x.shape == t.shape, "input and target shape different: %s, %s" % (
         x.shape, t.shape)
-    assert x.ndim() == 2, "2d input required, input shapes: %s, %s" % (x.shape,
-                                                                       t.shape)
-    assert t.ndim() == 2, "2d input required, input shapes: %s, %s" % (x.shape,
-                                                                       t.shape)
-    return MeanSquareError()(x, t)[0]
+    return MeanSquareError(t)(x)[0]
 
 
 def ctensor2numpy(x):
@@ -2935,7 +3008,14 @@ class Sub(Operator):
         """
         Return `a-b`, where x is CTensor.
         """
+        ori_type = None
+        if a.data_type() != singa.kFloat32:
+            ori_type = a.data_type()
+            a = a.AsType(singa.kFloat32)
+            b = b.AsType(singa.kFloat32)
         res = singa.__sub__(a, b)
+        if ori_type is not None:
+            res = res.AsType(ori_type)
         if training:
             self.shape0 = list(a.shape())
             self.shape1 = list(b.shape())
@@ -3226,8 +3306,15 @@ class Div(Operator):
         """
         Return `np.div(a,b)`, where a and b are CTensor.
         """
+        ori_type = None
+        if a.data_type() != singa.kFloat32:
+            ori_type = a.data_type()
+            a = a.AsType(singa.kFloat32)
+            b = b.AsType(singa.kFloat32)
         res = singa.__mul__(a, singa.PowFloat(b, -1.0))
         # res = singa.__div__(a, b)
+        if ori_type is not None:
+            res = res.AsType(ori_type)
         if training:
             self.input = (singa.MultFloat(a, -1.0), singa.PowFloat(b, -1.0)
                          )  # -a, 1/b
@@ -4025,6 +4112,7 @@ class ReduceMean(Operator):
             _x = tensor.reshape(_x, x_shape)
         self.cache = (x_shape, x)
         scale = np.prod(x_shape) / np.prod(x.shape())
+        self.scale = scale
         _x = singa.MultFloat(_x.data, scale)
         return _x
 
@@ -4041,6 +4129,7 @@ class ReduceMean(Operator):
         mask = singa.Tensor(list(x.shape()), x.device())
         mask.SetFloatValue(1.0)
         dy = singa.__mul__(mask, dy)
+        dy = singa.MultFloat(dy, self.scale)
         return dy
 
 
@@ -4320,10 +4409,10 @@ class Gather(Operator):
         xs = []
         for indice in self.indices:
             # each indice is a sub-indice
-            if isinstance(indice, tuple) or isinstance(indice, list):
+            if isinstance(indice, (tuple, list, np.ndarray)):
                 sub_xs = []
                 for idx in indice:
-                    idx = idx % _shape
+                    idx = int(idx % _shape)
                     tmp_tensor = singa.SliceOn(x, idx, idx + 1, self.axis)
                     sub_xs.append(tmp_tensor)
                 sub_xs = singa.VecTensor(sub_xs)
@@ -4680,17 +4769,17 @@ class _RNN(Operator):
     """ RNN operation with c++ backend
     """
 
-    def __init__(self,
-                 handle,
-                 return_sequences=False,
-                 batch_first=True,
-                 use_mask=False,
-                 seq_lengths=None):
+    def __init__(
+            self,
+            handle,
+            return_sequences=False,
+            #  batch_first=True,
+            use_mask=False,
+            seq_lengths=None):
         assert singa.USE_CUDA, "Not able to run without CUDA"
         super(_RNN, self).__init__()
         self.handle = handle
         self.return_sequences = return_sequences
-        self.batch_first = batch_first
         self.use_mask = use_mask
         if use_mask:
             assert type(seq_lengths) == Tensor, "wrong type for seq_lengths"
@@ -4719,17 +4808,18 @@ class _RNN(Operator):
             if self.use_mask:
                 (y, hy,
                  cy) = singa.GpuRNNForwardInferenceEx(x, hx, cx, w,
-                                                     self.seq_lengths.data,
-                                                     self.handle)
+                                                      self.seq_lengths.data,
+                                                      self.handle)
             else:
                 (y, hy,
                  cy) = singa.GpuRNNForwardInference(x, hx, cx, w, self.handle)
 
         if self.return_sequences:
-            # return full y {seq, bs, data_size}
+            # (seq, bs, data)
             return y
         else:
             # return last time step of y
+            # (seq, bs, data)[-1] -> (bs, data)
             last_y_shape = (y.shape()[1], y.shape()[2])
             last_y = singa.Tensor(list(last_y_shape), x.device())
 
@@ -4742,19 +4832,16 @@ class _RNN(Operator):
         assert training is True and hasattr(
             self, "inputs"), "Please set training as True before do BP. "
 
+        # (seq, bs, hid)
         dy = None
         if self.return_sequences:
-            # from: dy shape {bs, seq, ..}
-            # to:   dy shape {seq, bs, ..}
             assert grad.shape() == self.inputs['y'].shape(), (
                 "grad shape %s != y shape %s" %
                 (grad.shape(), self.inputs['y'].shape()))
             dy = grad
-            dy = dy.transpose((1, 0, 2))
         else:
-            # from: grad shape (bs, directions*hidden)
-            # to:     dy shape (seq, bs, directions*hidden)
-            #                  empty space filled by zeros
+            # grad (bs, directions*hidden) -> dy (seq, bs, directions*hidden)
+            #   empty space filled by zeros
             assert grad.shape() == (self.inputs['y'].shape()[1],
                                     self.inputs['y'].shape()[2]), (
                                         "grad y shape %s != last y shape %s" %
@@ -4785,13 +4872,10 @@ class _RNN(Operator):
             (dx, dhx,
              dcx) = singa.GpuRNNBackwardx(self.inputs['y'], dy, dhy, dcy,
                                           self.inputs['w'], self.inputs['hx'],
-                                                self.inputs['cx'], self.handle)
+                                          self.inputs['cx'], self.handle)
             dW = singa.GpuRNNBackwardW(self.inputs['x'], self.inputs['hx'],
-                                    self.inputs['y'], self.handle)
+                                       self.inputs['y'], self.handle)
 
-        # dx {seq, bs, ..} => {bat, seq, ..}
-        if self.batch_first:
-            dx = singa.Transpose(dx, list((1, 0, 2)))
 
         return dx, dhx, dcx, dW
 
@@ -4859,10 +4943,13 @@ class CosSim(Operator):
         ad = singa.Reshape(ad, list(ad.shape()) + [1])  # b * 1
         bd = singa.Reshape(bd, list(bd.shape()) + [1])  # b * 1
         ret = singa.Reshape(ret, list(ret.shape()) + [1])  # b * 1
+        dy = singa.Reshape(dy, list(dy.shape()) + [1])  # boardcast
         da = singa.__sub__(singa.__div__(b, ab),
-                           singa.__mul__(ret, singa.__div__(a, ad)))
+                           singa.__div__(singa.__mul__(ret, a), ad))
         db = singa.__sub__(singa.__div__(a, ab),
-                           singa.__mul__(ret, singa.__div__(b, bd)))
+                           singa.__div__(singa.__mul__(ret, b), bd))
+        da = singa.__mul__(dy, da)
+        db = singa.__mul__(dy, db)
         return da, db
 
 
@@ -4875,6 +4962,9 @@ def cossim(a, b):
     Returns:
         the output Tensor.
     """
+    assert a.shape == b.shape, "shape not match for cossim"
+    assert a.ndim() == 2, "shape should be in 2d for cossim"
+    assert b.ndim() == 2, "shape should be in 2d for cossim"
     return CosSim()(a, b)[0]
 
 
@@ -4970,6 +5060,7 @@ class Expand(Operator):
                     dy = singa.ConcatOn(dxs, axis)
         dy = singa.Reshape(dy, self.x_shape)
         return dy
+
 
 def expand(x, shape):
     """
@@ -5209,6 +5300,74 @@ def upsample(x, mode, scales):
     return UpSample(mode, scales)(x)[0]
 
 
+class Where(Operator):
+    """
+    Where operator following ONNX Operator Schemas
+    https://github.com/onnx/onnx/blob/master/docs/Operators.md#Where
+    and Numpy
+    https://numpy.org/doc/stable/reference/generated/numpy.where.html
+    Example usage::
+    condition = [[True, False], 
+              [True, True]]
+    x = [[1, 2], 
+        [3, 4]]
+    y =  [[9, 8], 
+        [7, 6]]
+
+    output = [[1, 8],
+            [3, 4]]
+    """
+
+    def __init__(self, condition):
+        """
+        Args:
+            condition (Tensor): When True (nonzero), yield X, otherwise yield Y
+        """
+        super(Where, self).__init__()
+        self.condition = condition
+
+    def forward(self, a, b):
+        if isinstance(self.condition, list):
+            self.condition = np.array(self.condition)
+        if isinstance(self.condition, np.ndarray):
+            self.condition = self.condition.astype(np.float32)
+            self.condition = tensor.from_numpy(self.condition)
+            self.condition.to_device(a.device())
+            self.condition = self.condition.data
+        self.neg_condition = singa.AddFloat(singa.MultFloat(self.condition, -1.), 1.)
+        _a, _b = a, b
+        dtype0 = _a.data_type()
+        dtype1 = _b.data_type()
+        if dtype0 == singa.kInt or dtype1 == singa.kInt:
+            _a = a.AsType(singa.kFloat32)
+            _b = b.AsType(singa.kFloat32)
+            res = singa.__add__(singa.__mul__(self.condition, _a),
+                             singa.__mul__(self.neg_condition, _b))
+            res = res.AsType(singa.kInt)
+        else:
+            res = singa.__add__(singa.__mul__(self.condition, _a),
+                             singa.__mul__(self.neg_condition, _b))
+        return res
+
+    def backward(self, dy):
+        da = singa.__mul__(self.condition, dy)
+        db = singa.__mul__(self.neg_condition, dy)
+        return da, db
+
+
+def where(x, y, condition):
+    """
+    Produces a Where operator
+    Args:
+        x (Tensor): input tensor.
+        y (Tensor): input tensor.
+        condition (Tensor): When True (nonzero), yield X, otherwise yield Y
+    Returns:
+        the output Tensor.
+    """
+    return Where(condition)(x, y)[0]
+
+
 class Round(Operator):
     """
     Element-wise round the input
@@ -5263,6 +5422,84 @@ def rounde(x):
         the output Tensor.
     """
     return Rounde()(x)[0]
+
+
+class Embedding(Operator):
+    """
+    Init an embedding operator
+    """
+
+    def __init__(self):
+        super(Embedding, self).__init__()
+
+    def forward(self, x, w):
+        """
+        forward of embedding
+        Args:
+            x (CTensor): input tensor.
+            w (CTensor): weight tensor.
+        Returns:
+            the output CTensor.
+        """
+        x = tensor.to_numpy(tensor.from_raw_tensor(x))
+        if training:
+            self.cache = (x, w.shape())
+
+        xs = []
+        x = x.tolist()
+        for indice in x:
+            sub_xs = []
+            for idx in indice:
+                idx = int(idx)
+                tmp_tensor = singa.SliceOn(w, idx, idx + 1, 0)
+                sub_xs.append(tmp_tensor)
+            sub_xs = singa.VecTensor(sub_xs)
+            tmp_tensor = singa.ConcatOn(sub_xs, 0)
+            tmp_tensor = singa.Reshape(tmp_tensor,
+                                       [1] + list(tmp_tensor.shape()))
+            
+            xs.append(tmp_tensor)
+        xs = singa.VecTensor(xs)
+        xs = singa.ConcatOn(xs, 0)
+        return xs
+
+    def backward(self, dy):
+        """
+        backward of embedding
+        Args:
+            dy (CTensor): gradient tensor.
+        Raises:
+            the gradient tensor over input tensor.
+        """
+        x, w_shape = self.cache
+        dy_shape = dy.shape()
+        # construct the dx
+        dx = tensor.sum(tensor.from_raw_tensor(dy), axis=2)
+
+        # construct the dw
+        dws = []
+        for idx in range(w_shape[0]):
+            tmp_tensor = singa.Tensor((1, w_shape[1]), dy.device())
+            tmp_tensor.SetFloatValue(0.0)
+            dws.append(tmp_tensor)
+        dy = singa.Reshape(dy, [dy_shape[0] * dy_shape[1], dy_shape[2]])
+        x = x.reshape(-1)
+        for idx, val in enumerate(x):
+            tmp_tensor = singa.SliceOn(dy, idx, idx + 1, 0)
+            dws[val] = singa.__add__(dws[val], tmp_tensor)
+        dws = singa.VecTensor(dws)
+        return dx.data, singa.ConcatOn(dws, 0)
+
+
+def embedding(x, w):
+    """
+    Produces an embedding operator.
+    Args:
+    Returns:
+        the output Tensor.
+    """
+    return Embedding()(x, w)[0]
+
 
 ''' alias for Operator and Layers
 '''

@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+#include <array>
+
 #include "gtest/gtest.h"
 #include "singa/core/tensor.h"
 using singa::Device;

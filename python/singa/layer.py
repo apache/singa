@@ -438,6 +438,48 @@ class Gemm(Layer):
             self.b.copy_from(parameters[self.b.name])
 
 
+class Embedding(Layer):
+    """
+    Generate an Embedding operator
+    """
+
+    def __init__(self, input_dim, output_dim, initializer="gaussian"):
+        """init the Embedding operator
+        Args:
+            input_dim (int): the number of different words in the dictionary
+            output_dim (int): the dimendion of a word after the embedding
+            initializer (str, optional): weight initializer, can be [uniform, gaussian]. Defaults to "uniform".
+        """
+        super(Embedding, self).__init__()
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.initializer = initializer
+
+    def initialize(self, x):
+        w_shape = (self.input_dim, self.output_dim)
+        self.W = Tensor(shape=w_shape,
+                        requires_grad=True,
+                        stores_grad=True,
+                        device=x.device)
+        if self.initializer == 'uniform':
+            self.W.uniform(-1., 1.)
+        else:
+            self.W.gaussian(0., 1.)
+
+    def from_pretrained(self, W, freeze=True):
+        self.set_params({self.W.name: W})
+        self.W.requires_grad = not freeze
+
+    def forward(self, x):
+        return autograd.embedding(x, self.W)
+
+    def get_params(self):
+        return {self.W.name: self.W}
+
+    def set_params(self, parameters):
+        self.W.copy_from(parameters[self.W.name])
+
+
 class Conv2d(Layer):
     """
     Generate a Conv 2d operator
@@ -1328,6 +1370,18 @@ class ReLU(Layer):
         return autograd.relu(x)
 
 
+class Sigmoid(Layer):
+    """
+    Generate a ReLU operator
+    """
+
+    def __init__(self):
+        super(Sigmoid, self).__init__()
+
+    def forward(self, x):
+        return autograd.sigmoid(x)
+
+
 class Add(Layer):
     """
     Generate a Add operator
@@ -1363,6 +1417,54 @@ class SoftMaxCrossEntropy(Layer):
 
     def forward(self, x, t):
         return autograd.softmax_cross_entropy(x, t)
+
+
+class SoftMax(Layer):
+    """
+    Generate a SoftMax operator
+    """
+
+    def __init__(self):
+        super(SoftMax, self).__init__()
+
+    def forward(self, x):
+        return autograd.softmax(x)
+
+
+class MeanSquareError(Layer):
+    """
+    Generate a MeanSquareError operator
+    """
+
+    def __init__(self):
+        super(MeanSquareError, self).__init__()
+
+    def forward(self, x, t):
+        return autograd.mse_loss(x, t)
+
+
+class CrossEntropy(Layer):
+    """
+    Generate a CrossEntropy operator
+    """
+
+    def __init__(self):
+        super(CrossEntropy, self).__init__()
+
+    def forward(self, x, t):
+        return autograd.cross_entropy(x, t)
+
+
+class BinaryCrossEntropy(Layer):
+    """
+    Generate a BinaryCrossEntropy operator
+    """
+
+    def __init__(self):
+        super(BinaryCrossEntropy, self).__init__()
+
+    def forward(self, x, t):
+        return autograd.binary_cross_entropy(x, t)
 
 
 class Dropout(Layer):
@@ -1414,12 +1516,12 @@ class CudnnRNN(Layer):
                  activation="tanh",
                  num_layers=1,
                  bias=True,
-                 batch_first=False,
+                 batch_first=True,
                  dropout=0,
                  bidirectional=False,
                  rnn_mode="lstm",
                  use_mask=False,
-                 return_sequences=False):
+                 return_sequences=True):
         """
             Args:
                 hidden_size: hidden feature dim
@@ -1467,13 +1569,15 @@ class CudnnRNN(Layer):
                         requires_grad=True,
                         stores_grad=True,
                         device=x.device)
-        self.W.gaussian(0, 1)
+
+        k = 1 / self.hidden_size
+        self.W.uniform(-math.sqrt(k), math.sqrt(k))
 
     def forward(self, x, hx=None, cx=None, seq_lengths=None):
 
         self.device_check(x, self.W)
-        if self.batch_first:
-            x = x.transpose((1, 0, 2))
+        if self.batch_first:  # (bs,seq,data) -> (seq,bs,data)
+            x = autograd.transpose(x, (1, 0, 2))
 
         batch_size = x.shape[1]
         directions = 2 if self.bidirectional else 1
@@ -1496,17 +1600,16 @@ class CudnnRNN(Layer):
             assert type(seq_lengths) == Tensor, "wrong type for seq_lengths"
             y = autograd._RNN(self.handle,
                               return_sequences=self.return_sequences,
-                              batch_first=self.batch_first,
                               use_mask=self.use_mask,
                               seq_lengths=seq_lengths)(x, hx, cx, self.W)[0]
         else:
-            y = autograd._RNN(self.handle,
-                              return_sequences=self.return_sequences,
-                              batch_first=self.batch_first)(x, hx, cx,
-                                                            self.W)[0]
+            y = autograd._RNN(
+                self.handle,
+                return_sequences=self.return_sequences,
+            )(x, hx, cx, self.W)[0]
         if self.return_sequences and self.batch_first:
-            #   outputs has shape of {sequence length, batch size, hidden size}
-            y = y.transpose((1, 0, 2))  # to {bs, seq, hid}
+            # (seq, bs, hid) -> (bs, seq, hid)
+            y = autograd.transpose(y, (1, 0, 2))
         return y
 
     def get_params(self):
