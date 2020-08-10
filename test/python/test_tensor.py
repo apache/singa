@@ -478,16 +478,31 @@ class TestTensorMethods(unittest.TestCase):
         x = tensor.Tensor((4, 5, 3, 2), device=dev)
         x.gaussian(0, 1)
 
-    # TODO: failed
-    def test_half_np(self, dev=gpu_dev):
-        x_val = np.random.random((2, 3)).astype(np.float32)
-        x = tensor.from_numpy(x_val)
-        x.to_device(dev)
+    def test_float32_as_type_float16(self,dev=cpu_dev):
+        tq = tensor.random((2,3,4), dev)
+        tq = tq.as_type(tensor.float16)
 
-        self.assertEqual(x.dtype, core_pb2.kFloat16)
-        print(x.dtype)
-        print(x_val)
-        print(x)
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_copy_from_np32_to_kfloat16_gpu(self):
+        self.test_copy_from_np32_to_kfloat16(gpu_dev)
+
+    def test_copy_from_np32_to_kfloat16(self, dev=cpu_dev):
+        x_val = np.random.random((2, 3)).astype(np.float32)
+        x = tensor.Tensor((2,3), cpu_dev, tensor.float16)
+        x.copy_from_numpy(x_val)
+        self.assertEqual(x.dtype, tensor.float16)
+
+    def test_copy_from_np16_to_kfloat16(self, dev=gpu_dev):
+        x_val = np.random.random((2, 3)).astype(np.float16)
+        x = tensor.Tensor((2,3), cpu_dev, tensor.float16)
+        x.copy_from_numpy(x_val)
+        self.assertEqual(x.dtype, tensor.float16)
+        # print(x)
+
+    def test_from_np16_to_kfloat16(self, dev=gpu_dev):
+        x_val = np.random.random((2, 3)).astype(np.float16)
+        x = tensor.from_numpy(x_val)
+        self.assertEqual(x.dtype, tensor.float16)
 
     def test_half(self, dev=gpu_dev):
         x = tensor.Tensor((2,3),device=dev,dtype=core_pb2.kFloat16)

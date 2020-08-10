@@ -67,7 +67,10 @@ from .device import get_default_device
 
 int32 = core_pb2.kInt
 float32 = core_pb2.kFloat32
+float16 = core_pb2.kFloat16
 CTensor = singa.Tensor
+
+singa_type_name = {float32: 'float32', float16: 'float16', int32: 'int32'}
 
 
 class Tensor(object):
@@ -342,12 +345,15 @@ class Tensor(object):
         if not np_array.ndim == 1:
             np_array = np_array.flatten()
         dt = np_array.dtype
-        if dt == np.float32:
+        if dt == np.float32 and self.dtype == float32:
             self.data.CopyFloatDataFromHostPtr(np_array)
+        elif dt in (np.float16, np.float32) and self.dtype == float16:
+            np_array = np_array.astype(np.float16)
+            self.data.CopyHalfFloatDataFromHostPtr(np_array)
         elif dt == np.int or dt == np.int32:
             self.data.CopyIntDataFromHostPtr(np_array)
         else:
-            print('Not implemented yet for ', dt)
+            raise NotImplementedError('Not implemented yet for combination np type %s and singa type %s'%(dt,singa_type_name[self.dtype]))
 
     def copy_data(self, t):
         '''Copy data from other Tensor instance.

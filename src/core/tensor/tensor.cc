@@ -249,17 +249,6 @@ void Tensor::CopyDataFromHostPtr(const DType *src, const size_t num,
     LOG(WARNING) << "Copy data from null host ptr";
   }
 }
-template <> void Tensor::CopyDataFromHostPtr(const void *src,
-                                          const size_t num,
-                                          const size_t offset) const {
-  if (src != nullptr) {
-    device_->CopyDataFromHostPtr(block(), src, SizeOf(data_type_) * num,
-                                 SizeOf(data_type_) * offset);
-  } else {
-    LOG(WARNING) << "Copy data from null host ptr";
-  }
-}
-
 template void Tensor::CopyDataFromHostPtr(const float *src, const size_t num,
                                           const size_t offset) const;
 template void Tensor::CopyDataFromHostPtr(const half_float::half *src, const size_t num,
