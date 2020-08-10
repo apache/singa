@@ -40,6 +40,7 @@
 #define NO_IMPORT_ARRAY
 #endif
 #include "stdio.h"
+#include "half.hpp"
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
 %}
@@ -3089,6 +3090,7 @@
 %numpy_typemaps(long long         , NPY_LONGLONG , int)
 %numpy_typemaps(unsigned long long, NPY_ULONGLONG, int)
 %numpy_typemaps(float             , NPY_FLOAT    , int)
+%numpy_typemaps(half_float::half  , NPY_FLOAT16  , int)
 %numpy_typemaps(double            , NPY_DOUBLE   , int)
 
 /* ***************************************************************

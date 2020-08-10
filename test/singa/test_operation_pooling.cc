@@ -32,6 +32,7 @@ TEST(DNNLOperationPooling, Forward) {
 
   Tensor in(Shape{batchsize, c, h, w});
   in.CopyDataFromHostPtr(x, batchsize * c * h * w);
+  // in = in.AsType(kFloat16);
 
   PoolingHandle pool_handle(in, {2, 2}, {1, 1}, {0, 0}, true);
   Tensor out1 = CpuPoolingForward(pool_handle, in);

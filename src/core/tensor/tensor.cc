@@ -191,13 +191,14 @@ Tensor Resize(const Tensor &in, const Shape &shape) {
     }                                                                          \
   } while (0)
 
+// TODO: Shicong: add Tensor::SetType() as inplace operations
 // return new tensor
-Tensor Tensor::AsType(const DataType type) {
+Tensor Tensor::AsType(const DataType type) const {
   CHECK(block() && block()->initialized() == true)
       << "the data of the tensor needs be initialized before casting to "
          "another type";
   if (data_type_ != type) {
-    Tensor &thisRef = *this;
+    const Tensor &thisRef = *this;
     Tensor ret(shape_, device_, type);
     TYPE_TYPE_LANG_SWITCH(
         data_type_, LDType, type, RDType, device_->lang(), Lang, {
@@ -248,10 +249,20 @@ void Tensor::CopyDataFromHostPtr(const DType *src, const size_t num,
     LOG(WARNING) << "Copy data from null host ptr";
   }
 }
-template void Tensor::CopyDataFromHostPtr(const unsigned char *src,
+template <> void Tensor::CopyDataFromHostPtr(const void *src,
                                           const size_t num,
-                                          const size_t offset) const;
+                                          const size_t offset) const {
+  if (src != nullptr) {
+    device_->CopyDataFromHostPtr(block(), src, SizeOf(data_type_) * num,
+                                 SizeOf(data_type_) * offset);
+  } else {
+    LOG(WARNING) << "Copy data from null host ptr";
+  }
+}
+
 template void Tensor::CopyDataFromHostPtr(const float *src, const size_t num,
+                                          const size_t offset) const;
+template void Tensor::CopyDataFromHostPtr(const half_float::half *src, const size_t num,
                                           const size_t offset) const;
 template void Tensor::CopyDataFromHostPtr(const int *src, const size_t num,
                                           const size_t offset) const;
@@ -821,8 +832,36 @@ void Tensor::get_value(SType *value, const size_t num) const {
   auto ptr = static_cast<const SType *>(t.block()->data());
   for (size_t i = 0; i < num; i++) value[i] = ptr[i];
 }
-template void Tensor::get_value<float>(float *value, const size_t num) const;
+
+// explicit specialization
+template<> void Tensor::get_value<float>(float *value, const size_t num) const {
+  if (data_type_ == kFloat16){
+    Tensor tmp = this->AsType(kFloat16);
+    CHECK(device_ == defaultDevice);
+    Tensor t(shape_, device_, data_type_);
+    // transform function arrange data in memory considering stride
+    singa::Transform(tmp, &t);
+    auto ptr = static_cast<const float *>(t.block()->data());
+    for (size_t i = 0; i < num; i++) value[i] = ptr[i];
+  } else{
+    CHECK(device_ == defaultDevice);
+    Tensor t(shape_, device_, data_type_);
+    // transform function arrange data in memory considering stride
+    singa::Transform(*this, &t);
+    auto ptr = static_cast<const float *>(t.block()->data());
+    for (size_t i = 0; i < num; i++) value[i] = ptr[i];
+  }
+}
 template void Tensor::get_value<int>(int *value, const size_t num) const;
+template<> void Tensor::get_value<half_float::half>(half_float::half *value, const size_t num) const{
+  Tensor tmp = this->AsType(kFloat32);
+  CHECK(device_ == defaultDevice);
+  Tensor t(shape_, device_, kFloat32);
+  singa::Transform(tmp, &t);
+  t = t.AsType(kFloat16);
+  auto ptr = static_cast<const half_float::half *>(t.block()->data());
+  for (size_t i = 0; i < num; i++) value[i] = ptr[i];
+}
 
 // DEPRECATED
 template <typename SType>

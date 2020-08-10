@@ -905,9 +905,8 @@ def to_numpy(t):
     th = to_host(t)
     if th.dtype == core_pb2.kFloat32:
         np_array = th.data.GetFloatValue(int(th.size()))
-    if th.dtype == core_pb2.kFloat16:
-        th = th.as_type(core_pb2.kFloat32)
-        np_array = th.data.GetFloatValue(int(th.size()))
+    elif th.dtype == core_pb2.kFloat16:
+        np_array = th.data.GetHalfFloatValue(int(th.size()))
     elif th.dtype == core_pb2.kInt:
         np_array = th.data.GetIntValue(int(th.size()))
     else:
@@ -1760,7 +1759,13 @@ def copy_from_numpy(data, np_array):
     if not np_array.ndim == 1:
         np_array = np_array.flatten()
     dt = np_array.dtype
-    if dt == np.float32:
+    if dt == np.float32 and data.data_type() == singa.kFloat16:
+        # print("handling np float32 to kfloat16")
+        # np_array = np_array.astype(np.ubyte)
+        # print("np array size()", np_array.size())
+        # data.CopyByteDataFromHostPtr(np_array, np_array.size())
+        data.CopyHalfFloatDataFromHostPtr(np_array)
+    elif dt == np.float32:
         data.CopyFloatDataFromHostPtr(np_array)
     elif dt == np.int or dt == np.int32:
         data.CopyIntDataFromHostPtr(np_array)

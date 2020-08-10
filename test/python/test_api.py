@@ -644,6 +644,31 @@ class TestAPI(unittest.TestCase):
     def test_concat_gpu(self):
         self._concat_helper(gpu_dev)
 
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_half(self,dev=cpu_dev):
+        x=tensor.Tensor((2,3),dev,singa_api.kFloat16)
+        y=tensor.Tensor((2,3),dev)
+
+        np_val = np.ones((6,))/3
+        np_val = np_val.astype(np.float32)
+        y.data.CopyFloatDataFromHostPtr(np_val)
+        print(np_val)
+        print("y", y)
+
+        # np_val = np_val.astype(np.ubyte)
+        # print("np ubyte", np_val)
+        # print("np ubyte back to float32", np_val.astype(np.float32))
+        # print(np_val.size)
+        # np_ptr = x.ctypes.data_as(ctypes.c_void_p)
+        # x.data.CopyByteDataFromHostPtr(np_ptr, 6)
+        np_val = np_val.astype(np.float16)
+        # x.data.CopyByteDataFromHostPtr(np_val)
+    # %template(CopyHalfFloatDataFromHostPtr) CopyDataFromHostPtr<half_float::half>;
+        x.data.CopyHalfFloatDataFromHostPtr(np_val)
+        print("x",x.dtype)
+        print("x",tensor.to_numpy(x).dtype)
+        pass
+
     def _ceil_helper(self, dev):
 
         np1 = np.random.random([5, 6, 7, 8]).astype(np.float32)

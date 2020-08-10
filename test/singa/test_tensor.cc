@@ -68,6 +68,36 @@ TEST(TensorClass, Reshape) {
   EXPECT_TRUE(o.shape() != t.shape());
 }
 
+
+TEST(TensorClass, CopyBytesFromHostPtr) {
+  auto cuda = std::make_shared<singa::CudaGPU>();
+  auto cpu = std::make_shared<singa::CppCPU>();
+
+  vector<half_float::half> list1(3, half_float::half(1.0/3));
+
+  // Tensor t(Shape{3}, cpu, singa::kFloat16);
+  Tensor t(Shape{3}, cuda, singa::kFloat16);
+
+  // const void *data_ptr = list1.data();
+  const half_float::half *data_ptr = list1.data();
+  t.CopyDataFromHostPtr(data_ptr, 3);
+  t.ToHost();
+
+  const half_float::half* data_ptr2 = static_cast<const half_float::half*>(t.block()->data());
+
+  for (int i=0;i<t.size();i++){
+    std::cout<<data_ptr2[i]<<std::endl;
+  }
+
+  // ok
+  vector<half_float::half> out1(t.size(), half_float::half(0.0));
+  std::cout<<"get half value";
+  t.get_value<half_float::half>(out1.data(), t.size());
+  for (int i=0;i<t.size();i++){
+    std::cout<<out1[i]<<std::endl;
+  }
+}
+
 TEST(TensorClass, AsTypeHalfCpu) {
   // using half_float::half;
   // using namespace half_float::literal;

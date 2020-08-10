@@ -480,7 +480,7 @@ class TestTensorMethods(unittest.TestCase):
 
     # TODO: failed
     def test_half_np(self, dev=gpu_dev):
-        x_val = np.random.random((2, 3)).astype(np.half)
+        x_val = np.random.random((2, 3)).astype(np.float32)
         x = tensor.from_numpy(x_val)
         x.to_device(dev)
 

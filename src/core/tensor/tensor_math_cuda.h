@@ -134,6 +134,7 @@ cudnnTensorDescriptor_t generate_tensor_nd_desc(const Tensor& x) {
   // LOG(INFO) << vec2str(shape);
   // LOG(INFO) << vec2str(stride);
   // LOG(INFO) << "";
+  // TODO: shicong use mapping function
   cudnnDataType_t c_data_type = CUDNN_DATA_FLOAT;
   if (x.data_type() == kFloat16)
     c_data_type = CUDNN_DATA_HALF;

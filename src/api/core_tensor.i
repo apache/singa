@@ -33,6 +33,7 @@
 #include "singa/core/device.h"
 #include "singa/proto/core.pb.h"
 #include "singa/proto/model.pb.h"
+#include "half.hpp"
 using singa::DataType;
 %}
 %shared_ptr(singa::Device)
@@ -47,6 +48,12 @@ using singa::DataType;
 }
 %apply (int *IN_ARRAY1, int DIM1) {
        (const int *src, const size_t num)
+}
+%apply (half_float::half *IN_ARRAY1, int DIM1) {
+       (const half_float::half *src, const size_t num)
+}
+%apply (half_float::half *ARGOUT_ARRAY1, int DIM1) {
+       (half_float::half *value, const size_t num)
 }
 %apply (float *ARGOUT_ARRAY1, int DIM1) {
        (float *value, const size_t num)
@@ -90,6 +97,9 @@ namespace singa{
 
     std::shared_ptr<singa::Device> device() const;
 
+    template <typename SType> void get_value(SType* value, const size_t num) const;
+    %template(GetHalfFloatValue) get_value<half_float::half>;
+
     template <typename SType> void GetValue(SType* value, const size_t num) const;
     %template(GetFloatValue) GetValue<float>;
     %template(GetIntValue) GetValue<int>;
@@ -117,6 +127,7 @@ namespace singa{
                                                        const size_t num,
                                                        const size_t offset = 0) const;
     %template(CopyFloatDataFromHostPtr) CopyDataFromHostPtr<float>;
+    %template(CopyHalfFloatDataFromHostPtr) CopyDataFromHostPtr<half_float::half>;
     %template(CopyIntDataFromHostPtr) CopyDataFromHostPtr<int>;
 
     void CopyData(const Tensor &other);
