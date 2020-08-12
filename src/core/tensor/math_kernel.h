@@ -68,6 +68,7 @@ void tanh(const size_t n, const float *in, float *out, cudaStream_t s);
 void atan(const size_t n, const float *in, float *out, cudaStream_t s);
 void atanh(const size_t n, const float *in, float *out, cudaStream_t s);
 void relu(const size_t n, const float *in, float *out, cudaStream_t s);
+void relu(const size_t n, const __half *in, __half *out, cudaStream_t s);
 void sigmoid(const size_t n, const float *in, float *out, cudaStream_t s);
 void softplus(const size_t n, const float *in, float *out, cudaStream_t s);
 void softsign(const size_t n, const float *in, float *out, cudaStream_t s);
@@ -81,6 +82,8 @@ void add(const size_t n, const float *in, const float x, float *out,
          cudaStream_t s);
 
 void mult(const size_t n, const float *in, const float x, float *out,
+          cudaStream_t s);
+void mult(const size_t n, const __half *in, const __half x, __half *out,
           cudaStream_t s);
 
 void broadcast_to(const size_t n, size_t nDim, const float *in,
@@ -139,6 +142,9 @@ void div(const size_t n, const float *in1, const float *in2, float *out,
 
 // void sum(const size_t n, const float *in, float *out, cudaStream_t s);
 
+void ComputeCrossEntropy(bool int_target, const size_t batchsize,
+                         const size_t dim, const __half *p, const __half *t,
+                         __half *loss, cudaStream_t stream);
 void ComputeCrossEntropy(bool int_target, const size_t batchsize,
                          const size_t dim, const float *p, const int *t,
                          float *loss, cudaStream_t stream);

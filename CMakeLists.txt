@@ -42,7 +42,7 @@ message(STATUS "SINGA Version ${SINGA_VERSION}")
 
 # Flags
 IF(UNIX)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -O2 -fPIC -Wall -pthread")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -O2 -fPIC -Wall -pthread -Wfatal-errors")
 ENDIF()
 IF(APPLE)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -g -O2 -fPIC -Wall -pthread")
@@ -113,6 +113,8 @@ IF (USE_CUDA)
     #ADD_SUBDIRECTORY(lib/cnmem)
     #LIST(APPEND SINGA_LINKER_LIBS cnmem)
     SET(global_cuda_objs "")
+    # add support cuda fp16
+    SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --gpu-architecture=compute_60")
 ENDIF()
 
 # TODO(wangwei) detect the ev lib

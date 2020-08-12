@@ -22,6 +22,7 @@
 #include <tuple>
 #include <vector>
 
+#include "half.hpp"
 #include "singa/core/common.h"
 #include "singa/core/device.h"
 #include "singa/proto/core.pb.h"
@@ -117,7 +118,7 @@ class Tensor {
   const vector<int> &stride() const { return stride_; }
 
   /// Return true if the content of the tensor is initialized
-  bool initailized() const {
+  bool initialized() const {
     return block_ != nullptr && block_->initialized();
   }
 
@@ -142,6 +143,8 @@ class Tensor {
 
   template <typename SType>
   void get_value(SType *value, const size_t num) const;
+
+  friend std::ostream &operator<<(std::ostream &os, Tensor &out);
 
   /// Serialize data, shape and transpose to protobuf object.
   void ToProto(singa::TensorProto *proto) const;
@@ -170,6 +173,10 @@ class Tensor {
   template <typename SType>
   void CopyDataFromHostPtr(const SType *src, const size_t num,
                            const size_t offset = 0) const;
+
+  template <typename SType>
+  void CopyDataToHostPtr(SType *src, const size_t num,
+                         const size_t offset = 0) const;
 
   /// Copy data from another Tensor which may be on a diff device.
   /// Meta data would not be copied!
@@ -258,7 +265,10 @@ class Tensor {
   Tensor &ResetLike(const Tensor &t);
 
   /// Reset the data type, it would reallocate block if type changes.
-  Tensor AsType(const DataType type);
+  Tensor AsType(const DataType type) const;
+
+  /// change data type for this tensor
+  Tensor &ToType(const DataType type);
 
   /// Reset the device.
   /// If the target device is a diff device, then do deep data copy.
@@ -312,7 +322,7 @@ inline void CheckDataTypeAndLang(const Tensor &in1, const Tensor &in2) {
 
 template <typename FromType, typename ToType>
 ToType TypeCast(const FromType &x) {
-  // TODO(wangwei) cast fp16; prevent some casts, e.g., float to char
+  // TODO(wangwei) prevent some casts, e.g., float to char
   return static_cast<ToType>(x);
 }
 

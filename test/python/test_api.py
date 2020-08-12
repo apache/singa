@@ -24,7 +24,7 @@ import math
 import numpy as np
 
 from singa import singa_wrap as singa_api
-from singa import tensor
+from singa import tensor, layer, autograd
 from cuda_helper import gpu_dev, cpu_dev
 
 
