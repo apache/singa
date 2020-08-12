@@ -2048,9 +2048,11 @@ class SingaRep(BackendRep):
         outputs_dict = OrderedDict([])
 
         # last_layers means we run this model until the last #N layers
-        last_layers = kwargs.get('last_layers', len(self._layers))
-        if last_layers != len(self._layers):
-            for outp in self._layers[last_layers - 1].outputs:
+        last_layers = kwargs.get('last_layers', len(self._layers) - 1)
+        last_layers = last_layers if last_layers >= 0 else (
+            last_layers + 1) % len(self._layers)
+        if last_layers != len(self._layers) - 1:
+            for outp in self._layers[last_layers].outputs:
                 outputs_dict[outp] = None
         else:
             for outp in self.outputs:
@@ -2064,7 +2066,7 @@ class SingaRep(BackendRep):
         self.init_tensor_count()
 
         # run the layer by the topo order
-        for node in self._layers[:last_layers]:
+        for node in self._layers[:last_layers + 1]:
             op = self.__dict__[node.name]
             self.handle_special_ops(node, op, tensor_dict)
             # make input
