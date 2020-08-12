@@ -1087,7 +1087,8 @@ class SingaBackend(Backend):
         'Unsqueeze': 'Unsqueeze',
         'NonZero': 'NonZero',
         'Ceil': 'Ceil',
-        # # special op
+        # special op
+        'ScatterElements': 'ScatterElements',
         'Cast': 'Cast',
         'Split': 'Split',
         'Squeeze': 'Squeeze',
@@ -1155,6 +1156,7 @@ class SingaBackend(Backend):
         'Expand': '_create_expand',
         'Pad': '_create_pad',
         'Upsample': '_create_upsample',
+        'ScatterElements': '_create_scatter_elements',
         'Where': '_create_where',
     }
 
@@ -1190,7 +1192,10 @@ class SingaBackend(Backend):
         return operator(mode, None, None)
 
     @classmethod
-    def _create_upsample(cls, onnx_node, operator, opset_version=_opset_version):
+    def _create_upsample(cls,
+                         onnx_node,
+                         operator,
+                         opset_version=_opset_version):
         """
         get the UpSample operator from onnx node
         Args:
@@ -1676,6 +1681,25 @@ class SingaBackend(Backend):
 
         is_max = onnx_node.op_type == 'MaxPool'
         return operator(kernel_size, stride, padding, is_max, auto_pad)
+
+    @classmethod
+    def _create_scatter_elements(cls,
+                                 onnx_node,
+                                 operator,
+                                 opset_version=_opset_version):
+        """
+        get the ScatterElements from the onnx node
+        Args:
+            onnx_node(OnnxNode): a given onnx node
+            operator (Operator Class): a singa operator class
+            opset_version(int): the opset version
+        Returns: 
+            singa operator instance      
+        """
+        axis = onnx_node.getattr("axis", 0)
+        onnx_node.set_attr_inputs(onnx_node.inputs[1], 'indices')
+        onnx_node.set_attr_inputs(onnx_node.inputs[2], 'updates')
+        return operator(None, None, axis)
 
     @classmethod
     def _onnx_constant_to_np(cls, onnx_node, opset_version=_opset_version):

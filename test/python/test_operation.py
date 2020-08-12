@@ -2881,6 +2881,74 @@ class TestPythonOperation(unittest.TestCase):
     def test_ceil_gpu(self):
         self.ceil_test(gpu_dev)
 
+    def _test_scatter_elements(self, dev):
+        # testing witout axis
+        data = np.zeros((3, 3), dtype=np.float32)
+        indices = np.array([[1, 0, 2], [0, 2, 1]], dtype=np.int32)
+        updates = np.array([[1.0, 1.1, 1.2], [2.0, 2.1, 2.2]], dtype=np.float32)
+        output = np.array([[2.0, 1.1, 0.0], [1.0, 0.0, 2.2], [0.0, 2.1, 1.2]],
+                        dtype=np.float32)
+
+        data = tensor.from_numpy(data)
+        indices = tensor.from_numpy(indices)
+        updates = tensor.from_numpy(updates)
+        data.to_device(dev)
+        indices.to_device(dev)
+        updates.to_device(dev)
+
+        result = autograd.scatter_elements(data, indices, updates)
+        dy = tensor.from_numpy(np.ones(data.shape, dtype=np.float32))
+        dx = result.creator.backward(dy.data)
+        np.testing.assert_almost_equal(tensor.to_numpy(result), output, decimal=5)
+        self.check_shape(dx.shape(), data.shape)
+
+        # testing with axis
+        data =  np.array([[1.0, 2.0, 3.0, 4.0, 5.0]], dtype=np.float32)
+        indices = np.array([[1, 3]], dtype=np.int32)
+        updates = np.array([[1.1, 2.1]], dtype=np.float32)
+        output = np.array([[1.0, 1.1, 3.0, 2.1, 5.0]], dtype=np.float32)
+
+        data = tensor.from_numpy(data)
+        indices = tensor.from_numpy(indices)
+        updates = tensor.from_numpy(updates)
+        data.to_device(dev)
+        indices.to_device(dev)
+        updates.to_device(dev)
+
+        result = autograd.scatter_elements(data, indices, updates, axis=1)
+        dy = tensor.from_numpy(np.ones(data.shape, dtype=np.float32))
+        dx = result.creator.backward(dy.data)
+        np.testing.assert_almost_equal(tensor.to_numpy(result), output, decimal=5)
+        self.check_shape(dx.shape(), data.shape)
+
+        # testing with negative indices:
+        data = np.array([[1.0, 2.0, 3.0, 4.0, 5.0]], dtype=np.float32)
+        indices = np.array([[1, -3]], dtype=np.int64)
+        updates = np.array([[1.1, 2.1]], dtype=np.float32)
+        output = np.array([[1.0, 1.1, 2.1, 4.0, 5.0]], dtype=np.float32)
+
+        data = tensor.from_numpy(data)
+        indices = tensor.from_numpy(indices)
+        updates = tensor.from_numpy(updates)
+        data.to_device(dev)
+        indices.to_device(dev)
+        updates.to_device(dev)
+
+        result = autograd.scatter_elements(data, indices, updates, axis=1)
+        dy = tensor.from_numpy(np.ones(data.shape, dtype=np.float32))
+        dx = result.creator.backward(dy.data)
+        np.testing.assert_almost_equal(tensor.to_numpy(result), output, decimal=5)
+        self.check_shape(dx.shape(), data.shape)
+       
+
+    def test_cpu_scatter_elements(self):
+        self._test_scatter_elements(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_gpu_scatter_elements(self):
+        self._test_scatter_elements(gpu_dev)
+
+
     def split_test(self, dev):
         X = np.array([1., 2., 3., 4., 5., 6.]).astype(np.float32)
         DY1 = np.ones((2), dtype=np.float32)
