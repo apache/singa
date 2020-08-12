@@ -48,10 +48,10 @@ using std::atomic;
 namespace singa {
 
 namespace lang {
-/// To implemente functions using cpp libraries
+/// To implement functions using cpp libraries
 typedef struct _Cpp {
 } Cpp;
-/// To implemente functions using cuda libraries
+/// To implement functions using cuda libraries
 typedef struct _Cuda {
 } Cuda;
 /// To implement function using opencl libraries

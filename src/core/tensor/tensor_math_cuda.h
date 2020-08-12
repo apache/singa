@@ -24,6 +24,7 @@
 #include <cuda_runtime.h>
 #include <cudnn.h>
 
+#include "../../model/layer/cudnn_utils.h"
 #include "./math_kernel.h"
 #include "./tensor_math.h"
 #include "singa/core/common.h"
@@ -134,9 +135,9 @@ cudnnTensorDescriptor_t generate_tensor_nd_desc(const Tensor& x) {
   // LOG(INFO) << vec2str(shape);
   // LOG(INFO) << vec2str(stride);
   // LOG(INFO) << "";
-  check_cudnn(cudnnSetTensorNdDescriptor(x_desc, CUDNN_DATA_FLOAT,
-                                         generate_dim_cuda(y), shape.data(),
-                                         stride.data()));
+  check_cudnn(cudnnSetTensorNdDescriptor(
+      x_desc, GetCudnnDataType(x.data_type()), generate_dim_cuda(y),
+      shape.data(), stride.data()));
 
   return x_desc;
 }
@@ -170,6 +171,24 @@ void Abs<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
 }
 
 template <>
+void CastCopy<float, half_float::half, lang::Cuda>(const Tensor* src,
+                                                   Tensor* dst, Context* ctx) {
+  /* cpp half is for labeling only, cuda requires __half */
+  const float* srcPtr = static_cast<const float*>(src->block()->data());
+  __half* dstPtr = static_cast<__half*>(dst->block()->mutable_data());
+  cuda::float2half(dst->Size(), srcPtr, dstPtr, ctx->stream);
+}
+
+template <>
+void CastCopy<half_float::half, float, lang::Cuda>(const Tensor* src,
+                                                   Tensor* dst, Context* ctx) {
+  /* cpp half is for labeling only, cuda requires __half */
+  const __half* srcPtr = static_cast<const __half*>(src->block()->data());
+  float* dstPtr = static_cast<float*>(dst->block()->mutable_data());
+  cuda::half2float(dst->Size(), srcPtr, dstPtr, ctx->stream);
+}
+
+template <>
 void CastCopy<float, int, lang::Cuda>(const Tensor* src, Tensor* dst,
                                       Context* ctx) {
   const float* srcPtr = static_cast<const float*>(src->block()->data());
@@ -191,6 +210,13 @@ void Set<float, lang::Cuda>(const float x, Tensor* out, Context* ctx) {
 
   check_cudnn(cudnnSetTensor(ctx->cudnn_handle, generate_tensor_nd_desc(*out),
                              outPtr, (void*)(&x)));
+}
+
+template <>
+void Set<half_float::half, lang::Cuda>(const half_float::half x, Tensor* out,
+                                       Context* ctx) {
+  vector<half_float::half> data_src(out->size(), x);
+  out->CopyDataFromHostPtr(data_src.data(), out->size(), 0);
 }
 
 template <>
@@ -229,6 +255,20 @@ inline Tensor get_broadcasted_tensor(const Tensor& in1, Context* ctx) {
 }
 
 template <>
+void Transform<half_float::half, lang::Cuda>(const Tensor& in, Tensor* out,
+                                             Context* ctx) {
+  const void* inPtr = in.block()->data();
+  void* outPtr = out->block()->mutable_data();
+
+  float alpha = 1.0;
+  float beta = 0.0;
+
+  check_cudnn(cudnnTransformTensor(
+      ctx->cudnn_handle, (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
+      (void*)(&beta), generate_tensor_nd_desc(*out), outPtr));
+}
+
+template <>
 void Transform<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
   const float* inPtr = static_cast<const float*>(in.block()->data());
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
@@ -242,56 +282,64 @@ void Transform<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
 }
 
 /// add sub div mul pow on two tensors
-#define GenBinaryMathFn(fn, kernel)                                       \
-  template <>                                                             \
-  void fn<float, lang::Cuda>(const Tensor& in1, const Tensor& in2,        \
-                             Tensor* out, Context* ctx) {                 \
-    const float* inPtr1 = static_cast<const float*>(in1.block()->data()); \
-    const float* inPtr2 = static_cast<const float*>(in2.block()->data()); \
-    float* outPtr = static_cast<float*>(out->block()->mutable_data());    \
-    const size_t num = out->Size();                                       \
-                                                                          \
-    int strideProduct1 = 1;                                               \
-    for (const auto& i : in1.stride()) strideProduct1 *= i;               \
-                                                                          \
-    int strideProduct2 = 1;                                               \
-    for (const auto& i : in2.stride()) strideProduct2 *= i;               \
-                                                                          \
-    if ((strideProduct1 * strideProduct2) != 0) {                         \
-      if (!in1.transpose() && !in2.transpose() &&                         \
-          (in1.stride() == in2.stride())) {                               \
-        kernel(num, inPtr1, inPtr2, outPtr, ctx->stream);                 \
-      } else {                                                            \
-        if (in1.transpose() && in2.transpose()) {                         \
-          Tensor t(in1.shape(), in1.device(), in1.data_type());           \
-          Transform<float, lang::Cuda>(in1, &t, ctx);                     \
-          Transform<float, lang::Cuda>(in2, out, ctx);                    \
-                                                                          \
-          float* tPtr = static_cast<float*>(t.block()->mutable_data());   \
-          kernel(num, tPtr, outPtr, outPtr, ctx->stream);                 \
-        } else if (in1.transpose()) {                                     \
-          Transform<float, lang::Cuda>(in1, out, ctx);                    \
-          kernel(num, outPtr, inPtr2, outPtr, ctx->stream);               \
-        } else if (in2.transpose()) {                                     \
-          Transform<float, lang::Cuda>(in2, out, ctx);                    \
-          kernel(num, inPtr1, outPtr, outPtr, ctx->stream);               \
-        }                                                                 \
-      }                                                                   \
-    } else {                                                              \
-      Tensor in1Bc;                                                       \
-      Tensor in2Bc;                                                       \
-      if (strideProduct1 == 0) {                                          \
-        in1Bc = get_broadcasted_tensor(in1, ctx);                         \
-        inPtr1 = static_cast<const float*>(in1Bc.block()->data());        \
-      }                                                                   \
-                                                                          \
-      if (strideProduct2 == 0) {                                          \
-        in2Bc = get_broadcasted_tensor(in2, ctx);                         \
-        inPtr2 = static_cast<const float*>(in2Bc.block()->data());        \
-      }                                                                   \
-                                                                          \
-      kernel(num, inPtr1, inPtr2, outPtr, ctx->stream);                   \
-    }                                                                     \
+#define GenBinaryMathFn(fn, kernel)                                           \
+  template <>                                                                 \
+  void fn<float, lang::Cuda>(const Tensor& in1, const Tensor& in2,            \
+                             Tensor* out, Context* ctx) {                     \
+    const float* inPtr1 = static_cast<const float*>(in1.block()->data());     \
+    const float* inPtr2 = static_cast<const float*>(in2.block()->data());     \
+    float* outPtr = static_cast<float*>(out->block()->mutable_data());        \
+    const size_t num = out->Size();                                           \
+                                                                              \
+    int strideProduct1 = 1;                                                   \
+    for (const auto& i : in1.stride()) strideProduct1 *= i;                   \
+                                                                              \
+    int strideProduct2 = 1;                                                   \
+    for (const auto& i : in2.stride()) strideProduct2 *= i;                   \
+                                                                              \
+    if ((strideProduct1 * strideProduct2) != 0) {                             \
+      if (!in1.transpose() && !in2.transpose() &&                             \
+          (in1.stride() == in2.stride())) {                                   \
+        kernel(num, inPtr1, inPtr2, outPtr, ctx->stream);                     \
+      } else {                                                                \
+        if (in1.transpose() && in2.transpose()) {                             \
+          Tensor t(in1.shape(), in1.device(), in1.data_type());               \
+          Transform<float, lang::Cuda>(in1, &t, ctx);                         \
+          Transform<float, lang::Cuda>(in2, out, ctx);                        \
+                                                                              \
+          float* tPtr = static_cast<float*>(t.block()->mutable_data());       \
+          kernel(num, tPtr, outPtr, outPtr, ctx->stream);                     \
+        } else if (in1.transpose()) {                                         \
+          Transform<float, lang::Cuda>(in1, out, ctx);                        \
+          kernel(num, outPtr, inPtr2, outPtr, ctx->stream);                   \
+        } else if (in2.transpose()) {                                         \
+          Transform<float, lang::Cuda>(in2, out, ctx);                        \
+          kernel(num, inPtr1, outPtr, outPtr, ctx->stream);                   \
+        }                                                                     \
+      }                                                                       \
+    } else {                                                                  \
+      Tensor in1Bc;                                                           \
+      Tensor in2Bc;                                                           \
+      if (strideProduct1 == 0) {                                              \
+        in1Bc = get_broadcasted_tensor(in1, ctx);                             \
+        inPtr1 = static_cast<const float*>(in1Bc.block()->data());            \
+      }                                                                       \
+                                                                              \
+      if (strideProduct2 == 0) {                                              \
+        in2Bc = get_broadcasted_tensor(in2, ctx);                             \
+        inPtr2 = static_cast<const float*>(in2Bc.block()->data());            \
+      }                                                                       \
+                                                                              \
+      kernel(num, inPtr1, inPtr2, outPtr, ctx->stream);                       \
+    }                                                                         \
+  }                                                                           \
+  template <>                                                                 \
+  void fn<half_float::half, lang::Cuda>(const Tensor& in1, const Tensor& in2, \
+                                        Tensor* out, Context* ctx) {          \
+    auto _out = Tensor(out->shape(), out->device(), kFloat32);                \
+    fn<float, lang::Cuda>(in1.AsType(kFloat32), in2.AsType(kFloat32), &_out,  \
+                          ctx);                                               \
+    CastCopy<float, half_float::half, lang::Cuda>(&_out, out, ctx);           \
   }
 
 /// out = in1 * in2
@@ -345,6 +393,16 @@ void EltwiseMult<float, lang::Cuda>(const Tensor& in, const float x,
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
   const size_t num = in.Size();
   cuda::mult(num, inPtr, x, outPtr, ctx->stream);
+}
+
+template <>
+void EltwiseMult<half_float::half, lang::Cuda>(const Tensor& in,
+                                               const half_float::half x,
+                                               Tensor* out, Context* ctx) {
+  const __half* inPtr = static_cast<const __half*>(in.block()->data());
+  __half* outPtr = static_cast<__half*>(out->block()->mutable_data());
+  const size_t num = in.Size();
+  cuda::mult(num, inPtr, static_cast<__half>(x), outPtr, ctx->stream);
 }
 
 /// Base is e. out[i]=e^in[i]
@@ -510,7 +568,6 @@ void EQ<float, lang::Cuda>(const Tensor& in1, const Tensor& in2, Tensor* out,
   cuda::eq(num, outPtr, 0.0, outPtr, ctx->stream);
 }
 
-
 /// Natual logarithm, the base is e, Neper number out[i]=ln(in[i]).
 template <>
 void Log<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
@@ -574,6 +631,16 @@ void ReLUBackward<float, lang::Cuda>(const Tensor& in1, const Tensor& in2,
   const size_t num = in1.Size();
   cuda::relubackward(num, in1Ptr, in2Ptr, outPtr, ctx->stream);
 }
+template <>
+void ReLUBackward<half_float::half, lang::Cuda>(const Tensor& in1,
+                                                const Tensor& in2, Tensor* out,
+                                                Context* ctx) {
+  auto _in1 = in1.AsType(kFloat32);
+  auto _in2 = in2.AsType(kFloat32);
+  auto _out = Tensor(out->shape(), out->device(), kFloat32);
+  ReLUBackward<float, lang::Cuda>(_in1, _in2, &_out, ctx);
+  CastCopy<float, half_float::half, lang::Cuda>(&_out, out, ctx);
+}
 
 /// Element-wise operation, out[i]=max(0, in[i])
 // template <>
@@ -618,6 +685,21 @@ void ReLU<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
     cuda::relu(num, inPtr, outPtr, ctx->stream);
   } else {  // else we transform in to out to store first
     Transform<float, lang::Cuda>(in, out, ctx);
+    cuda::relu(num, outPtr, outPtr, ctx->stream);
+  }
+}
+
+template <>
+void ReLU<half_float::half, lang::Cuda>(const Tensor& in, Tensor* out,
+                                        Context* ctx) {
+  const __half* inPtr = static_cast<const __half*>(in.block()->data());
+  __half* outPtr = static_cast<__half*>(out->block()->mutable_data());
+  const size_t num = in.Size();
+
+  if (in.stride() == out->stride()) {
+    cuda::relu(num, inPtr, outPtr, ctx->stream);
+  } else {  // else we transform in to out to store first
+    Transform<half_float::half, lang::Cuda>(in, out, ctx);
     cuda::relu(num, outPtr, outPtr, ctx->stream);
   }
 }
@@ -846,6 +928,16 @@ void Uniform<float, lang::Cuda>(const float low, const float high, Tensor* out,
   cuda::add(num, outPtr, low, outPtr, ctx->stream);
 }
 
+template <>
+void Uniform<half_float::half, lang::Cuda>(const half_float::half low,
+                                           const half_float::half high,
+                                           Tensor* out, Context* ctx) {
+  Tensor tmp(out->shape(), out->device(), kFloat32);
+  Uniform<float, lang::Cuda>(static_cast<float>(low), static_cast<float>(high),
+                             &tmp, ctx);
+  CastCopy<float, half_float::half, lang::Cuda>(&tmp, out, ctx);
+}
+
 // The random generator should be extracted from ctx.
 // If DType is not float, then convert the mean and delta to DType
 template <>
@@ -864,6 +956,16 @@ void Gaussian<float, lang::Cuda>(const float mean, const float std, Tensor* out,
   } else {
     CURAND_CHECK(curandGenerateNormal(rgen, outPtr, num, mean, std));
   }
+}
+
+template <>
+void Gaussian<half_float::half, lang::Cuda>(const half_float::half mean,
+                                            const half_float::half std,
+                                            Tensor* out, Context* ctx) {
+  Tensor tmp(out->shape(), out->device(), kFloat32);
+  Gaussian<float, lang::Cuda>(static_cast<float>(mean), static_cast<float>(std),
+                              &tmp, ctx);
+  CastCopy<float, half_float::half, lang::Cuda>(&tmp, out, ctx);
 }
 
 // =========================Blas operations==================================
@@ -907,6 +1009,15 @@ void Axpy<float, lang::Cuda>(const float alpha, const Tensor& in, Tensor* out,
   auto handle = ctx->cublas_handle;  // TODO(wangwei) set cudastream
   const size_t num = in.Size();
   CUBLAS_CHECK(cublasSaxpy(handle, num, &alpha, inPtr, 1, outPtr, 1));
+}
+template <>
+void Axpy<half_float::half, lang::Cuda>(const half_float::half alpha,
+                                        const Tensor& in, Tensor* out,
+                                        Context* ctx) {
+  auto _in = in.AsType(kFloat32);
+  auto _out = out->AsType(kFloat32);
+  Axpy<float, lang::Cuda>(static_cast<float>(alpha), _in, &_out, ctx);
+  CastCopy<float, half_float::half, lang::Cuda>(&_out, out, ctx);
 }
 
 /// out = \sum_i in1[i] * in2[i]
@@ -983,12 +1094,62 @@ void GEMV<float, lang::Cuda>(const float alpha, const Tensor& A,
     CUBLAS_CHECK(cublasSgemv(handle, CUBLAS_OP_N, m, n, &alpha, APtr, m, vPtr,
                              1, &beta, outPtr, 1));
 }
+template <>
+void GEMV<half_float::half, lang::Cuda>(const half_float::half alpha,
+                                        const Tensor& A, const Tensor& v,
+                                        const half_float::half beta,
+                                        Tensor* out, Context* ctx) {
+  auto _A = A.AsType(kFloat32);
+  auto _v = v.AsType(kFloat32);
+  Tensor _out = Tensor(out->shape(), out->device(), kFloat32);
+  GEMV<float, lang::Cuda>(static_cast<float>(alpha), _A, _v,
+                          static_cast<float>(beta), &_out, ctx);
+  CastCopy<float, half_float::half, lang::Cuda>(&_out, out, ctx);
+}
+
+template <>
+void GEMM<half_float::half, lang::Cuda>(const half_float::half alpha,
+                                        const Tensor& A, const Tensor& B,
+                                        const half_float::half beta, Tensor* C,
+                                        Context* ctx) {
+  auto transA = A.transpose();
+  auto transa = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
+  auto transB = B.transpose();
+  auto transb = transB ? CUBLAS_OP_T : CUBLAS_OP_N;
+  const size_t nrowA = A.shape()[0];
+  const size_t ncolA = A.shape()[1];
+  const size_t ncolB = B.shape()[1];
+  int lda = transA ? nrowA : ncolA;
+  int ldb = transB ? ncolA : ncolB;
+  int ldc = ncolB;
+  const __half* APtr = static_cast<const __half*>(A.block()->data());
+  const __half* BPtr = static_cast<const __half*>(B.block()->data());
+  __half* CPtr = static_cast<__half*>(C->block()->mutable_data());
+  const __half* alphaPtr =
+      static_cast<const __half*>(static_cast<const void*>(&alpha));
+  const __half* betaPtr =
+      static_cast<const __half*>(static_cast<const void*>(&beta));
+  auto handle = ctx->cublas_handle;  // TODO(wangwei) set cudastream
+  CUBLAS_CHECK(cublasHgemm(handle, transb, transa, ncolB, nrowA, ncolA,
+                           alphaPtr, BPtr, ldb, APtr, lda, betaPtr, CPtr, ldc));
+}
+
+template <>
+void Dot<half_float::half, lang::Cuda>(const Tensor& in1, const Tensor& in2,
+                                       Tensor* out, Context* ctx) {
+  auto _in1 = in1.AsType(kFloat32);
+  auto _in2 = in2.AsType(kFloat32);
+  Tensor _out = Tensor(out->shape(), out->device(), kFloat32);
+  Dot<float, lang::Cuda>(_in1, _in2, &_out, ctx);
+  CastCopy<float, half_float::half, lang::Cuda>(&_out, out, ctx);
+}
 
 // http://docs.nvidia.com/cuda/cublas/#cublas-lt-t-gt-gemm
 template <>
 void GEMM<float, lang::Cuda>(const float alpha, const Tensor& A,
                              const Tensor& B, const float beta, Tensor* C,
                              Context* ctx) {
+  /* A 2d, B 2d*/
   auto transA = A.transpose();
   auto transa = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
   auto transB = B.transpose();
@@ -1052,6 +1213,40 @@ void GEMMBatched<float, lang::Cuda>(const float alpha, const Tensor& A,
   CUBLAS_CHECK(cublasSgemmStridedBatched(
       handle, transa, transb, ncolB, nrowA, ncolA, &alpha, BPtr, ldb, strideB,
       APtr, lda, strideA, &beta, CPtr, ldc, strideC, batchCount));
+}
+
+template <>
+void SoftMax<half_float::half, lang::Cuda>(const Tensor& in, Tensor* out,
+                                           Context* ctx) {
+  cudnnSoftmaxAlgorithm_t algorithm = CUDNN_SOFTMAX_ACCURATE;
+  cudnnSoftmaxMode_t mode = CUDNN_SOFTMAX_MODE_INSTANCE;
+
+  /*
+   * tensor tmp is for generating cudnn descriptor
+   *   as for cudnn softmax, it required shape of {N, C, 1, 1}
+   *   while helper func `generate_shape_cuda` generate shape of {1, 1, N, C}
+   *   Thus this part serve similar purpose as `generate_shape_cuda` but in
+   * reverse manner
+   */
+  CHECK_LE(in.shape().size(), 5)
+      << "Dimensions (shape) beyond 5 are currently not supported";
+  auto tmp = in;
+  while (tmp.shape().size() < 4) {
+    auto s = tmp.shape();
+    s.push_back(1);
+    tmp.Reshape(s);
+  }
+
+  const __half* inPtr = static_cast<const __half*>(in.block()->data());
+  __half* outPtr = static_cast<__half*>(out->block()->mutable_data());
+
+  float alpha = 1.0f;
+  float beta = 0.0f;
+
+  check_cudnn(cudnnSoftmaxForward(
+      ctx->cudnn_handle, algorithm, mode, static_cast<void*>(&alpha),
+      generate_tensor_nd_desc(tmp), inPtr, static_cast<void*>(&beta),
+      generate_tensor_nd_desc(tmp), outPtr));
 }
 
 template <>
@@ -1125,27 +1320,49 @@ void SoftMaxBackward<float, lang::Cuda>(const Tensor& in, Tensor* out,
 template <>
 void ComputeCrossEntropy<float, lang::Cuda>(bool int_target,
                                             const size_t batchsize,
-                                            const size_t dim, const Block* p,
-                                            const Block* t, Block* loss,
+                                            const size_t dim, const Tensor& p,
+                                            const Tensor& t, Tensor* loss,
                                             Context* ctx) {
-  const float* pPtr = static_cast<const float*>(p->data());
-  const int* tPtr = static_cast<const int*>(t->data());
-  float* lossPtr = static_cast<float*>(loss->mutable_data());
+  const float* pPtr = static_cast<const float*>(p.block()->data());
+  const int* tPtr = static_cast<const int*>(t.block()->data());
+  float* lossPtr = static_cast<float*>(loss->block()->mutable_data());
   cuda::ComputeCrossEntropy(int_target, batchsize, dim, pPtr, tPtr, lossPtr,
                             ctx->stream);
 }
 template <>
+void ComputeCrossEntropy<half_float::half, lang::Cuda>(
+    bool int_target, const size_t batchsize, const size_t dim, const Tensor& p,
+    const Tensor& t, Tensor* loss, Context* ctx) {
+  auto _p = p.AsType(kFloat32);
+  Tensor _loss = Tensor(loss->shape(), loss->device(), kFloat32);
+  ComputeCrossEntropy<float, lang::Cuda>(int_target, batchsize, dim, _p, t,
+                                         &_loss, ctx);
+  CastCopy<float, half_float::half, lang::Cuda>(&_loss, loss, ctx);
+}
+template <>
 void SoftmaxCrossEntropyBwd<float, lang::Cuda>(bool int_target,
                                                const size_t batchsize,
-                                               const size_t dim, const Block* p,
-                                               const Block* t, Block* grad,
-                                               Context* ctx) {
-  CHECK_EQ(p, grad) << "Use the same pointer to optimize performance";
-  const float* pPtr = static_cast<const float*>(p->data());
-  const int* tPtr = static_cast<const int*>(t->data());
-  float* gradPtr = static_cast<float*>(grad->mutable_data());
+                                               const size_t dim,
+                                               const Tensor& p, const Tensor& t,
+                                               Tensor* grad, Context* ctx) {
+  CHECK_EQ(p.block(), grad->block())
+      << "Use the same pointer to optimize performance";
+  const float* pPtr = static_cast<const float*>(p.block()->data());
+  const int* tPtr = static_cast<const int*>(t.block()->data());
+  float* gradPtr = static_cast<float*>(grad->block()->mutable_data());
   cuda::SoftmaxCrossEntropyBwd(int_target, batchsize, dim, pPtr, tPtr, gradPtr,
                                ctx->stream);
+}
+template <>
+void SoftmaxCrossEntropyBwd<half_float::half, lang::Cuda>(
+    bool int_target, const size_t batchsize, const size_t dim, const Tensor& p,
+    const Tensor& t, Tensor* grad, Context* ctx) {
+  CHECK_EQ(p.block(), grad->block())
+      << "Use the same pointer to optimize performance";
+  auto _p = p.AsType(kFloat32);
+  SoftmaxCrossEntropyBwd<float, lang::Cuda>(int_target, batchsize, dim, _p, t,
+                                            &_p, ctx);
+  CastCopy<float, half_float::half, lang::Cuda>(&_p, grad, ctx);
 }
 
 // template <>
