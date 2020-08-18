@@ -391,6 +391,34 @@ void Floor<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
 }
 
 template <>
+void Round<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
+  const float* inPtr = static_cast<const float*>(in.block()->data());
+  float* outPtr = static_cast<float*>(out->block()->mutable_data());
+  const size_t num = in.Size();
+
+  if (in.stride() == out->stride()) {
+    cuda::round(num, inPtr, outPtr, ctx->stream);
+  } else {  // else we transform in to out to store first
+    Transform<float, lang::Cuda>(in, out, ctx);
+    cuda::round(num, outPtr, outPtr, ctx->stream);
+  }
+}
+
+template <>
+void RoundE<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
+  const float* inPtr = static_cast<const float*>(in.block()->data());
+  float* outPtr = static_cast<float*>(out->block()->mutable_data());
+  const size_t num = in.Size();
+
+  if (in.stride() == out->stride()) {
+    cuda::rounde(num, inPtr, outPtr, ctx->stream);
+  } else {  // else we transform in to out to store first
+    Transform<float, lang::Cuda>(in, out, ctx);
+    cuda::rounde(num, outPtr, outPtr, ctx->stream);
+  }
+}
+
+template <>
 void GE<float, lang::Cuda>(const Tensor& in, const float x, Tensor* out,
                            Context* ctx) {
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
@@ -458,6 +486,30 @@ void LE<float, lang::Cuda>(const Tensor& in1, const Tensor& in2, Tensor* out,
   const size_t num = in1.Size();
   cuda::le(num, outPtr, 0.0, outPtr, ctx->stream);
 }
+
+template <>
+void EQ<float, lang::Cuda>(const Tensor& in, const float x, Tensor* out,
+                           Context* ctx) {
+  float* outPtr = static_cast<float*>(out->block()->mutable_data());
+  const float* inPtr = static_cast<const float*>(in.block()->data());
+  const size_t num = in.Size();
+
+  if (in.stride() == out->stride()) {
+    cuda::eq(num, inPtr, x, outPtr, ctx->stream);
+  } else {  // else we transform in to out to store first
+    Transform<float, lang::Cuda>(in, out, ctx);
+    cuda::eq(num, outPtr, x, outPtr, ctx->stream);
+  }
+}
+template <>
+void EQ<float, lang::Cuda>(const Tensor& in1, const Tensor& in2, Tensor* out,
+                           Context* ctx) {
+  Sub<float, lang::Cuda>(in1, in2, out, ctx);
+  float* outPtr = static_cast<float*>(out->block()->mutable_data());
+  const size_t num = in1.Size();
+  cuda::eq(num, outPtr, 0.0, outPtr, ctx->stream);
+}
+
 
 /// Natual logarithm, the base is e, Neper number out[i]=ln(in[i]).
 template <>
@@ -802,7 +854,16 @@ void Gaussian<float, lang::Cuda>(const float mean, const float std, Tensor* out,
   auto rgen = ctx->curand_generator;
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
   const size_t num = out->Size();
-  CURAND_CHECK(curandGenerateNormal(rgen, outPtr, num, mean, std));
+
+  // CURAND_STATUS_LENGTH_NOT_MULTIPLE
+  if (num % 2 != 0) {
+    Tensor tmp(Shape{num + 1}, out->device());
+    float* outPtr_tmp = static_cast<float*>(tmp.block()->mutable_data());
+    CURAND_CHECK(curandGenerateNormal(rgen, outPtr_tmp, num + 1, mean, std));
+    CopyDataToFrom(out, tmp, num, 0, 0);
+  } else {
+    CURAND_CHECK(curandGenerateNormal(rgen, outPtr, num, mean, std));
+  }
 }
 
 // =========================Blas operations==================================

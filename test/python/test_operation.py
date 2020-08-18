@@ -451,9 +451,75 @@ class TestPythonOperation(unittest.TestCase):
 
         params = rnn.get_params()
         for key, param in params.items():
-            auto_grad = tensor.to_numpy(auto_grads[param])
+            auto_grad = tensor.to_numpy(auto_grads[id(param)])
 
             self.gradients_check(valinna_rnn_forward, param, auto_grad, dev=dev)
+
+    def _gradient_check_cudnn_rnn(self, mode="vanilla", dev=gpu_dev):
+        seq = 10
+        bs = 2
+        fea = 10
+        hid = 10
+        x = np.random.random((seq, bs, fea)).astype(np.float32)
+        tx = tensor.Tensor(device=dev, data=x)
+        y = np.random.random((seq, bs, hid)).astype(np.float32)
+        y = np.reshape(y, (-1, hid))
+        ty = tensor.Tensor(device=dev, data=y)
+        rnn = layer.CudnnRNN(hid, rnn_mode=mode, return_sequences=True)
+
+        def vanilla_rnn_forward():
+            out = rnn(tx)
+            out = autograd.reshape(out, (-1, hid))
+            loss = autograd.softmax_cross_entropy(out, ty)
+            return loss
+
+        loss = vanilla_rnn_forward()
+        auto_grads = autograd.gradients(loss)
+
+        params = rnn.get_params()
+        for key, param in params.items():
+            auto_grad = tensor.to_numpy(auto_grads[id(param)])
+            self.gradients_check(vanilla_rnn_forward, param, auto_grad, dev=dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_gradient_check_cudnn_rnn_vanilla(self):
+        self._gradient_check_cudnn_rnn(mode="vanilla", dev=gpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_gradient_check_cudnn_rnn_lstm(self):
+        self._gradient_check_cudnn_rnn(mode="lstm", dev=gpu_dev)
+
+    # Cos Sim Gradient Check
+    def _gradient_check_cossim(self, dev=gpu_dev):
+        bs = 2
+        vec = 3
+        ta = tensor.random((bs, vec), dev)
+        tb = tensor.random((bs, vec), dev)
+        # treat ta, tb as params
+        ta.stores_grad = True
+        tb.stores_grad = True
+        ty = tensor.random((bs,), dev)
+
+        def _forward():
+            out = autograd.cossim(ta, tb)
+            loss = autograd.mse_loss(out, ty)
+            return loss
+
+        loss = _forward()
+        auto_grads = autograd.gradients(loss)
+
+        params = {id(ta): ta, id(tb): tb}
+
+        for key, param in params.items():
+            auto_grad = tensor.to_numpy(auto_grads[id(param)])
+            self.gradients_check(_forward, param, auto_grad, dev=dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_gradient_check_cossim_gpu(self):
+        self._gradient_check_cossim(dev=gpu_dev)
+
+    def test_gradient_check_cossim_cpu(self):
+        self._gradient_check_cossim(dev=cpu_dev)
 
     def test_numerical_gradients_check_for_vallina_rnn_cpu(self):
         self._numerical_gradients_check_for_vallina_rnn_helper(cpu_dev)
@@ -483,7 +549,7 @@ class TestPythonOperation(unittest.TestCase):
 
         params = rnn.get_params()
         for key, param in params.items():
-            auto_grad = tensor.to_numpy(auto_grads[param])
+            auto_grad = tensor.to_numpy(auto_grads[id(param)])
 
             self.gradients_check(lstm_forward, param, auto_grad, dev=dev)
 
@@ -505,7 +571,7 @@ class TestPythonOperation(unittest.TestCase):
         t.to_device(dev)
 
         loss = autograd.mse_loss(x, t)
-        dx = loss.creator.backward()[0]
+        dx = loss.creator.backward()
 
         loss_np = tensor.to_numpy(loss)[0]
         self.assertAlmostEqual(loss_np, 0.0366666, places=4)
@@ -2520,8 +2586,8 @@ class TestPythonOperation(unittest.TestCase):
             result = gemm(a)
 
             params = gemm.get_params()
-            B = tensor.to_numpy(params['Gemm.W'])
-            C = tensor.to_numpy(params['Gemm.b'])
+            B = tensor.to_numpy(params['W'])
+            C = tensor.to_numpy(params['b'])
 
             da, db, dc = result.creator.backward(dy.data)
 
@@ -2575,7 +2641,6 @@ class TestPythonOperation(unittest.TestCase):
         dy = tensor.from_numpy(DY)
         dy.to_device(dev)
 
-        
         result = autograd.globalaveragepool(x)
         dx = result.creator.backward(dy.data)
 
@@ -2816,6 +2881,74 @@ class TestPythonOperation(unittest.TestCase):
     def test_ceil_gpu(self):
         self.ceil_test(gpu_dev)
 
+    def _test_scatter_elements(self, dev):
+        # testing witout axis
+        data = np.zeros((3, 3), dtype=np.float32)
+        indices = np.array([[1, 0, 2], [0, 2, 1]], dtype=np.int32)
+        updates = np.array([[1.0, 1.1, 1.2], [2.0, 2.1, 2.2]], dtype=np.float32)
+        output = np.array([[2.0, 1.1, 0.0], [1.0, 0.0, 2.2], [0.0, 2.1, 1.2]],
+                        dtype=np.float32)
+
+        data = tensor.from_numpy(data)
+        indices = tensor.from_numpy(indices)
+        updates = tensor.from_numpy(updates)
+        data.to_device(dev)
+        indices.to_device(dev)
+        updates.to_device(dev)
+
+        result = autograd.scatter_elements(data, indices, updates)
+        dy = tensor.from_numpy(np.ones(data.shape, dtype=np.float32))
+        dx = result.creator.backward(dy.data)
+        np.testing.assert_almost_equal(tensor.to_numpy(result), output, decimal=5)
+        self.check_shape(dx.shape(), data.shape)
+
+        # testing with axis
+        data =  np.array([[1.0, 2.0, 3.0, 4.0, 5.0]], dtype=np.float32)
+        indices = np.array([[1, 3]], dtype=np.int32)
+        updates = np.array([[1.1, 2.1]], dtype=np.float32)
+        output = np.array([[1.0, 1.1, 3.0, 2.1, 5.0]], dtype=np.float32)
+
+        data = tensor.from_numpy(data)
+        indices = tensor.from_numpy(indices)
+        updates = tensor.from_numpy(updates)
+        data.to_device(dev)
+        indices.to_device(dev)
+        updates.to_device(dev)
+
+        result = autograd.scatter_elements(data, indices, updates, axis=1)
+        dy = tensor.from_numpy(np.ones(data.shape, dtype=np.float32))
+        dx = result.creator.backward(dy.data)
+        np.testing.assert_almost_equal(tensor.to_numpy(result), output, decimal=5)
+        self.check_shape(dx.shape(), data.shape)
+
+        # testing with negative indices:
+        data = np.array([[1.0, 2.0, 3.0, 4.0, 5.0]], dtype=np.float32)
+        indices = np.array([[1, -3]], dtype=np.int64)
+        updates = np.array([[1.1, 2.1]], dtype=np.float32)
+        output = np.array([[1.0, 1.1, 2.1, 4.0, 5.0]], dtype=np.float32)
+
+        data = tensor.from_numpy(data)
+        indices = tensor.from_numpy(indices)
+        updates = tensor.from_numpy(updates)
+        data.to_device(dev)
+        indices.to_device(dev)
+        updates.to_device(dev)
+
+        result = autograd.scatter_elements(data, indices, updates, axis=1)
+        dy = tensor.from_numpy(np.ones(data.shape, dtype=np.float32))
+        dx = result.creator.backward(dy.data)
+        np.testing.assert_almost_equal(tensor.to_numpy(result), output, decimal=5)
+        self.check_shape(dx.shape(), data.shape)
+       
+
+    def test_cpu_scatter_elements(self):
+        self._test_scatter_elements(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_gpu_scatter_elements(self):
+        self._test_scatter_elements(gpu_dev)
+
+
     def split_test(self, dev):
         X = np.array([1., 2., 3., 4., 5., 6.]).astype(np.float32)
         DY1 = np.ones((2), dtype=np.float32)
@@ -3021,12 +3154,6 @@ class TestPythonOperation(unittest.TestCase):
             dy = tensor.Tensor(shape=(seq_length, batch_size,
                                       directions * hidden_size),
                                device=dev).gaussian(0, 1)
-            dhy = tensor.Tensor(shape=(num_layers * directions, batch_size,
-                                       hidden_size),
-                                device=dev).gaussian(0, 1)
-            dcy = tensor.Tensor(shape=(num_layers * directions, batch_size,
-                                       hidden_size),
-                                device=dev).gaussian(0, 1)
 
             # init cudnn rnn op
             rnn_handle = singa.CudnnRNNHandle(x.data,
@@ -3039,19 +3166,29 @@ class TestPythonOperation(unittest.TestCase):
             w = tensor.Tensor(shape=(rnn_handle.weights_size,),
                               device=dev).gaussian(0, 1)
 
+            # return sequence, y shape = {seq, bs, hidden}
             # init operator/operation
-            _rnn = autograd._RNN(rnn_handle)
+            _rnn = autograd._RNN(rnn_handle, return_sequences=True)
 
             # forward
-            (y, hy, cy) = _rnn(x, hx, cx, w)
+            y = _rnn(x, hx, cx, w)[0]
+            assert y.shape == dy.shape
             # print(ys)
 
             # backward
-            dx, dhx, dcx, dw = _rnn.backward(dy.data, dhy.data, dcy.data)
+            dx, dhx, dcx, dw = _rnn.backward(dy.data)
+
+            # return no sequence, y shape = {bs, hidden}
+            _rnn = autograd._RNN(rnn_handle, return_sequences=False)
+            dy = tensor.Tensor(shape=(batch_size, directions * hidden_size),
+                               device=dev).gaussian(0, 1)
+            y = _rnn(x, hx, cx, w)[0]
+
+            assert y.shape == dy.shape
+            # backward
+            dx, dhx, dcx, dw = _rnn.backward(dy.data)
 
     def cossim_helper(self, dev):
-        from numpy.linalg import norm
-
         A = np.random.randn(*[3, 10]).astype(np.float32)
         B = np.random.randn(*[3, 10]).astype(np.float32)
 
@@ -3067,7 +3204,7 @@ class TestPythonOperation(unittest.TestCase):
         y = autograd.cossim(a, b)
         da, db = y.creator.backward(dy.data)  # CTensor
 
-        self.check_shape(y.shape, (3, ))
+        self.check_shape(y.shape, (3,))
         self.check_shape(da.shape(), (3, 10))
         self.check_shape(db.shape(), (3, 10))
 
@@ -3077,6 +3214,324 @@ class TestPythonOperation(unittest.TestCase):
     @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_cossim_gpu(self):
         self.cossim_helper(gpu_dev)
+
+    def expand_helper(self, dev):
+        shape = [3, 1]
+        X = np.reshape(np.arange(1, np.prod(shape) + 1, dtype=np.float32),
+                       shape)
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        # dim_changed
+        new_shape = [2, 1, 6]
+        y_t = X * np.ones(new_shape, dtype=np.float32)
+        dy = tensor.from_numpy(y_t)
+        dy.to_device(dev)
+        y = autograd.expand(x, new_shape)
+        dx = y.creator.backward(dy.data)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), y_t)
+        self.check_shape(dx.shape(), tuple(shape))
+
+        # dim_unchanged
+        new_shape_2 = [3, 4]
+        y_t2 = np.tile(X, 4)
+        dy2 = tensor.from_numpy(y_t2)
+        dy2.to_device(dev)
+        y2 = autograd.expand(x, new_shape_2)
+        dx2 = y2.creator.backward(dy2.data)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y2), y_t2)
+        self.check_shape(dx2.shape(), tuple(shape))
+
+    def test_expand_cpu(self):
+        self.expand_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_expand_gpu(self):
+        self.expand_helper(gpu_dev)
+
+    def pad_helper(self, dev):
+        X = np.array([
+            [1.0, 1.2],
+            [2.3, 3.4],
+            [4.5, 5.7],
+        ]).astype(np.float32)
+        Y1 = np.array([
+            [0.0, 0.0, 1.0, 1.2],
+            [0.0, 0.0, 2.3, 3.4],
+            [0.0, 0.0, 4.5, 5.7],
+        ],).astype(np.float32)
+        Y2 = np.array([
+            [1.0, 1.2, 1.0, 1.2],
+            [2.3, 3.4, 2.3, 3.4],
+            [4.5, 5.7, 4.5, 5.7],
+        ],).astype(np.float32)
+        Y3 = np.array([
+            [1.0, 1.0, 1.0, 1.2],
+            [2.3, 2.3, 2.3, 3.4],
+            [4.5, 4.5, 4.5, 5.7],
+        ],).astype(np.float32)
+
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+        pads = [0, 2, 0, 0]
+
+        DY = np.random.randn(3, 4).astype(np.float32)
+        dy = tensor.from_numpy(DY)
+        dy.to_device(dev)
+
+        y1 = autograd.pad(x, "constant", pads)
+        y2 = autograd.pad(x, "reflect", pads)
+        y3 = autograd.pad(x, "edge", pads)
+        dx1 = y1.creator.backward(dy.data)
+        dx2 = y2.creator.backward(dy.data)
+        dx3 = y3.creator.backward(dy.data)
+        pad_width = []
+        half_width = len(pads) // 2
+        for i in range(half_width):
+            pad_width += [[pads[i], pads[i + half_width]]]
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y1),
+                                             np.pad(
+                                                 X,
+                                                 pad_width=pad_width,
+                                                 mode="constant",
+                                                 constant_values=0.,
+                                             ),
+                                             decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y2),
+                                             np.pad(
+                                                 X,
+                                                 pad_width=pad_width,
+                                                 mode="reflect",
+                                             ),
+                                             decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y3),
+                                             np.pad(
+                                                 X,
+                                                 pad_width=pad_width,
+                                                 mode="edge",
+                                             ),
+                                             decimal=5)
+        self.check_shape(dx1.shape(), (3, 2))
+        self.check_shape(dx2.shape(), (3, 2))
+        self.check_shape(dx3.shape(), (3, 2))
+
+    def test_pad_cpu(self):
+        self.pad_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_pad_gpu(self):
+        self.pad_helper(gpu_dev)
+
+    def upsample_helper(self, dev):
+        X = np.array([[[
+            [1, 2],
+            [3, 4],
+        ]]], dtype=np.float32)
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        scales = np.array([1.0, 1.0, 2.0, 3.0], dtype=np.float32)
+        y_t = np.array([[[
+            [1, 1, 1, 2, 2, 2],
+            [1, 1, 1, 2, 2, 2],
+            [3, 3, 3, 4, 4, 4],
+            [3, 3, 3, 4, 4, 4],
+        ]]],
+                       dtype=np.float32)
+        dy = tensor.from_numpy(y_t)
+        dy.to_device(dev)
+
+        y = autograd.upsample(x, "nearest", scales)
+        dx = y.creator.backward(dy.data)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), y_t)
+        self.check_shape(dx.shape(), tuple(X.shape))
+
+    def test_upsample_cpu(self):
+        self.upsample_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_upsample_gpu(self):
+        self.upsample_helper(gpu_dev)
+
+    def test_invalid_inputs(self, dev=cpu_dev):
+        _1d = tensor.Tensor((10,), dev)
+        _2d = tensor.Tensor((10, 10), dev)
+        _3d = tensor.Tensor((10, 10, 10), dev)
+        self.assertRaises(AssertionError, autograd.softmax_cross_entropy, _2d,
+                          _3d)
+        self.assertRaises(AssertionError, autograd.mse_loss, _2d, _3d)
+        self.assertRaises(AssertionError, autograd.add_bias, _2d, _1d, 3)
+        self.assertRaises(AssertionError, autograd.ranking_loss, _2d, _1d)
+
+    def where_helper(self, dev):
+        X = np.array([[1, 2], [3, 4]], dtype=np.float32)
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        X2 = np.array([[9, 8], [7, 6]], dtype=np.float32)
+        x2 = tensor.from_numpy(X2)
+        x2.to_device(dev)
+
+        condition = [[True, False], [True, True]]
+        y_t = np.where(condition, X, X2)
+        dx1_t = np.array([[1, 0], [3, 4]], dtype=np.float32)
+        dx2_t = np.array([[0, 8], [0, 0]], dtype=np.float32)
+        dy = tensor.from_numpy(y_t)
+        dy.to_device(dev)
+
+        y = autograd.where(x, x2, condition)
+        dx1, dx2 = y.creator.backward(dy.data)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), y_t)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), dx1_t)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx2)), dx2_t)
+
+    def test_where_cpu(self):
+        self.where_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_where_gpu(self):
+        self.where_helper(gpu_dev)
+
+    def rounde_helper(self, dev):
+        X = np.array([0.1, 0.5, 0.9, 1.2, 1.5,
+                    1.8, 2.3, 2.5, 2.7, -1.1,
+                    -1.5, -1.9, -2.2, -2.5, -2.8]).astype(np.float32)
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        y_t = np.array([0., 0., 1., 1., 2.,
+                    2., 2., 2., 3., -1.,
+                    -2., -2., -2., -2., -3.]).astype(np.float32)
+        dy = tensor.from_numpy(y_t)
+        dy.to_device(dev)
+
+        y = autograd.rounde(x)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), y_t)
+
+    def test_rounde_cpu(self):
+        self.rounde_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_rounde_gpu(self):
+        self.rounde_helper(gpu_dev)
+
+    def round_helper(self, dev):
+        X = np.array([0.1, 0.5, 0.9, 1.2, 1.5,
+                    1.8, 2.3, 2.5, 2.7, -1.1,
+                    -1.5, -1.9, -2.2, -2.5, -2.8]).astype(np.float32)
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        y_t = np.array([0., 1., 1., 1., 2.,
+                    2., 2., 3., 3., -1.,
+                    -2., -2., -2., -3., -3.]).astype(np.float32)
+        dy = tensor.from_numpy(y_t)
+        dy.to_device(dev)
+
+        y = autograd.round(x)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), y_t)
+
+    def test_round_cpu(self):
+        self.round_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_round_gpu(self):
+        self.round_helper(gpu_dev)
+
+    def embedding_helper(self, dev):
+        embedding = layer.Embedding(10, 3)
+
+        X = np.array([[0,1,2,3], [9,8,7,6]])
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        dy = tensor.Tensor(shape=(2, 4, 3), device=dev)
+        dy.gaussian(0.0, 1.0)
+
+        y = embedding(x)  # PyTensor
+        dx, dW = y.creator.backward(dy.data)  # CTensor
+
+        self.check_shape(y.shape, (2, 4, 3))
+        self.check_shape(dx.shape(), (2, 4))
+        self.check_shape(dW.shape(), (10, 3))
+
+    def test_embedding_cpu(self):
+        self.embedding_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_embedding_gpu(self):
+        self.embedding_helper(gpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def _cossim_value(self, dev=gpu_dev):
+        # numpy val
+        np.random.seed(0)
+        bs = 1000
+        vec_s = 1200
+        a = np.random.random((bs, vec_s)).astype(np.float32)
+        b = np.random.random((bs, vec_s)).astype(np.float32)
+        dy = np.random.random((bs,)).astype(np.float32)
+
+        # singa tensor
+        ta = tensor.from_numpy(a)
+        tb = tensor.from_numpy(b)
+        tdy = tensor.from_numpy(dy)
+        ta.to_device(dev)
+        tb.to_device(dev)
+        tdy.to_device(dev)
+
+        # singa forward and backward
+        ty = autograd.cossim(ta, tb)
+        tda, tdb = ty.creator.backward(tdy.data)
+
+        np_forward = list()
+        for i in range(len(a)):
+            a_norm = np.linalg.norm(a[i])
+            b_norm = np.linalg.norm(b[i])
+            ab_dot = np.dot(a[i], b[i])
+            out = ab_dot / (a_norm * b_norm)
+            np_forward.append(out)
+
+        np_backward_a = list()
+        np_backward_b = list()
+        for i in range(len(a)):
+            a_norm = np.linalg.norm(a[i])
+            b_norm = np.linalg.norm(b[i])
+            da = dy[i] * (b[i] / (a_norm * b_norm) - (np_forward[i] * a[i]) /
+                          (a_norm * a_norm))
+            db = dy[i] * (a[i] / (a_norm * b_norm) - (np_forward[i] * b[i]) /
+                          (b_norm * b_norm))
+            np_backward_a.append(da)
+            np_backward_b.append(db)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(ty),
+                                             np.array(np_forward))
+        np.testing.assert_array_almost_equal(
+            tensor.to_numpy(tensor.from_raw_tensor(tda)), np_backward_a)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_cossim_value_gpu(self):
+        self._cossim_value(gpu_dev)
+
+    def test_cossim_value_cpu(self):
+        self._cossim_value(cpu_dev)
+
+    def test_mse_loss_value(self, dev=cpu_dev):
+        y = np.random.random((1000, 1200)).astype(np.float32)
+        tar = np.random.random((1000, 1200)).astype(np.float32)
+        # get singa value
+        sy = tensor.from_numpy(y, dev)
+        starget = tensor.from_numpy(tar, dev)
+        sloss = autograd.mse_loss(sy, starget)
+        sgrad = sloss.creator.backward()
+        # get np value result
+        np_loss = np.mean(np.square(tar - y))
+        np_grad = -2 * (tar - y) / np.prod(tar.shape)
+        # value check
+        np.testing.assert_array_almost_equal(
+            tensor.to_numpy(tensor.from_raw_tensor(sgrad)), np_grad)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(sloss), np_loss)
 
 
 if __name__ == '__main__':

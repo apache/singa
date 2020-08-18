@@ -62,6 +62,8 @@ class Device {
   /// max mem size to use (in MB)
   Device(int id, int num_executors);
 
+  void Reset();
+
   virtual void SetRandSeed(unsigned seed) = 0;
 
   void EnableGraph(bool enable) { graph_enabled_ = enable; }
@@ -309,7 +311,11 @@ class OpenclDevice : public singa::Device {
 class Platform {
  public:
   /// Return the default host device
-  static std::shared_ptr<Device> GetDefaultDevice() { return defaultDevice; }
+  static std::shared_ptr<Device> GetDefaultDevice() {
+    // cannot reset cpu device, which leads to error
+    // defaultDevice->Reset();
+    return defaultDevice;
+  }
 
 #ifdef USE_CUDA
   /// Return the number of total available GPUs
