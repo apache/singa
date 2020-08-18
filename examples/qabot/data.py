@@ -22,21 +22,65 @@ import numpy as np
 import random
 
 
-# auxiliary function
-def split_one_line(line, decode=False):
-    if decode:
-        return line.rstrip().decode("utf-8").split("\t")
-    else:
-        return line.rstrip().split("\t")
+def load_vocabulary(vocab_path, label_path):
+    id_to_word = {}
+    with open(vocab_path, 'rb') as f:
+        lines = f.readlines()
+        for l in lines:
+            d = l.rstrip().decode("utf-8").split("\t")
+            if d[0] not in id_to_word:
+                id_to_word[d[0]] = d[1]
+
+    label_to_ans = {}
+    label_to_ans_text = {}
+    with open(label_path) as f:
+        lines = f.readlines()
+        for l in lines:
+            label, answer = l.rstrip().split('\t')
+            if label not in label_to_ans:
+                label_to_ans[label] = answer
+                label_to_ans_text[label] = [
+                    id_to_word[t] for t in answer.split(' ')
+                ]
+    return id_to_word, label_to_ans, label_to_ans_text
 
 
-def words_to_fixed_length_vec(word_to_vec, words, sentence_length=10):
+def parse_file(fpath, id_to_word, label_to_ans_text):
+    data = []
+    with open(fpath) as f:
+        lines = f.readlines()
+        for l in lines:
+            d = l.rstrip().split('\t')
+            q = [id_to_word[t] for t in d[1].split(' ')]  # question
+            poss = [label_to_ans_text[t] for t in d[2].split(' ')
+                   ]  # ground-truth
+            negs = [
+                label_to_ans_text[t] for t in d[3].split(' ') if t not in d[2]
+            ]  # candidate-pool without ground-truth
+            for pos in poss:
+                data.append((q, pos, negs))
+    return data
+
+
+def parse_test_file(fpath, id_to_word, label_to_ans_text):
+    data = []
+    with open(fpath) as f:
+        lines = f.readlines()
+        for l in lines[12:]:
+            d = l.rstrip().split('\t')
+            q = [id_to_word[t] for t in d[1].split(' ')]  # question
+            poss = [t for t in d[2].split(' ')]  # ground-truth
+            cands = [t for t in d[3].split(' ')]  # candidate-pool
+            data.append((q, poss, cands))
+    return data
+
+def words_text_to_fixed_seqlen_vec(word2vec, words, sentence_length=10):
     sentence_vec = []
     for word in words:
         if len(sentence_vec) >= sentence_length:
             break
-        if word in word_to_vec:
-            sentence_vec.append(word_to_vec[word])
+        if word in word2vec:
+            sentence_vec.append(word2vec[word])
         else:
             sentence_vec.append(np.zeros((300,)))
     while len(sentence_vec) < sentence_length:
@@ -44,134 +88,54 @@ def words_to_fixed_length_vec(word_to_vec, words, sentence_length=10):
     return np.array(sentence_vec, dtype=np.float32)
 
 
-# functions for parsing files
-def load_vocabulary(vocab_path, label_path):
-    id_to_word = {}
-    with open(vocab_path, 'rb') as f:
-        lines = f.readlines()
-        for line in lines:
-            word_id, word = split_one_line(line, decode=True)
-            if word_id not in id_to_word:
-                id_to_word[word_id] = word
-
-    label_to_ans = {}
-    with open(label_path) as f:
-        lines = f.readlines()
-        for line in lines:
-            label, answer = split_one_line(line)
-            if label not in label_to_ans:
-                ans_text_list = [id_to_word[t] for t in answer.split(' ')]
-                label_to_ans[label] = ans_text_list
-
-    return id_to_word, label_to_ans
-
-
-def parse_train_file(fpath, id_to_word, label_to_ans):
-    data = []
-    with open(fpath) as f:
-        lines = f.readlines()
-        for line in lines:
-            # domain, question, ground-truth, candidate-pool without ground-truth
-            domain, question, poss, negs = split_one_line(line)
-            question = [id_to_word[t] for t in question.split(' ')]
-            poss = [label_to_ans[t] for t in poss.split(' ')]
-            negs = [label_to_ans[t] for t in negs.split(' ') if t not in poss]
-
-            for pos in poss:
-                data.append((question, pos, negs))
-
-    return data
-
-
-def parse_test_file(fpath, id_to_word, label_to_ans):
-    data = []
-    with open(fpath) as f:
-        lines = f.readlines()
-        for line in lines[12:]:
-            # domain, question, ground-truth, candidate-pool
-            domain, question, poss, cands = split_one_line(line)
-            question = [id_to_word[t] for t in question.split(' ')]
-            poss = [t for t in poss.split(' ')]
-            cands = [t for t in cands.split(' ')]
-
-            data.append((question, poss, cands))
-
-    return data
-
-
-# functions for generating data
-def generate_train_data(train_raw_data, word_to_vec, num_negs=10):
-    train_q = []
-    train_a_pos = []
-    train_a_neg = []
-    q_max_len = 15
-    a_max_len = 150
-    for (question, a_pos, a_negs) in train_raw_data:
+def generate_qa_triplets(data, num_negs=10):
+    tuples = []
+    for (q, a_pos, a_negs) in data:
         for i in range(num_negs):
-            a_neg = random.choice(a_negs)
-            q_vec = words_to_fixed_length_vec(word_to_vec, question, q_max_len)
-            a_pos_vec = words_to_fixed_length_vec(word_to_vec, a_pos, a_max_len)
-            a_neg_vec = words_to_fixed_length_vec(word_to_vec, a_neg, a_max_len)
-            train_q.append(np.array(q_vec))
-            train_a_pos.append(np.array(a_pos_vec))
-            train_a_neg.append(np.array(a_neg_vec))
+            tpl = (q, a_pos, random.choice(a_negs))
+            tuples.append(tpl)
+    return tuples
 
-    train_q = np.array(train_q)
-    train_a_pos = np.array(train_a_pos)
-    train_a_neg = np.array(train_a_neg)
-    train_a = np.concatenate([train_a_pos, train_a_neg])
-    return (train_q, train_a)
+def qa_tuples_to_naive_training_format(wv, tuples):
+    training = []
+    q_len_limit = 10
+    a_len_limit = 100
+    for tpl in tuples:
+        q, a_pos, a_neg = tpl
+        q_vec = words_text_to_fixed_seqlen_vec(wv, q, q_len_limit)
+        training.append(
+            (q_vec, words_text_to_fixed_seqlen_vec(wv, a_pos, a_len_limit), 1))
+        training.append(
+            (q_vec, words_text_to_fixed_seqlen_vec(wv, a_neg, a_len_limit), 0))
+    return training
 
+def triplet_text_to_vec(triplet, wv, q_max_len, a_max_len):
+    return [
+        words_text_to_fixed_seqlen_vec(wv, triplet[0], q_max_len),
+        words_text_to_fixed_seqlen_vec(wv, triplet[1], a_max_len),
+        words_text_to_fixed_seqlen_vec(wv, triplet[2], a_max_len)
+    ]
 
-def generate_eval_data(train_raw_data, word_to_vec):
-    eval_data = []
-    q_max_len = 15
-    a_max_len = 150
-    for (question, a_pos, a_negs) in train_raw_data:
-        a_vecs = []
-        for ans in [a_pos] + a_negs:
-            a_vec = words_to_fixed_length_vec(word_to_vec, ans, a_max_len)
-            a_vecs.append(np.array(a_vec))
-        if len(a_vecs) % 2 == 1:
-            a_vecs.pop(-1)
-        assert len(a_vecs) % 2 == 0
-
-        repeat_times = int(len(a_vecs) / 2)
-        q_vec = words_to_fixed_length_vec(word_to_vec, question, q_max_len)
-        q_vecs = [q_vec] * repeat_times
-
-        q_vecs = np.array(q_vecs)
-        a_vecs = np.array(a_vecs)
-        eval_data.append((q_vecs, a_vecs))
-
-    return eval_data
-
-
-def generate_test_data(train_test_data, word_to_vec, label_to_ans):
-    test_data = []
-    q_max_len = 15
-    a_max_len = 150
-    for (question, labels, cands) in train_test_data:
-        cands_vecs = []
-        for cand in cands:
-            text = label_to_ans[cand]
-            cand_vec = words_to_fixed_length_vec(word_to_vec, text, a_max_len)
-            cands_vecs.append(cand_vec)
-        if len(cands_vecs) % 2 == 1:
-            cands_vecs.pop(-1)
-        assert len(cands_vecs) % 2 == 0
-
-        repeat_times = int(len(cands_vecs) / 2)
-        q_vec = words_to_fixed_length_vec(word_to_vec, question, q_max_len)
-        q_vecs = [q_vec] * repeat_times
-
-        labels_idx = [cands.index(label) for label in labels if label in cands]
-
-        q_vecs = np.array(q_vecs)
-        cands_vecs = np.array(cands_vecs)
-        test_data.append((q_vecs, cands_vecs, labels, labels_idx))
-
-    return test_data
+def train_data_gen_fn(train_triplet_vecs, bs=32):
+    q = []
+    ap = []
+    an = []
+    for t in train_triplet_vecs:
+        q.append(t[0])
+        ap.append(t[1])
+        an.append(t[2])
+        if len(q) >= bs:
+            q = np.array(q)
+            ap = np.array(ap)
+            an = np.array(an)
+            a = np.concatenate([ap, an])
+            assert 2 * q.shape[0] == a.shape[0]
+            yield q, a
+            q = []
+            ap = []
+            an = []
+    # return the rest
+    # return np.array(q), np.concatenate([np.array(ap), np.array(an)])
 
 
 if __name__ == "__main__":

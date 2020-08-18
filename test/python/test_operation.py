@@ -2520,8 +2520,8 @@ class TestPythonOperation(unittest.TestCase):
             result = gemm(a)
 
             params = gemm.get_params()
-            B = tensor.to_numpy(params['W'])
-            C = tensor.to_numpy(params['b'])
+            B = tensor.to_numpy(params['Gemm.W'])
+            C = tensor.to_numpy(params['Gemm.b'])
 
             da, db, dc = result.creator.backward(dy.data)
 
@@ -2575,7 +2575,7 @@ class TestPythonOperation(unittest.TestCase):
         dy = tensor.from_numpy(DY)
         dy.to_device(dev)
 
-
+        
         result = autograd.globalaveragepool(x)
         dx = result.creator.backward(dy.data)
 

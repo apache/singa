@@ -63,12 +63,9 @@ class QAModel(model.Model):
     def train_one_batch(self, q, a):
         out = self.forward(q, a)
         loss = autograd.qa_lstm_loss(out[0], out[1])
-        self.optimizer(loss)
+        self.optimizer.backward_and_update(loss)
 
         return out, loss
-
-    def set_optimizer(self, optimizer):
-        self.optimizer = optimizer
 
 
 class MLP(model.Model):
