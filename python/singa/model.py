@@ -51,7 +51,7 @@ class ModelMeta(layer.LayerMeta):
                     elif isinstance(item, tensor.Tensor):
                         item.creator = None
             elif isinstance(tensors, tensor.Tensor):
-                self._results.creator = None
+                tensors.creator = None
 
         @wraps(func)
         def wrapper(self, *args, **kwargs):
