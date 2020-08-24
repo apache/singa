@@ -4890,7 +4890,7 @@ class CosSim(Operator):
 
     @classmethod
     def dot(cls, a, b):
-        """ 
+        """
         dot multiply
         Args:
             a (CTensor): 2d input tensor.

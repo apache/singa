@@ -83,10 +83,10 @@ class Device {
   /// Copy data within or across devices.
   virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
                               CopyDirection direction, int dst_offset,
-                              int src_offset);
+                              int src_offset, Context* ctx);
 
   void CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
-                           size_t dst_offset = 0);
+                           size_t dst_offset = 0, Context* ctx = nullptr);
   /// Submit the operation to the device, which may execute it right now or
   /// delay it depending on the scheduler.
   void Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
@@ -263,7 +263,8 @@ class OpenclDevice : public singa::Device {
 
   virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
                               CopyDirection direction, int dst_offset = 0,
-                              int src_offset = 0) override;
+                              int src_offset = 0,
+                              Context* ctx = nullptr) override;
 
  protected:
   /// The OpenCL device that this object represents.
