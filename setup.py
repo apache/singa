@@ -33,7 +33,7 @@ the wheel package and the wheel file will be rejected by PYPI website during
 uploading due to file name error.
 
     # repair the wheel pakage and upload to pypi
-    $ /opt/python/cp36-cp36m/bin/python setup.py upload
+    $ /opt/python/cp36-cp36m/bin/python setup.py audit
 
 For the Dockerfile with CUDA and CUDNN installed, the CUDA version and 
 CUDNN version are exported as environment variable: CUDA_VERSION, CUDNN_VERSION.

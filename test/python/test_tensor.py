@@ -484,7 +484,7 @@ class TestTensorMethods(unittest.TestCase):
         x.to_device(dev)
         scalar = np.random.random((1,))[0] * 100
         y = x + scalar
-        self.assertEqual(y.dtype, core_pb2.kFloat32)
+        self.assertEqual(y.dtype, tensor.float32)
         np.testing.assert_array_almost_equal(tensor.to_numpy(y), x_val + scalar)
 
     @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
@@ -501,7 +501,7 @@ class TestTensorMethods(unittest.TestCase):
         x.to_device(dev)
         scalar = np.random.random((1,))[0] * 100
         y = x + scalar
-        self.assertEqual(y.dtype, core_pb2.kFloat32)
+        self.assertEqual(y.dtype, tensor.float32)
         np.testing.assert_array_almost_equal(tensor.to_numpy(y), x_val + scalar)
 
     @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
@@ -549,7 +549,7 @@ class TestTensorMethods(unittest.TestCase):
                           [-8, 3, -5, -11, 0], [4, 0, 3, -6, -3]]],
                         dtype=np.int32)
         b_np = np.array([[-6, -3, -8, -17, 1], [-4, -16, 4, -9, 0],
-                          [7, 1, 11, -12, 4], [-6, -8, -5, -3, 0]],
+                         [7, 1, 11, -12, 4], [-6, -8, -5, -3, 0]],
                         dtype=np.int32)
         ta = tensor.from_numpy(a_np)
         tb = tensor.from_numpy(b_np)
