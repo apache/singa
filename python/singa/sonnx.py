@@ -1087,7 +1087,8 @@ class SingaBackend(Backend):
         'Unsqueeze': 'Unsqueeze',
         'NonZero': 'NonZero',
         'Ceil': 'Ceil',
-        # # special op
+        # special op
+        'ScatterElements': 'ScatterElements',
         'Cast': 'Cast',
         'Split': 'Split',
         'Squeeze': 'Squeeze',
@@ -1155,6 +1156,7 @@ class SingaBackend(Backend):
         'Expand': '_create_expand',
         'Pad': '_create_pad',
         'Upsample': '_create_upsample',
+        'ScatterElements': '_create_scatter_elements',
         'Where': '_create_where',
     }
 
@@ -1190,7 +1192,10 @@ class SingaBackend(Backend):
         return operator(mode, None, None)
 
     @classmethod
-    def _create_upsample(cls, onnx_node, operator, opset_version=_opset_version):
+    def _create_upsample(cls,
+                         onnx_node,
+                         operator,
+                         opset_version=_opset_version):
         """
         get the UpSample operator from onnx node
         Args:
@@ -1678,6 +1683,25 @@ class SingaBackend(Backend):
         return operator(kernel_size, stride, padding, is_max, auto_pad)
 
     @classmethod
+    def _create_scatter_elements(cls,
+                                 onnx_node,
+                                 operator,
+                                 opset_version=_opset_version):
+        """
+        get the ScatterElements from the onnx node
+        Args:
+            onnx_node(OnnxNode): a given onnx node
+            operator (Operator Class): a singa operator class
+            opset_version(int): the opset version
+        Returns: 
+            singa operator instance      
+        """
+        axis = onnx_node.getattr("axis", 0)
+        onnx_node.set_attr_inputs(onnx_node.inputs[1], 'indices')
+        onnx_node.set_attr_inputs(onnx_node.inputs[2], 'updates')
+        return operator(None, None, axis)
+
+    @classmethod
     def _onnx_constant_to_np(cls, onnx_node, opset_version=_opset_version):
         """
         parse onnx constatn node to numpy array
@@ -2048,9 +2072,11 @@ class SingaRep(BackendRep):
         outputs_dict = OrderedDict([])
 
         # last_layers means we run this model until the last #N layers
-        last_layers = kwargs.get('last_layers', len(self._layers))
-        if last_layers != len(self._layers):
-            for outp in self._layers[last_layers - 1].outputs:
+        last_layers = kwargs.get('last_layers', len(self._layers) - 1)
+        last_layers = last_layers if last_layers >= 0 else (
+            last_layers + 1) % len(self._layers)
+        if last_layers != len(self._layers) - 1:
+            for outp in self._layers[last_layers].outputs:
                 outputs_dict[outp] = None
         else:
             for outp in self.outputs:
@@ -2064,7 +2090,7 @@ class SingaRep(BackendRep):
         self.init_tensor_count()
 
         # run the layer by the topo order
-        for node in self._layers[:last_layers]:
+        for node in self._layers[:last_layers + 1]:
             op = self.__dict__[node.name]
             self.handle_special_ops(node, op, tensor_dict)
             # make input

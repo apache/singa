@@ -20,6 +20,8 @@
  ************************************************************/
 
 #include "rnn.h"
+
+#include <map>
 namespace singa {
 #ifdef USE_CUDNN
 CudnnRNNHandle::CudnnRNNHandle(const Tensor &x, const int hidden_size,
@@ -32,6 +34,7 @@ CudnnRNNHandle::CudnnRNNHandle(const Tensor &x, const int hidden_size,
       hidden_size(hidden_size),
       mode(mode),
       num_layers(num_layers) {
+  // cudnn rnn bias is not available in cudnn v7.4.5, not found in cudnn.h
   CHECK_EQ(bias, 1) << "Current implementation always include bias";
   CHECK(bidirectional == 0 || bidirectional == 1)
       << "bidirectional should be 0 or 1 not " << bidirectional;
@@ -57,7 +60,7 @@ CudnnRNNHandle::CudnnRNNHandle(const Tensor &x, const int hidden_size,
   init_rnn_desc();
   init_parameters_desc(xDesc);
   init_workspace(xDesc);
-
+  init_param_mapping(xDesc);
   delete[] xDesc;
 }
 
@@ -125,7 +128,6 @@ void CudnnRNNHandle::init_dropout_desc() {
   CUDNN_CHECK(cudnnSetDropoutDescriptor(dropoutDesc, ctx->cudnn_handle, dropout,
                                         states, stateSize, seed));
 }
-
 
 void init_yDesc(cudnnTensorDescriptor_t *yDesc, CudnnRNNHandle &h) {
   int dimA[] = {h.batch_size,
@@ -233,7 +235,8 @@ vector<Tensor> GpuRNNForwardInference(const Tensor &x, const Tensor &hx,
         delete[] yDesc;
       },
       {x.block(), hx.block(), cx.block(), W.block()},
-      {y.block(), hy.block(), cy.block(), h.workspace.block()});
+      {y.block(), hy.block(), cy.block(), h.workspace.block()},
+      "cudnnRNNForwardInterface");
   return {y, hy, cy};
 }
 
@@ -305,7 +308,8 @@ vector<Tensor> GpuRNNForwardTraining(const Tensor &x, const Tensor &hx,
       },
       {x.block(), hx.block(), cx.block(), W.block()},
       {y.block(), hy.block(), cy.block(), h.workspace.block(),
-       h.reserve_space.block()});
+       h.reserve_space.block()},
+      "cudnnRNNForwardTraining");
 
   return {y, hy, cy};
 }
@@ -383,7 +387,8 @@ vector<Tensor> GpuRNNBackwardx(const Tensor &y, const Tensor &dy,
       {y.block(), dy.block(), dhy.block(), dcy.block(), hx.block(), cx.block(),
        W.block()},
       {dx.block(), dhx.block(), dcx.block(), h.workspace.block(),
-       h.reserve_space.block()});
+       h.reserve_space.block()},
+      "cudnnRNNBackwardx");
   return {dx, dhx, dcx};
 }
 
@@ -394,6 +399,7 @@ Tensor GpuRNNBackwardW(const Tensor &x, const Tensor &hx, const Tensor &y,
   // x shape {seq, bs}
   // y shape {seq, bs}
   dW.SetValue(0.0f);
+  h.workspace.SetValue(0.0f);
   dW.device()->Exec(
       [dW, x, hx, y, &h](Context *ctx) {
         cudnnTensorDescriptor_t *xDesc =
@@ -423,8 +429,93 @@ Tensor GpuRNNBackwardW(const Tensor &x, const Tensor &hx, const Tensor &y,
         delete[] yDesc;
       },
       {x.block(), y.block(), hx.block()},
-      {dW.block(), h.workspace.block(), h.reserve_space.block()});
+      {dW.block(), h.workspace.block(), h.reserve_space.block()},
+      "cudnnRnnBackwardW");
   return dW;
+}
+
+void CudnnRNNHandle::init_param_mapping(cudnnTensorDescriptor_t *xDesc) {
+  int linLayerIDRange = 2;
+  if (mode == 0 || mode == 1) {
+    // vanilla relu/tanh
+    linLayerIDRange = 2;
+  } else if (mode == 2) {
+    // lstm
+    linLayerIDRange = 8;
+  } else if (mode == 3) {
+    // gru
+    linLayerIDRange = 6;
+  }
+  int pseudoLayerRange = (bidirectional ? 2 : 1) * num_layers;
+
+  // dummy weights for getting the offset
+  Tensor weights(
+      Shape{
+          weights_size,
+      },
+      dev);
+  weights.SetValue(0.0f);
+  const void *W_ptr = weights.block()->data();
+
+  void *param_ptr = nullptr;
+  int dims[] = {1, 1, 1};
+  cudnnDataType_t data_type;
+  cudnnTensorFormat_t tensor_format;
+  int n_dims;
+  cudnnFilterDescriptor_t paramDesc;
+  CUDNN_CHECK(cudnnCreateFilterDescriptor(&paramDesc));
+
+  vector<bool> paramTypes{false, true};
+  for (int linLayerID = 0; linLayerID < linLayerIDRange; linLayerID++) {
+    for (int pseudoLayer = 0; pseudoLayer < pseudoLayerRange; pseudoLayer++) {
+      for (const bool &is_bias : paramTypes) {
+        // get param ptr
+        if (is_bias) {
+          CUDNN_CHECK(cudnnGetRNNLinLayerBiasParams(
+              ctx->cudnn_handle, rnnDesc, pseudoLayer, xDesc[0], wDesc, W_ptr,
+              linLayerID, paramDesc, &param_ptr));
+        } else {
+          CUDNN_CHECK(cudnnGetRNNLinLayerMatrixParams(
+              ctx->cudnn_handle, rnnDesc, pseudoLayer, xDesc[0], wDesc, W_ptr,
+              linLayerID, paramDesc, &param_ptr));
+        }
+
+        // get param dims
+        CUDNN_CHECK(cudnnGetFilterNdDescriptor(paramDesc, 3, &data_type,
+                                               &tensor_format, &n_dims, dims));
+
+        // get diff - offset
+        size_t offset = (float *)param_ptr - (float *)W_ptr;
+
+        // save in map
+        weights_mapping[std::make_tuple(linLayerID, pseudoLayer, is_bias)] =
+            std::make_tuple(offset, dims[0] * dims[1] * dims[2]);
+      }
+    }
+  }
+}
+
+void GpuRNNSetParam(int linLayerID, int pseudoLayer, Tensor &weights,
+                    Tensor &paramValues, bool is_bias, CudnnRNNHandle &h) {
+  size_t offset, size;
+  std::tie(offset, size) =
+      h.weights_mapping[std::make_tuple(linLayerID, pseudoLayer, is_bias)];
+  CHECK_EQ(size, paramValues.size()) << "param size is not expected";
+  CopyDataToFrom(&weights, paramValues, size, offset, 0);
+}
+
+Tensor GpuRNNGetParamCopy(int linLayerID, int pseudoLayer, Tensor &weights,
+                          bool is_bias, CudnnRNNHandle &h) {
+  size_t offset, size;
+  std::tie(offset, size) =
+      h.weights_mapping[std::make_tuple(linLayerID, pseudoLayer, is_bias)];
+  Tensor paramCopy(
+      Shape{
+          size,
+      },
+      weights.device());
+  CopyDataToFrom(&paramCopy, weights, size, 0, offset);
+  return paramCopy;
 }
 
 /*

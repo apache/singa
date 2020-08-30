@@ -20,12 +20,14 @@ This script includes Model class for python users
 to use Computational Graph in their model.
 '''
 
-from functools import wraps
+import os
+import gc
 import time
-import numpy as np
 import json
 import zipfile
-import os
+import numpy as np
+from functools import wraps
+from collections import Iterable
 
 from singa import tensor
 from singa import autograd
@@ -33,12 +35,23 @@ from singa import layer
 from .tensor import Tensor
 from . import singa_wrap as singa
 
-import gc
-
 
 class ModelMeta(layer.LayerMeta):
 
     def buffer_operation(func):
+
+        def remove_creator(tensors):
+            if not tensors:
+                return
+
+            if isinstance(tensors, Iterable):
+                for item in tensors:
+                    if isinstance(item, Iterable):
+                        remove_creator(item)
+                    elif isinstance(item, tensor.Tensor):
+                        item.creator = None
+            elif isinstance(tensors, tensor.Tensor):
+                tensors.creator = None
 
         @wraps(func)
         def wrapper(self, *args, **kwargs):
@@ -66,13 +79,7 @@ class ModelMeta(layer.LayerMeta):
                     self._buffered = True
 
                     # deconstruct Operations before running the entire graph
-                    if self._results:
-                        if isinstance(self._results, list):
-                            for _matrix in self._results:
-                                if isinstance(_matrix, tensor.Tensor):
-                                    _matrix.creator = None
-                        elif isinstance(self._results, tensor.Tensor):
-                            self._results.creator = None
+                    remove_creator(self._results)
 
                     # make sure all Operations are deallocated
                     gc.collect()

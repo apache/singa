@@ -23,8 +23,6 @@
 #include <iomanip>
 #include <sstream>
 #include <thread>
-#include <unordered_set>
-//#include <iostream>
 
 #include "singa/core/device.h"
 #include "singa/utils/safe_queue.h"
@@ -66,11 +64,6 @@ BlkInfo *Graph::block(Block *blk) const {
   return it->second;
 }
 
-Block *Graph::write_block(const size_t idx) const {
-  CHECK_LT(idx, write_blocks_.size());
-  return write_blocks_[idx];
-}
-
 Node *Graph::begin_node(const size_t idx) const {
   CHECK_LT(idx, begin_nodes_.size());
   return begin_nodes_[idx];
@@ -102,7 +95,7 @@ void Graph::Reset() {
   }
   blocks_.clear();
 
-  write_blocks_.clear();
+  leaf_blocks_.clear();
 
   iteration_ = 0;
 
@@ -119,6 +112,7 @@ void Graph::Debug() {
   int w = 0;
   size_t max_in_num = 0, max_out_num = 0, max_next_num = 0, max_free_num = 0;
   for (auto &it : nodes_) {
+    if (it->op_name_ == "Waiting") continue;
     max_in_num = std::max(max_in_num, it->in_edges_.size());
     max_out_num = std::max(max_out_num, it->out_edges_.size());
   }
@@ -131,7 +125,8 @@ void Graph::Debug() {
     max_free_num = std::max(max_free_num, it.size());
   }
 
-  for (size_t i = std::max(nodes_.size(), blocks_.size()); i > 0; i /= 10, ++w) {
+  size_t max_size = std::max(nodes_.size(), blocks_.size());
+  for (size_t i = max_size; i > 0; i /= 10, ++w) {
   }
 
   std::stringstream ss;
@@ -146,9 +141,16 @@ void Graph::Debug() {
     ss << "OP[" << std::setw(w) << i;
     auto node = nodes_[i];
 
+    string name;
+    if (node->op_name_.size() > 16) {
+      name = node->op_name_.substr(0, 13) + "...";
+    } else {
+      name = node->op_name_;
+    }
+
     ss << "] Inputs:[";
     size = node->in_edges_.size();
-    for (size_t j = 0; j < max_in_num; ++j) {
+    for (size_t j = 0; j < std::max(max_in_num, size); ++j) {
       if (j < size)
         ss << std::setw(w) << blocks_[node->in_edges_[j]->blk_]->id_ << " ";
       else
@@ -157,7 +159,7 @@ void Graph::Debug() {
 
     ss << "] Outputs:[";
     size = node->out_edges_.size();
-    for (size_t j = 0; j < max_out_num; ++j) {
+    for (size_t j = 0; j < std::max(max_out_num, size); ++j) {
       if (j < size)
         ss << std::setw(w) << blocks_[node->out_edges_[j]->blk_]->id_ << " ";
       else
@@ -195,7 +197,7 @@ void Graph::Debug() {
 
   for (auto it : blkInfos) {
     auto blkInfo = it;
-    ss << "Block[" << std::setw(w) << blkInfo->id_ << "] addr[" << std::setw(w)
+    ss << "Block[" << std::setw(w) << blkInfo->id_ << "] addr[" << std::setw(10)
        << blkInfo->blk_ << "] size[" << std::setw(10) << blkInfo->blk_->size()
        << "] graph_ref[" << std::setw(w) << blkInfo->graph_ref_
        << "] ref_count[" << std::setw(w) << blkInfo->blk_->ref_count() << "] ";
@@ -421,6 +423,13 @@ void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
     Node *src_node = nullptr;
     BlkInfo *blkInfo = nullptr;
 
+    // update leaf blocks
+    auto iter = leaf_blocks_.find(blk);
+    if (iter != leaf_blocks_.end()) {
+      leaf_blocks_.erase(iter);
+    }
+
+    // check if the block is already in the computational graph
     auto it = blocks_.find(blk);
     if (it == blocks_.end()) {
       blkInfo = new BlkInfo(blocks_.size(), blk, BlockType::kInput);
@@ -431,6 +440,7 @@ void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
         blkInfo->type_ = BlockType::kInter;
       }
 
+      // update the existing edge, update dst node and create new edge
       Edge *write_edge = blkInfo->write_edge_;
       if (write_edge) {
         if (!write_edge->dst_node_) {
@@ -445,6 +455,7 @@ void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
       }
     }
 
+    // create new edge for new block
     Edge *edge = new Edge(edges_.size(), blk, src_node, node);
     blkInfo->graph_ref_ += 1;
     if (src_node) {
@@ -460,6 +471,9 @@ void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
     Block *blk = write_blocks[i];
     BlkInfo *blkInfo = nullptr;
 
+    // update leaf blocks
+    leaf_blocks_.insert(blk);
+
     auto it = blocks_.find(blk);
     if (it == blocks_.end()) {
       blkInfo = new BlkInfo(blocks_.size(), blk, BlockType::kEnd);
@@ -471,6 +485,7 @@ void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
       }
     }
 
+    // create new edge for new block
     Edge *edge = new Edge(edges_.size(), blk, node, nullptr);
     blkInfo->write_edge_ = edge;
     blkInfo->graph_ref_ += 1;
@@ -478,9 +493,6 @@ void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
     node->AddOutEdge(edge);
     edges_.push_back(edge);
   }
-
-  // for sync op
-  write_blocks_ = write_blocks;
 
   // add node into nodes
   nodes_.push_back(node);
@@ -490,8 +502,8 @@ void Graph::AddSyncOp(function<void(Context *)> &&op, string op_name) {
   // create new node
   Node *node = new Node(nodes_.size(), std::move(op), op_name);
 
-  for (size_t i = 0; i < write_blocks_.size(); ++i) {
-    Block *blk = write_blocks_[i];
+  for (auto it : leaf_blocks_) {
+    Block *blk = it;
     BlkInfo *blkInfo = blocks_[blk];
     Edge *edge = nullptr;
 
@@ -557,7 +569,7 @@ void Graph::AnalyzeNodes() {
         next_nodes_[i].push_back(nodes_[i + 1]);
       }
 
-      std::unordered_set<Block *> blks;
+      BlockSet blks;
       for (size_t j = 0; j < curNode->in_edges_.size(); ++j) {
         blks.insert(curNode->in_edges_[j]->blk_);
       }
@@ -622,7 +634,7 @@ void Graph::AnalyzeNodes() {
       }
 
       // step 3: push_back curNode to the used_nodes_ of relevant blocks
-      std::unordered_set<Block *> blks;
+      BlockSet blks;
       for (size_t j = 0; j < curNode->in_edges_.size(); ++j) {
         blks.insert(curNode->in_edges_[j]->blk_);
       }

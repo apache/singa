@@ -29,7 +29,7 @@ from singa import opt
 
 from cuda_helper import gpu_dev, cpu_dev
 
-def assertTensorEqual(x,y):
+def assertTensorEqual(x,y,decimal=6):
     assert x.shape == y.shape
     assert x.dtype == y.dtype
     assert x.device.id() == y.device.id()
@@ -38,7 +38,8 @@ def assertTensorEqual(x,y):
     y.to_host()
     np.testing.assert_array_almost_equal(
         x.data.GetFloatValue(int(x.size())),
-        y.data.GetFloatValue(int(y.size())))
+        y.data.GetFloatValue(int(y.size())),
+                                    decimal)
     x.to_device(d)
     y.to_device(d)
 
@@ -104,6 +105,77 @@ class TestOptimizer(unittest.TestCase):
         sgd1.apply(w.name, w, g)
 
         assertTensorEqual(w, w_step1)
+
+    @on_cpu_gpu
+    def test_RMSProp_const_lr(self, dev=cpu_dev):
+        cpu_dev.EnableGraph(False)
+        opt1 = opt.RMSProp(lr=0.1)
+        w_shape=(2,3)
+        w = tensor.Tensor(w_shape, device=dev).set_value(0.1)
+        g = tensor.Tensor(w_shape, device=dev).set_value(0.1)
+
+        # running_average = running_average * rho + param_grad * param_grad * (1 - rho)
+        # param_value = param_value - lr * param_grad / sqrt(running_average + epsilon)
+
+        running_average = 0.1 * tensor.square(g)
+        tmp = running_average + 1e-8
+        tmp = tensor.sqrt(tmp)
+        tmp = g / tmp
+
+        w_step1 = w - 0.1 * tmp
+        opt1.apply(w.name, w, g)
+
+        assertTensorEqual(w, w_step1)
+
+    @on_cpu_gpu
+    def test_AdaGrad_const_lr(self, dev=cpu_dev):
+        cpu_dev.EnableGraph(False)
+        opt1 = opt.AdaGrad(lr=0.1)
+        w_shape=(2,3)
+        w = tensor.Tensor(w_shape, device=dev).set_value(0.1)
+        g = tensor.Tensor(w_shape, device=dev).set_value(0.1)
+
+        # history = history + param_grad * param_grad
+        # param_value = param_value - lr * param_grad / sqrt(history + epsilon)
+
+        history = tensor.square(g)
+        tmp = history + 1e-8
+        tmp = tensor.sqrt(tmp)
+        tmp = g / tmp
+
+        w_step1 = w - 0.1 * tmp
+        opt1.apply(w.name, w, g)
+
+        assertTensorEqual(w, w_step1)
+
+    @on_cpu_gpu
+    def test_Adam_const_lr(self, dev=cpu_dev):
+        cpu_dev.EnableGraph(False)
+        opt1 = opt.Adam(lr=0.1)
+        w_shape=(2,3)
+        w = tensor.Tensor(w_shape, device=dev).set_value(1.0)
+        g = tensor.Tensor(w_shape, device=dev).set_value(0.1)
+
+        # m := beta_1 * m + (1 - beta_1) * grad 
+        # v := beta_2 * v + (1 - beta_2) * grad * grad
+        # m_norm = m / (1 - beta_1 ^ step) 
+        # v_norm = v / (1 - beta_2 ^ step) 
+        # param := param - (lr * m_norm) / ( sqrt(v_norm) + epsilon) )
+
+        m = 0.1 * g
+        tmp = tensor.square(g)
+        v = 0.001 * tmp
+
+        m_norm = m / 0.1
+        v_norm = v / 0.001
+
+        tmp = tensor.sqrt(v_norm) + 1e-8
+        tmp = m_norm / tmp      
+
+        w_step1 = w - 0.1 * tmp
+        opt1.apply(w.name, w, g)
+
+        assertTensorEqual(w, w_step1, decimal=5)
 
     @on_cpu_gpu
     def test_sgd_const_lr_momentum(self, dev=cpu_dev):

@@ -16,11 +16,15 @@
 # limitations under the License.
 #
 
+import sys
 import unittest
-# import xmlrunner
 
-loader = unittest.TestLoader()
-tests = loader.discover('.')
-testRunner = unittest.runner.TextTestRunner()
-# testRunner = xmlrunner.XMLTestRunner(output='.')
-testRunner.run(tests)
+def main():
+    loader = unittest.TestLoader()
+    tests = loader.discover('.')
+    testRunner = unittest.runner.TextTestRunner()
+    ret = not testRunner.run(tests).wasSuccessful()
+    sys.exit(ret)
+
+if __name__ == "__main__":
+    main()

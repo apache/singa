@@ -225,7 +225,7 @@ class Xception(model.Model):
         self.relu4 = layer.ReLU()
         self.globalpooling = layer.MaxPool2d(10, 1)
         self.flatten = layer.Flatten()
-        self.fc = layer.Linear(2048, num_classes)
+        self.fc = layer.Linear(num_classes)
 
         self.softmax_cross_entropy = layer.SoftMaxCrossEntropy()
 
