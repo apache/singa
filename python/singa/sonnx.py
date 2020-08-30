@@ -1337,8 +1337,9 @@ class SingaBackend(Backend):
         Returns: 
             singa operator instance
         """
+        seed = onnx_node.getattr("seed", 0)
         ratio = onnx_node.getattr("ratio", 0)
-        return operator(ratio)
+        return operator(seed, ratio)
 
     @classmethod
     def _create_constant_of_shape(cls,
