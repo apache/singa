@@ -55,8 +55,6 @@ import os
 import io
 import sys
 import subprocess
-import textwrap
-import traceback
 import shutil
 import shlex
 from pathlib import Path
@@ -192,10 +190,8 @@ def generate_singa_config(with_cuda, with_nccl):
 
 
 def get_cpp_flags():
-    last_err = None
     default_flags = ['-std=c++11', '-fPIC', '-g', '-O2', '-Wall', '-pthread']
     # avx_flags = [ '-mavx'] #'-mf16c',
-    flags_to_try = []
     if sys.platform == 'darwin':
         # Darwin most likely will have Clang, which has libc++.
         return default_flags + ['-stdlib=libc++']

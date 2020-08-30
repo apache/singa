@@ -15,14 +15,14 @@
 # limitations under the License.
 #
 
-name: macOS
+name: Native-MacOS
 
 on:
   push:
   pull_request:
 
 jobs:
-  build-macOS-cpu:
+  build-cpptest-cpu:
     runs-on: macos-latest
 
     steps:

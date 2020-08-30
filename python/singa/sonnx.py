@@ -21,18 +21,21 @@ from __future__ import division
 
 import numpy as np
 import onnx.utils
-import onnx
+import onnx.save 
+import onnx.load
 from onnx.backend.base import Backend, BackendRep
 from onnx import (checker, helper, numpy_helper, GraphProto, NodeProto,
-                  TensorProto, OperatorSetIdProto, optimizer, mapping)
+                  TensorProto, OperatorSetIdProto, optimizer, mapping,
+                  shape_inference)
 import warnings
 
-from singa import device
-from . import singa_wrap as singa
-from . import autograd, layer
-from . import tensor
-from . import model
-from singa import utils
+import device
+import autograd
+import layer
+import tensor
+import model
+import utils
+from singa_wrap as singa
 
 import collections
 OrderedDict = collections.OrderedDict
@@ -390,10 +393,9 @@ class SingaFrontend(object):
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
-        tensor_type = onnx.TensorProto.FLOAT if isinstance(
-            op.value, float) else onnx.TensorProto.INT32
-        tensor_value = onnx.helper.make_tensor("value", tensor_type, [1],
-                                               [op.value])
+        tensor_type = TensorProto.FLOAT if isinstance(
+            op.value, float) else TensorProto.INT32
+        tensor_value = helper.make_tensor("value", tensor_type, [1], [op.value])
         node.attribute.extend([
             helper.make_attribute('value', tensor_value),
         ])
@@ -1895,7 +1897,7 @@ class SingaBackend(Backend):
         try:
             model = onnx.utils.polish_model(model)
         except IndexError as err:
-            model = onnx.shape_inference.infer_shapes(model)
+            model = shape_inference.infer_shapes(model)
 
         # check the opset version and ir version
         # SINGA supports opset version(11), ir version(1.6.0 -> 6)

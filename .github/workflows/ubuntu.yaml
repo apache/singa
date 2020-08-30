@@ -17,7 +17,7 @@
 
 # This is a basic workflow to help you get started with Actions
 
-name: C++
+name: Native-Ubuntu
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -41,7 +41,7 @@ jobs:
   #    - name: C++ test
   #      run: build/bin/test_singa
  
-  build-ubuntu-oneDNN:
+  build-cpptest-on-cpu:
     runs-on: ubuntu-latest
 
     steps:
