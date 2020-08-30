@@ -71,7 +71,7 @@ google_news_pretrain_embeddings_link = "https://s3.amazonaws.com/dl4j-distributi
 
 def get_idx2word(data_dir):
     idx2word = dict()
-    with open(data_dir + "vocabulary") as vc_f:
+    with open(data_dir + "vocabulary", encoding="utf-8") as vc_f:
         for line in vc_f:
             pair = line.strip().split("\t")
             idx = int(pair[0].replace("idx_", ""))

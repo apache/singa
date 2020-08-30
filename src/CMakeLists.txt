@@ -105,6 +105,11 @@ IF(UNIX OR APPLE)
   SET_TARGET_PROPERTIES(singa PROPERTIES LINK_FLAGS "")
 ENDIF()
 
+IF(CODE_COVERAGE)
+    MESSAGE("-- Enabling Code Coverage")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g --coverage")
+ENDIF(CODE_COVERAGE)
+
 #pass configure infor to swig
 FILE(REMOVE "${CMAKE_CURRENT_SOURCE_DIR}/api/config.i")
 CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/api/config.i.in" "${CMAKE_CURRENT_SOURCE_DIR}/api/config.i")
