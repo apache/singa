@@ -117,6 +117,13 @@ __global__ void KernelExp(const size_t n, const float *in, float *out) {
   }
 }
 
+__global__ void KernelErf(const size_t n, const float *in, float *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = erff(in[i]);
+  }
+}
+
 __global__ void KernelCeil2(const size_t n, const float *in, float *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
@@ -580,6 +587,10 @@ void sign(const size_t n, const float *in, float *out, cudaStream_t s) {
 
 void exp(const size_t n, const float *in, float *out, cudaStream_t s) {
   KernelExp <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
+}
+
+void erf(const size_t n, const float *in, float *out, cudaStream_t s) {
+  KernelErf <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
 }
 
 void ceil2(const size_t n, const float *in, float *out, cudaStream_t s) {
