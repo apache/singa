@@ -20,22 +20,20 @@
 from __future__ import division
 
 import numpy as np
-import onnx.utils
-import onnx.save
-import onnx.load
+import onnx
 from onnx.backend.base import Backend, BackendRep
 from onnx import (checker, helper, numpy_helper, GraphProto, NodeProto,
                   TensorProto, OperatorSetIdProto, optimizer, mapping,
                   shape_inference)
 import warnings
 
-import device
-import autograd
-import layer
-import tensor
-import model
-import utils
-import singa_wrap as singa
+from . import device
+from . import autograd
+from . import layer
+from . import tensor
+from . import model
+from . import utils
+from . import singa_wrap as singa
 
 import collections
 OrderedDict = collections.OrderedDict
