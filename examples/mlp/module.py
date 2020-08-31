@@ -91,6 +91,7 @@ def create_model(pretrained=False, **kwargs):
 __all__ = ['MLP', 'create_model']
 
 if __name__ == "__main__":
+    np.random.seed(0)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-p',
@@ -103,6 +104,12 @@ if __name__ == "__main__":
                         action='store_false',
                         help='disable graph',
                         dest='graph')
+    parser.add_argument('-m',
+                        '--max-epoch',
+                        default=1001,
+                        type=int,
+                        help='maximum epochs',
+                        dest='max_epoch')
     args = parser.parse_args()
 
     # generate the boundary
@@ -122,7 +129,7 @@ if __name__ == "__main__":
     data = np.array([[a, b] for (a, b) in zip(x, y)], dtype=np_precision)
 
     dev = device.create_cuda_gpu_on(0)
-    sgd = opt.SGD(0.05, dtype=precision)
+    sgd = opt.SGD(0.1, 0.9, dtype=precision)
 
 
     tx = tensor.Tensor((400, 2), dev, precision)
@@ -131,10 +138,10 @@ if __name__ == "__main__":
 
     # attached model to graph
     model.set_optimizer(sgd)
-    model.compile([tx], is_train=True, use_graph=args.graph, sequential=False)
+    model.compile([tx], is_train=True, use_graph=args.graph, sequential=True)
     model.train()
 
-    for i in range(1001):
+    for i in range(args.max_epoch):
         tx.copy_from_numpy(data)
         ty.copy_from_numpy(label)
         out, loss = model(tx, ty, 'fp32', spars=None)

@@ -703,13 +703,17 @@ class AddBias(Operator):
         Args:
             dy (CTensor): data for the dL / dy, L is the loss.
         Return:
-            a tuple for (db, dx), db is data for dL / db, dx is data
+            a tuple for (dx, db), db is data for dL / db, dx is data
             for dL / dx.
         """
+        dtype = dy.data_type()
+        _dy = dy.AsType(tensor.float32)
         if self.axis == 0:
-            return dy, singa.Sum(dy, 0)
+            return dy, singa.Sum(_dy, 0).AsType(dtype)
+            # return dy, singa.Sum(dy, 0)
         elif self.axis == 1:
-            return dy, singa.Sum(dy, 0)
+            return dy, singa.Sum(_dy, 0).AsType(dtype)
+            # return dy, singa.Sum(dy, 0)
 
 
 def add_bias(x, b, axis=0):

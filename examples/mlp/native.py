@@ -41,6 +41,12 @@ if __name__ == "__main__":
                         choices=['float32','float16'],
                         default='float32',
                         dest='precision')
+    parser.add_argument('-m',
+                        '--max-epoch',
+                        default=1001,
+                        type=int,
+                        help='maximum epochs',
+                        dest='max_epoch')
     args = parser.parse_args()
 
     np.random.seed(0)
@@ -103,9 +109,10 @@ if __name__ == "__main__":
     b1 = Tensor(shape=(2,),device=dev, dtype=precision, requires_grad=True, stores_grad=True)
     b1.set_value(0.0)
 
-    sgd = opt.SGD(0.05, dtype=precision)
+    sgd = opt.SGD(0.05, 0.9, dtype=precision)
+
     # training process
-    for i in range(1001):
+    for i in range(args.max_epoch):
         x = autograd.matmul(inputs, w0)
         x = autograd.add_bias(x, b0)
         x = autograd.relu(x)
@@ -115,4 +122,4 @@ if __name__ == "__main__":
         sgd(loss)
 
         if i % 100 == 0:
-            print("training loss = ", tensor.to_numpy(loss)[0])
+            print("%d, training loss = " %i, tensor.to_numpy(loss)[0])

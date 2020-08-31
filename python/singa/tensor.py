@@ -268,7 +268,6 @@ class Tensor(object):
         Returns:
             new tensor with new type
         '''
-        assert self.data.initialized()
         if dtype == singa.kInt:
             pass
         elif dtype == singa.kFloat32:
@@ -294,6 +293,7 @@ class Tensor(object):
         Returns:
             new tensor with new type
         '''
+        assert self.data.initialized()
         if dtype == singa.kInt:
             pass
         elif dtype == singa.kFloat32:
@@ -618,8 +618,6 @@ class Tensor(object):
             this tensor
         '''
         if isinstance(x, Tensor):
-            assert x.dtype == self.dtype
-            assert x.dtype != float16
             self.data += x.data
         else:
             self.data += float(x)
@@ -651,13 +649,7 @@ class Tensor(object):
             this tensor
         '''
         if isinstance(x, Tensor):
-            dtype = self.dtype
-            self.to_type(float32)
-            x.to_type(float32)
-
             self.data *= x.data
-            self.to_type(dtype)
-            x.to_type(dtype)
         else:
             self.data *= float(x)
         return self
@@ -686,13 +678,7 @@ class Tensor(object):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(singa.__add__(self.data, rhs.data))
         else:
-            dtype = self.dtype
-            self.to_type(float32)
-
             ret = _call_singa_func(singa.AddFloat, self.data, rhs)
-
-            self.to_type(dtype)
-            ret.to_type(dtype)
             return ret
 
     def __sub__(self, rhs):
