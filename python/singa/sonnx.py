@@ -21,7 +21,7 @@ from __future__ import division
 
 import numpy as np
 import onnx.utils
-import onnx.save 
+import onnx.save
 import onnx.load
 from onnx.backend.base import Backend, BackendRep
 from onnx import (checker, helper, numpy_helper, GraphProto, NodeProto,
@@ -35,7 +35,7 @@ import layer
 import tensor
 import model
 import utils
-from singa_wrap as singa
+import singa_wrap as singa
 
 import collections
 OrderedDict = collections.OrderedDict
