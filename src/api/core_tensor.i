@@ -32,7 +32,7 @@
 #include "singa/core/tensor.h"
 #include "singa/core/device.h"
 #include "singa/proto/core.pb.h"
-#include "singa/proto/model.pb.h"
+// #include "singa/proto/model.pb.h"
 using singa::DataType;
 %}
 %shared_ptr(singa::Device)
@@ -42,6 +42,9 @@ using singa::DataType;
 %init %{
   import_array();
 %}
+// better use (int DIM1, float* IN_ARRAY1)
+// otherwise, the generated py method will have the arg name src,
+// which in fact accepts num as the input
 %apply (float *IN_ARRAY1, int DIM1) {
        (const float *src, const size_t num)
 }
@@ -62,7 +65,10 @@ using singa::DataType;
 %apply float[] {float *};
 #endif // USE_JAVA
 
-
+namespace std {
+  %template(VecTensor) vector<singa::Tensor>;
+  %template(VecVecSize) vector<vector<size_t>>;
+}
 
 %template(Shape) std::vector<size_t>;
 

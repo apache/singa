@@ -24,3 +24,5 @@ github:
     wiki: true
     # Enable issues on github
     issues: true
+    # Enable settings on github
+    settings: true

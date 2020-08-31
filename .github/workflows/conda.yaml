@@ -27,7 +27,7 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  build-ubuntu-conda:
+  build-pytest-on-cpu:
     runs-on: ubuntu-latest
 
     steps:
@@ -36,5 +36,5 @@ jobs:
         run: conda install conda-build
       - name: conda-config
         run: conda config --add channels conda-forge && conda config --add channels nusdbsystem
-      - name: build-singa-conda
+      - name: build-pytest
         run: conda build tool/conda/singa
