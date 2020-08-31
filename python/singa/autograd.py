@@ -3942,13 +3942,16 @@ class Dropout(Operator):
     `output = scale * data * mask`, `scale = 1. / (1. - ratio)`.
     """
 
-    def __init__(self, ratio=0.5):
+    def __init__(self, seed=0, ratio=0.5):
         """
         Args:
+            seed (int): the random seed
             ratio (float): the ratio of random dropout, with value in [0, 1).
         """
         super(Dropout, self).__init__()
         self.ratio = ratio
+        self.seed = int(seed)
+        self.init_seed = False
 
     def forward(self, x):
         """
@@ -3958,6 +3961,9 @@ class Dropout(Operator):
         Returns:
             the output CTensor.
         """
+        if not self.init_seed:
+            x.device().SetRandSeed(self.seed)
+            self.init_seed = True
         if training:
             self.scale = 1 / 1 - self.ratio
             self.mask = singa.Tensor(list(x.shape()), x.device())
@@ -3978,7 +3984,7 @@ class Dropout(Operator):
         return dy
 
 
-def dropout(x, ratio=0.5):
+def dropout(x, seed=0, ratio=0.5):
     """
     Init a Dropout, which scales the masked input data by the following
     equation: `output = scale * data * mask`, `scale = 1. / (1. - ratio)`.
@@ -3988,7 +3994,7 @@ def dropout(x, ratio=0.5):
     Returns:
         the output Tensor.
     """
-    return Dropout(ratio)(x)[0]
+    return Dropout(seed, ratio)(x)[0]
 
 
 class ReduceSum(Operator):
