@@ -31,12 +31,14 @@ jobs:
         with:
           python-version: "3.7"
       - name: install-build-dependencies
-        run: brew install protobuf swig opencv glog lmdb numpy && pip3 install numpy
+        run: brew install protobuf swig opencv glog lmdb numpy && pip3 install numpy \
+             && wget https://github.com/oneapi-src/oneDNN/releases/download/v1.1.3/dnnl_mac_1.1.3_cpu_iomp.tgz -P /tmp && tar zxf /tmp/dnnl_mac_1.1.3_cpu_iomp.tgz -C .
       - name: configure
-        run: mkdir build && cd build && cmake -DUSE_PYTHON3=YES -DENABLE_TEST=YES ..
+        run: mkdir build && cd build && cmake -DUSE_PYTHON3=YES -DENABLE_TEST=YES -DUSE_DNNL=YES ..
         env:
           CMAKE_INCLUDE_PATH: /usr/local/opt/openblas/include:$CMAKE_INCLUDE_PATH
           CMAKE_LIBRARY_PATH: /usr/local/opt/openblas/lib:$CMAKE_LIBRARY_PATH
+          DNNL_ROOT: `pwd`/dnnl_mac_1.1.3_cpu_iomp
       - name: build
         run: cd build && make
         env:

@@ -20,7 +20,9 @@
 from __future__ import division
 
 import numpy as np
+
 import onnx
+import onnx.utils
 from onnx.backend.base import Backend, BackendRep
 from onnx import (checker, helper, numpy_helper, GraphProto, NodeProto,
                   TensorProto, OperatorSetIdProto, optimizer, mapping,
