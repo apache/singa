@@ -26,4 +26,5 @@
 %include "core_tensor.i"
 %include "core_device.i"
 %include "model_operation.i"
+%include "dist_communicator.i"
  // %include "io_snapshot.i"

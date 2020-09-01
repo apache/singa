@@ -16,20 +16,16 @@
     specific language governing permissions and limitations
     under the License.
 -->
-# Train RNN model over IMDB dataset
+# Train a question and answering QABOT model
 
-Recurrent neural networks (RNN) are widely used for modelling sequential data,
-e.g., natural language sentences. This example describes how to implement a RNN
-application (or model) using SINGA's CUDNN RNN layers.
-We will use the [LSTM](https://www.mitpressjournals.org/doi/abs/10.1162/neco.1997.9.8.1735) model as an
-example to train on IMDB dataset.
+This example describes how to implement a question and answering QABOT
+application using SINGA's CUDNN RNN layers.
+
+We will use the [LSTM](https://www.mitpressjournals.org/doi/abs/10.1162/neco.1997.9.8.1735) model together with max pooling as an
+example to train the QABOT.
 
 ## Instructions
 
-* Prepare the dataset,
-
-        python imdb_data.py
-
 * Start the training,
 
-        python imdb_train.py
+        python qabot_train.py

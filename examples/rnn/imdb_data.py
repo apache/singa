@@ -176,6 +176,8 @@ def encode_token(words, wv, w2i):
 def preprocess():
     ''' collect and preprocess raw data from acl Imdb dataset
     '''
+    nltk.download('stopwords')
+
     print("preparing raw imdb data")
     data_gz = check_exist_or_download(imdb_dataset_link)
     data_dir = unzip_data(download_dir, data_gz)
@@ -203,7 +205,7 @@ def preprocess():
                             (test_pos_dir, 1), (test_neg_dir, 0)]:
         for filename in os.listdir(data_dir):
             if filename.endswith(".txt"):
-                with open(os.path.join(data_dir, filename), "r") as fhdl:
+                with open(os.path.join(data_dir, filename), "r", encoding="utf-8") as fhdl:
                     data.append((fhdl.read(), label))
 
     # text review cleaning
