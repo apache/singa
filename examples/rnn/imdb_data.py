@@ -36,6 +36,7 @@ preprocessed_imdb_data_fp = download_dir + 'imdb_processed.pickle'
 imdb_dataset_link = "https://ai.stanford.edu/~amaas/data/sentiment/aclImdb_v1.tar.gz"
 google_news_pretrain_embeddings_link = "https://s3.amazonaws.com/dl4j-distribution/GoogleNews-vectors-negative300.bin.gz"
 
+
 def pad_batch(b, seq_limit):
     ''' convert a batch of encoded sequence
         to pretrained word vectors from the embed weights (lookup dictionary)
@@ -62,6 +63,7 @@ def pad_batch(b, seq_limit):
     batch_senti_onehot = np.array(batch_senti_onehot).astype(np.float32)
     batch_seq = np.array(batch_seq).astype(np.int32)
     return batch_seq, batch_senti_onehot, batch_senti
+
 
 def pad_batch_2vec(b, seq_limit, embed_weights):
     ''' convert a batch of encoded sequence
@@ -123,7 +125,7 @@ def remove_between_square_brackets(text):
 
 def remove_special_characters(text, remove_digits=True):
     ''' lambda fn for removing special char '''
-    pattern = r'[^a-zA-z0-9\s]'
+    pattern = r'[^a-zA-Z0-9\s]'
     text = re.sub(pattern, '', text)
     return text
 
@@ -183,7 +185,7 @@ def preprocess():
     data_dir = unzip_data(download_dir, data_gz)
 
     # imdb dirs
-    vocab_f = data_dir + '/imdb.vocab'
+    # vocab_f = data_dir + '/imdb.vocab'
     train_pos_dir = data_dir + '/train/pos/'
     train_neg_dir = data_dir + '/train/neg/'
     test_pos_dir = data_dir + '/test/pos/'
@@ -205,7 +207,9 @@ def preprocess():
                             (test_pos_dir, 1), (test_neg_dir, 0)]:
         for filename in os.listdir(data_dir):
             if filename.endswith(".txt"):
-                with open(os.path.join(data_dir, filename), "r", encoding="utf-8") as fhdl:
+                with open(os.path.join(data_dir, filename),
+                          "r",
+                          encoding="utf-8") as fhdl:
                     data.append((fhdl.read(), label))
 
     # text review cleaning
