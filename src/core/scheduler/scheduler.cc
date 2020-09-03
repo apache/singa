@@ -483,6 +483,24 @@ void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
       if (blkInfo->type_ == BlockType::kInput) {
         blkInfo->type_ = BlockType::kParam;
       }
+
+      Edge *write_edge = blkInfo->write_edge_;
+      if (write_edge) {
+	if (!write_edge->dst_node_) {
+	  write_edge->dst_node_ = node;
+	  node->AddInEdge(write_edge);
+	} else {
+	  Node *lastNode = write_edge->src_node_;
+	  auto outEdges = lastNode->out_edges();
+	  for (auto outEdge : outEdges) {
+	    if (outEdge->blk_ == blk && outEdge->dst_node_ != node) {
+	      Edge *edge = new Edge(edges_.size(), blk, outEdge->dst_node_, node);
+	      outEdge->dst_node_->AddOutEdge(edge);
+	      node->AddInEdge(edge);
+	    }
+	  }
+	}
+      }
     }
 
     // create new edge for new block
