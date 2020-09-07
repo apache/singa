@@ -41,6 +41,7 @@ _include_nodes_patterns = {
     'ReduceSum': r'(test_reduce_sum)',
     'ReduceMean': r'(test_reduce_mean)',
     'BatchNormalization': r'(test_batchnorm)',
+    'ScatterElements': r'(test_scatter_elements)',
     'Conv': r'(test_basic_conv_|test_conv_with_|test_Conv2d)',
     'MaxPool': r'(test_maxpool_2d)',
     'AveragePool': r'(test_averagepool_2d)',
@@ -105,18 +106,26 @@ for pattern in _exclude_nodes_patterns:
 if not singa.USE_CUDA:
     backend_test.exclude(r'(cuda)')
 
+OnnxBackendNodeModelTest = backend_test.enable_report().test_cases['OnnxBackendNodeModelTest']
+
+# disable and enable training before and after test cases
+def setUp(self):
+    # print("\nIn method", self._testMethodName)
+    autograd.training = False
+
+def tearDown(self):
+    autograd.training = True
+
+OnnxBackendNodeModelTest.setUp = setUp
+OnnxBackendNodeModelTest.tearDown = tearDown
+
 # import all test cases at global scope to make them visible to python.unittest
 # print(backend_test.enable_report().test_cases)
 test_cases = {
-    'OnnxBackendNodeModelTest':
-        backend_test.enable_report().test_cases['OnnxBackendNodeModelTest']
+    'OnnxBackendNodeModelTest': OnnxBackendNodeModelTest
 }
 
 globals().update(test_cases)
-
-# def setUp(self):
-#     print("\nIn method", self._testMethodName)
-# OnnxBackendNodeModelTest.setUp = setUp
 
 if __name__ == '__main__':
     unittest.main()

@@ -20,7 +20,6 @@ import math
 import numpy as np
 import collections
 
-from singa import tensor
 from . import singa_wrap as singa
 
 OrderedDict = collections.OrderedDict
@@ -55,7 +54,7 @@ def update_progress(progress, info):
     sys.stdout.flush()
 
 
-def handle_odd_pad_fwd(x, odd_padding):
+def handle_odd_pad_fwd(x, odd_padding, is_pool=False):
     """
     handle odd padding mode forward
     Args:
@@ -64,21 +63,27 @@ def handle_odd_pad_fwd(x, odd_padding):
     Returns: 
         tensor, the output
     """
-    x_tensor = tensor.from_raw_tensor(x)
     # (axis, left padding if True else right padding)
     flags = [(2, True), (2, False), (3, True), (3, False)]
     for (axis, left), pad in zip(flags, odd_padding):
         if pad == 0:
             continue
-        zeros_shape = list(x_tensor.data.shape())
-        zeros_shape[axis] = pad
-        zero_padding = np.zeros(zeros_shape).astype(np.float32)
-        zero_padding = tensor.Tensor(device=x.device(), data=zero_padding)
-        if left:
-            x_tensor = tensor.concatenate((zero_padding, x_tensor), axis)
+        if is_pool:
+            if left:
+                padding = singa.SliceOn(x, 0, pad, axis)
+            else:
+                axis_shape = list(x.shape())[axis]
+                padding = singa.SliceOn(x, axis_shape - pad, axis_shape, axis)
         else:
-            x_tensor = tensor.concatenate((x_tensor, zero_padding), axis)
-    return x_tensor.data
+            pad_shape = list(x.shape())
+            pad_shape[axis] = pad
+            padding = singa.Tensor(list(pad_shape), x.device())
+            padding.SetFloatValue(0.)
+        if left:
+            x = singa.ConcatOn(singa.VecTensor([padding, x]), axis)
+        else:
+            x = singa.ConcatOn(singa.VecTensor([x, padding]), axis)
+    return x
 
 
 def handle_odd_pad_bwd(dx, odd_padding):

@@ -106,6 +106,25 @@ class MLP(model.Model):
 
 
 # lstm testing
+class LSTMModel3(model.Model):
+
+    def __init__(self, hidden_size):
+        super(LSTMModel3, self).__init__()
+        self.lstm = layer.CudnnRNN(
+            hidden_size=hidden_size,
+            batch_first=True,
+            #    return_sequences=True,
+            use_mask=True)
+        self.l1 = layer.Linear(2)
+        self.optimizer = opt.SGD(0.1)
+
+    def forward(self, x, seq_lengths):
+        y = self.lstm(x, seq_lengths=seq_lengths)
+        y = autograd.reshape(y, (y.shape[0], -1))
+        y = self.l1(y)
+        return y
+
+
 class LSTMModel2(model.Model):
 
     def __init__(self, hidden_size, bidirectional, num_layers):
@@ -149,36 +168,38 @@ class LSTMModel(model.Model):
 class TestModelMethods(unittest.TestCase):
 
     @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
-    def test_lstm_model_varying_bs_seq_length(self, dev=gpu_dev):
-        hidden_size = 6
-        bidirectional = False
-        num_layers = 1
-        m = LSTMModel2(hidden_size, bidirectional, num_layers)
-        x = tensor.Tensor(shape=(2, 3, 4), device=dev)
-        x.gaussian(0, 1)
-        y = tensor.Tensor(shape=(2, hidden_size), device=dev)
-        y.gaussian(0, 1)
-        m.compile([x], is_train=True, use_graph=False, sequential=False)
+    def test_rnn_with_seq_lengths(self, dev=gpu_dev):
+        bs = 2
+        seq_length = 3
+        hidden_size = 2
+        em_size = 2
+        x_np = np.array([[[0.1, 0.1], [0.2, 0.2], [0.3, 0.3]],
+                         [[0.3, 0.3], [0.4, 0.4], [0.0,
+                                                   0.0]]]).astype(np.float32)
+        y_np = np.array([[0.4, 0.4], [0.5, 0.5]]).astype(np.float32)
+        seq_lengths_np = np.array([3, 2]).astype(np.int32)
+
+        x = tensor.from_numpy(x_np)
+        x.to_device(dev)
+        y = tensor.from_numpy(y_np)
+        y.to_device(dev)
+        seq_lengths = tensor.from_numpy(seq_lengths_np)
+
+        m = LSTMModel3(hidden_size)
+        m.compile([x, seq_lengths],
+                  is_train=True,
+                  use_graph=False,
+                  sequential=False)
         m.train()
-        for i in range(1000):
-            out = m.forward(x)
+        for i in range(10):
+            out = m.forward(x, seq_lengths)
             loss = autograd.mse_loss(out, y)
-            if i % 50 == 0:
-                print("l:", loss)
+            print("train l:", tensor.to_numpy(loss))
             m.optimizer(loss)
-
-        # bs changed
-        bs = 1
-        seq = 2
-        x2 = tensor.Tensor(shape=(bs, seq, 4), device=dev)
-        x2.gaussian(0, 1)
-        y2 = tensor.Tensor(shape=(bs, hidden_size), device=dev)
-        y2.gaussian(0, 1)
-
-        out = m.forward(x2)
-        loss = autograd.mse_loss(out, y2)
-        print("test l:", loss)
-        m.optimizer(loss)
+        m.eval()
+        out = m.forward(x, seq_lengths)
+        loss = autograd.mse_loss(out, y)
+        print(" eval l:", tensor.to_numpy(loss))
 
     @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
     def test_lstm_model(self, dev=gpu_dev):

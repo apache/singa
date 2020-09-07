@@ -340,6 +340,19 @@ class TestAPI(unittest.TestCase):
     def test_transpose_and_arithmetic_op_broadcast_cpu(self):
         self._transpose_and_arithmetic_op_broadcast_helper(cpu_dev)
 
+    def _erf(self, dev=cpu_dev):
+        np1 = np.random.random((2, 3)).astype(np.float32)
+
+        x1 = tensor.from_numpy(np1)
+        x1.to_device(dev)
+        y1 = tensor.from_raw_tensor(singa_api.Erf(x1.data))
+
+        # from scipy.special import erf
+        # np.testing.assert_array_almost_equal(erf(np1), tensor.to_numpy(y1))
+
+    def test_erf_cpu(self):
+        self._erf(cpu_dev)
+
     @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
     def test_transpose_and_arithmetic_op_broadcast_gpu(self):
         self._transpose_and_arithmetic_op_broadcast_helper(gpu_dev)
@@ -831,6 +844,79 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(dcx.shape(), cx.shape)
 
         dW = singa_api.GpuRNNBackwardW(x.data, hx.data, y, rnn_handle)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_rnn_with_seq_lengths(self):
+        dev = gpu_dev
+
+        # params
+        hidden_size = 7
+        seq_length = 5
+        batch_size = 6
+        feature_size = 3
+        directions = 2
+        num_layers = 2
+
+        # shapes
+        x_s = (seq_length, batch_size, feature_size)
+        y_s = (seq_length, batch_size, hidden_size)
+        states_s = (num_layers * directions, batch_size, hidden_size)
+
+        # tensors
+        x = tensor.Tensor(x_s, dev).gaussian(0, 1)
+        y = tensor.Tensor(y_s, dev).gaussian(0, 1)
+        dy = tensor.Tensor(y_s, dev).gaussian(0, 1)
+        dhy = tensor.Tensor(states_s, dev).gaussian(0, 1)
+        dcy = tensor.Tensor(states_s, dev).gaussian(0, 1)
+        hx = tensor.Tensor(states_s, dev).gaussian(0, 1)
+        cx = tensor.Tensor(states_s, dev).gaussian(0, 1)
+
+        # handle
+        rnn_handle = singa_api.CudnnRNNHandle(x.data, hidden_size, 2)
+        w = tensor.Tensor((rnn_handle.weights_size,), dev).gaussian(0, 1)
+
+        # seq lengths
+        seq_lengths = tensor.from_numpy(np.array([seq_length] * batch_size))
+
+        # operations
+        (dx, dhx, dcx) = singa_api.GpuRNNBackwardxEx(y.data, dy.data, dhy.data,
+                                                     dcy.data, w.data, hx.data,
+                                                     cx.data, seq_lengths.data,
+                                                     rnn_handle)
+
+
+    def test_round_cpu(self):
+        self._round(cpu_dev)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_round_gpu(self):
+        self._round(gpu_dev)
+
+    def _round(self, dev=gpu_dev):
+        x = tensor.Tensor(shape=(3,4,5), device=dev).gaussian(0, 1)
+        y = tensor._call_singa_func(singa_api.Round, x.data)
+        np.testing.assert_array_almost_equal(np.round(tensor.to_numpy(x)),
+                                             tensor.to_numpy(y))
+
+    def test_round_even_cpu(self):
+        self._round_even(cpu_dev)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_round_even_gpu(self):
+        self._round_even(gpu_dev)
+
+    def _round_even(self, dev=gpu_dev):
+        q=np.array([0.1, 0.5, 0.9, 1.2, 1.5,
+                    1.8, 2.3, 2.5, 2.7, -1.1,
+                    -1.5, -1.9, -2.2, -2.5, -2.8]).astype(np.float32)
+        ans = np.array([0., 0., 1., 1., 2.,
+                    2., 2., 2., 3., -1.,
+                    -2., -2., -2., -2., -3.]).astype(np.float32)
+
+        x = tensor.Tensor(shape=q.shape, device=dev)
+        x.copy_from_numpy(q)
+        y = tensor._call_singa_func(singa_api.RoundE, x.data)
+        np.testing.assert_array_almost_equal(ans, tensor.to_numpy(y))
 
 
 if __name__ == '__main__':

@@ -59,7 +59,7 @@ void OpenclDevice::SetRandSeed(unsigned seed) { seed = seed; }
 
 void OpenclDevice::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
                                   CopyDirection direction, int dst_offset,
-                                  int src_offset) {
+                                  int src_offset, Context* ctx) {
   // Pointers must be valid.
   if (!dst || !src) return;
 

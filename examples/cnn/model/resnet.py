@@ -149,7 +149,7 @@ class ResNet(model.Model):
         self.layer4, layers4 = self._make_layer(block, 512, layers[3], stride=2)
         self.avgpool = layer.AvgPool2d(7, stride=1)
         self.flatten = layer.Flatten()
-        self.fc = layer.Linear(512 * block.expansion, num_classes)
+        self.fc = layer.Linear(num_classes)
         self.softmax_cross_entropy = layer.SoftMaxCrossEntropy()
 
         self.register_layers(*layers1, *layers2, *layers3, *layers4)

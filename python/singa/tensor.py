@@ -61,12 +61,11 @@ import numpy as np
 from functools import reduce
 import re
 
-from .proto import core_pb2
 from . import singa_wrap as singa
 from .device import get_default_device
 
-int32 = core_pb2.kInt
-float32 = core_pb2.kFloat32
+int32 = 2  #core.proto.kInt32
+float32 = 0  #core.proto.kFloat32
 CTensor = singa.Tensor
 
 
@@ -223,6 +222,11 @@ class Tensor(object):
             the number of Bytes allocated for this tensor.
         '''
         return self.data.MemSize()
+
+    def contiguous(self):
+        t = Tensor(self.shape, self.device, self.dtype)
+        t.data = singa.Contiguous(self.data)
+        return t
 
     def reshape(self, shape):
         '''Return a new tensor with the given shape, and the original
@@ -697,6 +701,14 @@ class Tensor(object):
         else:
             return _call_singa_func(singa.GEFloat, self.data, rhs)
 
+    def __eq__(self, rhs):
+        if isinstance(rhs, Tensor):
+            return from_raw_tensor(singa.__eq__(self.data, rhs.data))
+        elif rhs is None:
+            return False
+        else:
+            return _call_singa_func(singa.EQFloat, self.data, rhs)
+
     def __radd__(self, lhs):
         lhs = float(lhs)
         one = Tensor(self.shape, self.device, self.dtype)
@@ -784,6 +796,10 @@ def sizeof(dtype):
     return singa.SizeOf(dtype)
 
 
+def contiguous(tensor):
+    return _call_singa_func(singa.Contiguous, tensor.data)
+
+
 def reshape(tensor, shape):
     '''Reshape the input tensor with the given shape and
     the original tensor is not changed
@@ -827,7 +843,7 @@ def copy_data_to_from(dst, src, size, dst_offset=0, src_offset=0):
     singa.CopyDataToFrom(dst.data, src.data, size, dst_offset, src_offset)
 
 
-def from_numpy(np_array):
+def from_numpy(np_array, dev=None):
     '''Create a Tensor instance with the shape, dtype and values from the numpy
     array.
 
@@ -846,13 +862,15 @@ def from_numpy(np_array):
         np_array = np_array.astype(np.int32)
 
     if np_array.dtype == np.float32:
-        dtype = core_pb2.kFloat32
+        dtype = float32
     else:
         assert np_array.dtype == np.int32, \
             'Only float and int tensors are supported'
-        dtype = core_pb2.kInt
+        dtype = int32
     ret = Tensor(np_array.shape, dtype=dtype)
     ret.copy_from_numpy(np_array)
+    if dev:
+        ret.to_device(dev)
     return ret
 
 
@@ -880,9 +898,9 @@ def to_numpy(t):
         a numpy array
     '''
     th = to_host(t)
-    if th.dtype == core_pb2.kFloat32:
+    if th.dtype == float32:
         np_array = th.data.GetFloatValue(int(th.size()))
-    elif th.dtype == core_pb2.kInt:
+    elif th.dtype == int32:
         np_array = th.data.GetIntValue(int(th.size()))
     else:
         print('Not implemented yet for ', th.dtype)
@@ -1160,6 +1178,20 @@ def ge(t, x):
         or t[i] >= x[i] ? 1.0f:0.0f
     '''
     return t >= x
+
+
+def eq(t, x):
+    '''Elementi-wise comparison for t == x.
+
+    Args:
+        t (Tensor): left hand side operand
+        x (Tensor or float): right hand side operand
+
+    Returns:
+        a Tensor with each element being t[i] == x ? 1.0f:0.0f,
+        or t[i] == x[i] ? 1.0f:0.0f
+    '''
+    return t == x
 
 
 def add(lhs, rhs, ret=None):
@@ -1743,3 +1775,30 @@ def concatenate(tensors, axis):
     for t in tensors:
         ctensors.append(t.data)
     return _call_singa_func(singa.ConcatOn, ctensors, axis)
+
+
+def random(shape, device=get_default_device()):
+    ''' return a random tensor with given shape
+
+    Args:
+        shape: shape of generated tensor
+        device: device of generated tensor, default is cpu
+
+    Returns:
+        new tensor generated
+    '''
+    ret = Tensor(shape, device=device)
+    ret.uniform(0, 1)
+    return ret
+
+
+def zeros(shape, device=get_default_device()):
+    ret = Tensor(shape, device=device)
+    ret.set_value(0.0)
+    return ret
+
+
+def ones(shape, device=get_default_device()):
+    ret = Tensor(shape, device=device)
+    ret.set_value(1.0)
+    return ret

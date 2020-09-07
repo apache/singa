@@ -35,6 +35,23 @@ Device::~Device() {
   }
 }
 
+void Device::Reset() {
+  // Sync the device to finished the current calculation
+  graph_enabled_ = false;
+  Sync();
+
+  // Reset Seed
+  // seed_ = std::chrono::system_clock::now().time_since_epoch().count();
+  // SetRandSeed(seed_);
+
+  // Reset Graph
+  graph_->Reset();
+
+  // Others
+  verbosity_ = 0;
+  skip_iteration_ = 5;
+}
+
 void Device::Exec(function<void(Context*)>&& fn,
                   const vector<Block*> read_blocks,
                   const vector<Block*> write_blocks, string op_name,
@@ -93,19 +110,14 @@ void Device::FreeBlock(Block* block) {
 
 void Device::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
                             CopyDirection direct, int dst_offset,
-                            int src_offset) {
-  this->Exec(
-      [this, dst, src, nBytes, direct, dst_offset, src_offset](Context* ctx) {
-        this->CopyToFrom(
-            reinterpret_cast<char*>(dst->mutable_data()) + dst_offset,
-            reinterpret_cast<const char*>(src->data()) + src_offset, nBytes,
-            direct, ctx);
-      },
-      {src}, {dst}, "CopyDataToFrom");
+                            int src_offset, Context* ctx) {
+  this->CopyToFrom(reinterpret_cast<char*>(dst->mutable_data()) + dst_offset,
+                   reinterpret_cast<const char*>(src->data()) + src_offset,
+                   nBytes, direct, ctx);
 }
 
 void Device::CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
-                                 size_t dst_offset) {
+                                 size_t dst_offset, Context* ctx) {
   auto direct = lang_ == kCpp ? kHostToHost : kHostToDevice;
   void* dstptr = reinterpret_cast<char*>(dst->mutable_data()) + dst_offset;
   Exec([this, dstptr, src, nBytes,

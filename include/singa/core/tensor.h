@@ -230,6 +230,9 @@ class Tensor {
   template <typename SType>
   Tensor &operator/=(const SType x);
 
+  /// if tensor is transposed, transform to contiguous memory
+  Tensor &Contiguous();
+
   /// change the shape (and stride); the block may be reallocated.
   Tensor &Reshape(const Shape &shape);
 
@@ -320,6 +323,8 @@ Tensor Boradcast(const Shape &shape);
 /// which shares the memory with in if possible
 Tensor Reshape(const Tensor &in, const Shape &s);
 
+Tensor Contiguous(const Tensor &in);
+
 Tensor Resize(const Tensor &in, const Shape &s);
 
 /// Reverse the shape vector
@@ -343,8 +348,11 @@ void RepeatDataToFrom(bool broadcast_flag, const vector<size_t> &repeats,
 
 // =============Element-wise operations====================================
 Tensor Abs(const Tensor &in);
+Tensor Erf(const Tensor &in);
 Tensor Ceil(const Tensor &in);
 Tensor Floor(const Tensor &in);
+Tensor Round(const Tensor &in);
+Tensor RoundE(const Tensor &in);
 Tensor Exp(const Tensor &in);
 Tensor Log(const Tensor &in);
 Tensor ReLU(const Tensor &in);
@@ -369,8 +377,11 @@ Tensor Atanh(const Tensor &in);
 Tensor Transform(const Tensor &in);
 
 void Abs(const Tensor &in, Tensor *out);
+void Erf(const Tensor &in, Tensor *out);
 void Ceil(const Tensor &in, Tensor *out);
 void Floor(const Tensor &in, Tensor *out);
+void Round(const Tensor &in, Tensor *out);
+void RoundE(const Tensor &in, Tensor *out);
 void Exp(const Tensor &in, Tensor *out);
 void Log(const Tensor &in, Tensor *out);
 void ReLU(const Tensor &in, Tensor *out);
@@ -448,6 +459,16 @@ void GE(const Tensor &in, const SType x, Tensor *out);
 /// Element-wise operation, out[i]= (in1[i] >= in2[i]) ? 1.f : 0.f
 Tensor operator>=(const Tensor &in1, const Tensor &in2);
 void GE(const Tensor &in1, const Tensor &in2, Tensor *out);
+
+/// Element-wise operation, out[i]= (in[i] == x) ? 1.f : 0.f
+template <typename SType>
+Tensor operator==(const Tensor &in, const SType x);
+template <typename SType>
+void EQ(const Tensor &in, const SType x, Tensor *out);
+
+/// Element-wise operation, out[i]= (in1[i] == in2[i]) ? 1.f : 0.f
+Tensor operator==(const Tensor &in1, const Tensor &in2);
+void EQ(const Tensor &in1, const Tensor &in2, Tensor *out);
 
 Tensor operator+(const Tensor &lhs, const Tensor &rhs);
 void Add(const Tensor &lhs, const Tensor &rhs, Tensor *out);

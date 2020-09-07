@@ -20,19 +20,22 @@
 from __future__ import division
 
 import numpy as np
-import onnx.utils
+
 import onnx
+import onnx.utils
 from onnx.backend.base import Backend, BackendRep
 from onnx import (checker, helper, numpy_helper, GraphProto, NodeProto,
-                  TensorProto, OperatorSetIdProto, optimizer, mapping)
+                  TensorProto, OperatorSetIdProto, optimizer, mapping,
+                  shape_inference)
 import warnings
 
-from singa import device
-from . import singa_wrap as singa
-from . import autograd, layer
+from . import device
+from . import autograd
+from . import layer
 from . import tensor
 from . import model
-from singa import utils
+from . import utils
+from . import singa_wrap as singa
 
 import collections
 OrderedDict = collections.OrderedDict
@@ -65,7 +68,7 @@ def onnx_type_to_singa_type(onnx_type):
 
 gpu_dev = None
 if singa.USE_CUDA:
-    gpu_dev = device.create_cuda_gpu(set_default=False)
+    gpu_dev = device.create_cuda_gpu()
 cpu_dev = device.get_default_device()
 
 
@@ -390,10 +393,9 @@ class SingaFrontend(object):
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
-        tensor_type = onnx.TensorProto.FLOAT if isinstance(
-            op.value, float) else onnx.TensorProto.INT32
-        tensor_value = onnx.helper.make_tensor("value", tensor_type, [1],
-                                               [op.value])
+        tensor_type = TensorProto.FLOAT if isinstance(
+            op.value, float) else TensorProto.INT32
+        tensor_value = helper.make_tensor("value", tensor_type, [1], [op.value])
         node.attribute.extend([
             helper.make_attribute('value', tensor_value),
         ])
@@ -1087,7 +1089,8 @@ class SingaBackend(Backend):
         'Unsqueeze': 'Unsqueeze',
         'NonZero': 'NonZero',
         'Ceil': 'Ceil',
-        # # special op
+        # special op
+        'ScatterElements': 'ScatterElements',
         'Cast': 'Cast',
         'Split': 'Split',
         'Squeeze': 'Squeeze',
@@ -1115,6 +1118,7 @@ class SingaBackend(Backend):
         'Upsample': 'UpSample',
         'DepthToSpace': 'DepthToSpace',
         'SpaceToDepth': 'SpaceToDepth',
+        'Where': 'Where',
         'Gemm': 'layer.Gemm',  # layer
         'BatchNormalization': 'layer.BatchNorm2d',  # layer
         'Conv': 'layer.Conv2d',  # layer
@@ -1158,6 +1162,8 @@ class SingaBackend(Backend):
         'Upsample': '_create_upsample',
         'DepthToSpace': '_create_depth_space',
         'SpaceToDepth': '_create_depth_space',
+        'ScatterElements': '_create_scatter_elements',
+        'Where': '_create_where',
     }
 
     @classmethod
@@ -1175,6 +1181,19 @@ class SingaBackend(Backend):
         mode = utils.force_unicode(onnx_node.getattr("mode", "DCR"))
         return operator(blocksize, mode)
 
+    @classmethod
+    def _create_where(cls, onnx_node, operator, opset_version=_opset_version):
+        """
+        get the Where operator from onnx node
+        Args:
+            onnx_node (OnnxNode): a given onnx node
+            operator (Operator Class): a singa operator class
+            opset_version (int): the opset version
+        Returns: 
+            singa operator instance
+        """
+        onnx_node.set_attr_inputs(onnx_node.inputs[0], 'condition')
+        return operator(None)
 
     @classmethod
     def _create_pad(cls, onnx_node, operator, opset_version=_opset_version):
@@ -1194,7 +1213,10 @@ class SingaBackend(Backend):
         return operator(mode, None, None)
 
     @classmethod
-    def _create_upsample(cls, onnx_node, operator, opset_version=_opset_version):
+    def _create_upsample(cls,
+                         onnx_node,
+                         operator,
+                         opset_version=_opset_version):
         """
         get the UpSample operator from onnx node
         Args:
@@ -1336,8 +1358,9 @@ class SingaBackend(Backend):
         Returns: 
             singa operator instance
         """
+        seed = onnx_node.getattr("seed", 0)
         ratio = onnx_node.getattr("ratio", 0)
-        return operator(ratio)
+        return operator(seed, ratio)
 
     @classmethod
     def _create_constant_of_shape(cls,
@@ -1682,6 +1705,25 @@ class SingaBackend(Backend):
         return operator(kernel_size, stride, padding, is_max, auto_pad)
 
     @classmethod
+    def _create_scatter_elements(cls,
+                                 onnx_node,
+                                 operator,
+                                 opset_version=_opset_version):
+        """
+        get the ScatterElements from the onnx node
+        Args:
+            onnx_node(OnnxNode): a given onnx node
+            operator (Operator Class): a singa operator class
+            opset_version(int): the opset version
+        Returns: 
+            singa operator instance      
+        """
+        axis = onnx_node.getattr("axis", 0)
+        onnx_node.set_attr_inputs(onnx_node.inputs[1], 'indices')
+        onnx_node.set_attr_inputs(onnx_node.inputs[2], 'updates')
+        return operator(None, None, axis)
+
+    @classmethod
     def _onnx_constant_to_np(cls, onnx_node, opset_version=_opset_version):
         """
         parse onnx constatn node to numpy array
@@ -1693,8 +1735,7 @@ class SingaBackend(Backend):
         """
         onnx_tensor = onnx_node.getattr('value')
         np_dtype = mapping.TENSOR_TYPE_TO_NP_TYPE[onnx_tensor.data_type]
-        np_tensor = np.frombuffer(onnx_tensor.raw_data, dtype=np_dtype)
-        return tensor.from_numpy(np_tensor)
+        return np.frombuffer(onnx_tensor.raw_data, dtype=np_dtype)
 
     @classmethod
     def _onnx_node_to_singa_op(cls, onnx_node, opset_version=_opset_version):
@@ -1752,9 +1793,9 @@ class SingaBackend(Backend):
                 weights[key] = val
             else:
                 x = tensor.from_numpy(val)
-                if device == 'CPU':
+                if device != 'CPU':
                     assert singa.USE_CUDA, "Your SINGA doesn't compile GPU module."
-                    dev = device.create_cuda_gpu(set_default=False)
+                    dev = device.create_cuda_gpu()
                 else:
                     dev = device.get_default_device()
                 x.to_device(dev)
@@ -1876,7 +1917,7 @@ class SingaBackend(Backend):
         try:
             model = onnx.utils.polish_model(model)
         except IndexError as err:
-            model = onnx.shape_inference.infer_shapes(model)
+            model = shape_inference.infer_shapes(model)
 
         # check the opset version and ir version
         # SINGA supports opset version(11), ir version(1.6.0 -> 6)
@@ -2053,9 +2094,11 @@ class SingaRep(BackendRep):
         outputs_dict = OrderedDict([])
 
         # last_layers means we run this model until the last #N layers
-        last_layers = kwargs.get('last_layers', len(self._layers))
-        if last_layers != len(self._layers):
-            for outp in self._layers[last_layers - 1].outputs:
+        last_layers = kwargs.get('last_layers', len(self._layers) - 1)
+        last_layers = last_layers if last_layers >= 0 else (
+            last_layers + 1) % len(self._layers)
+        if last_layers != len(self._layers) - 1:
+            for outp in self._layers[last_layers].outputs:
                 outputs_dict[outp] = None
         else:
             for outp in self.outputs:
@@ -2069,7 +2112,7 @@ class SingaRep(BackendRep):
         self.init_tensor_count()
 
         # run the layer by the topo order
-        for node in self._layers[:last_layers]:
+        for node in self._layers[:last_layers + 1]:
             op = self.__dict__[node.name]
             self.handle_special_ops(node, op, tensor_dict)
             # make input

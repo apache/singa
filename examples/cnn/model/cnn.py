@@ -30,8 +30,8 @@ class CNN(model.Model):
         self.dimension = 4
         self.conv1 = layer.Conv2d(num_channels, 20, 5, padding=0, activation="RELU")
         self.conv2 = layer.Conv2d(20, 50, 5, padding=0, activation="RELU")
-        self.linear1 = layer.Linear(4 * 4 * 50, 500)
-        self.linear2 = layer.Linear(500, num_classes)
+        self.linear1 = layer.Linear(500)
+        self.linear2 = layer.Linear(num_classes)
         self.pooling1 = layer.MaxPool2d(2, 2, padding=0)
         self.pooling2 = layer.MaxPool2d(2, 2, padding=0)
         self.relu = layer.ReLU()
