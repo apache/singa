@@ -69,7 +69,10 @@ __global__ void KernelSum(const size_t n, const float *in, float *out) {
 }
 */
 
-__global__ void KernelBroadcastTo(const size_t n, size_t nDim, const float *in,const float* shape, const float* stride, float *out) {
+// TODO template kernel
+__global__ void KernelTraverseUnaryTransform(const size_t n, size_t nDim, const __half *in,
+                                  const int* shape, const int* stride,
+                                  __half *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
     int shape_accu = n;
@@ -86,6 +89,33 @@ __global__ void KernelBroadcastTo(const size_t n, size_t nDim, const float *in,c
   }
 }
 
+__global__ void KernelTraverseUnaryTransform(const size_t n, size_t nDim, const float *in,
+                                  const int* shape, const int* stride,
+                                  float *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    int shape_accu = n;
+    size_t offset = 0;
+    int remains = i;
+
+    for (int k = 0; k < nDim; k++) {
+      shape_accu = shape_accu/shape[k];
+      int idx = remains/shape_accu;
+      remains = remains%shape_accu;
+      offset = offset + idx*stride[k];
+    }
+    out[i] = in[offset];
+  }
+}
+
+__global__ void KernelAdd(const size_t n, const __half *in1, const __half *in2,
+                          __half *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = __hadd(in1[i], in2[i]);
+  }
+}
+
 __global__ void KernelAdd(const size_t n, const float *in1, const float *in2,
                           float *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
@@ -99,6 +129,14 @@ __global__ void KernelAdd(const size_t n, const float *in, const float x,
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
     out[i] = in[i] + x;
+  }
+}
+
+__global__ void KernelSub(const size_t n, const __half *in1, const __half *in2,
+                          __half *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = __hsub(in1[i], in2[i]);
   }
 }
 
@@ -263,6 +301,14 @@ __global__ void KernelSqrt(const size_t n, const float *in, float *out) {
   }
 }
 
+__global__ void KernelPow(const size_t n, const __half *in1, const __half *in2,
+                          __half *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = __float2half(__powf(__half2float(in1[i]), __half2float(in2[i])));
+  }
+}
+
 __global__ void KernelPow(const size_t n, const float *in1, const float *in2,
                           float *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
@@ -276,6 +322,14 @@ __global__ void KernelPow(const size_t n, const float *in, const float x,
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
     out[i] = std::pow(in[i], x);
+  }
+}
+
+__global__ void KernelMult(const size_t n, const __half *in1, const __half *in2,
+                           __half *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = __hmul(in1[i], in2[i]);
   }
 }
 
@@ -300,6 +354,14 @@ __global__ void KernelMult(const size_t n, const __half *in, const __half x,
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
     out[i] = in[i] * x;
+  }
+}
+
+__global__ void KernelDiv(const size_t n, const __half *in1, const __half *in2,
+                          __half *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = __hdiv(in1[i], in2[i]);
   }
 }
 
@@ -700,8 +762,16 @@ void add(const size_t n, const float *in, const float x, float *out,
   KernelAdd <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, x, out);
 }
 
-void broadcast_to(const size_t n, size_t nDim,const float *in,const float* shape, const float* stride, float *out, cudaStream_t s) {
-  KernelBroadcastTo <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, nDim, in, shape, stride, out);
+void traverse_unary_transform(const size_t n, size_t nDim, const __half *in,
+                  const int* shape, const int* stride, __half *out,
+                  cudaStream_t s) {
+  KernelTraverseUnaryTransform <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, nDim, in, shape, stride, out);
+}
+
+void traverse_unary_transform(const size_t n, size_t nDim, const float *in,
+                  const int* shape, const int* stride, float *out,
+                  cudaStream_t s) {
+  KernelTraverseUnaryTransform <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, nDim, in, shape, stride, out);
 }
 
 void mult(const size_t n, const float *in, const float x, float *out,
@@ -773,8 +843,16 @@ void pow(const size_t n, const float *in1, const float *in2, float *out,
          cudaStream_t s) {
   KernelPow <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in1, in2, out);
 }
+void pow(const size_t n, const __half *in1, const __half *in2, __half *out,
+         cudaStream_t s) {
+  KernelPow <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in1, in2, out);
+}
 
 void add(const size_t n, const float *in1, const float *in2, float *out,
+         cudaStream_t s) {
+  KernelAdd <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in1, in2, out);
+}
+void add(const size_t n, const __half *in1, const __half *in2, __half *out,
          cudaStream_t s) {
   KernelAdd <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in1, in2, out);
 }
@@ -783,13 +861,25 @@ void sub(const size_t n, const float *in1, const float *in2, float *out,
          cudaStream_t s) {
   KernelSub <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in1, in2, out);
 }
+void sub(const size_t n, const __half *in1, const __half *in2, __half *out,
+         cudaStream_t s) {
+  KernelSub <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in1, in2, out);
+}
 
 void mult(const size_t n, const float *in1, const float *in2, float *out,
           cudaStream_t s) {
   KernelMult <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in1, in2, out);
 }
+void mult(const size_t n, const __half *in1, const __half *in2, __half *out,
+          cudaStream_t s) {
+  KernelMult <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in1, in2, out);
+}
 
 void div(const size_t n, const float *in1, const float *in2, float *out,
+         cudaStream_t s) {
+  KernelDiv <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in1, in2, out);
+}
+void div(const size_t n, const __half *in1, const __half *in2, __half *out,
          cudaStream_t s) {
   KernelDiv <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in1, in2, out);
 }

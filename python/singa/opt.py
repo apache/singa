@@ -27,9 +27,8 @@ from deprecated import deprecated
 
 class DecayScheduler:
     # to be used for decaying learning rate or regularization coefficient or momentum, etc.
-    def __init__(self, init_value, dtype=tensor.float32):
+    def __init__(self, init_value):
         self.init_value = init_value
-        self.dtype = dtype
 
     def __call__(self, step):
         assert isinstance(step, Tensor)
@@ -45,7 +44,7 @@ class Constant(DecayScheduler):
 
     def call(self, step: Tensor) -> Tensor:
         # TODO should be an in-place operator
-        ret = Tensor((1,), step.device, self.dtype)
+        ret = Tensor((1,), step.device)
         ret.set_value(self.init_value)
         return ret
 
@@ -64,7 +63,7 @@ class ExponentialDecay(DecayScheduler):
             s = step // self.decay_steps
         else:
             s = step / self.decay_steps
-        ret = Tensor((1,), s.device, self.dtype)
+        ret = Tensor((1,), s.device)
         ret.set_value(self.decay_rate)
         return self.init_value * tensor.pow(ret, s)
 
@@ -76,7 +75,7 @@ class Optimizer(object):
         config (Dict): specify the default values of configurable variables.
     """
 
-    def __init__(self, lr, dtype=tensor.float32):
+    def __init__(self, lr, dtype=None):
         # init lr(could be a constant scalar or a learning rate scheduler)
         if type(lr) == float or type(lr) == int:
             self.lr = Constant(lr)
@@ -154,20 +153,6 @@ class Optimizer(object):
                 var.to_device(x_device)
         inputs[0].device.EnableGraph(flag)
 
-    def dtype_check(self, *inputs):
-        """ check if all input have same data type.
-
-        Args:
-            *inputs: input args consisting of only PyTensors
-        """
-        flag = inputs[0].device.graph_enabled()
-        inputs[0].device.EnableGraph(False)
-
-        for inp in inputs:
-            if inp.dtype != self.dtype:
-                inp.to_type(self.dtype)
-
-        inputs[0].device.EnableGraph(flag)
 
     @deprecated(
         reason=
@@ -235,7 +220,7 @@ class SGD(Optimizer):
                  dampening=0,
                  weight_decay=0,
                  nesterov=False,
-                 dtype=tensor.float32):
+                 dtype=None):
         super(SGD, self).__init__(lr, dtype)
 
         # init momentum
@@ -295,7 +280,18 @@ class SGD(Optimizer):
                                                        param_grad.shape)
         self.device_check(param_value, self.step_counter, self.lr_value,
                           self.mom_value, self.dam_value, self.decay_value)
-        assert param_grad.dtype == param_value.dtype
+
+        # derive dtype from input
+        self.dtype = param_value.dtype
+
+        dam_value_ref = self.dam_value
+        self.dam_value = self.dam_value.as_type(self.dtype)
+        mom_value_ref = self.mom_value
+        self.mom_value = self.mom_value.as_type(self.dtype)
+        lr_value_ref = self.lr_value
+        self.lr_value = self.lr_value.as_type(self.dtype)
+        decay_value_ref = self.decay_value
+        self.decay_value = self.decay_value.as_type(self.dtype)
 
         # TODO add branch operator
         # if self.decay_value != 0:
@@ -310,19 +306,9 @@ class SGD(Optimizer):
                 param_value.device.EnableGraph(flag)
 
             buf = self.moments[param_name]
-
-            mom_value = self.mom_value.as_type(buf.dtype)
-            buf *= mom_value
-
+            buf *= self.mom_value
             alpha = 1.0 - self.dam_value
-            alpha = alpha.as_type(buf.dtype)
-
-            # TODO: fix for float16
-            alpha = alpha.as_type(tensor.float32)
-            param_grad = param_grad.as_type(tensor.float32)
-            buf = buf.as_type(tensor.float32)
             singa.Axpy(alpha.data, param_grad.data, buf.data)
-            buf = buf.as_type(param_value.dtype)
 
             if self.nesterov:
                 singa.Axpy(self.mom_value.data, buf.data, param_grad.data)
@@ -330,11 +316,12 @@ class SGD(Optimizer):
                 param_grad = buf
 
         minus_lr = 0.0 - self.lr_value
-        minus_lr = minus_lr.as_type(param_value.dtype)
+        singa.Axpy(minus_lr.data, param_grad.data, param_value.data)
 
-        _param_value = param_value.as_type(tensor.float32)
-        singa.Axpy(minus_lr.as_type(tensor.float32).data, param_grad.as_type(tensor.float32).data, _param_value.data)
-        param_value.copy_data(_param_value.as_type(param_value.dtype))
+        self.dam_value = dam_value_ref
+        self.mom_value = mom_value_ref
+        self.lr_value = lr_value_ref
+        self.decay_value = decay_value_ref
 
     def step(self):
         # increment step counter, lr and moment

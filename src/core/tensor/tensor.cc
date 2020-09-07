@@ -895,17 +895,19 @@ template void Tensor::GetValue<float>(float *value, const size_t num) const;
 template void Tensor::GetValue<int>(int *value, const size_t num) const;
 
 std::ostream &operator<<(std::ostream &os, Tensor &out) {
-  auto dev = out.device();
-  out.ToHost();
-  auto len = out.size();
-  TYPE_SWITCH(out.data_type(), DType, {
+  Tensor t(out.shape(), out.device(), out.data_type());
+  singa::Transform(out, &t);
+  t.ToHost();
+  auto len = t.size();
+  TYPE_SWITCH(t.data_type(), DType, {
     vector<DType> values(len, static_cast<DType>(0.0f));
-    out.get_value<DType>(values.data(), len);
+    t.get_value<DType>(values.data(), len);
+    os << "[";
     for (int i = 0; i < len; i++) {
       os << values[i] << ",";
     }
+    os << "]\n";
   });
-  out.ToDevice(dev);
   return os;
 }
 

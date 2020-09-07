@@ -86,8 +86,12 @@ void mult(const size_t n, const float *in, const float x, float *out,
 void mult(const size_t n, const __half *in, const __half x, __half *out,
           cudaStream_t s);
 
-void broadcast_to(const size_t n, size_t nDim, const float *in,
-                  const float *shape, const float *stride, float *out,
+void traverse_unary_transform(const size_t n, size_t nDim, const float *in,
+                  const int *shape, const int *stride, float *out,
+                  cudaStream_t s);
+
+void traverse_unary_transform(const size_t n, size_t nDim, const __half *in,
+                  const int *shape, const int *stride, __half *out,
                   cudaStream_t s);
 
 void div(const size_t n, const float x, const float *in, float *out,
@@ -127,17 +131,27 @@ void le(const size_t num, const float *in1, const float *in2, float *out,
 // 2 inputs
 void pow(const size_t n, const float *in1, const float *in2, float *out,
          cudaStream_t s);
+void pow(const size_t n, const __half *in1, const __half *in2, __half *out,
+         cudaStream_t s);
 
 void add(const size_t n, const float *in1, const float *in2, float *out,
+         cudaStream_t s);
+void add(const size_t n, const __half *in1, const __half *in2, __half *out,
          cudaStream_t s);
 
 void sub(const size_t n, const float *in1, const float *in2, float *out,
          cudaStream_t s);
+void sub(const size_t n, const __half *in1, const __half *in2, __half *out,
+         cudaStream_t s);
 
 void mult(const size_t n, const float *in1, const float *in2, float *out,
           cudaStream_t s);
+void mult(const size_t n, const __half *in1, const __half *in2, __half *out,
+          cudaStream_t s);
 
 void div(const size_t n, const float *in1, const float *in2, float *out,
+         cudaStream_t s);
+void div(const size_t n, const __half *in1, const __half *in2, __half *out,
          cudaStream_t s);
 
 // void sum(const size_t n, const float *in, float *out, cudaStream_t s);

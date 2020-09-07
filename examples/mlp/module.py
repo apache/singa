@@ -129,7 +129,7 @@ if __name__ == "__main__":
     data = np.array([[a, b] for (a, b) in zip(x, y)], dtype=np_precision)
 
     dev = device.create_cuda_gpu_on(0)
-    sgd = opt.SGD(0.1, 0.9, dtype=precision)
+    sgd = opt.SGD(0.1, 0.9, 1e-5)
 
 
     tx = tensor.Tensor((400, 2), dev, precision)

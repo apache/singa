@@ -109,7 +109,7 @@ if __name__ == "__main__":
     b1 = Tensor(shape=(2,),device=dev, dtype=precision, requires_grad=True, stores_grad=True)
     b1.set_value(0.0)
 
-    sgd = opt.SGD(0.05, 0.9, dtype=precision)
+    sgd = opt.SGD(0.05, 0.8)
 
     # training process
     for i in range(args.max_epoch):

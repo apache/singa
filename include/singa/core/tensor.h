@@ -115,6 +115,19 @@ class Tensor {
     return false;
   }
 
+  bool broadcasted() const {
+    int strideProduct = 1;
+    for (const auto& i : stride_) strideProduct *= i;
+    if (strideProduct == 0){
+      return true;
+    }
+    return false;
+  }
+
+  bool is_contiguous() const {
+    return !broadcasted() && !transpose();
+  }
+
   const vector<int> &stride() const { return stride_; }
 
   /// Return true if the content of the tensor is initialized
