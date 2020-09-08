@@ -38,3 +38,5 @@ jobs:
         run: conda config --add channels conda-forge && conda config --add channels nusdbsystem
       - name: build-pytest
         run: conda build tool/conda/singa
+        env:
+          TEST_COMMAND: pytest --cov=$PREFIX/lib/python3.7/site-packages/singa --cov-report=xml && codecov --flags singa-python

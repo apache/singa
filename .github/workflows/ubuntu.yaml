@@ -60,3 +60,5 @@ jobs:
         run: build/bin/test_singa
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
+        with:
+          flags: singa-cpp
