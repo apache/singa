@@ -545,7 +545,7 @@ TEST_F(TestGraph, MultipleIndependentOps) {
     graph.AddOperation(op2, {b2.block()}, {workspace.block(), b2.block()});
     graph.AddOperation(clean3, {}, {workspace.block()});
     graph.AddOperation(op3, {b3.block()}, {workspace.block(), b3.block()});
-    graph.AddOperation(clean2, {}, {workspace.block()});
+    graph.AddOperation(clean4, {}, {workspace.block()});
     graph.AddOperation(op4, {b4.block()}, {workspace.block(), b4.block()});
 
     EXPECT_EQ(8u, nodes.size());
