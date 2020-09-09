@@ -31,19 +31,26 @@ jobs:
         with:
           python-version: "3.7"
       - name: install-build-dependencies
-        run: brew install protobuf swig opencv glog lmdb numpy && pip3 install numpy && wget https://github.com/oneapi-src/oneDNN/releases/download/v1.1.3/dnnl_mac_1.1.3_cpu_iomp.tgz -P /tmp && tar zxf /tmp/dnnl_mac_1.1.3_cpu_iomp.tgz -C /tmp
+        run: |
+         brew install protobuf swig opencv glog lmdb numpy
+         pip3 install numpy && wget https://github.com/oneapi-src/oneDNN/releases/download/v1.2/dnnl_mac_1.2.0_cpu_tbb.tgz -P /tmp
+         tar zxf /tmp/dnnl_mac_1.2.0_cpu_tbb.tgz -C /tmp
       - name: configure
         run: mkdir build && cd build && cmake -DUSE_PYTHON3=YES -DENABLE_TEST=YES -DUSE_DNNL=YES ..
         env:
           CMAKE_INCLUDE_PATH: /usr/local/opt/openblas/include:$CMAKE_INCLUDE_PATH
           CMAKE_LIBRARY_PATH: /usr/local/opt/openblas/lib:$CMAKE_LIBRARY_PATH
-          DNNL_ROOT: /tmp/dnnl_mac_1.1.3_cpu_iomp
+          DNNL_ROOT: /tmp/dnnl_mac_1.2.0_cpu_tbb/
       - name: build
         run: cd build && make
         env:
           CXXFLAGS: -I  /Users/runner/hostedtoolcache/Python/3.7.8/x64/lib/python3.7/site-packages/numpy/core/include $CXXFLAGS
-          LD_LIBRARY_PATH: /usr/local/opt/openblas/lib:/tmp/dnnl_mac_1.1.3_cpu_iomp/lib:$LD_LIBRARY_PATH
+          LD_LIBRARY_PATH: /usr/local/opt/openblas/lib:/tmp/dnnl_mac_1.2.0_cpu_tbb/lib:$LD_LIBRARY_PATH
       - name: C++ test
-        run: ls /tmp/dnnl_mac_1.1.3_cpu_iomp/lib && otool -L build/bin/test_singa && build/bin/test_singa
+        run: |
+         brew install tbb
+         install_name_tool -change libdnnl.1.dylib /tmp/dnnl_mac_1.2.0_cpu_tbb/lib/libdnnl.1.dylib /Users/runner/work/singa/singa/build/lib/libsinga.dylib
+         install_name_tool -change libdnnl.1.dylib /tmp/dnnl_mac_1.2.0_cpu_tbb/lib/libdnnl.1.dylib build/bin/test_singa
+         build/bin/test_singa
         env:
-          LD_LIBRARY_PATH: /usr/local/opt/openblas/lib:/tmp/dnnl_mac_1.1.3_cpu_iomp/lib:$LD_LIBRARY_PATH
+          LD_LIBRARY_PATH: /usr/local/opt/openblas/lib:/tmp/dnnl_mac_1.2.0_cpu_tbb/lib:$LD_LIBRARY_PATH
