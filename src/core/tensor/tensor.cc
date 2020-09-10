@@ -430,15 +430,19 @@ void Tensor::Clone(Tensor *&other, std::shared_ptr<Device> device) const {
   return;
 }
 
-Tensor &Tensor::Broadcast(const Shape &shape) {
+Tensor &Tensor::Broadcast(const Shape &shape, const int ignore_last_dim) {
   // TODO(wangwei) do we need to transform the mem layout if the tensor was
   // transposed?
   auto m = shape_.size() - 1, n = shape.size() - 1;
-  for (size_t i = 0; i <= std::min(m, n); i++) {
-    if ((shape.at(n - i) != shape_.at(m - i)) && (shape.at(n - i) != 1)) {
-      CHECK_EQ(shape_.at(m - i), 1) << "i= " << i << "\n";  // << Backtrace();
-      shape_.at(m - i) = shape.at(n - i);
-      stride_.at(m - i) = 0;
+  // ignore_last_dim is useful for mult broadcast
+  // e.g. (2,3,4)x(4,5) to (2,3,4)x(2,4,5)
+  if (ignore_last_dim < std::min(m, n)) {
+    for (size_t i = ignore_last_dim; i <= std::min(m, n); i++) {
+      if ((shape.at(n - i) != shape_.at(m - i)) && (shape.at(n - i) != 1)) {
+        CHECK_EQ(shape_.at(m - i), 1) << "i= " << i << "\n";  // << Backtrace();
+        shape_.at(m - i) = shape.at(n - i);
+        stride_.at(m - i) = 0;
+      }
     }
   }
   if (m < n) {
@@ -450,9 +454,10 @@ Tensor &Tensor::Broadcast(const Shape &shape) {
   return *this;
 }
 
-Tensor Broadcast(const Tensor &in, const Shape &shape) {
+Tensor Broadcast(const Tensor &in, const Shape &shape,
+                 const int ignore_last_dim) {
   Tensor out(in);
-  return out.Broadcast(shape);
+  return out.Broadcast(shape, ignore_last_dim);
 }
 
 Tensor &Tensor::T() {
@@ -710,8 +715,8 @@ void RepeatDataToFrom(bool broadcast_flag, const vector<size_t> &repeats,
         { __VA_ARGS__ }                                        \
         break;                                                 \
       }                                                        \
-      case ((kInt << _SwitchShift) + kCuda): {             \
-        typedef int DType;                                   \
+      case ((kInt << _SwitchShift) + kCuda): {                 \
+        typedef int DType;                                     \
         typedef lang::Cuda Lang;                               \
         { __VA_ARGS__ }                                        \
         break;                                                 \
@@ -723,7 +728,7 @@ void RepeatDataToFrom(bool broadcast_flag, const vector<size_t> &repeats,
         break;                                                 \
       }                                                        \
       case ((kInt << _SwitchShift) + kCpp): {                  \
-        typedef int DType;                                   \
+        typedef int DType;                                     \
         typedef lang::Cpp Lang;                                \
         { __VA_ARGS__ }                                        \
         break;                                                 \
@@ -1547,19 +1552,15 @@ void Axpy(const Tensor &alpha, const Tensor &in, Tensor *out) {
 }
 
 Tensor Mult(const Tensor &A, const Tensor &B) {
-  Shape s;
-  s.push_back(A.shape(0));
-  if (B.nDim() == 2) s.push_back(B.shape(1));
-  if (A.nDim() > 2) {
-    // for n>2 dim
-    // A {..., m1, m2} x B {..., m2, m3} = C {..., m1, m3}
-    s = A.shape();
-    s.pop_back();
-    s.push_back(B.shape(B.nDim() - 1));
-  }
+  auto A_ = Broadcast(A, B.shape(), 2);
+  auto B_ = Broadcast(B, A.shape(), 2);
+
+  Shape s = A_.shape();
+  s.pop_back();
+  s.push_back(B.shape(B.nDim() - 1));
 
   Tensor out(s, A.device(), A.data_type());
-  Mult(A, B, &out);
+  Mult(A_, B_, &out);
   return out;
 }
 
@@ -1611,14 +1612,14 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
       Tensor A_tmp;
       Tensor B_tmp;
 
-      if (A.transpose()) {
+      if (A.transpose() || A.broadcasted()) {
         A_tmp = Tensor(A.shape(), A.device(), A.data_type());
         singa::Transform(A, &A_tmp);
       } else {
         A_tmp = A;
       }
 
-      if (B.transpose()) {
+      if (B.transpose() || B.broadcasted()) {
         B_tmp = Tensor(B.shape(), B.device(), B.data_type());
         singa::Transform(B, &B_tmp);
       } else {
