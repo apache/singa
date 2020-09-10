@@ -512,6 +512,47 @@ TEST_F(TestGraph, RunGraph) {
   }
 }
 
+TEST_F(TestGraph, MultipleIndependentOps) {
+  for (auto &it : devices) {
+    GOUT << "Test graph on device [" << it.first << "]" << std::endl;
+
+    auto dev = it.second;
+    Graph graph(dev.get());
+
+    auto &nodes = graph.nodes();
+
+    Tensor workspace(Shape{1}, dev);
+    Tensor b1(Shape{1}, dev);
+    Tensor b2(Shape{1}, dev);
+    Tensor b3(Shape{1}, dev);
+    Tensor b4(Shape{1}, dev);
+
+    // emulate clean up workspace, use the rnn design as reference
+    auto clean1 = [workspace](Context *ctx) mutable {};
+    auto clean2 = [workspace](Context *ctx) mutable {};
+    auto clean3 = [workspace](Context *ctx) mutable {};
+    auto clean4 = [workspace](Context *ctx) mutable {};
+
+    // emulate usage of workspace, use the rnn design as reference
+    auto op1 = [workspace, b1](Context *ctx) mutable {};
+    auto op2 = [workspace, b2](Context *ctx) mutable {};
+    auto op3 = [workspace, b2](Context *ctx) mutable {};
+    auto op4 = [workspace, b2](Context *ctx) mutable {};
+
+    graph.AddOperation(clean1, {}, {workspace.block()});
+    graph.AddOperation(op1, {b1.block()}, {workspace.block(), b1.block()});
+    graph.AddOperation(clean2, {}, {workspace.block()});
+    graph.AddOperation(op2, {b2.block()}, {workspace.block(), b2.block()});
+    graph.AddOperation(clean3, {}, {workspace.block()});
+    graph.AddOperation(op3, {b3.block()}, {workspace.block(), b3.block()});
+    graph.AddOperation(clean4, {}, {workspace.block()});
+    graph.AddOperation(op4, {b4.block()}, {workspace.block(), b4.block()});
+
+    EXPECT_EQ(8u, nodes.size());
+    graph.RunGraph();
+  }
+}
+
 TEST_F(TestGraph, RunInSerial) {
   for (auto &it : devices) {
     GOUT << "Test graph on device [" << it.first << "]" << std::endl;

@@ -108,9 +108,7 @@ m = IMDBModel(hid,
               num_layers=args.num_layers)
 m.set_opt(opt.SGD(args.lr, 0.9))
 
-m.compile([tx], is_train=True, use_graph=True, sequential=True)
-# dry run
-out, loss = m(tx, ty)
+m.compile([tx], is_train=True, use_graph=True, sequential=False)
 
 # training
 m.train()
