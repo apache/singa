@@ -1450,6 +1450,119 @@ def flatten(x, axis=1):
     return Flatten(axis)(x)[0]
 
 
+class ScatterElements(Operator):
+    """
+    ScatterElements operator following ONNX Operator Schemas
+    https://github.com/onnx/onnx/blob/master/docs/Changelog.md#ScatterElements-11
+
+    Example usage:
+    data = [
+        [0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0],
+    ]
+    axis = 0
+    indices = [
+        [1, 0, 2],
+        [0, 2, 1],
+    ]
+    updates = [
+        [1.0, 1.1, 1.2],
+        [2.0, 2.1, 2.2],
+    ]
+    output = [
+        [2.0, 1.1, 0.0]
+        [1.0, 0.0, 2.2]
+        [0.0, 2.1, 1.2]
+    ]
+
+    """
+
+    def __init__(self, indices, updates, axis=0):
+        """
+        Args:
+            indices (Tensor): index tensor
+            updates (Tensor): source tensor
+            axis (int): Which axis to scatter on. A negative value means 
+                counting dimension from the back. Accepted range is [-r,r-1]
+                where r=rank(destination_tensor) 
+        """
+        super(ScatterElements, self).__init__()
+        self.indices = indices
+        self.updates = updates
+        self.axis = axis
+
+    def forward(self, x):
+        x_shape = x.shape()
+        x_rank = len(x_shape)
+        if isinstance(self.indices, Tensor):
+            self.indices = tensor.to_numpy(self.indices)
+        elif isinstance(self.indices, (list, tuple)):
+            self.indices = np.array(self.indices)
+        if isinstance(self.updates, Tensor):
+            self.updates = tensor.to_numpy(self.updates)
+        elif isinstance(self.updates, (list, tuple)):
+            self.updates = np.array(self.updates)
+        self.updates.astype(np.int32)
+        _x = tensor.to_numpy(tensor.from_raw_tensor(x))
+        _x = _x.astype(np.float32)
+
+        assert x_rank == 2, "Only support 2D input."
+        assert x_rank == len(
+            self.indices.shape
+        ), "Index should have the same number of dimensions as output"
+        assert -x_rank < self.axis <= x_rank, "Axis is out of range"
+        assert np.logical_and(
+            -_x.shape[self.axis] < self.indices,
+            self.indices <= _x.shape[self.axis]).all(
+            ), "The values of the indexes should be between %d and %d" % (-_x.shape[self.axis], _x.shape[self.axis] - 1)
+
+        self.axis = self.axis % x_rank
+        u_shape = self.updates.shape
+        y = _x.copy()
+        for i in range(u_shape[0]):
+            for j in range(u_shape[1]):
+                idx = int(self.indices[i][j])
+                if self.axis == 0:
+                    y[idx][j] = self.updates[i][j]
+                else:
+                    y[i][idx] = self.updates[i][j]
+        y = tensor.from_numpy(y)
+        y.to_device(x.device())
+        return y.data
+
+    def backward(self, dy):
+        mask = np.ones(dy.shape(), dtype=np.float32)
+        u_shape = self.updates.shape
+        for i in range(u_shape[0]):
+            for j in range(u_shape[1]):
+                idx = int(self.indices[i][j])
+                if self.axis == 0:
+                    mask[idx][j] = 0.
+                else:
+                    mask[i][idx] = 0.
+        mask = tensor.from_numpy(mask)
+        mask.to_device(dy.device())
+        return singa.__mul__(dy, mask.data)
+
+
+def scatter_elements(x, indices, updates, axis=0):
+    """
+    Produces a ScatterElements operator
+    Args:
+        x (Tensor): input tensor.
+        indices (Tensor): index tensor
+        updates (Tensor): source tensor
+        axis (int): Which axis to scatter on. A negative value means 
+            counting dimension from the back. Accepted range is [-r,r-1]
+            where r=rank(destination_tensor) 
+    Returns:
+        the output Tensor.
+    """
+    return ScatterElements(indices, updates, axis)(x)[0]
+
+
+
 class Concat(Operator):
     """
     Concatenate a list of tensors into a single tensor. All input tensors must
@@ -1519,7 +1632,12 @@ def cat(xs, axis=0):
         a Tensor for the result
     """
     return Concat(axis)(*xs)[0]
-
+"""
+def make_slice(arr, axis, i):  # type: ignore
+        slc = [slice(None)] * arr.ndim
+        slc[axis] = i
+        return slc
+"""
 
 class _Conv2d(Operator):
     """
@@ -3828,13 +3946,16 @@ class Dropout(Operator):
     `output = scale * data * mask`, `scale = 1. / (1. - ratio)`.
     """
 
-    def __init__(self, ratio=0.5):
+    def __init__(self, seed=0, ratio=0.5):
         """
         Args:
+            seed (int): the random seed
             ratio (float): the ratio of random dropout, with value in [0, 1).
         """
         super(Dropout, self).__init__()
         self.ratio = ratio
+        self.seed = int(seed)
+        self.init_seed = False
 
     def forward(self, x):
         """
@@ -3844,6 +3965,9 @@ class Dropout(Operator):
         Returns:
             the output CTensor.
         """
+        if not self.init_seed:
+            x.device().SetRandSeed(self.seed)
+            self.init_seed = True
         if training:
             self.scale = 1 / 1 - self.ratio
             self.mask = singa.Tensor(list(x.shape()), x.device())
@@ -3864,7 +3988,7 @@ class Dropout(Operator):
         return dy
 
 
-def dropout(x, ratio=0.5):
+def dropout(x, seed=0, ratio=0.5):
     """
     Init a Dropout, which scales the masked input data by the following
     equation: `output = scale * data * mask`, `scale = 1. / (1. - ratio)`.
@@ -3874,7 +3998,7 @@ def dropout(x, ratio=0.5):
     Returns:
         the output Tensor.
     """
-    return Dropout(ratio)(x)[0]
+    return Dropout(seed, ratio)(x)[0]
 
 
 class ReduceSum(Operator):
@@ -4776,7 +4900,7 @@ class CosSim(Operator):
 
     @classmethod
     def dot(cls, a, b):
-        """ 
+        """
         dot multiply
         Args:
             a (CTensor): 2d input tensor.

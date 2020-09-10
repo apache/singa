@@ -75,14 +75,16 @@ requirements:
     - tqdm
     - onnx 1.6.0
     - deprecated 1.2.7
-    - pytest
-
+    
 test:
+  requires:
+    - pytest-cov
+    - tabulate
+    - codecov
   source_files:
     - test/python/*.py
   commands:
-    - cd test/python && python run.py
-
+    - {{ environ.get('TEST_COMMAND', 'cd test/python && python run.py') }}
 about:
   home: http://singa.apache.org/
   license: Apache V2

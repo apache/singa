@@ -61,12 +61,11 @@ import numpy as np
 from functools import reduce
 import re
 
-from .proto import core_pb2
 from . import singa_wrap as singa
 from .device import get_default_device
 
-int32 = core_pb2.kInt
-float32 = core_pb2.kFloat32
+int32 = 2  #core.proto.kInt32
+float32 = 0  #core.proto.kFloat32
 CTensor = singa.Tensor
 
 
@@ -863,11 +862,11 @@ def from_numpy(np_array, dev=None):
         np_array = np_array.astype(np.int32)
 
     if np_array.dtype == np.float32:
-        dtype = core_pb2.kFloat32
+        dtype = float32
     else:
         assert np_array.dtype == np.int32, \
             'Only float and int tensors are supported'
-        dtype = core_pb2.kInt
+        dtype = int32
     ret = Tensor(np_array.shape, dtype=dtype)
     ret.copy_from_numpy(np_array)
     if dev:
@@ -899,9 +898,9 @@ def to_numpy(t):
         a numpy array
     '''
     th = to_host(t)
-    if th.dtype == core_pb2.kFloat32:
+    if th.dtype == float32:
         np_array = th.data.GetFloatValue(int(th.size()))
-    elif th.dtype == core_pb2.kInt:
+    elif th.dtype == int32:
         np_array = th.data.GetIntValue(int(th.size()))
     else:
         print('Not implemented yet for ', th.dtype)

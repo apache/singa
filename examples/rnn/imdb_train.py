@@ -68,16 +68,18 @@ parser.add_argument('--mode',
                     default='lstm',
                     help='relu, tanh, lstm, gru',
                     dest='mode')
-parser.add_argument('--return-sequences',
-                    default='False',
+parser.add_argument('-s', '--return-sequences',
+                    default=False,
+                    action='store_true',
                     help='return sequences',
                     dest='return_sequences')
-parser.add_argument('--bidirectional',
-                    default='False',
+parser.add_argument('-d', '--bidirectional',
+                    default=False,
+                    action='store_true',
                     help='bidirectional lstm',
                     dest='bidirectional')
-parser.add_argument('--num-layers',
-                    default=1,
+parser.add_argument('-n', '--num-layers',
+                    default=2,
                     type=int,
                     help='num layers',
                     dest='num_layers')
@@ -106,7 +108,7 @@ m = IMDBModel(hid,
               num_layers=args.num_layers)
 m.set_opt(opt.SGD(args.lr, 0.9))
 
-m.compile([tx], is_train=True, use_graph=False, sequential=False)
+m.compile([tx], is_train=True, use_graph=True, sequential=True)
 # dry run
 out, loss = m(tx, ty)
 

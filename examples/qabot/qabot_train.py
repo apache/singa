@@ -138,7 +138,7 @@ if __name__ == "__main__":
     m = QAModel_maxpooling(args.hid_s,
                            q_seq=args.q_seq_limit,
                            a_seq=args.ans_seq_limit)
-    m.compile([tq, ta], is_train=True, use_graph=False, sequential=False)
+    m.compile([tq, ta], is_train=True, use_graph=True, sequential=False)
     m.optimizer = opt.SGD(args.lr, 0.9)
 
     # get data

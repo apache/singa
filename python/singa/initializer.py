@@ -145,7 +145,6 @@ def he_normal(t):
     """
     _random_fill(t, scale=2., mode='fan_in', distribution='normal')
 
-
 def lecun_normal(t):
     """LeCun normal initializer.
 
@@ -335,5 +334,3 @@ def _random_fill(t, scale, mode, distribution):
     else:
         limit = np.sqrt(3. * scale)
         t.uniform(-limit, limit)
-
-

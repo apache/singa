@@ -15,14 +15,5 @@
 # limitations under the License.
 #
 
-github:
-  description: a distributed deep learning platform
-  labels:
-    - deep-learning
-  features:
-    # Enable wiki for documentation
-    wiki: true
-    # Enable issues on github
-    issues: true
-    # Enable settings on github
-    settings: true
+ignore:
+  - proto/*
