@@ -21,22 +21,15 @@ set -ex
 USER=nusdbsystem
 OS=$TRAVIS_OS_NAME-64
 
-export PATH="$HOME/miniconda/bin:$PATH"
 conda config --set anaconda_upload no
 
 # save the package at given folder, then we can upload using singa-*.tar.bz2
-suffix=$TRAVIS_JOB_NUMBER  #`TZ=Asia/Singapore date +%Y-%m-%d-%H-%M-%S`
-export CONDA_BLD_PATH=~/conda-bld-$suffix
-mkdir $CONDA_BLD_PATH
+# suffix=$TRAVIS_JOB_NUMBER  #`TZ=Asia/Singapore date +%Y-%m-%d-%H-%M-%S`
+#export CONDA_BLD_PATH=~/conda-bld-$suffix
+echo $CONDA_BLD_PATH
 
-# get all tags
-git fetch --unshallow
-
-conda build tool/conda/singa --python 3.6
-conda build tool/conda/singa --python 3.7
-# conda install --use-local singa
-# cd test/python
-# $HOME/miniconda/bin/python run.py
+conda build tool/conda/singa
+# conda build tool/conda/singa --python 3.7
 
 if [[ "$TRAVIS_SECURE_ENV_VARS" == "false" ]];
   # install and run unittest
