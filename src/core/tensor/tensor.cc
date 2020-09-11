@@ -436,7 +436,7 @@ Tensor &Tensor::Broadcast(const Shape &shape, const int ignore_last_dim) {
   auto m = shape_.size() - 1, n = shape.size() - 1;
   // ignore_last_dim is useful for mult broadcast
   // e.g. (2,3,4)x(4,5) to (2,3,4)x(2,4,5)
-  if (ignore_last_dim < std::min(m, n)) {
+  if (ignore_last_dim < std::min(m, n) + 1) {
     for (size_t i = ignore_last_dim; i <= std::min(m, n); i++) {
       if ((shape.at(n - i) != shape_.at(m - i)) && (shape.at(n - i) != 1)) {
         CHECK_EQ(shape_.at(m - i), 1) << "i= " << i << "\n";  // << Backtrace();
