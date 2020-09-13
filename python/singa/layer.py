@@ -372,7 +372,7 @@ class Gemm(Layer):
 
     def initialize(self, x):
         if self.transA == 0:
-            self.in_features = x.shape[1]
+            self.in_features = x.shape[-1]
         else:
             self.in_features = x.shape[0]
 
@@ -409,14 +409,14 @@ class Gemm(Layer):
             self.device_check(x, self.W)
 
         if self.transA == 0:
-            in_features = x.shape[1]
+            in_features = x.shape[-1]
         else:
             in_features = x.shape[0]
 
         if self.transB == 0:
             in_features_w = self.W.shape[0]
         else:
-            in_features_w = self.W.shape[1]
+            in_features_w = self.W.shape[-1]
 
         assert in_features == in_features_w, (
             "Gemm layer expects input features size %d received %d" %

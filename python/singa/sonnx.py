@@ -2055,7 +2055,7 @@ class SingaRep(BackendRep):
             op.nb_kernels = shape[0]
         # Gemm nb_kernels and bias_shape
         elif node.op_type == "Gemm":
-            nb_kernels_flag = 0 if op.transB == 1 else 1
+            nb_kernels_flag = 0 if op.transB == 1 else -1
             shape = self.get_s(node.inputs[1], node, tensor_dict).shape
             op.nb_kernels = shape[nb_kernels_flag]
             if op.bias:

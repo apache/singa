@@ -96,8 +96,8 @@ if __name__ == "__main__":
     y = autograd.reshape(y, y.shape[-2:])[-1, :]
     y = tensor.softmax(y)
     y = tensor.to_numpy(y)[0]
-    y = np.argsort(y)
-    if(pred == 0):
+    y = np.argsort(y)[::-1]
+    if(y[0] == 0):
         print("Prediction: negative")
-    elif(pred == 1):
+    else:
         print("Prediction: positive")

@@ -605,18 +605,9 @@ class Matmul(Operator):
         Return `np.matmul(x,w)`, where x and w are CTensor.
         """
         # todo, cannot do Mult for dims more than 2
-        raw_shape = x.shape()
-        if raw_shape[:2] == (1, 1):
-            x = singa.Reshape(x, raw_shape[2:])
-        elif raw_shape[:1] == (1,):
-            x = singa.Reshape(x, raw_shape[1:])
         if training:
             self.input = (x, w)
         res = singa.Mult(x, w)
-        if raw_shape[:2] == (1, 1):
-            res = singa.Reshape(res, (1, 1) + res.shape())
-        elif raw_shape[:1] == (1,):
-            res = singa.Reshape(res, (1,) + res.shape())
         return res
 
     def backward(self, dy):
