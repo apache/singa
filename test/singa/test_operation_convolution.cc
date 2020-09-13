@@ -243,3 +243,47 @@ TEST(DNNLOperation_Convolution, Backward) {
 #endif  // USE_DNNL
 
 #endif  // USE_CBLAS
+
+#ifdef USE_CUDNN
+using namespace std;
+TEST(OperationConv, profiling) {
+  auto cuda = std::make_shared<singa::CudaGPU>();
+  // auto dtype = kFloat32;
+  // auto dtype = kFloat16;
+
+  // vector<DataType> dtypes = {kFloat32, kFloat16};
+  vector<DataType> dtypes = {kFloat16, kFloat32};
+  // vector<DataType> dtypes = {kFloat16};
+
+  for (auto dtype: dtypes){
+
+    vector<size_t> kernel{8, 8};
+    vector<size_t> stride{8, 8};
+    vector<size_t> padding{0, 0};
+    size_t in_chan=8;
+    size_t out_chan=8;
+    // auto has_bias = true;
+    auto has_bias = false;
+
+    Tensor x(Shape{128, in_chan, 128, 128}, cuda, dtype);
+    Gaussian(0.0f,1.0f,&x);
+    Tensor w(Shape{out_chan, in_chan, kernel[0], kernel[1]}, cuda, dtype);
+    Gaussian(0.0f,1.0f,&w);
+    Tensor b(Shape{out_chan,}, cuda, dtype);
+    Gaussian(0.0f,1.0f,&b);
+
+    auto h = CudnnConvHandle(x, kernel, stride, padding, in_chan, out_chan, has_bias);
+
+    using namespace std::chrono;
+    high_resolution_clock::time_point t1 = high_resolution_clock::now();
+
+    for (int i=0; i<1000; ++i)
+      auto out = GpuConvForward(x, w, b, h);
+
+    high_resolution_clock::time_point t2 = high_resolution_clock::now();
+    duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
+    std::cout << "Datatype " << dtype << " used: " << time_span.count() << " seconds.";
+    std::cout << std::endl;
+  }
+}
+#endif  // USE_CUDNN

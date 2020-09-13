@@ -23,6 +23,7 @@
 #include <cctype>
 
 #include "convolution.h"
+#include <iostream>
 
 namespace singa {
 
@@ -459,6 +460,7 @@ CudnnConvHandle::CudnnConvHandle(
   CUDNN_CHECK(cudnnCreateFilterDescriptor(&filter_desc));
   CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
 
+
   CUDNN_CHECK(cudnnSetTensor4dDescriptor(x_desc, CUDNN_TENSOR_NCHW,
                                          GetCudnnDataType(dtype), batchsize,
                                          channels, height, width));
@@ -476,6 +478,13 @@ CudnnConvHandle::CudnnConvHandle(
       GetCudnnDataType(dtype)
 #endif
           ));
+
+  if (GetCudnnDataType(dtype) == CUDNN_DATA_HALF){
+    std::cout<<"using tensor op"<<std::endl;
+    CUDNN_CHECK(cudnnSetConvolutionMathType(conv_desc, CUDNN_TENSOR_OP_MATH));
+    // CUDNN_CHECK(cudnnSetConvolutionMathType(conv_desc, CUDNN_TENSOR_OP_MATH_ALLOW_CONVERSION));
+  }
+
   if (CUDNN_MAJOR >= 7 && groups > 1) {
     CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc, groups));
   } else if (groups > 1) {
@@ -507,6 +516,10 @@ CudnnConvHandle::CudnnConvHandle(
     CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm(
         ctx->cudnn_handle, x_desc, filter_desc, conv_desc, y_desc, fwd_pref,
         workspace_byte_limit, &fp_alg));
+    std::cout<<"best algo is " << fp_alg << std::endl;
+    std::cout<<"CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM is " << CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM << std::endl;
+    std::cout<<"CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED is " << CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED << std::endl;
+    // fp_alg = CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED;
     CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm(
         ctx->cudnn_handle, x_desc, y_desc, conv_desc, filter_desc,
         bwd_filt_pref, workspace_byte_limit, &bp_filter_alg));

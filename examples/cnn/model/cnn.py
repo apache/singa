@@ -19,6 +19,7 @@
 
 from singa import layer
 from singa import model
+import time
 
 
 class CNN(model.Model):
@@ -39,7 +40,9 @@ class CNN(model.Model):
         self.softmax_cross_entropy = layer.SoftMaxCrossEntropy()
 
     def forward(self, x):
+        start_time = time.time()
         y = self.conv1(x)
+        print("conv1: ", time.time()-start_time)
         y = self.pooling1(y)
         y = self.conv2(y)
         y = self.pooling2(y)
