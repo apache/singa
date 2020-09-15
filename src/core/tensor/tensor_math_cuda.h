@@ -206,30 +206,36 @@ void Add<float, lang::Cuda>(const Tensor& in, const float x, Tensor* out,
                              generate_tensor_nd_desc(*out), outPtr));
 }
 
-inline Tensor get_broadcasted_tensor(const Tensor& in1, Context* ctx) {
-  Tensor in1Bc(in1.shape(), in1.device(), in1.data_type());
-  Tensor shape(Shape{in1.nDim()}, in1.device(), in1.data_type());
-  Tensor stride(Shape{in1.nDim()}, in1.device(), in1.data_type());
-  const vector<float> strideVec(in1.stride().begin(), in1.stride().end());
-  const vector<float> shapeVec(in1.shape().begin(), in1.shape().end());
+template <typename T>
+void TraverseUnaryTransformImpl(const Tensor& in1, Tensor* in1Bc,
+                                Context* ctx) {
+  Tensor shape(Shape{in1.nDim()}, in1.device(), kInt);
+  Tensor stride(Shape{in1.nDim()}, in1.device(), kInt);
+  const vector<int> strideVec(in1.stride().begin(), in1.stride().end());
+  const vector<int> shapeVec(in1.shape().begin(), in1.shape().end());
   shape.CopyDataFromHostPtr(shapeVec.data(), in1.nDim());
   stride.CopyDataFromHostPtr(strideVec.data(), in1.nDim());
+  const int* shapePtr = static_cast<const int*>(shape.block()->data());
+  const int* stridePtr = static_cast<const int*>(stride.block()->data());
 
-  const float* shapePtr = static_cast<const float*>(shape.block()->data());
-  const float* stridePtr = static_cast<const float*>(stride.block()->data());
-  const float* inPtr1 = static_cast<const float*>(in1.block()->data());
-  float* inBcPtr1 = static_cast<float*>(in1Bc.block()->mutable_data());
+  const T* inPtr1 = static_cast<const T*>(in1.block()->data());
+  T* inBcPtr1 = static_cast<T*>(in1Bc->block()->mutable_data());
 
-  const size_t n = Product(in1Bc.shape());
+  const size_t n = Product(in1Bc->shape());
 
-  cuda::broadcast_to(n, in1.nDim(), inPtr1, shapePtr, stridePtr, inBcPtr1,
-                     ctx->stream);
-
-  return in1Bc;
+  cuda::traverse_unary_transform(n, in1.nDim(), inPtr1, shapePtr, stridePtr,
+                                 inBcPtr1, ctx->stream);
 }
+template void TraverseUnaryTransformImpl<float>(const Tensor& in1,
+                                                Tensor* in1Bc, Context* ctx);
 
 template <>
 void Transform<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
+  if (in.broadcasted()) {
+    TraverseUnaryTransformImpl<float>(in, out, ctx);
+    return;
+  }
+
   const float* inPtr = static_cast<const float*>(in.block()->data());
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
 
@@ -251,13 +257,7 @@ void Transform<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
     float* outPtr = static_cast<float*>(out->block()->mutable_data());    \
     const size_t num = out->Size();                                       \
                                                                           \
-    int strideProduct1 = 1;                                               \
-    for (const auto& i : in1.stride()) strideProduct1 *= i;               \
-                                                                          \
-    int strideProduct2 = 1;                                               \
-    for (const auto& i : in2.stride()) strideProduct2 *= i;               \
-                                                                          \
-    if ((strideProduct1 * strideProduct2) != 0) {                         \
+    if (!in1.broadcasted() && !in2.broadcasted()) {                       \
       if (!in1.transpose() && !in2.transpose() &&                         \
           (in1.stride() == in2.stride())) {                               \
         kernel(num, inPtr1, inPtr2, outPtr, ctx->stream);                 \
@@ -278,16 +278,18 @@ void Transform<float, lang::Cuda>(const Tensor& in, Tensor* out, Context* ctx) {
         }                                                                 \
       }                                                                   \
     } else {                                                              \
-      Tensor in1Bc;                                                       \
-      Tensor in2Bc;                                                       \
-      if (strideProduct1 == 0) {                                          \
-        in1Bc = get_broadcasted_tensor(in1, ctx);                         \
-        inPtr1 = static_cast<const float*>(in1Bc.block()->data());        \
+      Tensor in1bc;                                                       \
+      Tensor in2bc;                                                       \
+      if (in1.broadcasted()) {                                            \
+        in1bc = Tensor(in1.shape(), in1.device(), in1.data_type());       \
+        Transform<float, lang::Cuda>(in1, &in1bc, ctx);                   \
+        inPtr1 = static_cast<const float*>(in1bc.block()->data());        \
       }                                                                   \
                                                                           \
-      if (strideProduct2 == 0) {                                          \
-        in2Bc = get_broadcasted_tensor(in2, ctx);                         \
-        inPtr2 = static_cast<const float*>(in2Bc.block()->data());        \
+      if (in2.broadcasted()) {                                            \
+        in2bc = Tensor(in2.shape(), in2.device(), in2.data_type());       \
+        Transform<float, lang::Cuda>(in2, &in2bc, ctx);                   \
+        inPtr2 = static_cast<const float*>(in2bc.block()->data());        \
       }                                                                   \
                                                                           \
       kernel(num, inPtr1, inPtr2, outPtr, ctx->stream);                   \
@@ -523,7 +525,6 @@ void EQ<float, lang::Cuda>(const Tensor& in1, const Tensor& in2, Tensor* out,
   const size_t num = in1.Size();
   cuda::eq(num, outPtr, 0.0, outPtr, ctx->stream);
 }
-
 
 /// Natual logarithm, the base is e, Neper number out[i]=ln(in[i]).
 template <>

@@ -114,6 +114,15 @@ class Tensor {
     return false;
   }
 
+  bool broadcasted() const {
+    int strideProduct = 1;
+    for (const auto &i : stride_) strideProduct *= i;
+    if (strideProduct == 0) {
+      return true;
+    }
+    return false;
+  }
+
   const vector<int> &stride() const { return stride_; }
 
   /// Return true if the content of the tensor is initialized
@@ -250,7 +259,7 @@ class Tensor {
 
   /// Return a view of the input tensor whose shape is broadcasted to be
   /// compitable with the given shape
-  Tensor &Broadcast(const Shape &shape);
+  Tensor &Broadcast(const Shape &shape, const int ignore_last_dim = 0);
 
   /// Reset the shape, device, and data type as given tensor.
   /// If block size changes, then reallocate a new block.
@@ -332,7 +341,8 @@ Tensor Transpose(const Tensor &in);
 
 /// Return a view of the input tensor whose shape is broadcasted to be
 /// compitable with the given shape
-Tensor Broadcast(const Tensor &in, const Shape &shape);
+Tensor Broadcast(const Tensor &in, const Shape &shape,
+                 const int ignore_last_dim = 0);
 
 /// Change the axes
 Tensor Transpose(const Tensor &in, const vector<size_t> &axes);

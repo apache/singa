@@ -161,6 +161,32 @@ class TestTensorMethods(unittest.TestCase):
         y = 2 / x
         self.assertEqual(tensor.average(y), 2.)
 
+    def matmul_high_dim_helper(self, dev):
+        configs = [
+            [(1, 12, 7, 64), (1, 12, 64, 7)],
+            [(1, 7, 768), (768, 768)],
+        ]
+        print()
+        for config in configs:
+            X = np.random.random(config[0]).astype(np.float32)
+            x = tensor.from_numpy(X)
+            x.to_device(dev)
+
+            W = np.random.random(config[1]).astype(np.float32)
+            w = tensor.from_numpy(W)
+            w.to_device(dev)
+
+            y_t = np.matmul(X, W)
+            y = autograd.matmul(x, w)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(y), y_t, 3)
+
+    def test_matmul_high_dim_cpu(self):
+        self.matmul_high_dim_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
+    def test_matmul_high_dim_gpu(self):
+        self.matmul_high_dim_helper(gpu_dev)
+
     def test_tensor_inplace_api(self):
         """ tensor inplace methods alter internal state and also return self
         """
