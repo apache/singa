@@ -75,7 +75,7 @@ class Optimizer(object):
         config (Dict): specify the default values of configurable variables.
     """
 
-    def __init__(self, lr):
+    def __init__(self, lr, dtype=None):
         # init lr(could be a constant scalar or a learning rate scheduler)
         if type(lr) == float or type(lr) == int:
             self.lr = Constant(lr)
@@ -85,6 +85,7 @@ class Optimizer(object):
             raise TypeError("Wrong learning rate type")
 
         # init step counter
+        self.dtype = dtype
         # TODO change type to int32
         self.step_counter = Tensor((1,), dtype=tensor.float32)
         self.step_counter.set_value(0)
@@ -217,8 +218,9 @@ class SGD(Optimizer):
                  momentum=0,
                  dampening=0,
                  weight_decay=0,
-                 nesterov=False):
-        super(SGD, self).__init__(lr)
+                 nesterov=False,
+                 dtype=None):
+        super(SGD, self).__init__(lr, dtype)
 
         # init momentum
         if type(momentum) == float or type(momentum) == int:
@@ -278,6 +280,18 @@ class SGD(Optimizer):
         self.device_check(param_value, self.step_counter, self.lr_value,
                           self.mom_value, self.dam_value, self.decay_value)
 
+        # derive dtype from input
+        self.dtype = param_value.dtype
+
+        dam_value_ref = self.dam_value
+        self.dam_value = self.dam_value.as_type(self.dtype)
+        mom_value_ref = self.mom_value
+        self.mom_value = self.mom_value.as_type(self.dtype)
+        lr_value_ref = self.lr_value
+        self.lr_value = self.lr_value.as_type(self.dtype)
+        decay_value_ref = self.decay_value
+        self.decay_value = self.decay_value.as_type(self.dtype)
+
         # TODO add branch operator
         # if self.decay_value != 0:
         if self.weight_decay.init_value != 0:
@@ -302,6 +316,11 @@ class SGD(Optimizer):
 
         minus_lr = 0.0 - self.lr_value
         singa.Axpy(minus_lr.data, param_grad.data, param_value.data)
+
+        self.dam_value = dam_value_ref
+        self.mom_value = mom_value_ref
+        self.lr_value = lr_value_ref
+        self.decay_value = decay_value_ref
 
     def step(self):
         # increment step counter, lr and moment

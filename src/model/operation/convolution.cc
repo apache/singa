@@ -539,6 +539,11 @@ CudnnConvHandle::CudnnConvHandle(
         ctx->cudnn_handle, filter_desc, y_desc, conv_desc, x_desc, topk,
         &num_bp_data_alg, bp_data_perf));
     bp_data_alg = bp_data_perf[0].algo;
+  } else if (prefer == "tensor_ops" || dtype == kFloat16) {
+    CUDNN_CHECK(cudnnSetConvolutionMathType(conv_desc, CUDNN_TENSOR_OP_MATH));
+    fp_alg = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM;
+    bp_filter_alg = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1;
+    bp_data_alg = CUDNN_CONVOLUTION_BWD_DATA_ALGO_1;
   } else {
     LOG(FATAL) << "Preferred algorithm is not available :" << prefer;
   }

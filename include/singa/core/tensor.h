@@ -22,6 +22,7 @@
 #include <tuple>
 #include <vector>
 
+#include "half.hpp"
 #include "singa/core/common.h"
 #include "singa/core/device.h"
 #include "singa/proto/core.pb.h"
@@ -123,10 +124,12 @@ class Tensor {
     return false;
   }
 
+  bool is_contiguous() const { return !broadcasted() && !transpose(); }
+
   const vector<int> &stride() const { return stride_; }
 
   /// Return true if the content of the tensor is initialized
-  bool initailized() const {
+  bool initialized() const {
     return block_ != nullptr && block_->initialized();
   }
 
@@ -267,7 +270,10 @@ class Tensor {
   Tensor &ResetLike(const Tensor &t);
 
   /// Reset the data type, it would reallocate block if type changes.
-  Tensor AsType(const DataType type);
+  Tensor AsType(const DataType type) const;
+
+  /// change data type for this tensor
+  Tensor &ToType(const DataType type);
 
   /// Reset the device.
   /// If the target device is a diff device, then do deep data copy.

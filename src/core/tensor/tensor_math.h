@@ -355,13 +355,13 @@ void Bernoulli(const float p, Tensor *out, Context *ctx) {
 // The random generator should be extracted from ctx.
 // If DType is not float, then convert the mean and std to DType
 template <typename DType, typename Lang>
-void Gaussian(const float mean, const float std, Tensor *out, Context *ctx) {
+void Gaussian(const DType mean, const DType std, Tensor *out, Context *ctx) {
   LOG(FATAL) << "Gaussian Not Implemented";
 }
 // The random generator should be extracted from ctx.
 // If DType is not float, then convert the low and high to DType
 template <typename DType, typename Lang>
-void Uniform(const float low, const float high, Tensor *out, Context *ctx) {
+void Uniform(const DType low, const DType high, Tensor *out, Context *ctx) {
   LOG(FATAL) << "Uniform Not Implemented";
 }
 
@@ -458,15 +458,15 @@ void SoftMaxBackward(const Tensor &in, Tensor *out, const Tensor &fdout,
 // yisen todo
 template <typename DType, typename Lang>
 void ComputeCrossEntropy(bool int_target, const size_t batchsize,
-                         const size_t dim, const Block *p, const Block *t,
-                         Block *loss, Context *ctx) {
+                         const size_t dim, const Tensor &p, const Tensor &t,
+                         Tensor *loss, Context *ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 
 template <typename DType, typename Lang>
 void SoftmaxCrossEntropyBwd(bool int_target, const size_t batchsize,
-                            const size_t dim, const Block *p, const Block *t,
-                            Block *grad, Context *ctx) {
+                            const size_t dim, const Tensor &p, const Tensor &t,
+                            Tensor *grad, Context *ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 

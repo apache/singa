@@ -706,10 +706,12 @@ class AddBias(Operator):
             a tuple for (db, dx), db is data for dL / db, dx is data
             for dL / dx.
         """
+        dtype = dy.data_type()
+        _dy = dy.AsType(tensor.float32)
         if self.axis == 0:
-            return dy, singa.Sum(dy, 0)
+            return dy, singa.Sum(_dy, 0).AsType(dtype)
         elif self.axis == 1:
-            return dy, singa.Sum(dy, 0)
+            return dy, singa.Sum(_dy, 0).AsType(dtype)
 
 
 def add_bias(x, b, axis=0):
@@ -1176,8 +1178,8 @@ class BinaryCrossEntropy(Operator):
         """
         posx = singa.AddFloat(x, 0.0001)
         loss = singa.SumAll(singa.__mul__(self.t, singa.Log(posx)))
-        negt = singa.AddFloat(singa.MultFloat(self.t,-1.0), 1.0)
-        negx = singa.AddFloat(singa.MultFloat(x,-1.0), 1.0001)
+        negt = singa.AddFloat(singa.MultFloat(self.t, -1.0), 1.0)
+        negx = singa.AddFloat(singa.MultFloat(x, -1.0), 1.0001)
         negLoss = singa.SumAll(singa.__mul__(negt, singa.Log(negx)))
         loss += negLoss
         loss /= -x.shape()[0]
@@ -1198,7 +1200,7 @@ class BinaryCrossEntropy(Operator):
         dx = singa.__div__(self.t, self.x)
         negt = singa.AddFloat(self.t, -1.0)
         negx = singa.AddFloat(self.x, -0.9999)
-        dx -= singa.__div__(negt, negx)          
+        dx -= singa.__div__(negt, negx)
         dx *= float(-1.0 / self.x.shape()[0])
         if isinstance(dy, float):
             # dtype of dy: float
@@ -1247,7 +1249,7 @@ class CrossEntropy(Operator):
                           dy = 1.0
         """
 
-        dx = singa.__div__(self.t, self.x)       
+        dx = singa.__div__(self.t, self.x)
         dx *= float(-1.0 / self.x.shape()[0])
         if isinstance(dy, float):
             # dtype of dy: float
@@ -1511,7 +1513,8 @@ class ScatterElements(Operator):
         assert np.logical_and(
             -_x.shape[self.axis] < self.indices,
             self.indices <= _x.shape[self.axis]).all(
-            ), "The values of the indexes should be between %d and %d" % (-_x.shape[self.axis], _x.shape[self.axis] - 1)
+            ), "The values of the indexes should be between %d and %d" % (
+                -_x.shape[self.axis], _x.shape[self.axis] - 1)
 
         self.axis = self.axis % x_rank
         u_shape = self.updates.shape
@@ -1556,7 +1559,6 @@ def scatter_elements(x, indices, updates, axis=0):
         the output Tensor.
     """
     return ScatterElements(indices, updates, axis)(x)[0]
-
 
 
 class Concat(Operator):
@@ -1628,12 +1630,15 @@ def cat(xs, axis=0):
         a Tensor for the result
     """
     return Concat(axis)(*xs)[0]
+
+
 """
 def make_slice(arr, axis, i):  # type: ignore
         slc = [slice(None)] * arr.ndim
         slc[axis] = i
         return slc
 """
+
 
 class _Conv2d(Operator):
     """
@@ -4882,7 +4887,6 @@ class _RNN(Operator):
             dW = singa.GpuRNNBackwardW(self.inputs['x'], self.inputs['hx'],
                                        self.inputs['y'], self.handle)
 
-
         return dx, dhx, dcx, dW
 
 
@@ -5340,7 +5344,8 @@ class Where(Operator):
             self.condition = tensor.from_numpy(self.condition)
             self.condition.to_device(a.device())
             self.condition = self.condition.data
-        self.neg_condition = singa.AddFloat(singa.MultFloat(self.condition, -1.), 1.)
+        self.neg_condition = singa.AddFloat(
+            singa.MultFloat(self.condition, -1.), 1.)
         _a, _b = a, b
         dtype0 = _a.data_type()
         dtype1 = _b.data_type()
@@ -5348,11 +5353,11 @@ class Where(Operator):
             _a = a.AsType(singa.kFloat32)
             _b = b.AsType(singa.kFloat32)
             res = singa.__add__(singa.__mul__(self.condition, _a),
-                             singa.__mul__(self.neg_condition, _b))
+                                singa.__mul__(self.neg_condition, _b))
             res = res.AsType(singa.kInt)
         else:
             res = singa.__add__(singa.__mul__(self.condition, _a),
-                             singa.__mul__(self.neg_condition, _b))
+                                singa.__mul__(self.neg_condition, _b))
         return res
 
     def backward(self, dy):
@@ -5463,7 +5468,7 @@ class Embedding(Operator):
             tmp_tensor = singa.ConcatOn(sub_xs, 0)
             tmp_tensor = singa.Reshape(tmp_tensor,
                                        [1] + list(tmp_tensor.shape()))
-            
+
             xs.append(tmp_tensor)
         xs = singa.VecTensor(xs)
         xs = singa.ConcatOn(xs, 0)

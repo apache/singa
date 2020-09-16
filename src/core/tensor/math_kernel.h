@@ -69,6 +69,7 @@ void tanh(const size_t n, const float *in, float *out, cudaStream_t s);
 void atan(const size_t n, const float *in, float *out, cudaStream_t s);
 void atanh(const size_t n, const float *in, float *out, cudaStream_t s);
 void relu(const size_t n, const float *in, float *out, cudaStream_t s);
+void relu(const size_t n, const __half *in, __half *out, cudaStream_t s);
 void sigmoid(const size_t n, const float *in, float *out, cudaStream_t s);
 void softplus(const size_t n, const float *in, float *out, cudaStream_t s);
 void softsign(const size_t n, const float *in, float *out, cudaStream_t s);
@@ -83,9 +84,14 @@ void add(const size_t n, const float *in, const float x, float *out,
 
 void mult(const size_t n, const float *in, const float x, float *out,
           cudaStream_t s);
+void mult(const size_t n, const __half *in, const __half x, __half *out,
+          cudaStream_t s);
 
 void traverse_unary_transform(const size_t n, size_t nDim, const float *in,
                               const int *shape, const int *stride, float *out,
+                              cudaStream_t s);
+void traverse_unary_transform(const size_t n, size_t nDim, const __half *in,
+                              const int *shape, const int *stride, __half *out,
                               cudaStream_t s);
 
 void div(const size_t n, const float x, const float *in, float *out,
@@ -96,6 +102,9 @@ void threshold(const size_t n, const float x, const float *in, float *out,
 
 void relubackward(const size_t num, const float *in1, const float *in2,
                   float *out, cudaStream_t s);
+
+void relubackward(const size_t num, const __half *in1, const __half *in2,
+                  __half *out, cudaStream_t s);
 
 void gt(const size_t num, const float *in, const float x, float *out,
         cudaStream_t s);
@@ -125,17 +134,27 @@ void le(const size_t num, const float *in1, const float *in2, float *out,
 // 2 inputs
 void pow(const size_t n, const float *in1, const float *in2, float *out,
          cudaStream_t s);
+void pow(const size_t n, const __half *in1, const __half *in2, __half *out,
+         cudaStream_t s);
 
 void add(const size_t n, const float *in1, const float *in2, float *out,
+         cudaStream_t s);
+void add(const size_t n, const __half *in1, const __half *in2, __half *out,
          cudaStream_t s);
 
 void sub(const size_t n, const float *in1, const float *in2, float *out,
          cudaStream_t s);
+void sub(const size_t n, const __half *in1, const __half *in2, __half *out,
+         cudaStream_t s);
 
 void mult(const size_t n, const float *in1, const float *in2, float *out,
           cudaStream_t s);
+void mult(const size_t n, const __half *in1, const __half *in2, __half *out,
+          cudaStream_t s);
 
 void div(const size_t n, const float *in1, const float *in2, float *out,
+         cudaStream_t s);
+void div(const size_t n, const __half *in1, const __half *in2, __half *out,
          cudaStream_t s);
 
 // void sum(const size_t n, const float *in, float *out, cudaStream_t s);
@@ -143,9 +162,15 @@ void div(const size_t n, const float *in1, const float *in2, float *out,
 void ComputeCrossEntropy(bool int_target, const size_t batchsize,
                          const size_t dim, const float *p, const int *t,
                          float *loss, cudaStream_t stream);
+void ComputeCrossEntropy(bool int_target, const size_t batchsize,
+                         const size_t dim, const __half *p, const int *t,
+                         __half *loss, cudaStream_t stream);
 void SoftmaxCrossEntropyBwd(bool int_target, const size_t batchsize,
                             const size_t dim, const float *p, const int *t,
                             float *grad, cudaStream_t stream);
+void SoftmaxCrossEntropyBwd(bool int_target, const size_t batchsize,
+                            const size_t dim, const __half *p, const int *t,
+                            __half *grad, cudaStream_t stream);
 
 void RowMax(const size_t nrow, const size_t ncol, const float *inPtr,
             float *outPtr, cudaStream_t stream);
