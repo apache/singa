@@ -1117,6 +1117,7 @@ class SingaBackend(Backend):
         'Pad': 'Pad',
         'Upsample': 'UpSample',
         'Where': 'Where',
+        'Erf': 'Erf',
         'Gemm': 'layer.Gemm',  # layer
         'BatchNormalization': 'layer.BatchNorm2d',  # layer
         'Conv': 'layer.Conv2d',  # layer
@@ -1874,13 +1875,15 @@ class SingaBackend(Backend):
         operators = []
         operator_tuple = namedtuple('operator_tuple', ['node', 'operator'])
         for node in graph.node:
+            if not node.name:
+                node.name = "%s_%d" % (str(node.op_type), len(operators))
             node = OnnxNode(node)
             # convert Constant to param
             if node.op_type == 'Constant':
                 params[node.outputs[0]] = cls._onnx_constant_to_np(node)
             else:
                 op = cls._onnx_node_to_singa_op(node, opset_version)
-                operators.extend([operator_tuple(node, op)])
+                operators.append(operator_tuple(node, op))
         return params, inputs, outputs, operators
 
     @classmethod
@@ -2052,7 +2055,7 @@ class SingaRep(BackendRep):
             op.nb_kernels = shape[0]
         # Gemm nb_kernels and bias_shape
         elif node.op_type == "Gemm":
-            nb_kernels_flag = 0 if op.transB == 1 else 1
+            nb_kernels_flag = 0 if op.transB == 1 else -1
             shape = self.get_s(node.inputs[1], node, tensor_dict).shape
             op.nb_kernels = shape[nb_kernels_flag]
             if op.bias:

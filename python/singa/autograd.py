@@ -605,14 +605,9 @@ class Matmul(Operator):
         Return `np.matmul(x,w)`, where x and w are CTensor.
         """
         # todo, cannot do Mult for dims more than 2
-        raw_shape = x.shape()
-        if raw_shape[:2] == (1, 1):
-            x = singa.Reshape(x, raw_shape[2:])
         if training:
             self.input = (x, w)
         res = singa.Mult(x, w)
-        if raw_shape[:2] == (1, 1):
-            res = singa.Reshape(res, (1, 1) + res.shape())
         return res
 
     def backward(self, dy):
@@ -1198,7 +1193,7 @@ class BinaryCrossEntropy(Operator):
         dx = singa.__div__(self.t, self.x)
         negt = singa.AddFloat(self.t, -1.0)
         negx = singa.AddFloat(self.x, -0.9999)
-        dx -= singa.__div__(negt, negx)          
+        dx -= singa.__div__(negt, negx)
         dx *= float(-1.0 / self.x.shape()[0])
         if isinstance(dy, float):
             # dtype of dy: float
@@ -1247,7 +1242,7 @@ class CrossEntropy(Operator):
                           dy = 1.0
         """
 
-        dx = singa.__div__(self.t, self.x)       
+        dx = singa.__div__(self.t, self.x)
         dx *= float(-1.0 / self.x.shape()[0])
         if isinstance(dy, float):
             # dtype of dy: float
@@ -5016,7 +5011,7 @@ class Expand(Operator):
         self.x_shape = list(x.shape())
         x_shape = self.x_shape.copy()
         for s_1, s_2 in zip(self.shape[::-1], x_shape[::-1]):
-            if s_1 != 1 and s_2 != 1:
+            if s_1 != 1 and s_2 != 1 and s_1 != s_2:
                 if len(self.shape) != len(x_shape):
                     assert False, ('not support dim_unchanged mode')
                 self.dim_changed = False
@@ -5463,7 +5458,7 @@ class Embedding(Operator):
             tmp_tensor = singa.ConcatOn(sub_xs, 0)
             tmp_tensor = singa.Reshape(tmp_tensor,
                                        [1] + list(tmp_tensor.shape()))
-            
+
             xs.append(tmp_tensor)
         xs = singa.VecTensor(xs)
         xs = singa.ConcatOn(xs, 0)
@@ -5505,6 +5500,34 @@ def embedding(x, w):
         the output Tensor.
     """
     return Embedding()(x, w)[0]
+
+
+class Erf(Operator):
+    """
+    Apply element-wise math.erf to the input
+    """
+
+    def __init__(self):
+        super(Erf, self).__init__()
+
+    def forward(self, x):
+        return singa.Erf(x)
+
+    def backward(self, dy):
+        dx = singa.MultFloat(singa.PowFloat(dy, 2.0), -1.0)
+        dx = singa.MultFloat(singa.Exp(dx), 2. / np.pi ** 0.5)
+        return dx
+
+
+def erf(x):
+    """
+    Apply element-wise math.erf to the input
+    Args:
+        x (Tensor): input tensor.
+    Returns:
+        the output Tensor.
+    """
+    return Erf()(x)[0]
 
 
 ''' alias for Operator and Layers

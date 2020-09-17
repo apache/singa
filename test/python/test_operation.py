@@ -3541,6 +3541,34 @@ class TestPythonOperation(unittest.TestCase):
             tensor.to_numpy(tensor.from_raw_tensor(sgrad)), np_grad)
         np.testing.assert_array_almost_equal(tensor.to_numpy(sloss), np_loss)
 
+    def erf_helper(self, dev):
+        X = np.array([
+            0.1, 0.5, 0.9, 1.2, 1.5, 1.8, 2.3, 2.5, 2.7, -1.1, -1.5, -1.9, -2.2,
+            -2.5, -2.8
+        ]).astype(np.float32)
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+
+        import math
+
+        y_t = np.vectorize(math.erf)(X)
+        dy = tensor.from_numpy(y_t)
+        dy.to_device(dev)
+        dx_t = 2. / np.pi**0.5 * np.exp(-np.power(y_t, 2))
+
+        y = autograd.erf(x)
+        dx = y.creator.backward(dy.data)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), y_t)
+        np.testing.assert_array_almost_equal(
+            tensor.to_numpy(tensor.from_raw_tensor(dx)), dx_t)
+
+    def test_erf_cpu(self):
+        self.erf_helper(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_erf_gpu(self):
+        self.erf_helper(gpu_dev)
+
 
 if __name__ == '__main__':
     unittest.main()
