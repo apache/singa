@@ -1089,6 +1089,8 @@ class SingaBackend(Backend):
         'Unsqueeze': 'Unsqueeze',
         'NonZero': 'NonZero',
         'Ceil': 'Ceil',
+        'Floor': 'Floor',
+        'Abs': 'Abs',
         # special op
         'ScatterElements': 'ScatterElements',
         'Cast': 'Cast',

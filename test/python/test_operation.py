@@ -2881,6 +2881,28 @@ class TestPythonOperation(unittest.TestCase):
     def test_ceil_gpu(self):
         self.ceil_test(gpu_dev)
 
+    def floor_test(self,dev):
+        X = np.array([-1.9,1.2]).astype(np.float32)
+        DY = np.ones((2),dtype=np.float32)
+        y = np.floor(X)
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
+        x.to_device(dev)
+        dy.to_device(dev)
+
+        result = autograd.floor(x)
+        dx = result.creator.backward(dy.data)
+        DX = np.zeros((2),dtype=np.float32)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result),y,decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)),DX,decimal=5)
+    
+    def test_floor_cpu(self):
+        self.floor_test(cpu_dev)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_floor_gpu(self):
+        self.floor_test(gpu_dev)    
+
     def _test_scatter_elements(self, dev):
         # testing witout axis
         data = np.zeros((3, 3), dtype=np.float32)
