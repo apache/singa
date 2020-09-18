@@ -20,12 +20,14 @@ This script includes Model class for python users
 to use Computational Graph in their model.
 '''
 
-from functools import wraps
+import os
+import gc
 import time
-import numpy as np
 import json
 import zipfile
-import os
+import numpy as np
+from functools import wraps
+from collections import Iterable
 
 from singa import tensor
 from singa import autograd
@@ -33,12 +35,23 @@ from singa import layer
 from .tensor import Tensor
 from . import singa_wrap as singa
 
-import gc
-
 
 class ModelMeta(layer.LayerMeta):
 
     def buffer_operation(func):
+
+        def remove_creator(tensors):
+            if not tensors:
+                return
+
+            if isinstance(tensors, Iterable):
+                for item in tensors:
+                    if isinstance(item, Iterable):
+                        remove_creator(item)
+                    elif isinstance(item, tensor.Tensor):
+                        item.creator = None
+            elif isinstance(tensors, tensor.Tensor):
+                tensors.creator = None
 
         @wraps(func)
         def wrapper(self, *args, **kwargs):
@@ -66,13 +79,7 @@ class ModelMeta(layer.LayerMeta):
                     self._buffered = True
 
                     # deconstruct Operations before running the entire graph
-                    if self._results:
-                        if isinstance(self._results, list):
-                            for _matrix in self._results:
-                                if isinstance(_matrix, tensor.Tensor):
-                                    _matrix.creator = None
-                        elif isinstance(self._results, tensor.Tensor):
-                            self._results.creator = None
+                    remove_creator(self._results)
 
                     # make sure all Operations are deallocated
                     gc.collect()
@@ -147,6 +154,21 @@ class Model(layer.Layer, metaclass=ModelMeta):
         self._results = None
 
     def compile(self, inputs, is_train=True, use_graph=False, sequential=False):
+        """ Compile and initialize the model
+
+        This function will automatically derive the shape of parameters
+        in each sublayer based on the shape of input placeholders. It will
+        also do some settings.
+
+        Args:
+            inputs(list): the list of input tensors(placeholders)
+            is_train(bool): when is_trainis True, this model will enter
+            training mode, otherwise it will enter the evaluation mode
+            use_graph(bool): when use_graph is True, computational graph
+            will be used to train this model
+            sequential(bool): when sequential is True, model will execute ops
+            in the graph follow the order of joining the graph
+        """
         assert len(inputs) > 0 and isinstance(inputs[0], Tensor), (
             'compile function expects PlaceHolders or Tensors')
 
@@ -162,7 +184,7 @@ class Model(layer.Layer, metaclass=ModelMeta):
         self.sequential = sequential
 
     def forward(self, *input):
-        """Defines the computation performed at every call.
+        """Defines the computation performed in every forward propagation.
 
         Should be overridden by all subclasses.
 
@@ -174,7 +196,15 @@ class Model(layer.Layer, metaclass=ModelMeta):
         """
         raise NotImplementedError
 
-    def train_one_batch(self, *input):
+    def train_one_batch(self, *input, **kwargs):
+        """Defines the computation performed in every training iteration
+
+        Should be overridden by all subclasses.
+
+        Args:
+            *input: the arguments of train_one_batch
+            **kwargs: the keyword arguments of train_one_batch
+        """
         raise NotImplementedError
 
     def train(self, mode=True):

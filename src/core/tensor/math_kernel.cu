@@ -69,7 +69,9 @@ __global__ void KernelSum(const size_t n, const float *in, float *out) {
 }
 */
 
-__global__ void KernelBroadcastTo(const size_t n, size_t nDim, const float *in,const float* shape, const float* stride, float *out) {
+__global__ void KernelTraverseUnaryTransform(const size_t n, size_t nDim,
+                                             const float *in, const int *shape,
+                                             const int *stride, float *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
     int shape_accu = n;
@@ -77,10 +79,10 @@ __global__ void KernelBroadcastTo(const size_t n, size_t nDim, const float *in,c
     int remains = i;
 
     for (int k = 0; k < nDim; k++) {
-      shape_accu = shape_accu/shape[k];
-      int idx = remains/shape_accu;
-      remains = remains%shape_accu;
-      offset = offset + idx*stride[k];
+      shape_accu = shape_accu / shape[k];
+      int idx = remains / shape_accu;
+      remains = remains % shape_accu;
+      offset = offset + idx * stride[k];
     }
     out[i] = in[offset];
   }
@@ -117,6 +119,13 @@ __global__ void KernelExp(const size_t n, const float *in, float *out) {
   }
 }
 
+__global__ void KernelErf(const size_t n, const float *in, float *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = erff(in[i]);
+  }
+}
+
 __global__ void KernelCeil2(const size_t n, const float *in, float *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
@@ -129,6 +138,26 @@ __global__ void KernelFloor(const size_t n, const float *in, float *out) {
     out[i] = std::floor(in[i]);
   }
 }
+
+__global__ void KernelRound(const size_t n, const float *in, float *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = roundf(in[i]);
+  }
+}
+
+__global__ void KernelRoundE(const size_t n, const float *in, float *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    float doub = in[i]*2;
+    if (ceilf(doub) == doub) {
+      out[i] = roundf(in[i]/2)*2;
+    } else {
+      out[i] = roundf(in[i]);
+    }
+  }
+}
+
 
 __global__ void KernelLog(const size_t n, const float *in, float *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
@@ -307,6 +336,23 @@ __global__ void KernelBGE(const size_t num, const float *in1, const float *in2,
     out[idx] = in1[idx] >= in2[idx] ? 1.0f : 0.0f;
   }
 }
+
+__global__ void KernelEQ(const size_t num, const float *in, const float x,
+                         float *out) {
+  for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
+       idx += blockDim.x * gridDim.x) {
+    out[idx] = in[idx] == x ? 1.0f : 0.0f;
+  }
+}
+
+__global__ void KernelBEQ(const size_t num, const float *in1, const float *in2,
+                         float *out) {
+  for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
+       idx += blockDim.x * gridDim.x) {
+    out[idx] = in1[idx] == in2[idx] ? 1.0f : 0.0f;
+  }
+}
+
 __global__ void KernelGT(const size_t num, const float *in, const float x,
                          float *out) {
   for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
@@ -545,12 +591,24 @@ void exp(const size_t n, const float *in, float *out, cudaStream_t s) {
   KernelExp <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
 }
 
+void erf(const size_t n, const float *in, float *out, cudaStream_t s) {
+  KernelErf <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
+}
+
 void ceil2(const size_t n, const float *in, float *out, cudaStream_t s) {
   KernelCeil2 <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
 }
 
 void floor(const size_t n, const float *in, float *out, cudaStream_t s) {
   KernelFloor <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
+}
+
+void round(const size_t n, const float *in, float *out, cudaStream_t s) {
+  KernelRound <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
+}
+
+void rounde(const size_t n, const float *in, float *out, cudaStream_t s) {
+  KernelRoundE <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
 }
 
 void log(const size_t n, const float *in, float *out, cudaStream_t s) {
@@ -595,8 +653,11 @@ void add(const size_t n, const float *in, const float x, float *out,
   KernelAdd <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, x, out);
 }
 
-void broadcast_to(const size_t n, size_t nDim,const float *in,const float* shape, const float* stride, float *out, cudaStream_t s) {
-  KernelBroadcastTo <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, nDim, in, shape, stride, out);
+void traverse_unary_transform(const size_t n, size_t nDim, const float *in,
+                              const int *shape, const int *stride, float *out,
+                              cudaStream_t s) {
+  KernelTraverseUnaryTransform<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(
+      n, nDim, in, shape, stride, out);
 }
 
 void mult(const size_t n, const float *in, const float x, float *out,
@@ -634,6 +695,14 @@ void ge(const size_t num, const float *in, const float x, float *out,
 void ge(const size_t num, const float *in1, const float *in2, float *out,
         cudaStream_t s) {
   KernelBGE <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (num, in1, in2, out);
+}
+void eq(const size_t num, const float *in, const float x, float *out,
+        cudaStream_t s) {
+  KernelEQ <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (num, in, x, out);
+}
+void eq(const size_t num, const float *in1, const float *in2, float *out,
+        cudaStream_t s) {
+  KernelBEQ <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (num, in1, in2, out);
 }
 void lt(const size_t num, const float *in, const float x, float *out,
         cudaStream_t s) {

@@ -21,13 +21,13 @@
 from singa import singa_wrap as singa
 from singa import opt
 import argparse
-import train
+import train_cnn
 import multiprocessing
 
 def run(args, local_rank, world_size, nccl_id):
     sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5)
     sgd = opt.DistOpt(sgd, nccl_id=nccl_id, local_rank=local_rank, world_size=world_size)
-    train.run(sgd.global_rank, sgd.world_size, sgd.local_rank, args.max_epoch,
+    train_cnn.run(sgd.global_rank, sgd.world_size, sgd.local_rank, args.max_epoch,
               args.batch_size, args.model, args.data, sgd, args.graph,
               args.verbosity, args.dist_option, args.spars)
 

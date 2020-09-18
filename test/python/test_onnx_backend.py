@@ -41,6 +41,7 @@ _include_nodes_patterns = {
     'ReduceSum': r'(test_reduce_sum)',
     'ReduceMean': r'(test_reduce_mean)',
     'BatchNormalization': r'(test_batchnorm)',
+    'ScatterElements': r'(test_scatter_elements)',
     'Conv': r'(test_basic_conv_|test_conv_with_|test_Conv2d)',
     'MaxPool': r'(test_maxpool_2d)',
     'AveragePool': r'(test_averagepool_2d)',
@@ -76,6 +77,7 @@ _exclude_nodes_patterns = [
     r'(test_gemm_default_single_elem_vector_bias_cuda)',  # status == CURAND_STATUS_SUCCESS
     r'(test_equal_bcast_cuda|test_equal_cuda)',  # Unknown combination of data type kInt and language kCuda
     r'(test_maxpool_1d|test_averagepool_1d|test_maxpool_3d|test_averagepool_3d)',  # Check failed: idx < shape_.size() (3 vs. 3)
+    r'test_depthtospace.*cuda', # cuda cannot support transpose with more than 4 dims
 ]
 
 _include_real_patterns = []  # todo
@@ -100,18 +102,30 @@ for name in sonnx.SingaBackend._rename_operators.keys():
 for pattern in _exclude_nodes_patterns:
     backend_test.exclude(pattern)
 
+# exclude the cuda cases
+if not singa.USE_CUDA:
+    backend_test.exclude(r'(cuda)')
+
+OnnxBackendNodeModelTest = backend_test.enable_report().test_cases['OnnxBackendNodeModelTest']
+
+# disable and enable training before and after test cases
+def setUp(self):
+    # print("\nIn method", self._testMethodName)
+    autograd.training = False
+
+def tearDown(self):
+    autograd.training = True
+
+OnnxBackendNodeModelTest.setUp = setUp
+OnnxBackendNodeModelTest.tearDown = tearDown
+
 # import all test cases at global scope to make them visible to python.unittest
 # print(backend_test.enable_report().test_cases)
 test_cases = {
-    'OnnxBackendNodeModelTest':
-        backend_test.enable_report().test_cases['OnnxBackendNodeModelTest']
+    'OnnxBackendNodeModelTest': OnnxBackendNodeModelTest
 }
 
 globals().update(test_cases)
-
-# def setUp(self):
-#     print("\nIn method", self._testMethodName)
-# OnnxBackendNodeModelTest.setUp = setUp
 
 if __name__ == '__main__':
     unittest.main()

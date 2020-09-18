@@ -32,7 +32,7 @@
 #include "singa/core/tensor.h"
 #include "singa/core/device.h"
 #include "singa/proto/core.pb.h"
-#include "singa/proto/model.pb.h"
+// #include "singa/proto/model.pb.h"
 using singa::DataType;
 %}
 %shared_ptr(singa::Device)
@@ -42,6 +42,9 @@ using singa::DataType;
 %init %{
   import_array();
 %}
+// better use (int DIM1, float* IN_ARRAY1)
+// otherwise, the generated py method will have the arg name src,
+// which in fact accepts num as the input
 %apply (float *IN_ARRAY1, int DIM1) {
        (const float *src, const size_t num)
 }
@@ -62,7 +65,10 @@ using singa::DataType;
 %apply float[] {float *};
 #endif // USE_JAVA
 
-
+namespace std {
+  %template(VecTensor) vector<singa::Tensor>;
+  %template(VecVecSize) vector<vector<size_t>>;
+}
 
 %template(Shape) std::vector<size_t>;
 
@@ -165,6 +171,7 @@ namespace singa{
                         Tensor *dst, const Tensor &src, const size_t num);
 
   Tensor Reshape(const Tensor &in, const std::vector<size_t> &s);
+  Tensor Contiguous(const Tensor &in);
   Tensor Transpose(const Tensor &in, const std::vector<size_t> &axes);
 
   %rename(DefaultTranspose) Transpose(const Tensor &in);
@@ -173,7 +180,10 @@ namespace singa{
   Tensor Abs(const Tensor &t);
   Tensor Ceil(const Tensor &t);
   Tensor Floor(const Tensor &t);
+  Tensor Round(const Tensor &t);
+  Tensor RoundE(const Tensor &t);
   Tensor Exp(const Tensor &t);
+  Tensor Erf(const Tensor &t);
   Tensor Log(const Tensor &t);
   Tensor ReLU(const Tensor &t);
   Tensor Sigmoid(const Tensor &t);
@@ -222,10 +232,12 @@ namespace singa{
   %rename(__le__) operator<=(const Tensor &lhs, const Tensor &rhs);
   %rename(__gt__) operator>(const Tensor &lhs, const Tensor &rhs);
   %rename(__ge__) operator>=(const Tensor &lhs, const Tensor &rhs);
+  %rename(__eq__) operator==(const Tensor &lhs, const Tensor &rhs);
   Tensor operator<(const Tensor &lhs, const Tensor &rhs);
   Tensor operator<=(const Tensor &lhs, const Tensor &rhs);
   Tensor operator>(const Tensor &lhs, const Tensor &rhs);
   Tensor operator>=(const Tensor &lhs, const Tensor &rhs);
+  Tensor operator==(const Tensor &lhs, const Tensor &rhs);
 
 
   %rename(LTFloat) operator<(const Tensor &t, const float x);
@@ -244,6 +256,10 @@ namespace singa{
   %rename(GEFloat) operator>=(const Tensor &t, const float x);
   template <typename DType> Tensor operator>=(const Tensor &t, const DType x);
   %template(opge) operator>= <float>;
+
+  %rename(EQFloat) operator==(const Tensor &t, const float x);
+  template <typename DType> Tensor operator==(const Tensor &t, const DType x);
+  %template(opeq) operator== <float>;
 
   Tensor ConcatOn(const std::vector<Tensor> &in, int axis);
   Tensor SliceOn(const Tensor&in, const size_t start, const size_t end, int axis);

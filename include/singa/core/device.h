@@ -62,6 +62,8 @@ class Device {
   /// max mem size to use (in MB)
   Device(int id, int num_executors);
 
+  void Reset();
+
   virtual void SetRandSeed(unsigned seed) = 0;
 
   void EnableGraph(bool enable) { graph_enabled_ = enable; }
@@ -81,10 +83,10 @@ class Device {
   /// Copy data within or across devices.
   virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
                               CopyDirection direction, int dst_offset,
-                              int src_offset);
+                              int src_offset, Context* ctx);
 
   void CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
-                           size_t dst_offset = 0);
+                           size_t dst_offset = 0, Context* ctx = nullptr);
   /// Submit the operation to the device, which may execute it right now or
   /// delay it depending on the scheduler.
   void Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
@@ -122,14 +124,16 @@ class Device {
 
   void PrintTimeProfiling();
   void SetVerbosity(int verbosity) { verbosity_ = verbosity; };
-  void SetSkipIteration(int skip_iteration) { skip_iteration_ = skip_iteration; };
+  void SetSkipIteration(int skip_iteration) {
+    skip_iteration_ = skip_iteration;
+  };
 
  protected:
   /// Execute one operation on one executor.
   virtual void DoExec(function<void(Context*)>&& fn, int executor) = 0;
-  virtual void TimeProfilingDoExec(function<void(Context*)>&& fn,
-                            int executor, Node *node) = 0;
-  virtual void EvaluateTimeElapsed(Node *node) = 0;
+  virtual void TimeProfilingDoExec(function<void(Context*)>&& fn, int executor,
+                                   Node* node) = 0;
+  virtual void EvaluateTimeElapsed(Node* node) = 0;
 
   virtual void CopyToFrom(void* dst, const void* src, size_t nBytes,
                           CopyDirection direction, Context* ctx) = 0;
@@ -184,9 +188,9 @@ class CppCPU : public Device {
 
  protected:
   void DoExec(function<void(Context*)>&& fn, int executor) override;
-  void TimeProfilingDoExec(function<void(Context*)>&& fn,
-                            int executor, Node *node) override;
-  void EvaluateTimeElapsed(Node *node) override;
+  void TimeProfilingDoExec(function<void(Context*)>&& fn, int executor,
+                           Node* node) override;
+  void EvaluateTimeElapsed(Node* node) override;
 
   void CopyToFrom(void* dst, const void* src, size_t nBytes,
                   CopyDirection direction, Context* ctx) override;
@@ -217,9 +221,9 @@ class CudaGPU : public Device {
 
  protected:
   void DoExec(function<void(Context*)>&& fn, int executor) override;
-  void TimeProfilingDoExec(function<void(Context*)>&& fn,
-                            int executor, Node *node) override;
-  void EvaluateTimeElapsed(Node *node) override;
+  void TimeProfilingDoExec(function<void(Context*)>&& fn, int executor,
+                           Node* node) override;
+  void EvaluateTimeElapsed(Node* node) override;
 
   void SyncBeforeCountingTime();
 
@@ -259,7 +263,8 @@ class OpenclDevice : public singa::Device {
 
   virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
                               CopyDirection direction, int dst_offset = 0,
-                              int src_offset = 0) override;
+                              int src_offset = 0,
+                              Context* ctx = nullptr) override;
 
  protected:
   /// The OpenCL device that this object represents.
@@ -306,7 +311,11 @@ class OpenclDevice : public singa::Device {
 class Platform {
  public:
   /// Return the default host device
-  static std::shared_ptr<Device> GetDefaultDevice() { return defaultDevice; }
+  static std::shared_ptr<Device> GetDefaultDevice() {
+    // cannot reset cpu device, which leads to error
+    // defaultDevice->Reset();
+    return defaultDevice;
+  }
 
 #ifdef USE_CUDA
   /// Return the number of total available GPUs

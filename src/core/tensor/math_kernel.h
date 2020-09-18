@@ -44,8 +44,11 @@ void set(const size_t n, const float v, float *out, cudaStream_t s);
 void abs(const size_t n, const float *in, float *out, cudaStream_t s);
 void sign(const size_t n, const float *in, float *out, cudaStream_t s);
 void exp(const size_t n, const float *in, float *out, cudaStream_t s);
+void erf(const size_t n, const float *in, float *out, cudaStream_t s);
 void ceil2(const size_t n, const float *in, float *out, cudaStream_t s);
 void floor(const size_t n, const float *in, float *out, cudaStream_t s);
+void round(const size_t n, const float *in, float *out, cudaStream_t s);
+void rounde(const size_t n, const float *in, float *out, cudaStream_t s);
 void cast_float_2_int(const size_t n, const float *src, int *dst,
                       cudaStream_t s);
 void cast_int_2_float(const size_t n, const int *src, float *dst,
@@ -81,9 +84,9 @@ void add(const size_t n, const float *in, const float x, float *out,
 void mult(const size_t n, const float *in, const float x, float *out,
           cudaStream_t s);
 
-void broadcast_to(const size_t n, size_t nDim, const float *in,
-                  const float *shape, const float *stride, float *out,
-                  cudaStream_t s);
+void traverse_unary_transform(const size_t n, size_t nDim, const float *in,
+                              const int *shape, const int *stride, float *out,
+                              cudaStream_t s);
 
 void div(const size_t n, const float x, const float *in, float *out,
          cudaStream_t s);
@@ -102,6 +105,11 @@ void gt(const size_t num, const float *in1, const float *in2, float *out,
 void ge(const size_t num, const float *in, const float x, float *out,
         cudaStream_t s);
 void ge(const size_t num, const float *in1, const float *in2, float *out,
+        cudaStream_t s);
+
+void eq(const size_t num, const float *in, const float x, float *out,
+        cudaStream_t s);
+void eq(const size_t num, const float *in1, const float *in2, float *out,
         cudaStream_t s);
 
 void lt(const size_t num, const float *in, const float x, float *out,

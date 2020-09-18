@@ -32,6 +32,7 @@ typedef std::vector<int> IntVec;
 using singa::Blk2InfoMap;
 using singa::BlkInfo;
 using singa::Block;
+using singa::BlockSet;
 using singa::BlockType;
 using singa::BlockVec;
 using singa::Context;
@@ -100,13 +101,13 @@ class Gout : public std::stringstream {
     }                                                                         \
   } while (false)
 
-#define CheckWriteBlocks(write_blocks, correct_write_blocks)     \
-  do {                                                           \
-    EXPECT_EQ(correct_write_blocks.size(), write_blocks.size()); \
-    for (size_t i = 0; i < write_blocks.size(); ++i) {           \
-      EXPECT_EQ(correct_write_blocks[i], write_blocks[i])        \
-          << "write_blocks is wrong at index [" << i << "]";     \
-    }                                                            \
+#define CheckLeafBlocks(leaf_blocks, correct_leaf_blocks)                   \
+  do {                                                                      \
+    EXPECT_EQ(correct_leaf_blocks.size(), leaf_blocks.size());              \
+    for (auto it : leaf_blocks) {                                           \
+      auto iter = correct_leaf_blocks.find(it);                             \
+      EXPECT_NE(iter, correct_leaf_blocks.end()) << "leaf blocks mismatch"; \
+    }                                                                       \
   } while (false)
 
 #define CheckFreeBlocks(node_id, blocks, free_blocks, correct_free_blocks)   \
@@ -157,7 +158,7 @@ TEST_F(TestGraph, AddOp) {
     auto &nodes = graph.nodes();
     auto &edges = graph.edges();
     auto &blocks = graph.blocks();
-    auto &write_blocks = graph.write_blocks();
+    auto &leaf_blocks = graph.leaf_blocks();
 
     Tensor in(Shape{1}, dev);
     Tensor out(Shape{1}, dev);
@@ -168,7 +169,7 @@ TEST_F(TestGraph, AddOp) {
     EXPECT_EQ(1u, nodes.size());
     EXPECT_EQ(2u, edges.size());
     EXPECT_EQ(2u, blocks.size());
-    EXPECT_EQ(1u, write_blocks.size());
+    EXPECT_EQ(1u, leaf_blocks.size());
 
     auto node = nodes[0];
     auto edge1 = edges[0];
@@ -182,7 +183,7 @@ TEST_F(TestGraph, AddOp) {
     CheckBlock(block1, 0, in.block(), BlockType::kInput, 1, nullptr,
                NodeVec({}));
     CheckBlock(block2, 1, out.block(), BlockType::kEnd, 1, edge2, NodeVec({}));
-    CheckWriteBlocks(write_blocks, BlockVec({out.block()}));
+    CheckLeafBlocks(leaf_blocks, BlockSet({out.block()}));
     EXPECT_TRUE(graph.dirty());
   }
 }
@@ -197,7 +198,7 @@ TEST_F(TestGraph, AddSyncOp) {
     auto &nodes = graph.nodes();
     auto &edges = graph.edges();
     auto &blocks = graph.blocks();
-    auto &write_blocks = graph.write_blocks();
+    auto &leaf_blocks = graph.leaf_blocks();
 
     Tensor in(Shape{1}, dev);
     Tensor out(Shape{1}, dev);
@@ -209,7 +210,7 @@ TEST_F(TestGraph, AddSyncOp) {
     EXPECT_EQ(2u, nodes.size());
     EXPECT_EQ(3u, edges.size());
     EXPECT_EQ(2u, blocks.size());
-    EXPECT_EQ(1u, write_blocks.size());
+    EXPECT_EQ(1u, leaf_blocks.size());
 
     auto node1 = nodes[0];
     auto node2 = nodes[1];
@@ -228,7 +229,7 @@ TEST_F(TestGraph, AddSyncOp) {
                NodeVec({}));
     CheckBlock(block2, 1, out.block(), BlockType::kInter, 1, edge3,
                NodeVec({}));
-    CheckWriteBlocks(write_blocks, BlockVec({out.block()}));
+    CheckLeafBlocks(leaf_blocks, BlockSet({out.block()}));
     EXPECT_TRUE(graph.dirty());
   }
 }
@@ -243,7 +244,7 @@ TEST_F(TestGraph, AddInplaceOp) {
     auto &nodes = graph.nodes();
     auto &edges = graph.edges();
     auto &blocks = graph.blocks();
-    auto &write_blocks = graph.write_blocks();
+    auto &leaf_blocks = graph.leaf_blocks();
 
     Tensor in(Shape{1}, dev);
     Tensor out(Shape{1}, dev);
@@ -254,7 +255,7 @@ TEST_F(TestGraph, AddInplaceOp) {
     EXPECT_EQ(1u, nodes.size());
     EXPECT_EQ(2u, edges.size());
     EXPECT_EQ(1u, blocks.size());
-    EXPECT_EQ(1u, write_blocks.size());
+    EXPECT_EQ(1u, leaf_blocks.size());
 
     auto node1 = nodes[0];
     auto edge1 = edges[0];
@@ -265,7 +266,7 @@ TEST_F(TestGraph, AddInplaceOp) {
     CheckEdge(edge1, 0, in.block(), nullptr, node1);
     CheckEdge(edge2, 1, in.block(), node1, nullptr);
     CheckBlock(block1, 0, in.block(), BlockType::kParam, 2, edge2, NodeVec({}));
-    CheckWriteBlocks(write_blocks, BlockVec({in.block()}));
+    CheckLeafBlocks(leaf_blocks, BlockSet{in.block()});
     EXPECT_TRUE(graph.dirty());
 
     graph.AddOperation(op, {in.block(), out.block()}, {out.block()});
@@ -273,7 +274,7 @@ TEST_F(TestGraph, AddInplaceOp) {
     EXPECT_EQ(2u, nodes.size());
     EXPECT_EQ(4u, edges.size());
     EXPECT_EQ(2u, blocks.size());
-    EXPECT_EQ(1u, write_blocks.size());
+    EXPECT_EQ(1u, leaf_blocks.size());
 
     auto node2 = nodes[1];
     auto edge3 = edges[2];
@@ -288,7 +289,7 @@ TEST_F(TestGraph, AddInplaceOp) {
     CheckBlock(block1, 0, in.block(), BlockType::kParam, 3, edge2, NodeVec({}));
     CheckBlock(block2, 1, out.block(), BlockType::kParam, 2, edge4,
                NodeVec({}));
-    CheckWriteBlocks(write_blocks, BlockVec({out.block()}));
+    CheckLeafBlocks(leaf_blocks, BlockSet({out.block()}));
     EXPECT_TRUE(graph.dirty());
   }
 }
@@ -303,7 +304,7 @@ TEST_F(TestGraph, BlockTypeInput) {
     auto &nodes = graph.nodes();
     auto &edges = graph.edges();
     auto &blocks = graph.blocks();
-    auto &write_blocks = graph.write_blocks();
+    auto &leaf_blocks = graph.leaf_blocks();
 
     Tensor in(Shape{1}, dev);
     Tensor out(Shape{1}, dev);
@@ -314,7 +315,7 @@ TEST_F(TestGraph, BlockTypeInput) {
     EXPECT_EQ(1u, nodes.size());
     EXPECT_EQ(2u, edges.size());
     EXPECT_EQ(2u, blocks.size());
-    EXPECT_EQ(1u, write_blocks.size());
+    EXPECT_EQ(1u, leaf_blocks.size());
 
     auto block1 = blocks.find(in.block())->second;
 
@@ -333,7 +334,7 @@ TEST_F(TestGraph, BlockTypeParam) {
     auto &nodes = graph.nodes();
     auto &edges = graph.edges();
     auto &blocks = graph.blocks();
-    auto &write_blocks = graph.write_blocks();
+    auto &leaf_blocks = graph.leaf_blocks();
 
     Tensor in(Shape{1}, dev);
     Tensor mid(Shape{1}, dev);
@@ -347,7 +348,7 @@ TEST_F(TestGraph, BlockTypeParam) {
     EXPECT_EQ(3u, nodes.size());
     EXPECT_EQ(5u, edges.size());
     EXPECT_EQ(3u, blocks.size());
-    EXPECT_EQ(1u, write_blocks.size());
+    EXPECT_EQ(1u, leaf_blocks.size());
 
     auto edge2 = edges[1];
     auto edge5 = edges[4];
@@ -370,7 +371,7 @@ TEST_F(TestGraph, BlockTypeInter) {
     auto &nodes = graph.nodes();
     auto &edges = graph.edges();
     auto &blocks = graph.blocks();
-    auto &write_blocks = graph.write_blocks();
+    auto &leaf_blocks = graph.leaf_blocks();
 
     Tensor in(Shape{1}, dev);
     Tensor mid(Shape{1}, dev);
@@ -384,7 +385,7 @@ TEST_F(TestGraph, BlockTypeInter) {
     EXPECT_EQ(3u, nodes.size());
     EXPECT_EQ(4u, edges.size());
     EXPECT_EQ(3u, blocks.size());
-    EXPECT_EQ(1u, write_blocks.size());
+    EXPECT_EQ(1u, leaf_blocks.size());
 
     auto edge2 = edges[1];
     auto edge4 = edges[3];
@@ -408,7 +409,7 @@ TEST_F(TestGraph, BlockTypeEnd) {
     auto &nodes = graph.nodes();
     auto &edges = graph.edges();
     auto &blocks = graph.blocks();
-    auto &write_blocks = graph.write_blocks();
+    auto &leaf_blocks = graph.leaf_blocks();
 
     Tensor in(Shape{1}, dev);
     Tensor out1(Shape{1}, dev);
@@ -421,7 +422,7 @@ TEST_F(TestGraph, BlockTypeEnd) {
     EXPECT_EQ(2u, nodes.size());
     EXPECT_EQ(3u, edges.size());
     EXPECT_EQ(3u, blocks.size());
-    EXPECT_EQ(1u, write_blocks.size());
+    EXPECT_EQ(2u, leaf_blocks.size());
 
     auto edge2 = edges[1];
     auto edge3 = edges[2];
@@ -443,7 +444,7 @@ TEST_F(TestGraph, RunGraph) {
     auto &nodes = graph.nodes();
     auto &edges = graph.edges();
     auto &blocks = graph.blocks();
-    auto &write_blocks = graph.write_blocks();
+    auto &leaf_blocks = graph.leaf_blocks();
 
     Tensor in(Shape{1}, dev);
     Tensor mid(Shape{1}, dev);
@@ -493,7 +494,7 @@ TEST_F(TestGraph, RunGraph) {
     EXPECT_EQ(7u, nodes.size());
     EXPECT_EQ(14u, edges.size());
     EXPECT_EQ(12u, blocks.size());
-    EXPECT_EQ(1u, write_blocks.size());
+    EXPECT_EQ(3u, leaf_blocks.size());
 
     in.SetValue(0);
     b1.SetValue(-1);
@@ -511,6 +512,47 @@ TEST_F(TestGraph, RunGraph) {
   }
 }
 
+TEST_F(TestGraph, MultipleIndependentOps) {
+  for (auto &it : devices) {
+    GOUT << "Test graph on device [" << it.first << "]" << std::endl;
+
+    auto dev = it.second;
+    Graph graph(dev.get());
+
+    auto &nodes = graph.nodes();
+
+    Tensor workspace(Shape{1}, dev);
+    Tensor b1(Shape{1}, dev);
+    Tensor b2(Shape{1}, dev);
+    Tensor b3(Shape{1}, dev);
+    Tensor b4(Shape{1}, dev);
+
+    // emulate clean up workspace, use the rnn design as reference
+    auto clean1 = [workspace](Context *ctx) mutable {};
+    auto clean2 = [workspace](Context *ctx) mutable {};
+    auto clean3 = [workspace](Context *ctx) mutable {};
+    auto clean4 = [workspace](Context *ctx) mutable {};
+
+    // emulate usage of workspace, use the rnn design as reference
+    auto op1 = [workspace, b1](Context *ctx) mutable {};
+    auto op2 = [workspace, b2](Context *ctx) mutable {};
+    auto op3 = [workspace, b2](Context *ctx) mutable {};
+    auto op4 = [workspace, b2](Context *ctx) mutable {};
+
+    graph.AddOperation(clean1, {}, {workspace.block()});
+    graph.AddOperation(op1, {b1.block()}, {workspace.block(), b1.block()});
+    graph.AddOperation(clean2, {}, {workspace.block()});
+    graph.AddOperation(op2, {b2.block()}, {workspace.block(), b2.block()});
+    graph.AddOperation(clean3, {}, {workspace.block()});
+    graph.AddOperation(op3, {b3.block()}, {workspace.block(), b3.block()});
+    graph.AddOperation(clean4, {}, {workspace.block()});
+    graph.AddOperation(op4, {b4.block()}, {workspace.block(), b4.block()});
+
+    EXPECT_EQ(8u, nodes.size());
+    graph.RunGraph();
+  }
+}
+
 TEST_F(TestGraph, RunInSerial) {
   for (auto &it : devices) {
     GOUT << "Test graph on device [" << it.first << "]" << std::endl;
@@ -521,7 +563,7 @@ TEST_F(TestGraph, RunInSerial) {
     auto &nodes = graph.nodes();
     auto &edges = graph.edges();
     auto &blocks = graph.blocks();
-    auto &write_blocks = graph.write_blocks();
+    auto &leaf_blocks = graph.leaf_blocks();
 
     Tensor in(Shape{1}, dev);
     Tensor mid(Shape{1}, dev);
@@ -570,7 +612,7 @@ TEST_F(TestGraph, RunInSerial) {
     EXPECT_EQ(7u, nodes.size());
     EXPECT_EQ(14u, edges.size());
     EXPECT_EQ(12u, blocks.size());
-    EXPECT_EQ(1u, write_blocks.size());
+    EXPECT_EQ(3u, leaf_blocks.size());
 
     in.SetValue(0);
     b1.SetValue(-1);
@@ -598,7 +640,7 @@ TEST_F(TestGraph, AutoRecycle) {
     auto &nodes = graph.nodes();
     auto &edges = graph.edges();
     auto &blocks = graph.blocks();
-    auto &write_blocks = graph.write_blocks();
+    auto &leaf_blocks = graph.leaf_blocks();
 
     {
       Tensor in(Shape{1}, dev);
@@ -671,7 +713,7 @@ TEST_F(TestGraph, AutoRecycle) {
     EXPECT_EQ(10u, nodes.size());
     EXPECT_EQ(21u, edges.size());
     EXPECT_EQ(15u, blocks.size());
-    EXPECT_EQ(1u, write_blocks.size());
+    EXPECT_EQ(3u, leaf_blocks.size());
 
     graph.RunGraph();
 
