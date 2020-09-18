@@ -1372,7 +1372,6 @@ class TestPythonOperation(unittest.TestCase):
         x = tensor.from_numpy(x)
         dy = tensor.from_numpy(dy)
         x.to_device(dev)
-        
         dy.to_device(dev)
 
         result = autograd.transpose(x, (1, 2, 0))
