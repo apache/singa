@@ -20,40 +20,43 @@
 # the code is modified from
 # https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
 
-from singa import autograd
-from singa import module
+from singa import layer
+from singa import model
 
 
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
-    return autograd.Conv2d(
+    return layer.Conv2d(
         in_planes,
         out_planes,
-        kernel_size=3,
+        3,
         stride=stride,
         padding=1,
         bias=False,
     )
 
 
-class BasicBlock(autograd.Layer):
+class BasicBlock(layer.Layer):
     expansion = 1
 
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(BasicBlock, self).__init__()
         self.conv1 = conv3x3(inplanes, planes, stride)
-        self.bn1 = autograd.BatchNorm2d(planes)
+        self.bn1 = layer.BatchNorm2d(planes)
         self.conv2 = conv3x3(planes, planes)
-        self.bn2 = autograd.BatchNorm2d(planes)
+        self.bn2 = layer.BatchNorm2d(planes)
+        self.relu1 = layer.ReLU()
+        self.add = layer.Add()
+        self.relu2 = layer.ReLU()
         self.downsample = downsample
         self.stride = stride
 
-    def __call__(self, x):
+    def forward(self, x):
         residual = x
 
         out = self.conv1(x)
         out = self.bn1(out)
-        out = autograd.relu(out)
+        out = self.relu1(out)
 
         out = self.conv2(out)
         out = self.bn2(out)
@@ -61,48 +64,50 @@ class BasicBlock(autograd.Layer):
         if self.downsample is not None:
             residual = self.downsample(x)
 
-        out = autograd.add(out, residual)
-        out = autograd.relu(out)
+        out = self.add(out, residual)
+        out = self.relu2(out)
 
         return out
 
 
-class Bottleneck(autograd.Layer):
+class Bottleneck(layer.Layer):
     expansion = 4
 
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(Bottleneck, self).__init__()
-        self.conv1 = autograd.Conv2d(inplanes,
-                                     planes,
-                                     kernel_size=1,
-                                     bias=False)
-        self.bn1 = autograd.BatchNorm2d(planes)
-        self.conv2 = autograd.Conv2d(planes,
-                                     planes,
-                                     kernel_size=3,
-                                     stride=stride,
-                                     padding=1,
-                                     bias=False)
-        self.bn2 = autograd.BatchNorm2d(planes)
-        self.conv3 = autograd.Conv2d(planes,
-                                     planes * self.expansion,
-                                     kernel_size=1,
-                                     bias=False)
-        self.bn3 = autograd.BatchNorm2d(planes * self.expansion)
+        self.conv1 = layer.Conv2d(inplanes, planes, 1, bias=False)
+        self.bn1 = layer.BatchNorm2d(planes)
+        self.relu1 = layer.ReLU()
+        self.conv2 = layer.Conv2d(planes,
+                                  planes,
+                                  3,
+                                  stride=stride,
+                                  padding=1,
+                                  bias=False)
+        self.bn2 = layer.BatchNorm2d(planes)
+        self.relu2 = layer.ReLU()
+        self.conv3 = layer.Conv2d(planes,
+                                  planes * self.expansion,
+                                  1,
+                                  bias=False)
+        self.bn3 = layer.BatchNorm2d(planes * self.expansion)
+
+        self.add = layer.Add()
+        self.relu3 = layer.ReLU()
 
         self.downsample = downsample
         self.stride = stride
 
-    def __call__(self, x):
+    def forward(self, x):
         residual = x
 
         out = self.conv1(x)
         out = self.bn1(out)
-        out = autograd.relu(out)
+        out = self.relu1(out)
 
         out = self.conv2(out)
         out = self.bn2(out)
-        out = autograd.relu(out)
+        out = self.relu2(out)
 
         out = self.conv3(out)
         out = self.bn3(out)
@@ -110,8 +115,8 @@ class Bottleneck(autograd.Layer):
         if self.downsample is not None:
             residual = self.downsample(x)
 
-        out = autograd.add(out, residual)
-        out = autograd.relu(out)
+        out = self.add(out, residual)
+        out = self.relu3(out)
 
         return out
 
@@ -121,7 +126,7 @@ __all__ = [
 ]
 
 
-class ResNet(module.Module):
+class ResNet(model.Model):
 
     def __init__(self, block, layers, num_classes=10, num_channels=3):
         self.inplanes = 64
@@ -129,32 +134,37 @@ class ResNet(module.Module):
         self.num_classes = num_classes
         self.input_size = 224
         self.dimension = 4
-        self.conv1 = autograd.Conv2d(num_channels,
-                                     64,
-                                     kernel_size=7,
-                                     stride=2,
-                                     padding=3,
-                                     bias=False)
-        self.bn1 = autograd.BatchNorm2d(64)
-        self.maxpool = autograd.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
-        self.avgpool = autograd.AvgPool2d(7, stride=1)
-        self.fc = autograd.Linear(512 * block.expansion, num_classes)
+        self.conv1 = layer.Conv2d(num_channels,
+                                  64,
+                                  7,
+                                  stride=2,
+                                  padding=3,
+                                  bias=False)
+        self.bn1 = layer.BatchNorm2d(64)
+        self.relu = layer.ReLU()
+        self.maxpool = layer.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        self.layer1, layers1 = self._make_layer(block, 64, layers[0])
+        self.layer2, layers2 = self._make_layer(block, 128, layers[1], stride=2)
+        self.layer3, layers3 = self._make_layer(block, 256, layers[2], stride=2)
+        self.layer4, layers4 = self._make_layer(block, 512, layers[3], stride=2)
+        self.avgpool = layer.AvgPool2d(7, stride=1)
+        self.flatten = layer.Flatten()
+        self.fc = layer.Linear(num_classes)
+        self.softmax_cross_entropy = layer.SoftMaxCrossEntropy()
+
+        self.register_layers(*layers1, *layers2, *layers3, *layers4)
 
     def _make_layer(self, block, planes, blocks, stride=1):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
-            conv = autograd.Conv2d(
+            conv = layer.Conv2d(
                 self.inplanes,
                 planes * block.expansion,
-                kernel_size=1,
+                1,
                 stride=stride,
                 bias=False,
             )
-            bn = autograd.BatchNorm2d(planes * block.expansion)
+            bn = layer.BatchNorm2d(planes * block.expansion)
 
             def _downsample(x):
                 return bn(conv(x))
@@ -172,12 +182,12 @@ class ResNet(module.Module):
                 x = layer(x)
             return x
 
-        return forward
+        return forward, layers
 
     def forward(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
-        x = autograd.relu(x)
+        x = self.relu(x)
         x = self.maxpool(x)
 
         x = self.layer1(x)
@@ -186,17 +196,17 @@ class ResNet(module.Module):
         x = self.layer4(x)
 
         x = self.avgpool(x)
-        x = autograd.flatten(x)
+        x = self.flatten(x)
         x = self.fc(x)
 
         return x
 
-    def loss(self, out, ty):
-        return autograd.softmax_cross_entropy(out, ty)
+    def train_one_batch(self, x, y, dist_option, spars):
+        out = self.forward(x)
+        loss = self.softmax_cross_entropy(out, y)
 
-    def optim(self, loss, dist_option, spars):
         if dist_option == 'fp32':
-            self.optimizer.backward_and_update(loss)
+            self.optimizer(loss)
         elif dist_option == 'fp16':
             self.optimizer.backward_and_update_half(loss)
         elif dist_option == 'partialUpdate':
@@ -209,6 +219,7 @@ class ResNet(module.Module):
             self.optimizer.backward_and_sparse_update(loss,
                                                       topK=False,
                                                       spars=spars)
+        return out, loss
 
     def set_optimizer(self, optimizer):
         self.optimizer = optimizer

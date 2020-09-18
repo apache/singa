@@ -16,25 +16,20 @@
     specific language governing permissions and limitations
     under the License.
 -->
-# Train Char-RNN over plain text
+# Train RNN model over IMDB dataset
 
 Recurrent neural networks (RNN) are widely used for modelling sequential data,
 e.g., natural language sentences. This example describes how to implement a RNN
-application (or model) using SINGA's RNN layers.
-We will use the [char-rnn](https://github.com/karpathy/char-rnn) model as an
-example, which trains over sentences or
-source code, with each character as an input unit. Particularly, we will train
-a RNN over Linux kernel source code. 
+application (or model) using SINGA's CUDNN RNN layers.
+We will use the [LSTM](https://www.mitpressjournals.org/doi/abs/10.1162/neco.1997.9.8.1735) model as an
+example to train on IMDB dataset.
 
 ## Instructions
 
-* Prepare the dataset. Download the [kernel source code](http://cs.stanford.edu/people/karpathy/char-rnn/).
-Other plain text files can also be used.
+* Prepare the dataset,
+
+        python imdb_data.py
 
 * Start the training,
 
-        python train.py linux_input.txt
-
-  Some hyper-parameters could be set through command line,
-
-        python train.py -h
+        python imdb_train.py

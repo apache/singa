@@ -67,6 +67,7 @@ INCLUDE_DIRECTORIES(${SINGA_INCLUDE_DIR})
 
 OPTION(USE_CUDA "Use Cuda libs" OFF)
 OPTION(ENABLE_TEST "Enable unit test" OFF)
+option(CODE_COVERAGE "Enable coverage reporting" OFF)
 OPTION(USE_PYTHON "Generate py wrappers" ON)
 OPTION(USE_PYTHON3 "Python 3x" OFF)
 

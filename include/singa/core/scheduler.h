@@ -22,14 +22,17 @@
 #include <condition_variable>
 #include <functional>
 #include <mutex>
+#include <string>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "singa/core/common.h"
 #include "singa/utils/safe_queue.h"
 
 using std::function;
+using std::string;
 using std::unordered_map;
 using std::vector;
 
@@ -44,22 +47,30 @@ class BlkInfo;
 typedef std::vector<Node *> NodeVec;
 typedef std::vector<Edge *> EdgeVec;
 typedef std::vector<Block *> BlockVec;
+typedef std::unordered_set<Block *> BlockSet;
 typedef std::function<void(Context *)> OpFunc;
 typedef std::unordered_map<Block *, BlkInfo *> Blk2InfoMap;
+typedef std::chrono::high_resolution_clock::time_point TimePoint;
 
 enum BlockType { kUnknow, kInput, kParam, kInter, kEnd };
 
 class Node {
  public:
-  Node(int id, OpFunc &&op) : id_(id), op_(std::move(op)) {}
+  Node(int id, OpFunc &&op, string op_name)
+      : id_(id), op_(std::move(op)), op_name_(op_name) {}
 
   void AddInEdge(Edge *in_edge);
   void AddOutEdge(Edge *out_edge);
 
   // getters of Node
   int id() const { return id_; }
+  string op_name() const { return op_name_; }
   const EdgeVec &in_edges() const { return in_edges_; }
   const EdgeVec &out_edges() const { return out_edges_; }
+  float time_elapsed() const { return time_elapsed_; }
+
+  // time profiling
+  void time_elapsed_inc(float time) { time_elapsed_ += time; }
 
  private:
   friend Graph;
@@ -68,6 +79,15 @@ class Node {
   OpFunc op_;
   EdgeVec in_edges_;
   EdgeVec out_edges_;
+
+  string op_name_;
+  float time_elapsed_ = 0;
+
+#ifdef USE_CUDA
+  cudaEvent_t start_;
+  cudaEvent_t end_;
+  friend class CudaGPU;
+#endif  // USE_CUDA
 };
 
 class Edge {
@@ -135,26 +155,26 @@ class Graph {
   void Debug();
   void RunGraph();
   void RunInSerial();
+  void PrintTimeProfiling();
   void AddOperation(OpFunc &&op, const BlockVec &read_blocks,
-                    const BlockVec &write_blocks);
+                    const BlockVec &write_blocks, string op_name = "no_name");
 
   // getters of Graph
   const NodeVec &nodes() const { return nodes_; }
   const EdgeVec &edges() const { return edges_; }
   const Blk2InfoMap &blocks() const { return blocks_; }
 
-  const BlockVec &write_blocks() const { return write_blocks_; }
+  const BlockSet &leaf_blocks() const { return leaf_blocks_; }
 
   bool dirty() const { return dirty_; }
   const NodeVec &begin_nodes() const { return begin_nodes_; }
   const std::vector<NodeVec> &next_nodes() const { return next_nodes_; }
   const std::vector<BlockVec> &free_blocks() const { return free_blocks_; }
+  int iteration() const { return iteration_; }
 
   Node *node(const size_t idx) const;
   Edge *edge(const size_t idx) const;
   BlkInfo *block(Block *blk) const;
-
-  Block *write_block(const size_t idx) const;
 
   Node *begin_node(const size_t idx) const;
   const NodeVec &next_nodes(const size_t idx) const;
@@ -165,7 +185,13 @@ class Graph {
   void FreeLoop();
   void AnalyzeNodes();
   void AnalyzeEdges();
-  void AddSyncOp(function<void(Context *)> &&op);
+  void TimeProfilingDoExec(Node *curNode);
+  void AddSyncOp(function<void(Context *)> &&op, string op_name = "no_name");
+
+  void step() { iteration_++; }
+  void time_elapsed_inc(float time) { time_elapsed_ += time; }
+  void TakeStartTime(TimePoint &start);
+  void EvaluateTimeElapsed(const TimePoint &start);
 
   // static void CUDART_CB Callback(cudaStream_t stream, cudaError_t status,
   //                                void *data);
@@ -178,15 +204,19 @@ class Graph {
   EdgeVec edges_;
   Blk2InfoMap blocks_;
 
-  // Blocks written by the last operation, used for sync op
-  BlockVec write_blocks_;
+  // Leaf blocks written by the previous operations, used for sync op
+  BlockSet leaf_blocks_;
 
-  // Calculation graph analysis
+  // Computational graph analysis
   bool dirty_ = false;
   bool in_serial_ = false;
   NodeVec begin_nodes_;
   std::vector<NodeVec> next_nodes_;
   std::vector<BlockVec> free_blocks_;
+
+  // Time Profiling
+  int iteration_ = 0;
+  float time_elapsed_ = 0;
 
   SafeQueue<int> free_queue_;
 };

@@ -43,6 +43,11 @@ CudaGPU::~CudaGPU() {
     CHECK_EQ(status, CUDNN_STATUS_SUCCESS) << cudnnGetErrorString(status);
   }
 #endif
+
+  // Explicitly destroys and cleans up all resources associated with current
+  // device
+  cudaDeviceReset();
+  // the returned code incidate "driver shutting down" after reset
 }
 const int kNumCudaStream = 1;
 
@@ -67,6 +72,12 @@ void CudaGPU::Setup() {
   // TODO(wangwei) create one handle for each steam?
   // Preserse for future use instead of default sync stream, for concurrency
   // cudaStreamCreate(&ctx_.stream);
+
+#ifdef USE_DIST
+  CUDA_CHECK(cudaStreamCreateWithFlags(&ctx_.s, cudaStreamNonBlocking));
+  CUDA_CHECK(cudaStreamCreateWithFlags(&ctx_.c1, cudaStreamNonBlocking));
+  CUDA_CHECK(cudaStreamCreateWithFlags(&ctx_.c2, cudaStreamNonBlocking));
+#endif  // USE_DIST
 
   CUDA_CHECK(cudaSetDevice(id_));
   // use curandCreateGeneratorHost for CudaHost device
@@ -94,6 +105,68 @@ void CudaGPU::SetRandSeed(unsigned seed) {
 }
 
 void CudaGPU::DoExec(function<void(Context*)>&& fn, int executor) { fn(&ctx_); }
+
+void CudaGPU::SyncBeforeCountingTime() {
+  // synchronization before counting time
+  bool previous_state = graph_enabled();
+  graph_enabled_ = false;
+  Sync();
+  graph_enabled_ = previous_state;
+}
+
+void CudaGPU::EvaluateTimeElapsed(Node* node) {
+  float totalTime;
+
+  cudaEventElapsedTime(&totalTime, node->start_, node->end_);
+
+  cudaEventDestroy(node->start_);
+  cudaEventDestroy(node->end_);
+
+  node->time_elapsed_inc(totalTime * 0.001);
+}
+
+void CudaGPU::TimeProfilingDoExec(function<void(Context*)>&& fn, int executor,
+                                  Node* node) {
+  // time profiling using cudaEvent
+  cudaEventCreate(&(node->start_));
+  cudaEventCreate(&(node->end_));
+
+#ifdef USE_DIST
+  if (node->op_name().find("Dist") != std::string::npos) {
+    if (node->op_name().find("Dist_s") != std::string::npos)
+      cudaEventRecord(node->start_, ctx_.s);
+    else if (node->op_name().find("Dist_c1") != std::string::npos)
+      cudaEventRecord(node->start_, ctx_.c1);
+    else if (node->op_name().find("Dist_c2") != std::string::npos)
+      cudaEventRecord(node->start_, ctx_.c2);
+    else if (node->op_name().find("Dist_c1c2") != std::string::npos)
+      cudaEventRecord(node->start_, ctx_.c1);
+  } else {
+    cudaEventRecord(node->start_, ctx_.stream);
+  }
+#else
+  cudaEventRecord(node->start_, ctx_.stream);
+#endif  // USE_DIST
+
+  fn(&ctx_);
+
+#ifdef USE_DIST
+  if (node->op_name().find("Dist") != std::string::npos) {
+    if (node->op_name().find("Dist_s") != std::string::npos)
+      cudaEventRecord(node->end_, ctx_.s);
+    else if (node->op_name().find("Dist_c1") != std::string::npos)
+      cudaEventRecord(node->end_, ctx_.c1);
+    else if (node->op_name().find("Dist_c2") != std::string::npos)
+      cudaEventRecord(node->end_, ctx_.c2);
+    else if (node->op_name().find("Dist_c1c2") != std::string::npos)
+      cudaEventRecord(node->end_, ctx_.c2);
+  } else {
+    cudaEventRecord(node->end_, ctx_.stream);
+  }
+#else
+  cudaEventRecord(node->end_, ctx_.stream);
+#endif  // USE_DIST
+}
 
 void CudaGPU::CopyToFrom(void* dst, const void* src, size_t nBytes,
                          CopyDirection direction, Context* ctx) {
@@ -131,8 +204,8 @@ void CudaGPU::Free(void* ptr) {
 }
 
 void CudaGPU::Sync() {
-  Exec([this](Context* ctx) { CUDA_CHECK(cudaStreamSynchronize(ctx_.stream)); },
-       {}, {});
+  Exec([this](Context* ctx) { CUDA_CHECK(cudaDeviceSynchronize()); }, {}, {},
+       "Waiting");
 }
 
 }  // namespace singa

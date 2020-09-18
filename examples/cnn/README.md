@@ -34,7 +34,7 @@ SINGA for image classification.
   [neural network operations](../../python/singa/autograd.py) imperatively. 
   The computational graph is not created.
 
-* `train.py` is the training script, which controls the training flow by
+* `train_cnn.py` is the training script, which controls the training flow by
   doing BackPropagation and SGD update.
 
 * `train_multiprocess.py` is the script for distributed training on a single

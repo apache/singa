@@ -83,6 +83,7 @@
                             <exclude>.gitmodules</exclude>
                             <exclude>java/target/*</exclude>
                             <exclude>miniconda.sh</exclude>
+                            <exclude>**/*.json</exclude>
                         </excludes>
                         <consoleOutput>True</consoleOutput>
                     </configuration>

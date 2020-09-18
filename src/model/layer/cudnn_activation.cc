@@ -81,7 +81,7 @@ const Tensor CudnnActivation::Forward(int flag, const Tensor& input) {
     CUDNN_CHECK(cudnnActivationForward(
         ctx->cudnn_handle, this->acti_desc_, &alpha, this->desc_,
         inblock->data(), &beta, this->desc_, outblock->mutable_data()));
-  }, {input.block()}, {output.block()});
+  }, {input.block()}, {output.block()}, "cudnnActivationForward");
   if (flag & kTrain) {
     if (cudnn_mode_ == CUDNN_ACTIVATION_SIGMOID ||
         cudnn_mode_ == CUDNN_ACTIVATION_TANH) {
@@ -111,7 +111,7 @@ const std::pair<Tensor, vector<Tensor>> CudnnActivation::Backward(
         ctx->cudnn_handle, this->acti_desc_, &alpha, this->desc_,
         yblock->data(), this->desc_, dyblock->data(), this->desc_,
         xblock->data(), &beta, this->desc_, dxblock->mutable_data()));
-  }, {grad.block(), inout.block()}, {dx.block()});
+  }, {grad.block(), inout.block()}, {dx.block()}, "cudnnActivationBackward");
   return std::make_pair(dx, param_grad);
 }
 }  // namespace singa

@@ -18,11 +18,11 @@
  * under the License.
  *
  ************************************************************/
-#include "../layer/convolution.h"
-
-#include <cctype>
+// #include "../layer/convolution.h"
 
 #include "convolution.h"
+
+#include <cctype>
 
 namespace singa {
 
@@ -185,10 +185,11 @@ Tensor CpuConvForward(const Tensor &x, Tensor &W, Tensor &b,
         // synchronize stream
         s.wait();
       },
-      {x.block(), W.block(), b.block()}, {output.block()});
+      {x.block(), W.block(), b.block()}, {output.block()}, "CpuConvForward");
 
   return output;
-#else   // cpp naive
+#else   // cpp naive, error due to Im2col importing
+/*
   Shape w_shape = W.shape();
   Shape b_shape;
   if (ch.bias_term) b_shape = b.shape();
@@ -219,6 +220,7 @@ Tensor CpuConvForward(const Tensor &x, Tensor &W, Tensor &b,
   W.Reshape(w_shape);
   if (ch.bias_term) b.Reshape(b_shape);
   return output;
+*/
 #endif  // USE_DNNL
 }
 
@@ -279,11 +281,12 @@ Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x,
                       {DNNL_ARG_DIFF_SRC, conv_user_src_memory}});
         ctx->dnnl_stream.wait();
       },
-      {x.block(), dy.block(), W.block()}, {dx.block()});
+      {x.block(), dy.block(), W.block()}, {dx.block()}, "CpuConvBackwardx");
 
   return dx;
 
 #else   // NOT USE_DNNL
+/*  // error due to importing Col2im
   Shape w_shape = W.shape();
   W.Reshape(Shape{ch.num_filters, ch.col_height});
 
@@ -303,6 +306,7 @@ Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x,
   }
   W.Reshape(w_shape);
   return dx;
+*/
 #endif  // USE_DNNL
 }
 
@@ -372,10 +376,12 @@ Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
                       {DNNL_ARG_DIFF_BIAS, conv_diff_bias_memory}});
         ctx->dnnl_stream.wait();
       },
-      {x.block(), dy.block(), W.block()}, {dW.block(), ch.db->block()});
+      {x.block(), dy.block(), W.block()}, {dW.block(), ch.db->block()},
+      "CpuConvBackwardW");
 
   return dW;
 #else   // native cpp
+/* // error due to importing Im2col
   Tensor dW;
   dW.ResetLike(W);
   dW.SetValue(0.0f);
@@ -398,6 +404,7 @@ Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
   }
   dW.Reshape(w_shape);
   return dW;
+*/
 #endif  // USE_DNNL
 }
 
@@ -598,7 +605,8 @@ Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b,
                                 cch.workspace_count * sizeof(float), &beta,
                                 cch.y_desc, outblock->mutable_data());
       },
-      {x.block(), W.block()}, {output.block(), cch.workspace.block()});
+      {x.block(), W.block()}, {output.block(), cch.workspace.block()},
+      "cudnnConvForward");
 
   if (cch.bias_term) {
     Tensor outputFake(output);
@@ -610,7 +618,7 @@ Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b,
                          bblock->data(), &beta, cch.y_desc,
                          outblock->mutable_data());
         },
-        {output.block(), b.block()}, {output.block()});
+        {output.block(), b.block()}, {output.block()}, "cudnnAddTensor");
   }
 
   return output;
@@ -634,7 +642,8 @@ Tensor GpuConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x,
             cch.workspace_count * sizeof(float), &beta, cch.x_desc,
             dxblock->mutable_data());
       },
-      {dy.block(), W.block()}, {dx.block(), cch.workspace.block()});
+      {dy.block(), W.block()}, {dx.block(), cch.workspace.block()},
+      "cudnnConvolutionBackwardData");
 
   return dx;
 }
@@ -658,7 +667,8 @@ Tensor GpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
             cch.workspace_count * sizeof(float), &beta, cch.filter_desc,
             dwblock->mutable_data());
       },
-      {dy.block(), x.block()}, {dW.block(), cch.workspace.block()});
+      {dy.block(), x.block()}, {dW.block(), cch.workspace.block()},
+      "cudnnConvolutionBackwardFilter");
 
   return dW;
 }
@@ -679,7 +689,7 @@ Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b,
                                      dyblock->data(), &beta, cch.bias_desc,
                                      dbblock->mutable_data());
       },
-      {dy.block()}, {db.block()});
+      {dy.block()}, {db.block()}, "cudnnConvolutionBackwardBias");
 
   return db;
 }
