@@ -15,7 +15,7 @@
 # limitations under the License.
 
 
-# The latest tag uses gcc 9, which is too high nvcc.
+# The latest tag uses gcc 9, which is too high for nvcc.
 # The following tag uses gcc 8, which works with nvcc.
 FROM quay.io/pypa/manylinux2014_x86_64:2020-05-01-b37d76b
 
