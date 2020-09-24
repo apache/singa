@@ -21,9 +21,13 @@ package:
   name: singa-dist
   version: {{ environ.get('GIT_DESCRIBE_TAG') }}
 
+source:
+  path: ../../../
+  # git_url: https://github.com/apache/singa.git
+
 requirements:
   run:
-    - singa {{ environ.get('GIT_DESCRIBE_TAG') }} cudnn7.3.1_cuda10.0_nccl2.4.8.1_mpich3.3.2_py{{ py }}
+    - singa {{ environ.get('GIT_DESCRIBE_TAG') }} cudnn7.6.5_cuda10.0_nccl2.4.8.1_mpich3.3.2_py{{ py }}
 
 build:
   number: 0

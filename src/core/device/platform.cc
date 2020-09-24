@@ -138,6 +138,8 @@ const vector<shared_ptr<Device>> Platform::CreateCudaGPUsOn(
   for (size_t i = 0; i < devices.size(); i++) {
     if (UsedDevice[devices[i]] == nullptr)
       UsedDevice[devices[i]] = std::make_shared<CudaGPU>(devices[i], pool);
+    else
+      UsedDevice[devices[i]]->Reset();
     ret.push_back(UsedDevice[devices[i]]);
   }
   mtx_.unlock();

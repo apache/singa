@@ -32,7 +32,7 @@
 #include "singa/core/tensor.h"
 #include "singa/core/device.h"
 #include "singa/proto/core.pb.h"
-#include "singa/proto/model.pb.h"
+// #include "singa/proto/model.pb.h"
 using singa::DataType;
 %}
 %shared_ptr(singa::Device)
@@ -42,6 +42,9 @@ using singa::DataType;
 %init %{
   import_array();
 %}
+// better use (int DIM1, float* IN_ARRAY1)
+// otherwise, the generated py method will have the arg name src,
+// which in fact accepts num as the input
 %apply (float *IN_ARRAY1, int DIM1) {
        (const float *src, const size_t num)
 }
@@ -62,7 +65,10 @@ using singa::DataType;
 %apply float[] {float *};
 #endif // USE_JAVA
 
-
+namespace std {
+  %template(VecTensor) vector<singa::Tensor>;
+  %template(VecVecSize) vector<vector<size_t>>;
+}
 
 %template(Shape) std::vector<size_t>;
 
@@ -90,7 +96,7 @@ namespace singa{
 
     std::shared_ptr<singa::Device> device() const;
 
-    template <typename SType> void GetValue(SType* value, const size_t num);
+    template <typename SType> void GetValue(SType* value, const size_t num) const;
     %template(GetFloatValue) GetValue<float>;
     %template(GetIntValue) GetValue<int>;
 
@@ -101,11 +107,11 @@ namespace singa{
     const std::vector<size_t> &shape() const;
     const size_t shape(size_t idx) const;
     bool transpose() const;
-    size_t nDim() const;    
+    size_t nDim() const;
 
     size_t Size() const;
     size_t MemSize() const;
-    
+
     void ResetLike(const Tensor &t);
     Tensor AsType(DataType type);
     void ToDevice(std::shared_ptr<singa::Device> dev);
@@ -115,16 +121,16 @@ namespace singa{
 
     template <typename DType> void CopyDataFromHostPtr(const DType *src,
                                                        const size_t num,
-                                                       const size_t offset = 0);
+                                                       const size_t offset = 0) const;
     %template(CopyFloatDataFromHostPtr) CopyDataFromHostPtr<float>;
     %template(CopyIntDataFromHostPtr) CopyDataFromHostPtr<int>;
 
     void CopyData(const Tensor &other);
     void RepeatData(std::vector<size_t> repeats, int axis, int total_repeats, const Tensor &src);
-    
+
     Tensor Clone() const;
     Tensor Repeat(std::vector<size_t> repeats, int axis);
-    
+
 
 #if USE_JAVA
     %rename(iAdd) operator+=(const Tensor &t);
@@ -161,10 +167,11 @@ namespace singa{
   void CopyDataToFrom(Tensor *dst, const Tensor &src, size_t num,
                       size_t src_offset = 0, size_t dst_offset = 0);
 
-  void RepeatDataToFrom(bool broadcast_flag, std::vector<size_t> repeats, int axis, 
+  void RepeatDataToFrom(bool broadcast_flag, std::vector<size_t> repeats, int axis,
                         Tensor *dst, const Tensor &src, const size_t num);
 
   Tensor Reshape(const Tensor &in, const std::vector<size_t> &s);
+  Tensor Contiguous(const Tensor &in);
   Tensor Transpose(const Tensor &in, const std::vector<size_t> &axes);
 
   %rename(DefaultTranspose) Transpose(const Tensor &in);
@@ -172,7 +179,11 @@ namespace singa{
 
   Tensor Abs(const Tensor &t);
   Tensor Ceil(const Tensor &t);
+  Tensor Floor(const Tensor &t);
+  Tensor Round(const Tensor &t);
+  Tensor RoundE(const Tensor &t);
   Tensor Exp(const Tensor &t);
+  Tensor Erf(const Tensor &t);
   Tensor Log(const Tensor &t);
   Tensor ReLU(const Tensor &t);
   Tensor Sigmoid(const Tensor &t);
@@ -221,10 +232,12 @@ namespace singa{
   %rename(__le__) operator<=(const Tensor &lhs, const Tensor &rhs);
   %rename(__gt__) operator>(const Tensor &lhs, const Tensor &rhs);
   %rename(__ge__) operator>=(const Tensor &lhs, const Tensor &rhs);
+  %rename(__eq__) operator==(const Tensor &lhs, const Tensor &rhs);
   Tensor operator<(const Tensor &lhs, const Tensor &rhs);
   Tensor operator<=(const Tensor &lhs, const Tensor &rhs);
   Tensor operator>(const Tensor &lhs, const Tensor &rhs);
   Tensor operator>=(const Tensor &lhs, const Tensor &rhs);
+  Tensor operator==(const Tensor &lhs, const Tensor &rhs);
 
 
   %rename(LTFloat) operator<(const Tensor &t, const float x);
@@ -243,6 +256,10 @@ namespace singa{
   %rename(GEFloat) operator>=(const Tensor &t, const float x);
   template <typename DType> Tensor operator>=(const Tensor &t, const DType x);
   %template(opge) operator>= <float>;
+
+  %rename(EQFloat) operator==(const Tensor &t, const float x);
+  template <typename DType> Tensor operator==(const Tensor &t, const DType x);
+  %template(opeq) operator== <float>;
 
   Tensor ConcatOn(const std::vector<Tensor> &in, int axis);
   Tensor SliceOn(const Tensor&in, const size_t start, const size_t end, int axis);
@@ -312,6 +329,7 @@ namespace singa{
   template <typename SType>
   void Axpy(SType alpha, const Tensor &in, Tensor *out);
   %template(Axpy) Axpy<float>;
+  void Axpy(const Tensor &alpha, const Tensor &in, Tensor *out);
 
   Tensor Mult(const Tensor &A, const Tensor &B);
   %rename(MultWithRet) Mult(const Tensor &A, const Tensor &B, Tensor *C);

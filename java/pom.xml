@@ -67,6 +67,8 @@
                             <exclude>test/gtest/**</exclude>
                             <exclude>examples/onnx/bert/inputs.json</exclude>
                             <exclude>examples/onnx/test_onnx_backend.py</exclude>
+                            <exclude>examples/onnx/gpt2/requirements.txt</exclude>
+			    <exclude>examples/onnx/ro_bert_a/requirements.txt</exclude>
                             <exclude>include/singa/utils/tinydir.h</exclude>
                             <exclude>include/singa/utils/cuda_utils.h</exclude>
                             <exclude>src/core/tensor/distribution.cl</exclude>
@@ -79,10 +81,12 @@
                             <exclude>cmake/Thirdparty/GetGitRevisionDescription.cmake</exclude>
                             <exclude>src/api/numpy.i</exclude>
                             <exclude>tool/cpplint.py</exclude>
+                            <exclude>tool/docker/devel/centos6/cuda10/cuda.repo</exclude>
                             <exclude>travis*.log</exclude>
                             <exclude>.gitmodules</exclude>
                             <exclude>java/target/*</exclude>
                             <exclude>miniconda.sh</exclude>
+                            <exclude>**/*.json</exclude>
                         </excludes>
                         <consoleOutput>True</consoleOutput>
                     </configuration>

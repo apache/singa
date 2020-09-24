@@ -31,21 +31,24 @@ from tqdm import tqdm
 from singa import device
 from singa import tensor
 from singa import autograd
-from singa import module
+from singa import layer
+from singa import model
 from singa import opt
 
 
-class CharRNN(module.Module):
+class CharRNN(model.Model):
 
     def __init__(self, vocab_size, hidden_size=32):
         super(CharRNN, self).__init__()
-        self.rnn = autograd.LSTM(vocab_size, hidden_size)
-        self.dense = autograd.Linear(hidden_size, vocab_size)
+        self.rnn = layer.LSTM(vocab_size, hidden_size)
+        self.cat = layer.Cat()
+        self.reshape1 = layer.Reshape()
+        self.dense = layer.Linear(hidden_size, vocab_size)
+        self.reshape2 = layer.Reshape()
+        self.softmax_cross_entropy = layer.SoftMaxCrossEntropy()
         self.optimizer = opt.SGD(0.01)
         self.hidden_size = hidden_size
         self.vocab_size = vocab_size
-        self.hx = tensor.Tensor((1, self.hidden_size))
-        self.cx = tensor.Tensor((1, self.hidden_size))
 
     def reset_states(self, dev):
         self.hx.to_device(dev)
@@ -53,18 +56,37 @@ class CharRNN(module.Module):
         self.hx.set_value(0.0)
         self.cx.set_value(0.0)
 
+    def initialize(self, inputs):
+        batchsize = inputs[0].shape[0]
+        self.hx = tensor.Tensor((batchsize, self.hidden_size))
+        self.cx = tensor.Tensor((batchsize, self.hidden_size))
+        self.reset_states(inputs[0].device)
+
     def forward(self, inputs):
-        x, self.hx, self.cx = self.rnn(inputs, (self.hx, self.cx))
-        x = autograd.cat(x)
-        x = autograd.reshape(x, (-1, self.hidden_size))
+        x, hx, cx = self.rnn(inputs, (self.hx, self.cx))
+        self.hx.copy_data(hx)
+        self.cx.copy_data(cx)
+        x = self.cat(x)
+        x = self.reshape1(x, (-1, self.hidden_size))
         return self.dense(x)
 
-    def loss(self, out, ty):
-        ty = autograd.reshape(ty, (-1, 1))
-        return autograd.softmax_cross_entropy(out, ty)
+    def train_one_batch(self, x, y):
+        out = self.forward(x)
+        y = self.reshape2(y, (-1, 1))
+        loss = self.softmax_cross_entropy(out, y)
+        self.optimizer(loss)
+        return out, loss
 
-    def optim(self, loss):
-        self.optimizer.backward_and_update(loss)
+    def get_states(self):
+        ret = super().get_states()
+        ret[self.hx.name] = self.hx
+        ret[self.cx.name] = self.cx
+        return ret
+
+    def set_states(self, states):
+        self.hx.copy_from(states[self.hx.name])
+        self.hx.copy_from(states[self.hx.name])
+        super().set_states(states)
 
 
 class Data(object):
@@ -86,7 +108,7 @@ class Data(object):
         data = [self.char_to_idx[c] for c in self.raw_data]
         # seq_length + 1 for the data + label
         nsamples = len(data) // (1 + seq_length)
-        data = data[0: nsamples * (1 + seq_length)]
+        data = data[0:nsamples * (1 + seq_length)]
         data = np.asarray(data, dtype=np.int32)
         data = np.reshape(data, (-1, seq_length + 1))
         # shuffle all sequences
@@ -181,7 +203,7 @@ def evaluate(model, data, batch_size, seq_length, dev, inputs, labels):
                                  dev, inputs, labels)
         model.reset_states(dev)
         y = model(inputs)
-        loss = model.loss(y, labels)[0]
+        loss = autograd.softmax_cross_entropy(y, labels)[0]
         val_loss += tensor.to_numpy(loss)[0]
     print('            validation loss is %f' %
           (val_loss / data.num_test_batch / seq_length))
@@ -196,7 +218,6 @@ def train(data,
     # SGD with L2 gradient normalization
     cuda = device.create_cuda_gpu()
     model = CharRNN(data.vocab_size, hidden_size)
-    model.on_device(cuda)
     model.graph(True, False)
 
     inputs, labels = None, None
@@ -208,10 +229,8 @@ def train(data,
             batch = data.train_dat[b * batch_size:(b + 1) * batch_size]
             inputs, labels = convert(batch, batch_size, seq_length,
                                      data.vocab_size, cuda, inputs, labels)
+            out, loss = model(inputs, labels)
             model.reset_states(cuda)
-            y = model(inputs)
-            loss = model.loss(y, labels)
-            model.optim(loss)
             train_loss += tensor.to_numpy(loss)[0]
 
         print('\nEpoch %d, train loss is %f' %

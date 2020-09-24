@@ -21,7 +21,7 @@
 from singa import singa_wrap as singa
 from singa import opt
 import argparse
-import train
+import train_cnn
 
 if __name__ == '__main__':
     # use argparse to get command config: max_epoch, model, data, etc. for single gpu training
@@ -31,47 +31,54 @@ if __name__ == '__main__':
                         choices=['resnet', 'xceptionnet', 'cnn', 'mlp'],
                         default='cnn')
     parser.add_argument('data', choices=['cifar10', 'cifar100', 'mnist'], default='mnist')
-    parser.add_argument('--epoch',
+    parser.add_argument('-m',
                         '--max-epoch',
                         default=10,
                         type=int,
                         help='maximum epochs',
                         dest='max_epoch')
-    parser.add_argument('--bs',
+    parser.add_argument('-b',
                         '--batch-size',
                         default=64,
                         type=int,
                         help='batch size',
                         dest='batch_size')
-    parser.add_argument('--lr',
+    parser.add_argument('-l',
                         '--learning-rate',
                         default=0.005,
                         type=float,
                         help='initial learning rate',
                         dest='lr')
-    parser.add_argument('--op',
-                        '--option',
+    parser.add_argument('-d',
+                        '--dist-option',
                         default='fp32',
                         choices=['fp32','fp16','partialUpdate','sparseTopK','sparseThreshold'],
                         help='distibuted training options',
-                        dest='dist_option')  # currently partialUpdate support graph=False only 
-    parser.add_argument('--spars',
+                        dest='dist_option')  # currently partialUpdate support graph=False only
+    parser.add_argument('-s',
                         '--sparsification',
                         default='0.05',
                         type=float,
                         help='the sparsity parameter used for sparsification, between 0 to 1',
                         dest='spars')
-    parser.add_argument('--no-graph',
+    parser.add_argument('-g',
                         '--disable-graph',
                         default='True',
                         action='store_false',
                         help='disable graph',
                         dest='graph')
+    parser.add_argument('-v',
+                        '--log-verbosity',
+                        default=0,
+                        type=int,
+                        help='logging verbosity',
+                        dest='verbosity')
 
     args = parser.parse_args()
 
     sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5)
     sgd = opt.DistOpt(sgd)
 
-    train.run(sgd.global_rank, sgd.world_size, sgd.local_rank, args.max_epoch,
-              args.batch_size, args.model, args.data, sgd, args.graph, args.dist_option, args.spars)
+    train_cnn.run(sgd.global_rank, sgd.world_size, sgd.local_rank, args.max_epoch,
+              args.batch_size, args.model, args.data, sgd, args.graph,
+              args.verbosity, args.dist_option, args.spars)

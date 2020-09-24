@@ -100,12 +100,20 @@ typedef struct _Context {
   std::mt19937 random_generator;
 #ifdef USE_CUDA
   cublasHandle_t cublas_handle;
-  cudaStream_t stream;
-  curandGenerator_t curand_generator;
+  cudaStream_t stream; 
+  curandGenerator_t curand_generator; 
+
 #ifdef USE_CUDNN
   cudnnHandle_t cudnn_handle;
 #endif
 #endif  // USE_CUDA
+
+#ifdef USE_DIST
+  // cuda streams used by communicator
+  cudaStream_t c1;
+  cudaStream_t c2;
+  cudaStream_t s;
+#endif
 
 #ifdef USE_DNNL
   dnnl::engine dnnl_engine;

@@ -21,7 +21,6 @@ import urllib.request
 import tarfile
 import glob
 import onnx
-from onnx import numpy_helper
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(message)s')
 
@@ -41,7 +40,7 @@ def load_dataset(test_data_dir):
         onnx_tensor = onnx.TensorProto()
         with open(input_file, 'rb') as f:
             onnx_tensor.ParseFromString(f.read())
-        inputs.append(numpy_helper.to_array(onnx_tensor))
+        inputs.append(onnx.numpy_helper.to_array(onnx_tensor))
 
     # load reference outputs
     ref_outputs = []
@@ -51,7 +50,7 @@ def load_dataset(test_data_dir):
         onnx_tensor = onnx.TensorProto()
         with open(output_file, 'rb') as f:
             onnx_tensor.ParseFromString(f.read())
-        ref_outputs.append(numpy_helper.to_array(onnx_tensor))
+        ref_outputs.append(onnx.numpy_helper.to_array(onnx_tensor))
     return inputs, ref_outputs
 
 
@@ -63,11 +62,3 @@ def check_exist_or_download(url):
         logging.info("Downloading %s" % url)
         urllib.request.urlretrieve(url, filename)
     return filename
-
-
-def update_batch_size(onnx_model, batch_size):
-    model_input = onnx_model.graph.input[0]
-    model_input.type.tensor_type.shape.dim[0].dim_value = batch_size
-    model_output = onnx_model.graph.output[0]
-    model_output.type.tensor_type.shape.dim[0].dim_value = batch_size
-    return onnx_model

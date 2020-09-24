@@ -20,7 +20,6 @@ import math
 import numpy as np
 import collections
 
-from singa import tensor
 from . import singa_wrap as singa
 
 OrderedDict = collections.OrderedDict
@@ -55,40 +54,44 @@ def update_progress(progress, info):
     sys.stdout.flush()
 
 
-def handle_odd_pad_fwd(x, odd_padding):
+def handle_odd_pad_fwd(x, odd_padding, is_pool=False):
     """
     handle odd padding mode forward
-    Args:x
-        the input tensor
-    Args:odd_padding
-        the odd_padding
+    Args:
+        x, the input tensor
+        odd_padding, the odd_padding
     Returns: 
         tensor, the output
     """
-    x_tensor = tensor.from_raw_tensor(x)
     # (axis, left padding if True else right padding)
     flags = [(2, True), (2, False), (3, True), (3, False)]
     for (axis, left), pad in zip(flags, odd_padding):
         if pad == 0:
             continue
-        zeros_shape = list(x_tensor.data.shape())
-        zeros_shape[axis] = pad
-        zero_padding = np.zeros(zeros_shape).astype(np.float32)
-        zero_padding = tensor.Tensor(device=x.device(), data=zero_padding)
-        if left:
-            x_tensor = tensor.concatenate((zero_padding, x_tensor), axis)
+        if is_pool:
+            if left:
+                padding = singa.SliceOn(x, 0, pad, axis)
+            else:
+                axis_shape = list(x.shape())[axis]
+                padding = singa.SliceOn(x, axis_shape - pad, axis_shape, axis)
         else:
-            x_tensor = tensor.concatenate((x_tensor, zero_padding), axis)
-    return x_tensor.data
+            pad_shape = list(x.shape())
+            pad_shape[axis] = pad
+            padding = singa.Tensor(list(pad_shape), x.device())
+            padding.SetFloatValue(0.)
+        if left:
+            x = singa.ConcatOn(singa.VecTensor([padding, x]), axis)
+        else:
+            x = singa.ConcatOn(singa.VecTensor([x, padding]), axis)
+    return x
 
 
 def handle_odd_pad_bwd(dx, odd_padding):
     """
     handle odd padding mode backward
-    Args:dx
-        the backward tensor
-    Args:odd_padding
-        the odd_padding
+    Args:
+        dx, the backward tensor
+        odd_padding, the odd_padding
     Returns: 
         tensor, the output
     """
@@ -108,12 +111,10 @@ def handle_odd_pad_bwd(dx, odd_padding):
 def same_pad_shape_check(handle, pad_mode, x):
     """
     check the shape is correct for same padding mode
-    Args:handle
-        the handle
-    Args:pad_mode
-        pad_mode
-    Args:x
-        input tensor
+    Args:
+        handle, the handle
+        pad_mode, pad_mode
+        x: input tensor
     Returns: 
         tuple, the correct padding(before divide 2)
     """
@@ -132,10 +133,9 @@ def same_pad_shape_check(handle, pad_mode, x):
 def re_new_handle(handle, x, is_pool=False):
     """
     re-new a handle by useing the new input tensor
-    Args:handle
-        the handle
-    Args:x
-        input tensor
+    Args:
+        handle, the handle
+        x, input tensor
     Returns: 
         handle, a new handle
     """
@@ -163,9 +163,7 @@ def get_padding_shape(pad_mode, input_spatial_shape, kernel_spatial_shape,
     return padding shape of conv2d or pooling,
     Args:
         pad_mode: string
-    Args:
         kernel_spatial_shape: list[int]
-    Args:
         strides_spatial: list[int]
     Returns: 
         list[int]
@@ -196,11 +194,9 @@ def get_output_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
     ! borrow from onnx
     Args:
         auto_pad: string
-    Args:
+        input_spatial_shape: list[int]
         kernel_spatial_shape: list[int]
-    Args:
         strides_spatial: list[int]
-    Args:
         output_spatial_shape: list[int]
     Returns: 
         list[int
@@ -241,19 +237,18 @@ def post_order_recursive(root, root_t):
     return a list by the topological ordering (postorder of Depth-first search)
     Args:
         root: singa operator
-    Args:
         root_t: tensor
     Returns: 
         deque[int]
     """
 
-    def recursive(root, yid, root_t, nodes, weights, inputs):
+    def recursive(root, yid, root_t):
         if root:
             # srcop: operator for a input of root
             # yid: id(output of this operator)
             # y: output of this operator
             for srcop, yid, y, _ in root.src:
-                recursive(srcop, yid, y, nodes, weights, inputs)
+                recursive(srcop, yid, y)
 
             if type(root).__name__ == 'Dummy':
                 if root_t != None:
@@ -269,5 +264,5 @@ def post_order_recursive(root, root_t):
     weights = OrderedDict()
     inputs = OrderedDict()
 
-    recursive(root, None, root_t, nodes, weights, inputs)
+    recursive(root, None, root_t)
     return nodes, weights, inputs
