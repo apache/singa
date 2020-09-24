@@ -106,5 +106,5 @@ if __name__ == "__main__":
         y = tensor.Tensor(device=dev, data=y)
         x = tensor.concatenate([x, y], 2)
 
-    text = tokenizer.decode(output)
+    text = postprocess(output)
     print(text)
