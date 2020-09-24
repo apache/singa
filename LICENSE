@@ -512,6 +512,7 @@ examples/onnx/tokenization.py
 examples/onnx/run_onnx_squad.py
 examples/onnx/inputs.json
 examples/onnx/gpt2/requirements.txt
+examples/onnx/ro_bert_a/requirements.txt
 
 # Copyright 2018 The Google AI Language Team Authors.
 #
