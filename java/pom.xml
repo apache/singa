@@ -68,6 +68,7 @@
                             <exclude>examples/onnx/bert/inputs.json</exclude>
                             <exclude>examples/onnx/test_onnx_backend.py</exclude>
                             <exclude>examples/onnx/gpt2/requirements.txt</exclude>
+			    <exclude>examples/onnx/ro_bert_a/requirements.txt</exclude>
                             <exclude>include/singa/utils/tinydir.h</exclude>
                             <exclude>include/singa/utils/cuda_utils.h</exclude>
                             <exclude>src/core/tensor/distribution.cl</exclude>
