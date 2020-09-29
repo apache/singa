@@ -265,7 +265,7 @@ __global__ void KernelReLUBackward(const size_t n, const __half *in1,
     if (__hge(in2[i], 0)) {
       out[i] = in1[i];
     } else {
-      out[i] = __float2half(0.0f);
+      out[i] = 0;
     }
   }
 }
@@ -504,7 +504,7 @@ __global__ void KernelComputeCrossEntropy(const bool int_target,
                                           const int *t, __half *loss) {
   size_t sample = blockIdx.x * blockDim.x + threadIdx.x;
   size_t num_threads = blockDim.x * gridDim.x;
-  __half __HALF_EPS = __float2half(0.0000001);
+  __half __HALF_EPS = 0.0000001;
   if (int_target) {
     for (; sample < batchsize; sample += num_threads) {
       __half prob_of_truth = p[sample * dim + t[sample]];
@@ -516,11 +516,11 @@ __global__ void KernelComputeCrossEntropy(const bool int_target,
     }
   } else {
     for (; sample < batchsize; sample += num_threads) {
-      __half sum = __float2half(0.0f);
+      __half sum = 0;
       for (size_t j = 0; j < dim; j++) {
         sum = __hadd(sum, __int2half_rd(t[sample * dim + j]));
       }
-      loss[sample] = __float2half(0.0f);
+      loss[sample] = 0;
       for (size_t j = 0, offset = sample * dim; j < dim; j++, offset++) {
         if (__hgt(p[offset], __HALF_EPS)) {
           loss[sample] = __hsub(
@@ -594,11 +594,11 @@ __global__ void KernelSoftmaxCrossEntropyBwd(const bool int_target,
   if (int_target) {
     for (; sample < batchsize; sample += num_threads) {
       size_t pos = sample * dim + t[sample];
-      grad[pos] = __hsub(p[pos], __float2half(1.0f));
+      grad[pos] = __hsub(p[pos], 1);
     }
   } else {
     for (; sample < batchsize; sample += num_threads) {
-      __half sum = __float2half(0.0f);
+      __half sum = 0;
       for (size_t j = 0; j < dim; j++) {
         sum = __hadd(sum, __int2half_rd(t[sample * dim + j]));
       }

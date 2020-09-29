@@ -1035,26 +1035,36 @@ void Axpy<float, lang::Cuda>(const float alpha, const Tensor& in, Tensor* out,
   CUBLAS_CHECK(cublasSaxpy(handle, num, &alpha, inPtr, 1, outPtr, 1));
 }
 
+/// out = alpha * in + out
+template <>
+void Axpy<float, lang::Cuda>(const Tensor &alpha, const Tensor& in, Tensor* out, Context* ctx) {
+  auto handle = ctx->cublas_handle;
+  const size_t num = in.Size();
+  CUBLAS_CHECK(cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_DEVICE));
+  CUBLAS_CHECK(cublasAxpyEx(handle, num, alpha.block()->data(), CUDA_R_32F, in.block()->data(), CUDA_R_32F, 1, out->block()->mutable_data(), CUDA_R_32F, 1, CUDA_R_32F));
+  CUBLAS_CHECK(cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST));
+}
+
+template<>
+void Axpy<half_float::half, lang::Cuda>(const Tensor &alpha, const Tensor &in, Tensor *out, Context *ctx) {
+  auto handle = ctx->cublas_handle;
+  const size_t num = in.Size();
+
+  auto _alpha = alpha.AsType(kFloat32);
+
+  CUBLAS_CHECK(cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_DEVICE));
+  CUBLAS_CHECK(cublasAxpyEx(handle, num, _alpha.block()->data(), CUDA_R_32F, in.block()->data(), CUDA_R_16F, 1, out->block()->mutable_data(), CUDA_R_16F, 1, CUDA_R_32F));
+  CUBLAS_CHECK(cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST));
+}
+
 template <>
 void Axpy<half_float::half, lang::Cuda>(const half_float::half alpha,
                                         const Tensor& in, Tensor* out,
                                         Context* ctx) {
-  auto _in = in.AsType(kFloat32);
-  auto _out = out->AsType(kFloat32);
-  Axpy<float, lang::Cuda>(static_cast<float>(alpha), _in, &_out, ctx);
-  CastCopy<float, half_float::half, lang::Cuda>(&_out, out, ctx);
-
-  // TODO: F0914 17:05:28.781035 33760 tensor_math_cuda.h:1045] Check failed:
-  // status == CUBLAS_STATUS_SUCCESS (15 vs. 0)  CUBLAS_STATUS_NOT_SUPPORTED
-  // *** Check failure stack trace: ***
-  // according to https://docs.nvidia.com/cuda/cublas/index.html#cublas-axpyEx
-  // it is supported const __half* inPtr = static_cast<const
-  // __half*>(in.block()->data());
-  // __half* outPtr = static_cast<__half*>(out->block()->mutable_data());
-  // auto handle = ctx->cublas_handle;  // TODO(wangwei) set cudastream
-  // const size_t num = in.Size();
-  // CUBLAS_CHECK(cublasAxpyEx(handle, num, &alpha, CUDA_R_16F, inPtr,
-  // CUDA_R_16F, 1, outPtr, CUDA_R_16F, 1, CUDA_R_32F));
+  auto handle = ctx->cublas_handle;
+  const size_t num = in.Size();
+  const float _alpha = static_cast<const float>(alpha);
+  CUBLAS_CHECK(cublasAxpyEx(handle, num, &alpha, CUDA_R_32F, in.block()->data(), CUDA_R_16F, 1, out->block()->mutable_data(), CUDA_R_16F, 1, CUDA_R_32F));
 }
 
 /// out = \sum_i in1[i] * in2[i]

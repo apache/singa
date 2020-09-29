@@ -493,7 +493,14 @@ CudnnConvHandle::CudnnConvHandle(
   CUDNN_CHECK(cudnnSetFilter4dDescriptor(
       filter_desc, GetCudnnDataType(dtype), CUDNN_TENSOR_NCHW, num_filters,
       channels / groups, kernel_h, kernel_w));
-  if (prefer == "fastest" || prefer == "limited_workspace" ||
+
+  if (prefer == "tensor_ops") {
+    std::cout<<"using tensor op\n";
+    CUDNN_CHECK(cudnnSetConvolutionMathType(conv_desc, CUDNN_TENSOR_OP_MATH));
+    fp_alg = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM;
+    bp_filter_alg = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1;
+    bp_data_alg = CUDNN_CONVOLUTION_BWD_DATA_ALGO_1;
+  } else if (prefer == "fastest" || prefer == "limited_workspace" ||
       prefer == "no_workspace") {
     cudnnConvolutionFwdPreference_t fwd_pref;
     cudnnConvolutionBwdFilterPreference_t bwd_filt_pref;
@@ -539,11 +546,6 @@ CudnnConvHandle::CudnnConvHandle(
         ctx->cudnn_handle, filter_desc, y_desc, conv_desc, x_desc, topk,
         &num_bp_data_alg, bp_data_perf));
     bp_data_alg = bp_data_perf[0].algo;
-  } else if (prefer == "tensor_ops" || dtype == kFloat16) {
-    CUDNN_CHECK(cudnnSetConvolutionMathType(conv_desc, CUDNN_TENSOR_OP_MATH));
-    fp_alg = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM;
-    bp_filter_alg = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1;
-    bp_data_alg = CUDNN_CONVOLUTION_BWD_DATA_ALGO_1;
   } else {
     LOG(FATAL) << "Preferred algorithm is not available :" << prefer;
   }
@@ -559,11 +561,11 @@ CudnnConvHandle::CudnnConvHandle(
       ctx->cudnn_handle, x_desc, y_desc, conv_desc, filter_desc, bp_filter_alg,
       &bp_filter_byte));
   workspace_count = std::max(std::max(fp_byte, bp_data_byte), bp_filter_byte) /
-                        sizeof(float) +
+                        SizeOf(dtype) +
                     1;
-  if (workspace_count * sizeof(float) > workspace_byte_limit)
+  if (workspace_count * SizeOf(dtype) > workspace_byte_limit)
     LOG(WARNING) << "The required memory for workspace ("
-                 << workspace_count * sizeof(float)
+                 << workspace_count * SizeOf(dtype)
                  << ") is larger than the expected Bytes ("
                  << workspace_byte_limit << ")";
   workspace = Tensor(Shape{workspace_count}, dev, dtype);
@@ -607,7 +609,7 @@ Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b,
                                 inblock->data(), cch.filter_desc,
                                 wblock->data(), cch.conv_desc, cch.fp_alg,
                                 cch.workspace.block()->mutable_data(),
-                                cch.workspace_count * sizeof(float), &beta,
+                                cch.workspace_count * SizeOf(x.data_type()), &beta,
                                 cch.y_desc, outblock->mutable_data());
       },
       {x.block(), W.block()}, {output.block(), cch.workspace.block()},
@@ -644,7 +646,7 @@ Tensor GpuConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x,
             ctx->cudnn_handle, &alpha, cch.filter_desc, wblock->data(),
             cch.y_desc, dyblock->data(), cch.conv_desc, cch.bp_data_alg,
             cch.workspace.block()->mutable_data(),
-            cch.workspace_count * sizeof(float), &beta, cch.x_desc,
+            cch.workspace_count * SizeOf(dx.data_type()), &beta, cch.x_desc,
             dxblock->mutable_data());
       },
       {dy.block(), W.block()}, {dx.block(), cch.workspace.block()},
@@ -669,7 +671,7 @@ Tensor GpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
             ctx->cudnn_handle, &alpha, cch.x_desc, inblock->data(), cch.y_desc,
             dyblock->data(), cch.conv_desc, cch.bp_filter_alg,
             cch.workspace.block()->mutable_data(),
-            cch.workspace_count * sizeof(float), &beta, cch.filter_desc,
+            cch.workspace_count * SizeOf(x.data_type()), &beta, cch.filter_desc,
             dwblock->mutable_data());
       },
       {dy.block(), x.block()}, {dW.block(), cch.workspace.block()},

@@ -392,6 +392,12 @@ void Axpy(const DType alpha, const Tensor &in, Tensor *out, Context *ctx) {
   LOG(FATAL) << "Axpy Not Implemented";
 }
 
+/// out = alpha * in + out
+template <typename DType, typename Lang>
+void Axpy(const Tensor &alpha, const Tensor &in, Tensor *out, Context *ctx) {
+  LOG(FATAL) << "Axpy Not Implemented";
+}
+
 /// out = ||in||_2^2, i.e, L2 norm.
 template <typename DType, typename Lang>
 void Nrm2(const Tensor &in, float *out, Context *ctx) {

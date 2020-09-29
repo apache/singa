@@ -22,6 +22,7 @@ from collections import OrderedDict
 
 from singa import utils
 from .tensor import Tensor
+from . import tensor
 from . import singa_wrap as singa
 
 
@@ -680,16 +681,30 @@ class Conv2d(Layer):
                     )
         else:
             if not hasattr(self, "handle"):
-                self.handle = singa.CudnnConvHandle(
-                    _x.data,
-                    self.kernel_size,
-                    self.stride,
-                    self.padding,
-                    self.in_channels,
-                    self.nb_kernels,
-                    self.bias,
-                    self.group,
-                )
+                if _x.dtype == tensor.float16:
+                    self.handle = singa.CudnnConvHandle(
+                        _x.data,
+                        self.kernel_size,
+                        self.stride,
+                        self.padding,
+                        self.in_channels,
+                        self.nb_kernels,
+                        self.bias,
+                        self.group,
+                        1024*1024*1024,
+                        "tensor_ops"
+                    )
+                else:
+                    self.handle = singa.CudnnConvHandle(
+                        _x.data,
+                        self.kernel_size,
+                        self.stride,
+                        self.padding,
+                        self.in_channels,
+                        self.nb_kernels,
+                        self.bias,
+                        self.group,
+                    )
 
     def forward(self, x):
         # sanitize the device of params/states, TODO: better to decorate forward()

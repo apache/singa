@@ -96,21 +96,23 @@ TEST(OperationBenchmark, Mult) {
 TEST(OperationBenchmark, Conv) {
   auto cuda = std::make_shared<singa::CudaGPU>();
   vector<DataType> dtypes = {kFloat16, kFloat32};
-  vector<vector<size_t>> kernels{{3, 3}, {5, 5}, {8, 8}};
+  vector<vector<size_t>> kernels{{1, 1}};
   vector<string> prefers{"tensor_ops", "fastest"};
-  vector<unsigned long> in_chans{1, 3, 8};
+  vector<unsigned long> in_chans{1024, 256, 64};
+  int img_hw = 28;
+  size_t out_chan = 64;
+  auto has_bias = false;
+  int batch = 64;
 
-  vector<size_t> stride{8, 8};
+  vector<size_t> stride{2, 2};
   vector<size_t> padding{0, 0};
   for (auto kernel : kernels) {
     for (auto in_chan : in_chans) {
       for (auto prefer : prefers) {
         cout << endl;
         for (auto dtype : dtypes) {
-          size_t out_chan = 64;
-          auto has_bias = false;
 
-          Tensor x(Shape{64, in_chan, 128, 128}, cuda, dtype);
+          Tensor x(Shape{batch, in_chan, img_hw, img_hw}, cuda, dtype);
           Gaussian(0.0f, 1.0f, &x);
           Tensor w(Shape{out_chan, in_chan, kernel[0], kernel[1]}, cuda, dtype);
           Gaussian(0.0f, 1.0f, &w);
@@ -119,18 +121,19 @@ TEST(OperationBenchmark, Conv) {
 
           auto h =
               CudnnConvHandle(x, kernel, stride, padding, in_chan, out_chan,
-                              has_bias, 1, 1024 * 1024 * 1024, "tensor_ops");
+                              has_bias, 1, 1024 * 1024 * 1024, prefer);
 
           high_resolution_clock::time_point t1 = high_resolution_clock::now();
 
           for (int i = 0; i < 1000; ++i) {
             auto out = GpuConvForward(x, w, b, h);
-            cudaStreamSynchronize(cuda->context(0)->stream);
+            cudaDeviceSynchronize();
           }
 
           high_resolution_clock::time_point t2 = high_resolution_clock::now();
           duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
           cout << " inchan " << in_chan;
+          cout << " outchan " << out_chan;
           cout << " ker sz " << kernel[0];
           cout << " prefer " << prefer;
           cout << " dtype " << dtype;
