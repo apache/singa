@@ -856,7 +856,7 @@ class BatchNorm2d(Layer):
 
         self.device_check(x, self.scale, self.bias, self.running_mean,
                           self.running_var)
-        self.type_check(x, self.scale, self.bias, self.running_mean,
+        self.dtype_check(x, self.scale, self.bias, self.running_mean,
                         self.running_var)
 
         y = autograd.batchnorm_2d(

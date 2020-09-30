@@ -121,8 +121,6 @@ def run(global_rank,
         from data import mnist
         train_x, train_y, val_x, val_y = mnist.load()
 
-    train_x = train_x.astype(np_dtype[precision])
-    val_x = val_x.astype(np_dtype[precision])
 
     num_channels = train_x.shape[1]
     image_size = train_x.shape[2]
@@ -216,6 +214,7 @@ def run(global_rank,
                 x = augmentation(x, batch_size)
                 if (image_size != model.input_size):
                     x = resize_dataset(x, model.input_size)
+            x = x.astype(np_dtype[precision])
             y = train_y[idx[b * batch_size:(b + 1) * batch_size]]
 
             # Copy the patch data into input tensors
@@ -246,6 +245,7 @@ def run(global_rank,
             if model.dimension == 4:
                 if (image_size != model.input_size):
                     x = resize_dataset(x, model.input_size)
+            x = x.astype(np_dtype[precision])
             y = val_y[b * batch_size:(b + 1) * batch_size]
             tx.copy_from_numpy(x)
             ty.copy_from_numpy(y)

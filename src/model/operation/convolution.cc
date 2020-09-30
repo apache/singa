@@ -495,7 +495,7 @@ CudnnConvHandle::CudnnConvHandle(
       channels / groups, kernel_h, kernel_w));
 
   if (prefer == "tensor_ops") {
-    std::cout<<"using tensor op\n";
+    // std::cout<<"using tensor op\n";
     CUDNN_CHECK(cudnnSetConvolutionMathType(conv_desc, CUDNN_TENSOR_OP_MATH));
     fp_alg = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM;
     bp_filter_alg = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1;
