@@ -34,6 +34,8 @@
 #include "singa/proto/core.pb.h"
 // #include "singa/proto/model.pb.h"
 #include "half.hpp"
+#include "singa/utils/logging.h"
+
 using singa::DataType;
 %}
 %shared_ptr(singa::Device)
@@ -384,4 +386,6 @@ namespace singa{
 
   Tensor CrossEntropyFwd(const Tensor& p, const Tensor& t);
   Tensor SoftmaxCrossEntropyBwd(const Tensor& p, const Tensor& t);
+
+  void InitLogging(const char* argv);
 }

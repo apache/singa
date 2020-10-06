@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 #include "singa/core/tensor.h"
-// #include "singa/utils/stacktrace.h"
 #include <algorithm>
 #include <utility>
 
