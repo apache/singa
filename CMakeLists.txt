@@ -113,6 +113,8 @@ IF (USE_CUDA)
     #ADD_SUBDIRECTORY(lib/cnmem)
     #LIST(APPEND SINGA_LINKER_LIBS cnmem)
     SET(global_cuda_objs "")
+    # add support cuda fp16
+    SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --gpu-architecture=compute_75")
 ENDIF()
 
 # TODO(wangwei) detect the ev lib

@@ -22,6 +22,7 @@ from collections import OrderedDict
 
 from singa import utils
 from .tensor import Tensor
+from . import tensor
 from . import singa_wrap as singa
 
 
@@ -167,6 +168,22 @@ class Layer(object, metaclass=LayerMeta):
                     sublayer.set_states(states)
         self.set_params(states)
 
+    def dtype_check(self, *inputs):
+        """ check if all input have same data type.
+
+        Args:
+            *inputs: input args consisting of only PyTensors
+        """
+        flag = inputs[0].device.graph_enabled()
+        inputs[0].device.EnableGraph(False)
+
+        x_dtype = inputs[0].dtype
+        for inp in inputs:
+            if inp.dtype != x_dtype:
+                inp.to_type(x_dtype)
+
+        inputs[0].device.EnableGraph(flag)
+
     def device_check(self, *inputs):
         """ Check if the devices of the input tensor are the same.
 
@@ -299,12 +316,18 @@ class Linear(Layer):
         w_shape = (self.in_features, self.out_features)
         b_shape = (self.out_features,)
 
-        self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
+        self.W = Tensor(shape=w_shape,
+                        dtype=x.dtype,
+                        requires_grad=True,
+                        stores_grad=True)
         std = math.sqrt(2.0 / (self.in_features + self.out_features))
         self.W.gaussian(0.0, std)
 
         if self.bias:
-            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
+            self.b = Tensor(shape=b_shape,
+                            dtype=x.dtype,
+                            requires_grad=True,
+                            stores_grad=True)
             self.b.set_value(0.0)
         else:
             self.b = None
@@ -312,8 +335,10 @@ class Linear(Layer):
     def forward(self, x):
         if self.b:
             self.device_check(x, self.W, self.b)
+            self.dtype_check(x, self.W, self.b)
         else:
             self.device_check(x, self.W)
+            self.dtype_check(x, self.W)
 
         assert x.shape[1] == self.W.shape[0], (
             "Linear layer expects input features size %d received %d" %
@@ -656,20 +681,35 @@ class Conv2d(Layer):
                     )
         else:
             if not hasattr(self, "handle"):
-                self.handle = singa.CudnnConvHandle(
-                    _x.data,
-                    self.kernel_size,
-                    self.stride,
-                    self.padding,
-                    self.in_channels,
-                    self.nb_kernels,
-                    self.bias,
-                    self.group,
-                )
+                if _x.dtype == tensor.float16:
+                    self.handle = singa.CudnnConvHandle(
+                        _x.data,
+                        self.kernel_size,
+                        self.stride,
+                        self.padding,
+                        self.in_channels,
+                        self.nb_kernels,
+                        self.bias,
+                        self.group,
+                        1024*1024*1024,
+                        "tensor_ops"
+                    )
+                else:
+                    self.handle = singa.CudnnConvHandle(
+                        _x.data,
+                        self.kernel_size,
+                        self.stride,
+                        self.padding,
+                        self.in_channels,
+                        self.nb_kernels,
+                        self.bias,
+                        self.group,
+                    )
 
     def forward(self, x):
         # sanitize the device of params/states, TODO: better to decorate forward()
         self.device_check(x, *[s for k, s in self.get_states().items()])
+        self.dtype_check(x, *[s for k, s in self.get_states().items()])
 
         assert (self.group >= 1 and self.in_channels % self.group
                 == 0), "please set reasonable group."
@@ -816,6 +856,8 @@ class BatchNorm2d(Layer):
 
         self.device_check(x, self.scale, self.bias, self.running_mean,
                           self.running_var)
+        self.dtype_check(x, self.scale, self.bias, self.running_mean,
+                        self.running_var)
 
         y = autograd.batchnorm_2d(
             self.handle,
