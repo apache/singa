@@ -17,4 +17,9 @@
 
 from . import singa_wrap
 
+import faulthandler
+faulthandler.enable()
+
+singa_wrap.InitLogging("")
+
 __version__ = singa_wrap.SINGA_VERSION
