@@ -35,7 +35,7 @@ Distributed deep learning system
 
 ## Quick Start
 
-* [Installation](doc/en/docs/installation.md)
+* [Installation](http://singa.apache.org/docs/installation/)
 * [Examples](examples)
 
 ## Issues
