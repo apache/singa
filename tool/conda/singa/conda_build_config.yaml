@@ -31,8 +31,8 @@ cudnn:                      # [linux]
 dnnl:
     - 1.1
 python:
-#    - 3.6
-    - 3.7
+    - 3.6
+#    - 3.7
 nccl:
     - 2.6.4.1               # [environ.get("CUDA")=="10.2"]
     - 2.4.8.1               # [environ.get("CUDA")=="10.0"]
