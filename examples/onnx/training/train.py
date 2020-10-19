@@ -104,18 +104,18 @@ def resize_dataset(x, image_size):
 
 class MyModel(sonnx.SONNXModel):
 
-    def __init__(self, onnx_model, num_classes=10, num_channels=3):
+    def __init__(self, onnx_model, num_classes=10, num_channels=3, last_layers=-1, in_dim=1000):
         super(MyModel, self).__init__(onnx_model)
         self.num_classes = num_classes
         self.input_size = 224
         self.dimension = 4
         self.num_channels = num_channels
         self.num_classes = num_classes
-        self.linear = layer.Linear(512, num_classes)
+        self.last_layers = last_layers
+        self.linear = layer.Linear(in_dim, num_classes)
 
     def forward(self, *x):
-        # if you change to other models, please update the output name here
-        y = super(MyModel, self).forward(*x, aux_output=['flatten_170'])[1]
+        y = super(MyModel, self).forward(*x, last_layers=self.last_layers)[0]
         y = self.linear(y)
         return y
 
@@ -175,7 +175,9 @@ def run(global_rank,
     onnx_model = onnx.load(os.path.join('/tmp', model_config['path']))
     model = MyModel(onnx_model,
                     num_channels=num_channels,
-                    num_classes=num_classes)
+                    num_classes=num_classes,
+                    last_layers=model_config['last_layers'],
+                    in_dim=model_config['last_layers_dim'])
 
     # For distributed training, sequential gives better performance
     if hasattr(sgd, "communicator"):
