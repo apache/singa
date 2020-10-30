@@ -23,7 +23,6 @@
 #include "singa/utils/logging.h"
 
 TEST(Logging, InfoLogging) {
-  singa::InitLogging("");
   int a = 3;
   CHECK_EQ(a, 3);
   LOG(INFO) << "test info logging";

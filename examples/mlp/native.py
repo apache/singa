@@ -22,8 +22,28 @@ from singa.tensor import Tensor
 from singa import autograd
 from singa import opt
 import numpy as np
+from singa import device
+import argparse
+
+np_dtype = {"float16": np.float16, "float32": np.float32}
+
+singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p',
+                        choices=['float32', 'float16'],
+                        default='float32',
+                        dest='precision')
+    parser.add_argument('-m',
+                        '--max-epoch',
+                        default=1001,
+                        type=int,
+                        help='maximum epochs',
+                        dest='max_epoch')
+    args = parser.parse_args()
+
+    np.random.seed(0)
 
     autograd.training = True
 
@@ -62,22 +82,47 @@ if __name__ == "__main__":
     print("train_data_shape:", data.shape)
     print("train_label_shape:", label.shape)
 
-    inputs = Tensor(data=data)
-    target = Tensor(data=label)
+    precision = singa_dtype[args.precision]
+    np_precision = np_dtype[args.precision]
 
-    w0 = Tensor(shape=(2, 3), requires_grad=True, stores_grad=True)
-    w0.gaussian(0.0, 0.1)
-    b0 = Tensor(shape=(3,), requires_grad=True, stores_grad=True)
+    dev = device.create_cuda_gpu()
+
+    inputs = Tensor(data=data, device=dev)
+    target = Tensor(data=label, device=dev)
+
+    inputs = inputs.as_type(precision)
+    target = target.as_type(tensor.int32)
+
+    w0_np = np.random.normal(0, 0.1, (2, 3)).astype(np_precision)
+    w0 = Tensor(data=w0_np,
+                device=dev,
+                dtype=precision,
+                requires_grad=True,
+                stores_grad=True)
+    b0 = Tensor(shape=(3,),
+                device=dev,
+                dtype=precision,
+                requires_grad=True,
+                stores_grad=True)
     b0.set_value(0.0)
 
-    w1 = Tensor(shape=(3, 2), requires_grad=True, stores_grad=True)
-    w1.gaussian(0.0, 0.1)
-    b1 = Tensor(shape=(2,), requires_grad=True, stores_grad=True)
+    w1_np = np.random.normal(0, 0.1, (3, 2)).astype(np_precision)
+    w1 = Tensor(data=w1_np,
+                device=dev,
+                dtype=precision,
+                requires_grad=True,
+                stores_grad=True)
+    b1 = Tensor(shape=(2,),
+                device=dev,
+                dtype=precision,
+                requires_grad=True,
+                stores_grad=True)
     b1.set_value(0.0)
 
-    sgd = opt.SGD(0.05)
+    sgd = opt.SGD(0.05, 0.8)
+
     # training process
-    for i in range(1001):
+    for i in range(args.max_epoch):
         x = autograd.matmul(inputs, w0)
         x = autograd.add_bias(x, b0)
         x = autograd.relu(x)
@@ -87,4 +132,4 @@ if __name__ == "__main__":
         sgd(loss)
 
         if i % 100 == 0:
-            print("training loss = ", tensor.to_numpy(loss)[0])
+            print("%d, training loss = " % i, tensor.to_numpy(loss)[0])
