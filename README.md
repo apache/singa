@@ -21,9 +21,9 @@
 
 # Apache SINGA
 
-[![Native Ubuntu build status](https://github.com/apache/singa/workflows/Native-Ubuntu/badge.svg)
-[![Native Mac build status](https://github.com/apache/singa/workflows/Native-MacOS/badge.svg)
-[![conda build status](https://github.com/apache/singa/workflows/conda/badge.svg)
+![Native Ubuntu build status](https://github.com/apache/singa/workflows/Native-Ubuntu/badge.svg)
+![Native Mac build status](https://github.com/apache/singa/workflows/Native-MacOS/badge.svg)
+![conda build status](https://github.com/apache/singa/workflows/conda/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/apache-singa/badge/?version=latest)](https://apache-singa.readthedocs.io/en/latest/?badge=latest)
 ![License](http://img.shields.io/:license-Apache%202.0-blue.svg)
 [![Follow Apache SINGA on Twitter](https://img.shields.io/twitter/follow/apachesinga.svg?style=social&label=Follow)](https://twitter.com/ApacheSinga)
@@ -35,7 +35,7 @@ Distributed deep learning system
 
 ## Quick Start
 
-* [Installation](doc/en/docs/installation.md)
+* [Installation](http://singa.apache.org/docs/installation/)
 * [Examples](examples)
 
 ## Issues

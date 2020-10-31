@@ -17,10 +17,6 @@
 # under the License.
 #
 
-
-import sys
-sys.path.append('/singa/build/python/')
-
 import os
 import numpy as np
 
@@ -30,6 +26,8 @@ from singa import sonnx
 from singa import autograd
 import onnx
 
+import sys
+sys.path.append(os.path.dirname(__file__) + '/..')
 from utils import download_model, check_exist_or_download
 
 import logging
@@ -44,12 +42,6 @@ def preprocess():
     tokens = tokenizer.encode(text, add_special_tokens=True)
     tokens = np.array(tokens)
     return tokens.reshape([1, -1]).astype(np.float32)
-
-
-def postprocess(out):
-    text = tokenizer.decode(out)
-    return text
-
 
 class MyModel(sonnx.SONNXModel):
 

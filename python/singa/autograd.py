@@ -5055,15 +5055,9 @@ class Expand(Operator):
             self.shape = self.shape.tolist()
         else:
             self.shape = list(self.shape)
-        self.dim_changed = True
         self.x_shape = list(x.shape())
         x_shape = self.x_shape.copy()
-        for s_1, s_2 in zip(self.shape[::-1], x_shape[::-1]):
-            if s_1 != 1 and s_2 != 1 and s_1 != s_2:
-                if len(self.shape) != len(x_shape):
-                    assert False, ('not support dim_unchanged mode')
-                self.dim_changed = False
-                break
+        self.dim_changed = True if len(self.shape) != len(x_shape) else False
         if self.dim_changed:
             tmp_tensor = singa.Tensor(self.shape, x.device())
             tmp_tensor.SetFloatValue(1.)

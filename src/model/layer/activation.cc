@@ -62,7 +62,7 @@ const Tensor Activation::Forward(int flag, const Tensor& input) {
     output = ReLU(input);
     if (flag & kTrain) buf_.push(input);
   } else
-    LOG(FATAL) << "Unkown activation: " << mode_;
+    LOG(FATAL) << "Unknown activation: " << mode_;
   return output;
 }
 

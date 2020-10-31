@@ -150,8 +150,8 @@ def run(global_rank,
             os.path.abspath(inspect.getfile(inspect.currentframe())))
         parent = os.path.dirname(current)
         sys.path.insert(0, parent)
-        from mlp import module
-        model = module.create_model(data_size=data_size,
+        from mlp import model
+        model = model.create_model(data_size=data_size,
                                     num_classes=num_classes)
 
     # For distributed training, sequential gives better performance
