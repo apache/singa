@@ -123,8 +123,11 @@ class Communicator {
 
   // normal synch
   size_t sendBuffOffset = 0;
-  float *fusedSendBuff;
-  float *fusedRecvBuff;
+  void *fusedSendBuff;
+  void *fusedRecvBuff;
+  void *offsetPointer;
+  size_t dataSize;
+  ncclDataType_t ncclType;
 
   // half synch
   bool halfInitialized;
