@@ -72,7 +72,6 @@ Tensor::Tensor(const Tensor &in)
       block_(in.block()),
       shape_(in.shape_),
       stride_(in.stride_) {
-  // printf("i am here in &in\n");
   if (block_ != nullptr) block_->IncRefCount();
 }
 
@@ -81,7 +80,6 @@ Tensor::Tensor(Tensor &&in)
       device_(in.device_),
       shape_(std::move(in.shape_)),
       stride_(std::move(in.stride_)) {
-  // printf("i am here in &&in\n");
   block_ = in.block_;
   in.block_ = nullptr;
 }

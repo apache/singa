@@ -237,11 +237,11 @@ void Communicator::fusedSynch(vector<Tensor> &t, bool send) {
           // memory copy to fusedBuff
           for (size_t i = 0; i < t.size(); i++) {
             if (t[0].data_type() == kFloat16) {
-              offsetPointer =
-                  (void *)(static_cast<__half *>(fusedRecvBuff) + sendBuffOffset);
+              offsetPointer = (void *)(static_cast<__half *>(fusedSendBuff) +
+                                       sendBuffOffset);
             } else {
-              offsetPointer =
-                  (void *)(static_cast<float *>(fusedRecvBuff) + sendBuffOffset);
+              offsetPointer = (void *)(static_cast<float *>(fusedSendBuff) +
+                                       sendBuffOffset);
             }
             CUDA_CHECK(cudaMemcpyAsync(
                 (void *)offsetPointer,
@@ -264,8 +264,8 @@ void Communicator::fusedSynch(vector<Tensor> &t, bool send) {
 
     device_->Exec(
         [this](Context *ctx) mutable {
-          allReduce((int)sendBuffOffset, (void *)fusedSendBuff,
-                    (void *)fusedRecvBuff, ncclType, ctx);
+          allReduce((int)sendBuffOffset, fusedSendBuff, fusedRecvBuff, ncclType,
+                    ctx);
           sendBuffOffset = 0;
         },
         prev_blocks_, blocks_, "Dist_s_fusedSynch_allreduce");
@@ -328,6 +328,10 @@ void Communicator::synch(Tensor &t) {
 }  // namespace singa
 
 void Communicator::fusedSynchHalf(vector<Tensor> &t, bool send) {
+  CHECK_EQ(t[0].data_type(), kFloat32)
+      << "This function is only available for input tensor precision 32 bit, "
+         "which are converted into 16 bits before transmit";
+
   CHECK_GT(t.size(), 0);
 
   generateBlocks(t);
@@ -375,8 +379,8 @@ void Communicator::fusedSynchHalf(vector<Tensor> &t, bool send) {
         blocks_, blocks_, "Waiting");
     device_->Exec(
         [this](Context *ctx) mutable {
-          allReduce((int)sendBuffOffset, (void *)fusedSendBuffHalf,
-                    (void *)fusedRecvBuffHalf, ncclHalf, ctx);
+          allReduce((int)sendBuffOffset, fusedSendBuffHalf, fusedRecvBuffHalf,
+                    ncclHalf, ctx);
         },
         blocks_, blocks_, "Dist_s_fusedSynchHalf_allreduce");
     device_->Exec(
@@ -410,6 +414,11 @@ void Communicator::fusedSynchHalf(vector<Tensor> &t, bool send) {
 }
 
 void Communicator::synchHalf(Tensor &t) {
+  // tensor precision is 32 bit, convert to 16 bit before transmit
+  CHECK_EQ(t.data_type(), kFloat32)
+      << "This function is only available for input tensor precision 32 bit, "
+         "which are converted into 16 bits before transmit";
+
   generateBlocks(t);
 
   if (halfInitialized == false) halfInit();
@@ -424,7 +433,8 @@ void Communicator::synchHalf(Tensor &t) {
   device_->Exec(
       [this, t](Context *ctx) mutable {
         float *addr = static_cast<float *>(t.block()->mutable_data());
-        cuda::float2half(t.Size(), addr, fusedSendBuffHalf, ctx->c1);
+        cuda::float2half(t.Size(), addr,
+                         static_cast<__half *>(fusedSendBuffHalf), ctx->c1);
       },
       blocks_, blocks_, "Dist_c1_synchHalf_float2half");
   device_->Exec(
@@ -436,8 +446,8 @@ void Communicator::synchHalf(Tensor &t) {
       blocks_, blocks_, "Waiting");
   device_->Exec(
       [this, t](Context *ctx) mutable {
-        allReduce(t.Size(), (void *)fusedSendBuffHalf,
-                  (void *)fusedRecvBuffHalf, ncclHalf, ctx);
+        allReduce(t.Size(), fusedSendBuffHalf, fusedRecvBuffHalf, ncclHalf,
+                  ctx);
       },
       blocks_, blocks_, "Dist_s_synchHalf_allreduce");
   device_->Exec(
@@ -450,7 +460,8 @@ void Communicator::synchHalf(Tensor &t) {
   device_->Exec(
       [this, t](Context *ctx) mutable {
         float *addr = static_cast<float *>(t.block()->mutable_data());
-        cuda::half2float(t.Size(), fusedRecvBuffHalf, addr, ctx->c2);
+        cuda::half2float(t.Size(), static_cast<__half *>(fusedRecvBuffHalf),
+                         addr, ctx->c2);
       },
       blocks_, blocks_, "Dist_c2_synchHalf_half2float");
 }

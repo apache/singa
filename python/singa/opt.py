@@ -254,7 +254,8 @@ class SGD(Optimizer):
             self.weight_decay = weight_decay
         else:
             raise TypeError("Wrong weight_decay type")
-        self.decay_value = self.weight_decay(self.step_counter).as_type(self.dtype)
+        self.decay_value = self.weight_decay(self.step_counter).as_type(
+            self.dtype)
 
         # init other params
         self.nesterov = nesterov
@@ -307,7 +308,6 @@ class SGD(Optimizer):
 
         minus_lr = 0.0 - self.lr_value
         singa.Axpy(minus_lr.data, param_grad.data, param_value.data)
-
 
     def step(self):
         # increment step counter, lr and moment
@@ -894,6 +894,9 @@ class DistOpt(object):
         acc = 0
         glist = []
         for p, g in autograd.backward(loss):
+            assert p.dtype == tensor.float32, (
+                'This function is only available for input tensor precision 32 bit, '
+                'which are converted into 16 bits before transmit')
             if clipping:
                 g = autograd.clip(g, -clip_Value, clip_Value)
             if g.size() > threshold:

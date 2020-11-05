@@ -131,8 +131,8 @@ class Communicator {
 
   // half synch
   bool halfInitialized;
-  __half *fusedSendBuffHalf;
-  __half *fusedRecvBuffHalf;
+  void *fusedSendBuffHalf;
+  void *fusedRecvBuffHalf;
 
   // sparsification
   cusparseHandle_t cusparse_handle;
