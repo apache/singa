@@ -58,8 +58,8 @@ if __name__ == '__main__':
                         dest='lr')
     parser.add_argument('-d',
                         '--dist-option',
-                        default='fp32',
-                        choices=['fp32','fp16','partialUpdate','sparseTopK','sparseThreshold'],
+                        default='plain',
+                        choices=['plain','half','partialUpdate','sparseTopK','sparseThreshold'],
                         help='distibuted training options',
                         dest='dist_option')  # currently partialUpdate support graph=False only
     parser.add_argument('-s',

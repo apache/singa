@@ -274,9 +274,9 @@ class Xception(model.Model):
     def train_one_batch(self, x, y, dist_option, spars):
         out = self.forward(x)
         loss = self.softmax_cross_entropy(out, y)
-        if dist_option == 'fp32':
+        if dist_option == 'plain':
             self.optimizer(loss)
-        elif dist_option == 'fp16':
+        elif dist_option == 'half':
             self.optimizer.backward_and_update_half(loss)
         elif dist_option == 'partialUpdate':
             self.optimizer.backward_and_partial_update(loss)
