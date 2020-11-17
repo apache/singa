@@ -20,8 +20,11 @@
 
 from singa import singa_wrap as singa
 from singa import opt
+from singa import tensor
 import argparse
 import train_cnn
+
+singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 
 if __name__ == '__main__':
     # use argparse to get command config: max_epoch, model, data, etc. for single gpu training
@@ -31,6 +34,10 @@ if __name__ == '__main__':
                         choices=['resnet', 'xceptionnet', 'cnn', 'mlp'],
                         default='cnn')
     parser.add_argument('data', choices=['cifar10', 'cifar100', 'mnist'], default='mnist')
+    parser.add_argument('-p',
+                        choices=['float32', 'float16'],
+                        default='float32',
+                        dest='precision')
     parser.add_argument('-m',
                         '--max-epoch',
                         default=10,
@@ -51,8 +58,8 @@ if __name__ == '__main__':
                         dest='lr')
     parser.add_argument('-d',
                         '--dist-option',
-                        default='fp32',
-                        choices=['fp32','fp16','partialUpdate','sparseTopK','sparseThreshold'],
+                        default='plain',
+                        choices=['plain','half','partialUpdate','sparseTopK','sparseThreshold'],
                         help='distibuted training options',
                         dest='dist_option')  # currently partialUpdate support graph=False only
     parser.add_argument('-s',
@@ -76,9 +83,9 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5)
+    sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5, dtype=singa_dtype[args.precision])
     sgd = opt.DistOpt(sgd)
 
     train_cnn.run(sgd.global_rank, sgd.world_size, sgd.local_rank, args.max_epoch,
               args.batch_size, args.model, args.data, sgd, args.graph,
-              args.verbosity, args.dist_option, args.spars)
+              args.verbosity, args.dist_option, args.spars, args.precision)

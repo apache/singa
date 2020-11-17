@@ -104,7 +104,7 @@ def run(global_rank,
         sgd,
         graph,
         verbosity,
-        dist_option='fp32',
+        dist_option='plain',
         spars=None,
         precision='float32'):
     dev = device.create_cuda_gpu_on(local_rank)

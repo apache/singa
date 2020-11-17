@@ -106,8 +106,8 @@ class Communicator {
                             float sparsThreshold, bool topK, Context *ctx);
   void _sparsification(Tensor &t, Tensor *accumulation, float sparsThreshold,
                        bool topK, Context *ctx);
-  void valSparsAllReduce(size_t num, float *accumulation, Context *ctx);
-  void topKSparsAllReduce(size_t num, float *accumulation, Context *ctx);
+  void valSparsAllReduce(size_t num, void *accumulation, Context *ctx);
+  void topKSparsAllReduce(size_t num, void *accumulation, Context *ctx);
 
   // last group of synchronized memory blocks
   std::shared_ptr<Device> device_ = nullptr;
@@ -123,13 +123,16 @@ class Communicator {
 
   // normal synch
   size_t sendBuffOffset = 0;
-  float *fusedSendBuff;
-  float *fusedRecvBuff;
+  void *fusedSendBuff;
+  void *fusedRecvBuff;
+  void *offsetPointer;
+  size_t dataSize;
+  ncclDataType_t ncclType;
 
   // half synch
   bool halfInitialized;
-  __half *fusedSendBuffHalf;
-  __half *fusedRecvBuffHalf;
+  void *fusedSendBuffHalf;
+  void *fusedRecvBuffHalf;
 
   // sparsification
   cusparseHandle_t cusparse_handle;
@@ -142,9 +145,9 @@ class Communicator {
   int *nnzGPU;
   int *nnzAllGPU;
   float threshold;
-  float *sparsSendBuff;
-  float *sparsRecvBuff;
-  float *backupBuff;
+  void *sparsSendBuff;
+  void *sparsRecvBuff;
+  void *backupBuff;
   int *fusedIndex;
 };
 }  // namespace singa
