@@ -43,7 +43,7 @@ def preprocess(img):
     return img
 
 
-def get_image_labe():
+def get_image_label():
     # download label
     label_url = 'https://s3.amazonaws.com/onnx-model-zoo/synset.txt'
     with open(check_exist_or_download(label_url), 'r') as f:
@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
     # inference
     logging.info("preprocessing...")
-    img, labels = get_image_labe()
+    img, labels = get_image_label()
     img = preprocess(img)
     # sg_ir = sonnx.prepare(onnx_model) # run without graph
     # y = sg_ir.run([img])
