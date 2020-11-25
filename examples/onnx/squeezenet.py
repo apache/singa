@@ -22,7 +22,6 @@ from PIL import Image
 
 from singa import device
 from singa import tensor
-from singa import autograd
 from singa import sonnx
 import onnx
 from utils import download_model, check_exist_or_download
@@ -51,16 +50,6 @@ def get_image_label():
         labels = [l.rstrip() for l in f]
 
     # download image
-    image_url = 'https://s3.amazonaws.com/model-server/inputs/kitten.jpg'
-    img = Image.open(check_exist_or_download(image_url))
-    return img, labels
-
-
-def get_image_label():
-    # download label
-    label_url = 'https://s3.amazonaws.com/onnx-model-zoo/synset.txt'
-    with open(check_exist_or_download(label_url), 'r') as f:
-        labels = [l.rstrip() for l in f]
     image_url = 'https://s3.amazonaws.com/model-server/inputs/kitten.jpg'
     img = Image.open(check_exist_or_download(image_url))
     return img, labels
