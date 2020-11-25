@@ -22,7 +22,6 @@ from PIL import Image
 
 from singa import device
 from singa import tensor
-from singa import autograd
 from singa import sonnx
 import onnx
 from utils import download_model, check_exist_or_download
