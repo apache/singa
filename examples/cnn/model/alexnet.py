@@ -17,61 +17,72 @@
 # under the License.
 #
 
-from singa import autograd
-from singa import module
+from singa import layer
+from singa import model
 
 
-class AlexNet(module.Module):
+class AlexNet(model.Model):
 
     def __init__(self, num_classes=10, num_channels=1):
         super(AlexNet, self).__init__()
         self.num_classes = num_classes
         self.input_size = 224
         self.dimension = 4
-        self.conv1 = autograd.Conv2d(num_channels, 64, 11, stride=4, padding=2)
-        self.conv2 = autograd.Conv2d(64, 192, 5, padding=2)
-        self.conv3 = autograd.Conv2d(192, 384, 3, padding=1)
-        self.conv4 = autograd.Conv2d(384, 256, 3, padding=1)
-        self.conv5 = autograd.Conv2d(256, 256, 3, padding=1)
-        self.linear1 = autograd.Linear(1024, 4096)
-        self.linear2 = autograd.Linear(4096, 4096)
-        self.linear3 = autograd.Linear(4096, num_classes)
-        self.pooling1 = autograd.MaxPool2d(2, 2, padding=0)
-        self.pooling2 = autograd.MaxPool2d(2, 2, padding=0)
-        self.pooling3 = autograd.MaxPool2d(2, 2, padding=0)
-        self.avg_pooling1 = autograd.AvgPool2d(3, 2, padding=0)
+        self.conv1 = layer.Conv2d(num_channels, 64, 11, stride=4, padding=2)
+        self.conv2 = layer.Conv2d(64, 192, 5, padding=2)
+        self.conv3 = layer.Conv2d(192, 384, 3, padding=1)
+        self.conv4 = layer.Conv2d(384, 256, 3, padding=1)
+        self.conv5 = layer.Conv2d(256, 256, 3, padding=1)
+        self.linear1 = layer.Linear(4096)
+        self.linear2 = layer.Linear(4096)
+        self.linear3 = layer.Linear(num_classes)
+        self.pooling1 = layer.MaxPool2d(2, 2, padding=0)
+        self.pooling2 = layer.MaxPool2d(2, 2, padding=0)
+        self.pooling3 = layer.MaxPool2d(2, 2, padding=0)
+        self.avg_pooling1 = layer.AvgPool2d(3, 2, padding=0)
+        self.relu1 = layer.ReLU()
+        self.relu2 = layer.ReLU()
+        self.relu3 = layer.ReLU()
+        self.relu4 = layer.ReLU()
+        self.relu5 = layer.ReLU()
+        self.relu6 = layer.ReLU()
+        self.relu7 = layer.ReLU()
+        self.flatten = layer.Flatten()
+        self.dropout1 = layer.Dropout()
+        self.dropout2 = layer.Dropout()
+        self.softmax_cross_entropy = layer.SoftMaxCrossEntropy()
 
     def forward(self, x):
         y = self.conv1(x)
-        y = autograd.relu(y)
+        y = self.relu1(y)
         y = self.pooling1(y)
         y = self.conv2(y)
-        y = autograd.relu(y)
+        y = self.relu2(y)
         y = self.pooling2(y)
         y = self.conv3(y)
-        y = autograd.relu(y)
+        y = self.relu3(y)
         y = self.conv4(y)
-        y = autograd.relu(y)
+        y = self.relu4(y)
         y = self.conv5(y)
-        y = autograd.relu(y)
+        y = self.relu5(y)
         y = self.pooling3(y)
         y = self.avg_pooling1(y)
-        y = autograd.flatten(y)
-        y = autograd.dropout(y)
+        y = self.flatten(y)
+        y = self.dropout1(y)
         y = self.linear1(y)
-        y = autograd.relu(y)
-        y = autograd.dropout(y)
+        y = self.relu6(y)
+        y = self.dropout2(y)
         y = self.linear2(y)
-        y = autograd.relu(y)
+        y = self.relu7(y)
         y = self.linear3(y)
         return y
 
-    def loss(self, out, ty):
-        return autograd.softmax_cross_entropy(out, ty)
+    def train_one_batch(self, x, y, dist_option, spars):
+        out = self.forward(x)
+        loss = self.softmax_cross_entropy(out, y)
 
-    def optim(self, loss, dist_option, spars):
         if dist_option == 'fp32':
-            self.optimizer.backward_and_update(loss)
+            self.optimizer(loss)
         elif dist_option == 'fp16':
             self.optimizer.backward_and_update_half(loss)
         elif dist_option == 'partialUpdate':
@@ -84,6 +95,7 @@ class AlexNet(module.Module):
             self.optimizer.backward_and_sparse_update(loss,
                                                       topK=False,
                                                       spars=spars)
+        return out, loss
 
     def set_optimizer(self, optimizer):
         self.optimizer = optimizer

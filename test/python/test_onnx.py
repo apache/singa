@@ -22,6 +22,7 @@ from singa import singa_wrap as singa_api
 from singa import tensor
 from singa import singa_wrap as singa
 from singa import autograd
+from singa import layer
 from singa import sonnx
 from singa import opt
 
@@ -54,12 +55,13 @@ class TestPythonOnnx(unittest.TestCase):
     def _conv2d_helper(self, dev):
         x = tensor.Tensor(shape=(2, 3, 3, 3), device=dev)
         x.gaussian(0.0, 1.0)
-        y = autograd.Conv2d(3, 1, 2)(x)
+        y = layer.Conv2d(1, 2)(x)
 
         # frontend
         model = sonnx.to_onnx([x], [y])
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -87,6 +89,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
                                              tensor.to_numpy(y_t[0]),
@@ -102,13 +105,14 @@ class TestPythonOnnx(unittest.TestCase):
     def _avg_pool_helper(self, dev):
         x = tensor.Tensor(shape=(2, 3, 3, 3), device=dev)
         x.gaussian(0.0, 1.0)
-        y = autograd.AvgPool2d(3, 1, 2)(x)
+        y = layer.AvgPool2d(3, 1, 2)(x)
 
         # frontend
         model = sonnx.to_onnx([x], [y])
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -134,6 +138,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
                                              tensor.to_numpy(y_t[0]),
@@ -158,6 +163,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
                                              tensor.to_numpy(y_t[0]),
@@ -186,6 +192,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x1, x2])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -214,6 +221,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x1, x2])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -244,6 +252,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x1, x2])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -260,7 +269,7 @@ class TestPythonOnnx(unittest.TestCase):
     def _max_pool_helper(self, dev):
         x = tensor.Tensor(shape=(2, 3, 4, 4), device=dev)
         x.gaussian(0.0, 1.0)
-        y = autograd.MaxPool2d(2, 2, 0)(x)
+        y = layer.MaxPool2d(2, 2, 0)(x)
 
         # frontend
         model = sonnx.to_onnx([x], [y])
@@ -268,6 +277,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -312,6 +322,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x, s, bias])  # mean and var has been stored in graph
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -329,7 +340,7 @@ class TestPythonOnnx(unittest.TestCase):
         x = tensor.Tensor(shape=(2, 20), device=dev)
         x.gaussian(0.0, 1.0)
         x1 = x.clone()
-        y = autograd.Linear(20, 1, bias=False)(x)
+        y = layer.Linear(20, 1, bias=False)(x)
 
         # frontend
         model = sonnx.to_onnx([x], [y])
@@ -337,6 +348,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x1])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -371,6 +383,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([tA, tB, tC])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -397,6 +410,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])  # shape has been stored in graph
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -425,6 +439,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x, x1])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -450,6 +465,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -475,6 +491,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -500,6 +517,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -525,6 +543,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -550,6 +569,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -575,6 +595,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -600,6 +621,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -625,6 +647,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -650,6 +673,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -675,6 +699,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -700,6 +725,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -725,6 +751,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -755,6 +782,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -784,6 +812,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -816,6 +845,7 @@ class TestPythonOnnx(unittest.TestCase):
 
     #     # backend
     #     sg_ir = sonnx.prepare(model, device=dev)
+    #     sg_ir.is_graph = True
     #     y_t = sg_ir.run([x0, x1])
 
     #     np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -847,6 +877,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x0, x1])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -873,6 +904,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -904,6 +936,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x0, x1])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -935,6 +968,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x0, x1])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -961,6 +995,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev, init_inputs=X)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -992,6 +1027,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x0, x1])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1021,6 +1057,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1048,6 +1085,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1075,6 +1113,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1102,6 +1141,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1133,6 +1173,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x0, x1])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1163,6 +1204,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x0, x1])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1193,6 +1235,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])  # min, max has been stored in model
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1225,6 +1268,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x, slope])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1255,6 +1299,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x, x1])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1283,6 +1328,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1314,6 +1360,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x0, x1])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1345,6 +1392,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x0, x1])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1372,6 +1420,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1404,6 +1453,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x0, x1])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1435,6 +1485,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x0, x1])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1467,6 +1518,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x0, x1])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1494,6 +1546,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1521,6 +1574,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1547,6 +1601,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1572,6 +1627,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev, init_inputs=[X])
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y),
@@ -1598,6 +1654,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         self.check_shape(
@@ -1624,6 +1681,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(
@@ -1650,6 +1708,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(
@@ -1676,6 +1735,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(
@@ -1702,6 +1762,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(
@@ -1728,6 +1789,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(
@@ -1754,6 +1816,7 @@ class TestPythonOnnx(unittest.TestCase):
 
     #       # backend
     #       sg_ir = sonnx.prepare(model, device=dev)
+    #       sg_ir.is_graph = True
     #       y_t = sg_ir.run([x])[0]
 
     #       np.testing.assert_array_almost_equal(tensor.to_numpy(y).shape, tensor.to_numpy(y_t).shape)
@@ -1777,6 +1840,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(
@@ -1802,6 +1866,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(
@@ -1827,6 +1892,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(
@@ -1852,6 +1918,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(
@@ -1884,6 +1951,7 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x])
 
         self.check_shape(
@@ -1900,15 +1968,31 @@ class TestPythonOnnx(unittest.TestCase):
     def _inference_helper(self, dev):
         x = tensor.Tensor(shape=(2, 3, 3, 3), device=dev)
         x.gaussian(0.0, 1.0)
-        x1 = autograd.Conv2d(3, 1, 2)(x)
-        y = autograd.Conv2d(1, 1, 2)(x1)
 
+        conv1 = layer.Conv2d(1, 2)
+        conv2 = layer.Conv2d(1, 2)
+
+        class MyLayer(layer.Layer):
+
+            def __init__(self, conv1, conv2):
+                super(MyLayer, self).__init__()
+                self.conv1 = conv1
+                self.conv2 = conv2
+
+            def forward(self, inputs):
+                x = self.conv1(inputs)
+                x = self.conv2(x)
+                return x
+
+        y = MyLayer(conv1, conv2)(x)
+        x1 = conv1(x)
         # frontend
         model = sonnx.to_onnx([x], [y])
         # print('The model is:\n{}'.format(model))
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         y_t = sg_ir.run([x], last_layers=-1)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(x1),
@@ -1926,16 +2010,28 @@ class TestPythonOnnx(unittest.TestCase):
         # forward
         x = tensor.Tensor(shape=(2, 3, 3, 3), device=dev)
         x.gaussian(0.0, 1.0)
-        x1 = autograd.Conv2d(3, 1, 2)(x)
-        x2 = autograd.Conv2d(1, 1, 2)(x1)
-        y = autograd.Flatten()(x2)[0]
+
+        class MyLayer(layer.Layer):
+
+            def __init__(self):
+                super(MyLayer, self).__init__()
+                self.conv1 = layer.Conv2d(1, 2)
+                self.conv2 = layer.Conv2d(1, 2)
+
+            def forward(self, inputs):
+                x = self.conv1(inputs)
+                x = self.conv2(x)
+                x = autograd.flatten(x)
+                return x
+
+        y = MyLayer()(x)
         y_t = tensor.Tensor(shape=(2, 1), device=dev)
         y_t.gaussian(0.0, 1.0)
-        loss = autograd.MeanSquareError()(y, y_t)[0]
+        loss = autograd.MeanSquareError(y_t)(y)[0]
         # backward
         sgd = opt.SGD(lr=0.01)
         for p, gp in autograd.backward(loss):
-            sgd.update(p, gp)
+            sgd.apply(p.name, p, gp)
         sgd.step()
 
         # frontend
@@ -1944,17 +2040,14 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
-        for idx, tens in sg_ir.tensor_map.items():
-            tens.requires_grad = True
-            tens.stores_grad = True
-            sg_ir.tensor_map[idx] = tens
+        sg_ir.is_graph = True
         # forward
         y_o = sg_ir.run([x])[0]
         # backward
-        loss = autograd.MeanSquareError()(y_o, y_t)[0]
+        loss = autograd.MeanSquareError(y_t)(y_o)[0]
         sgd = opt.SGD(lr=0.01)
         for p, gp in autograd.backward(loss):
-            sgd.update(p, gp)
+            sgd.apply(p.name, p, gp)
         sgd.step()
 
     def test_retraining_cpu(self):
@@ -1968,15 +2061,26 @@ class TestPythonOnnx(unittest.TestCase):
         # forward
         x = tensor.Tensor(shape=(2, 3, 3, 3), device=dev)
         x.gaussian(0.0, 1.0)
-        x1 = autograd.Conv2d(3, 1, 2)(x)
-        y = autograd.Flatten()(x1)[0]
+
+        class MyLayer(layer.Layer):
+
+            def __init__(self):
+                super(MyLayer, self).__init__()
+                self.conv1 = layer.Conv2d(1, 2)
+
+            def forward(self, inputs):
+                x = self.conv1(inputs)
+                x = autograd.flatten(x)
+                return x
+
+        y = MyLayer()(x)
         y_t = tensor.Tensor(shape=(2, 4), device=dev)
         y_t.gaussian(0.0, 1.0)
-        loss = autograd.MeanSquareError()(y, y_t)[0]
+        loss = autograd.MeanSquareError(y_t)(y)[0]
         # backward
         sgd = opt.SGD(lr=0.01)
         for p, gp in autograd.backward(loss):
-            sgd.update(p, gp)
+            sgd.apply(p.name, p, gp)
         sgd.step()
 
         # frontend
@@ -1985,17 +2089,31 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
+        sg_ir.is_graph = True
         # forward
-        x1 = sg_ir.run([x], last_layers=-1)[0]
-        x2 = autograd.Conv2d(1, 1, 2)(x1)
-        y_o = autograd.Flatten()(x2)[0]
+        class MyLayer2(layer.Layer):
+
+            def __init__(self, sg_ir):
+                super(MyLayer2, self).__init__()
+                self.sg_ir = sg_ir
+                for node, operator in self.sg_ir.layers:
+                    self.__dict__[node.name] = operator
+                self.conv2 = layer.Conv2d(1, 2)
+
+            def forward(self, inputs):
+                x = self.sg_ir.run(inputs, last_layers=-1)[0]
+                x = self.conv2(inputs)
+                x = autograd.flatten(x)
+                return x
+
+        y_o = MyLayer()(x)
         # backward
         y_ot = tensor.Tensor(shape=(2, 1), device=dev)
         y_ot.gaussian(0.0, 1.0)
-        loss = autograd.MeanSquareError()(y_o, y_ot)[0]
+        loss = autograd.MeanSquareError(y_ot)(y_o)[0]
         sgd = opt.SGD(lr=0.01)
         for p, gp in autograd.backward(loss):
-            sgd.update(p, gp)
+            sgd.apply(p.name, p, gp)
         sgd.step()
 
     def test_transfer_learning_cpu(self):

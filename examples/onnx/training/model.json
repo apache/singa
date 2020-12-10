@@ -1,0 +1,112 @@
+{
+    "resnet18v1": {
+        "name": "ResNet-18 Version 1",
+        "description": "ResNet v1 uses post-activation for the residual blocks",
+        "url": "https://s3.amazonaws.com/onnx-model-zoo/resnet/resnet18v1/resnet18v1.tar.gz",
+        "path": "resnet18v1/resnet18v1.onnx",
+        "last_layers": -3,
+        "last_layers_dim": 512
+    },
+    "resnet34v1": {
+        "name": "ResNet-34 Version 1",
+        "description": "ResNet v1 uses post-activation for the residual blocks",
+        "url": "https://s3.amazonaws.com/onnx-model-zoo/resnet/resnet34v1/resnet34v1.tar.gz",
+        "path": "resnet34v1/resnet34v1.onnx",
+        "last_layers": -3,
+        "last_layers_dim": 512
+    },
+    "resnet50v1": {
+        "name": "ResNet-50 Version 1",
+        "description": "ResNet v1 uses post-activation for the residual blocks",
+        "url": "https://s3.amazonaws.com/onnx-model-zoo/resnet/resnet50v1/resnet50v1.tar.gz",
+        "path": "resnet50v1/resnet50v1.onnx",
+        "last_layers": -3,
+        "last_layers_dim": 2048
+    },
+    "resnet101v1": {
+        "name": "ResNet-101 Version 1",
+        "description": "ResNet v1 uses post-activation for the residual blocks",
+        "url": "https://s3.amazonaws.com/onnx-model-zoo/resnet/resnet101v1/resnet101v1.tar.gz",
+        "path": "resnet101v1/resnet101v1.onnx",
+        "last_layers": -3,
+        "last_layers_dim": 2048
+    },
+    "resnet152v1": {
+        "name": "ResNet-152 Version 1",
+        "description": "ResNet v1 uses post-activation for the residual blocks",
+        "url": "https://s3.amazonaws.com/onnx-model-zoo/resnet/resnet152v1/resnet152v1.tar.gz",
+        "path": "resnet152v1/resnet152v1.onnx",
+        "last_layers": -3,
+        "last_layers_dim": 2048
+    },
+    "resnet18v2": {
+        "name": "ResNet-18 Version 2",
+        "description": "ResNet v2 uses pre-activation for the residual blocks",
+        "url": "https://s3.amazonaws.com/onnx-model-zoo/resnet/resnet18v2/resnet18v2.tar.gz",
+        "path": "resnet18v2/resnet18v2.onnx",
+        "last_layers": -3,
+        "last_layers_dim": 512
+    },
+    "resnet34v2": {
+        "name": "ResNet-34 Version 2",
+        "description": "ResNet v2 uses pre-activation for the residual blocks",
+        "url": "https://s3.amazonaws.com/onnx-model-zoo/resnet/resnet34v2/resnet34v2.tar.gz",
+        "path": "resnet34v2/resnet34v2.onnx",
+        "last_layers": -3,
+        "last_layers_dim": 512
+    },
+    "resnet50v2": {
+        "name": "ResNet-50 Version 2",
+        "description": "ResNet v2 uses pre-activation for the residual blocks",
+        "url": "https://s3.amazonaws.com/onnx-model-zoo/resnet/resnet50v2/resnet50v2.tar.gz",
+        "path": "resnet50v2/resnet50v2.onnx",
+        "last_layers": -3,
+        "last_layers_dim": 2048
+    },
+    "resnet101v2": {
+        "name": "ResNet-101 Version 2",
+        "description": "ResNet v2 uses pre-activation for the residual blocks",
+        "url": "https://s3.amazonaws.com/onnx-model-zoo/resnet/resnet101v2/resnet101v2.tar.gz",
+        "path": "resnet101v2/resnet101v2.onnx",
+        "last_layers": -3,
+        "last_layers_dim": 2048
+    },
+    "resnet152v2": {
+        "name": "ResNet-152 Version 2",
+        "description": "ResNet v2 uses pre-activation for the residual blocks",
+        "url": "https://s3.amazonaws.com/onnx-model-zoo/resnet/resnet152v2/resnet152v2.tar.gz",
+        "path": "resnet152v2/resnet152v2.onnx",
+        "last_layers": -3,
+        "last_layers_dim": 2048
+    },
+    "vgg16": {
+        "name": "VGG-16",
+        "url": "https://github.com/onnx/models/raw/master/vision/classification/vgg/model/vgg16-7.tar.gz",
+        "path": "vgg16/vgg16.onnx",
+        "last_layers": -3,
+        "last_layers_dim": 4096
+    },
+    "vgg16bn": {
+        "name": "VGG-16 with batch normalization",
+        "description": "VGG have batch normalization applied after each convolutional layer",
+        "url": "https://github.com/onnx/models/raw/master/vision/classification/vgg/model/vgg16-bn-7.tar.gz",
+        "path": "vgg16-bn/vgg16-bn.onnx",
+        "last_layers": -3,
+        "last_layers_dim": 4096
+    },
+    "vgg19": {
+        "name": "VGG-19",
+        "url": "https://github.com/onnx/models/raw/master/vision/classification/vgg/model/vgg19-7.tar.gz",
+        "path": "vgg19/vgg19.onnx",
+        "last_layers": -3,
+        "last_layers_dim": 4096
+    },
+    "vgg19bn": {
+        "name": "VGG-19 with batch normalization",
+        "description": "VGG have batch normalization applied after each convolutional layer",
+        "url": "https://github.com/onnx/models/raw/master/vision/classification/vgg/model/vgg19-bn-7.tar.gz",
+        "path": "vgg19-bn/vgg19-bn.onnx",
+        "last_layers": -3,
+        "last_layers_dim": 4096
+    }
+}

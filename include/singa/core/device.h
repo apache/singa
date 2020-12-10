@@ -19,6 +19,7 @@
 #ifndef SINGA_CORE_DEVICE_H_
 #define SINGA_CORE_DEVICE_H_
 
+#include <chrono>
 #include <functional>
 #include <map>
 #include <memory>
@@ -61,6 +62,8 @@ class Device {
   /// max mem size to use (in MB)
   Device(int id, int num_executors);
 
+  void Reset();
+
   virtual void SetRandSeed(unsigned seed) = 0;
 
   void EnableGraph(bool enable) { graph_enabled_ = enable; }
@@ -80,14 +83,15 @@ class Device {
   /// Copy data within or across devices.
   virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
                               CopyDirection direction, int dst_offset,
-                              int src_offset);
+                              int src_offset, Context* ctx);
 
   void CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
-                           size_t dst_offset = 0);
+                           size_t dst_offset = 0, Context* ctx = nullptr);
   /// Submit the operation to the device, which may execute it right now or
   /// delay it depending on the scheduler.
   void Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
-            const vector<Block*> write_blocks, bool use_rand_generator = false);
+            const vector<Block*> write_blocks, string op_name = "no_name",
+            bool use_rand_generator = false);
 
   void RunGraph(bool serial = false);
 
@@ -108,11 +112,28 @@ class Device {
 
   bool graph_enabled() const { return graph_enabled_; }
 
+  /// Verbosity of the time profiling function:
+  /// verbosity == 0 (default) -> no logging
+  /// verbosity == 1 -> display forward and backward propagation time
+  /// verbosity == 2 -> display each operation time (OP_ID, op name, time)
+  int verbosity() const { return verbosity_; }
+  /// the number of initial iteration that is skipped for time profiling
+  int skip_iteration() const { return skip_iteration_; }
+
   virtual std::shared_ptr<Device> host() const { return host_; }
+
+  void PrintTimeProfiling();
+  void SetVerbosity(int verbosity) { verbosity_ = verbosity; };
+  void SetSkipIteration(int skip_iteration) {
+    skip_iteration_ = skip_iteration;
+  };
 
  protected:
   /// Execute one operation on one executor.
   virtual void DoExec(function<void(Context*)>&& fn, int executor) = 0;
+  virtual void TimeProfilingDoExec(function<void(Context*)>&& fn, int executor,
+                                   Node* node) = 0;
+  virtual void EvaluateTimeElapsed(Node* node) = 0;
 
   virtual void CopyToFrom(void* dst, const void* src, size_t nBytes,
                           CopyDirection direction, Context* ctx) = 0;
@@ -134,6 +155,8 @@ class Device {
   int num_executors_ = 0;
   unsigned seed_ = 0;
   bool graph_enabled_ = false;
+  int verbosity_ = 0;
+  int skip_iteration_ = 5;
   /// The computational graph
   Graph* graph_ = nullptr;
   /// Programming language type, could be kCpp, kCuda, kOpencl
@@ -165,6 +188,9 @@ class CppCPU : public Device {
 
  protected:
   void DoExec(function<void(Context*)>&& fn, int executor) override;
+  void TimeProfilingDoExec(function<void(Context*)>&& fn, int executor,
+                           Node* node) override;
+  void EvaluateTimeElapsed(Node* node) override;
 
   void CopyToFrom(void* dst, const void* src, size_t nBytes,
                   CopyDirection direction, Context* ctx) override;
@@ -195,6 +221,11 @@ class CudaGPU : public Device {
 
  protected:
   void DoExec(function<void(Context*)>&& fn, int executor) override;
+  void TimeProfilingDoExec(function<void(Context*)>&& fn, int executor,
+                           Node* node) override;
+  void EvaluateTimeElapsed(Node* node) override;
+
+  void SyncBeforeCountingTime();
 
   void CopyToFrom(void* dst, const void* src, size_t nBytes,
                   CopyDirection direction, Context* ctx) override;
@@ -232,7 +263,8 @@ class OpenclDevice : public singa::Device {
 
   virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
                               CopyDirection direction, int dst_offset = 0,
-                              int src_offset = 0) override;
+                              int src_offset = 0,
+                              Context* ctx = nullptr) override;
 
  protected:
   /// The OpenCL device that this object represents.
@@ -279,7 +311,11 @@ class OpenclDevice : public singa::Device {
 class Platform {
  public:
   /// Return the default host device
-  static std::shared_ptr<Device> GetDefaultDevice() { return defaultDevice; }
+  static std::shared_ptr<Device> GetDefaultDevice() {
+    // cannot reset cpu device, which leads to error
+    // defaultDevice->Reset();
+    return defaultDevice;
+  }
 
 #ifdef USE_CUDA
   /// Return the number of total available GPUs

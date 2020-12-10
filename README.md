@@ -21,7 +21,9 @@
 
 # Apache SINGA
 
-[![Build Status](https://travis-ci.org/apache/singa.png)](https://travis-ci.org/apache/singa)
+![Native Ubuntu build status](https://github.com/apache/singa/workflows/Native-Ubuntu/badge.svg)
+![Native Mac build status](https://github.com/apache/singa/workflows/Native-MacOS/badge.svg)
+![conda build status](https://github.com/apache/singa/workflows/conda/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/apache-singa/badge/?version=latest)](https://apache-singa.readthedocs.io/en/latest/?badge=latest)
 ![License](http://img.shields.io/:license-Apache%202.0-blue.svg)
 [![Follow Apache SINGA on Twitter](https://img.shields.io/twitter/follow/apachesinga.svg?style=social&label=Follow)](https://twitter.com/ApacheSinga)
@@ -33,7 +35,7 @@ Distributed deep learning system
 
 ## Quick Start
 
-* [Installation](doc/en/docs/installation.md)
+* [Installation](http://singa.apache.org/docs/installation/)
 * [Examples](examples)
 
 ## Issues
@@ -42,8 +44,9 @@ Distributed deep learning system
 
 ## Code Analysis:
 
-![LGTM C++ Grade](https://img.shields.io/lgtm/grade/cpp/github/apache/incubator-singa)
-![LGTM Python Grade](https://img.shields.io/lgtm/grade/python/github/apache/incubator-singa)
+![LGTM C++ Grade](https://img.shields.io/lgtm/grade/cpp/github/apache/singa)
+![LGTM Python Grade](https://img.shields.io/lgtm/grade/python/github/apache/singa)
+[![codecov](https://codecov.io/gh/apache/singa/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/singa)
 
 [![Stargazers over time](https://starchart.cc/apache/singa.svg)](https://starchart.cc/apache/singa)
 

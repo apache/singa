@@ -18,7 +18,7 @@
 # Change tags to build with different cuda/cudnn versions:
 FROM nvidia/cuda:9.0-devel-ubuntu16.04
 
-ENV CUDNN_VERSION 7.4.2.24
+ENV CUDNN_VERSION 7.6.5.32
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libcudnn7=$CUDNN_VERSION-1+cuda9.0 \

@@ -47,12 +47,16 @@ class Device {
  public:
   virtual void SetRandSeed(unsigned seed) = 0;
   std::shared_ptr<Device> host();
+  void Reset();
   int id() const;
   virtual void Sync();
   void ResetGraph();
   void RunGraph(bool serial = false);
   bool graph_enabled() const;
   void EnableGraph(bool enable);
+  void PrintTimeProfiling();
+  void SetVerbosity(int verbosity);
+  void SetSkipIteration(int skip_iteration);
   static void EnableLazyAlloc(bool enbale);
 };
 

@@ -1,3 +1,44 @@
+Release Notes - SINGA - Version singa-3.1.0
+
+SINGA is a distributed deep learning library.
+
+This release includes following changes:
+
+  * Tensor core:
+    * Support tensor transformation (reshape, transpose) for tensors up to 6 dimensions.
+    * Implement traverse_unary_transform in Cuda backend, which is similar to CPP backend one.
+
+  * Add new tensor operators into the autograd module, including
+    CosSim, DepthToSpace, Embedding, Erf, Expand, Floor, Pad, Round, Rounde, SpaceToDepth, UpSample, Where. 
+    The corresponding ONNX operators are thus supported by SINGA.
+
+  * Add Embedding and Gemm into the layer module.
+
+  * Add SGD operators to opt module, including RMSProp, Adam, and AdaGrad.
+
+  * Extend the sonnx module to support 
+    DenseNet121, ShuffleNetv1, ShuffleNetv2, SqueezeNet, VGG19, GPT2, and RoBERTa,
+
+  * Reconstruct sonnx to 
+    * Support creating operators from both layer and autograd.
+    * Re-write SingaRep to provide a more powerful intermediate representation of SINGA.
+    * Add a SONNXModel which implements from Model to provide uniform API and features.
+
+  * Add one example that trains a BiLSTM model over the InsuranceQA data.
+
+  * Replace the Travis CI with Github workflow. Add quality and coverage management.
+
+  * Add compiling and packaging scripts to creat wheel packages for distribution.
+
+  * Fix bugs
+    * Fix IMDB LSTM model example training script.
+    * Fix Tensor operation Mult on Broadcasting use cases.
+    * Gaussian function on Tensor now can run on Tensor with odd size.
+    * Updated a testing helper function gradients() in autograd to lookup param gradient by param python object id for testing purpose.
+
+
+----------------------------------------------------------------------------------------------
+
 Release Notes - SINGA - Version singa-3.0.0
 
 SINGA is a distributed deep learning library.

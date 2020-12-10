@@ -26,7 +26,7 @@ source:
 
 requirements:
   run:
-    - singa {{ environ.get('GIT_DESCRIBE_TAG') | replace("-", ".") }} cudnn7.3.1_cuda10.0_py{{ py }}
+    - singa {{ environ.get('GIT_DESCRIBE_TAG') | replace("-", ".") }} cudnn7.6.5_cuda10.0_py{{ py }}
 
 build:
   number: 0

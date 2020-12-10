@@ -28,8 +28,7 @@ try:
 except ImportError:
     import cPickle as pickle
 
-from singa import initializer
-from singa import optimizer
+from singa import opt
 from singa import device
 from singa import tensor
 
@@ -48,16 +47,15 @@ def load_train_data(file_path):
 
 def train(data_file, use_gpu, num_epoch=10, batch_size=100):
     print('Start intialization............')
-    lr = 0.1   # Learning rate
+    lr = 0.0005   # Learning rate
     weight_decay = 0.0002
     hdim = 1000
     vdim = 784
-
     tweight = tensor.Tensor((vdim, hdim))
     tweight.gaussian(0.0, 0.1)
     tvbias = tensor.from_numpy(np.zeros(vdim, dtype=np.float32))
     thbias = tensor.from_numpy(np.zeros(hdim, dtype=np.float32))
-    opt = optimizer.SGD(momentum=0.5, weight_decay=weight_decay)
+    sgd = opt.SGD(lr=lr, momentum=0.9, weight_decay=weight_decay)
 
     print('Loading data ..................')
     train_x, valid_x = load_train_data(data_file)
@@ -103,9 +101,9 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
             tgvbias = tensor.sum(tnegdata, 0) - tensor.sum(tdata, 0)
             tghbias = tensor.sum(tneghidprob, 0) - tensor.sum(tposhidprob, 0)
 
-            opt.apply_with_lr(epoch, lr / batch_size, tgweight, tweight, 'w')
-            opt.apply_with_lr(epoch, lr / batch_size, tgvbias, tvbias, 'vb')
-            opt.apply_with_lr(epoch, lr / batch_size, tghbias, thbias, 'hb')
+            sgd.apply('w', tweight, tgweight)
+            sgd.apply('vb', tvbias, tgvbias)
+            sgd.apply('hb', thbias, tghbias)
 
         print('training erroraverage = %f' %
               (tensor.to_numpy(trainerrorsum) / train_x.shape[0]))
@@ -116,7 +114,7 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
         tvalidposhidprob = tvalidposhidprob + thbias
         tvalidposhidprob = tensor.sigmoid(tvalidposhidprob)
         tvalidposhidrandom = tensor.Tensor(tvalidposhidprob.shape, dev)
-        initializer.uniform(tvalidposhidrandom, 0.0, 1.0)
+        tvalidposhidrandom.uniform(0.0, 1.0)
         tvalidposhidsample = tensor.gt(tvalidposhidprob, tvalidposhidrandom)
 
         tvalidnegdata = tensor.mult(tvalidposhidsample, tweight.T())

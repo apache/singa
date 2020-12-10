@@ -23,7 +23,6 @@
 #include <iomanip>
 #include <sstream>
 #include <thread>
-#include <unordered_set>
 
 #include "singa/core/device.h"
 #include "singa/utils/safe_queue.h"
@@ -65,11 +64,6 @@ BlkInfo *Graph::block(Block *blk) const {
   return it->second;
 }
 
-Block *Graph::write_block(const size_t idx) const {
-  CHECK_LT(idx, write_blocks_.size());
-  return write_blocks_[idx];
-}
-
 Node *Graph::begin_node(const size_t idx) const {
   CHECK_LT(idx, begin_nodes_.size());
   return begin_nodes_[idx];
@@ -101,9 +95,15 @@ void Graph::Reset() {
   }
   blocks_.clear();
 
-  write_blocks_.clear();
+  leaf_blocks_.clear();
+
+  iteration_ = 0;
+
+  time_elapsed_ = 0;
 
   dirty_ = false;
+
+  in_serial_ = false;
 }
 
 void Graph::Debug() {
@@ -112,6 +112,7 @@ void Graph::Debug() {
   int w = 0;
   size_t max_in_num = 0, max_out_num = 0, max_next_num = 0, max_free_num = 0;
   for (auto &it : nodes_) {
+    if (it->op_name_ == "Waiting") continue;
     max_in_num = std::max(max_in_num, it->in_edges_.size());
     max_out_num = std::max(max_out_num, it->out_edges_.size());
   }
@@ -124,7 +125,8 @@ void Graph::Debug() {
     max_free_num = std::max(max_free_num, it.size());
   }
 
-  for (int i = std::max(nodes_.size(), blocks_.size()); i > 0; i /= 10, ++w) {
+  size_t max_size = std::max(nodes_.size(), blocks_.size());
+  for (size_t i = max_size; i > 0; i /= 10, ++w) {
   }
 
   std::stringstream ss;
@@ -139,9 +141,16 @@ void Graph::Debug() {
     ss << "OP[" << std::setw(w) << i;
     auto node = nodes_[i];
 
+    string name;
+    if (node->op_name_.size() > 16) {
+      name = node->op_name_.substr(0, 13) + "...";
+    } else {
+      name = node->op_name_;
+    }
+
     ss << "] Inputs:[";
     size = node->in_edges_.size();
-    for (size_t j = 0; j < max_in_num; ++j) {
+    for (size_t j = 0; j < std::max(max_in_num, size); ++j) {
       if (j < size)
         ss << std::setw(w) << blocks_[node->in_edges_[j]->blk_]->id_ << " ";
       else
@@ -150,7 +159,7 @@ void Graph::Debug() {
 
     ss << "] Outputs:[";
     size = node->out_edges_.size();
-    for (size_t j = 0; j < max_out_num; ++j) {
+    for (size_t j = 0; j < std::max(max_out_num, size); ++j) {
       if (j < size)
         ss << std::setw(w) << blocks_[node->out_edges_[j]->blk_]->id_ << " ";
       else
@@ -188,7 +197,7 @@ void Graph::Debug() {
 
   for (auto it : blkInfos) {
     auto blkInfo = it;
-    ss << "Block[" << std::setw(w) << blkInfo->id_ << "] addr[" << std::setw(w)
+    ss << "Block[" << std::setw(w) << blkInfo->id_ << "] addr[" << std::setw(10)
        << blkInfo->blk_ << "] size[" << std::setw(10) << blkInfo->blk_->size()
        << "] graph_ref[" << std::setw(w) << blkInfo->graph_ref_
        << "] ref_count[" << std::setw(w) << blkInfo->blk_->ref_count() << "] ";
@@ -228,16 +237,106 @@ void Graph::Debug() {
   printf("%s", ss.str().c_str());
 }
 
+void Graph::PrintTimeProfiling() {
+  std::stringstream ss;
+
+  // verbosity level: 1 -> forward and backward propagation time
+  if (device_->verbosity() == 1) {
+    bool forward = true;
+    float forward_time = 0;
+    float backward_time = 0;
+    float time_elapsed;
+
+    for (size_t i = 0; i < nodes_.size(); ++i)
+      if (nodes_[i]->time_elapsed() > 0) {
+        if (forward == true)
+          // check the op of cross entropy backward, after that are backward ops
+          // note that the function is more accurate when either
+          // SoftmaxCrossEntropy or Softmax is used
+          if (nodes_[i]->op_name().find("Backward") != std::string::npos)
+            forward = false;
+        // when forward becomes false, it starts the backward propagation
+
+        time_elapsed = (nodes_[i]->time_elapsed()) /
+                       (iteration_ - device_->skip_iteration());
+
+        if (forward == true) forward_time += time_elapsed;
+      }
+
+    backward_time = (time_elapsed_ / (iteration_ - device_->skip_iteration())) -
+                    forward_time;
+
+    ss << std::endl << "Time Profiling:" << std::endl;
+    ss << "Forward Propagation Time : " << forward_time << " sec" << std::endl;
+    ss << "Backward Propagation Time : " << backward_time << " sec"
+       << std::endl;
+  }
+
+  // verbosity level: 2 -> each operation time (OP_ID, operation name, time)
+  if (device_->verbosity() == 2) {
+    ss << std::endl << "Time Profiling:" << std::endl;
+    for (size_t i = 0; i < nodes_.size(); ++i)
+      if (nodes_[i]->time_elapsed() > 0)
+        ss << "OP_ID" << nodes_[i]->id_ << ". " << nodes_[i]->op_name() << " : "
+           << (nodes_[i]->time_elapsed()) / (iteration_) << " sec" << std::endl;
+  }
+
+  // verbosity level: 3 -> Distributed training operations
+  if (device_->verbosity() == 3) {
+    ss << std::endl << "Time Profiling:" << std::endl;
+    for (size_t i = 0; i < nodes_.size(); ++i)
+      if ((nodes_[i]->op_name().find("Dist") != std::string::npos) &&
+          (nodes_[i]->time_elapsed() > 0))
+        ss << "OP_ID" << nodes_[i]->id_ << ". " << nodes_[i]->op_name() << " : "
+           << (nodes_[i]->time_elapsed()) / (iteration_) << " sec" << std::endl;
+  }
+
+  printf("%s", ss.str().c_str());
+}
+
+void Graph::TimeProfilingDoExec(Node *curNode) {
+  if ((device_->verbosity() > 0) && (curNode->op_name_ != "Waiting") &&
+      (iteration_ >= device_->skip_iteration()))
+    device_->TimeProfilingDoExec(std::move(curNode->op_), 0, curNode);
+  else
+    device_->DoExec(std::move(curNode->op_), 0);
+}
+
+void Graph::EvaluateTimeElapsed(const TimePoint &start) {
+  if ((device_->verbosity() > 0) && (iteration_ > device_->skip_iteration())) {
+    device_->Sync();
+    std::chrono::duration<float> duration =
+        std::chrono::high_resolution_clock::now() - start;
+    time_elapsed_inc(duration.count());
+    for (size_t i = 0; i < nodes_.size(); ++i) {
+      Node *curNode = nodes_[i];
+      if (curNode->op_name_ != "Waiting") {
+        device_->EvaluateTimeElapsed(curNode);
+      }
+    }
+  }
+}
+
+void Graph::TakeStartTime(TimePoint &start) {
+  if ((device_->verbosity() > 0) && (iteration_ >= device_->skip_iteration())) {
+    device_->Sync();
+    start = std::chrono::high_resolution_clock::now();
+  }
+}
+
 void Graph::RunGraph() {
   in_serial_ = false;
   if (dirty_) Analyze();
 
+  TimePoint start;
   SafeQueue<Node *> node_queue;
 
   // activate nodes
   for (auto it : begin_nodes_) {
     node_queue.Push(it);
   }
+
+  TakeStartTime(start);
 
   // run graph
   while (node_queue.Size()) {
@@ -247,7 +346,7 @@ void Graph::RunGraph() {
     int curIndex = curNode->id_;
 
     // step 2: execute the operation
-    device_->DoExec(std::move(curNode->op_), 0);
+    TimeProfilingDoExec(curNode);
 
     // step 3: release some blocks' data that won't be used later
     for (auto it : free_blocks_[curIndex]) {
@@ -267,17 +366,24 @@ void Graph::RunGraph() {
       node_queue.Push(it);
     }
   }
+
+  // increment iteration counter
+  step();
+  EvaluateTimeElapsed(start);
 }
 
 void Graph::RunInSerial() {
   in_serial_ = true;
   if (dirty_) Analyze();
 
+  TimePoint start;
+  TakeStartTime(start);
+
   for (size_t i = 0; i < nodes_.size(); ++i) {
     Node *curNode = nodes_[i];
 
     // step 1: execute the operation
-    device_->DoExec(std::move(curNode->op_), 0);
+    TimeProfilingDoExec(curNode);
 
     // step 2: release some blocks' data that won't be used later
     for (auto it : free_blocks_[i]) {
@@ -291,21 +397,25 @@ void Graph::RunInSerial() {
     *)(cb_data), 0));
     */
   }
+
+  // increment iteration counter
+  step();
+  EvaluateTimeElapsed(start);
 }
 
 void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
-                         const BlockVec &write_blocks) {
+                         const BlockVec &write_blocks, string op_name) {
   dirty_ = true;
 
   // if the size of both read_blocks and write_blocks is zero,
   // this operation is used for synchronization
   if (read_blocks.size() == 0 && write_blocks.size() == 0) {
-    AddSyncOp(std::move(op));
+    AddSyncOp(std::move(op), op_name);
     return;
   }
 
   // create new node
-  Node *node = new Node(nodes_.size(), std::move(op));
+  Node *node = new Node(nodes_.size(), std::move(op), op_name);
 
   // create edges for read_blocks
   for (size_t i = 0; i < read_blocks.size(); ++i) {
@@ -313,6 +423,13 @@ void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
     Node *src_node = nullptr;
     BlkInfo *blkInfo = nullptr;
 
+    // update leaf blocks
+    auto iter = leaf_blocks_.find(blk);
+    if (iter != leaf_blocks_.end()) {
+      leaf_blocks_.erase(iter);
+    }
+
+    // check if the block is already in the computational graph
     auto it = blocks_.find(blk);
     if (it == blocks_.end()) {
       blkInfo = new BlkInfo(blocks_.size(), blk, BlockType::kInput);
@@ -323,6 +440,7 @@ void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
         blkInfo->type_ = BlockType::kInter;
       }
 
+      // update the existing edge, update dst node and create new edge
       Edge *write_edge = blkInfo->write_edge_;
       if (write_edge) {
         if (!write_edge->dst_node_) {
@@ -337,6 +455,7 @@ void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
       }
     }
 
+    // create new edge for new block
     Edge *edge = new Edge(edges_.size(), blk, src_node, node);
     blkInfo->graph_ref_ += 1;
     if (src_node) {
@@ -352,6 +471,9 @@ void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
     Block *blk = write_blocks[i];
     BlkInfo *blkInfo = nullptr;
 
+    // update leaf blocks
+    leaf_blocks_.insert(blk);
+
     auto it = blocks_.find(blk);
     if (it == blocks_.end()) {
       blkInfo = new BlkInfo(blocks_.size(), blk, BlockType::kEnd);
@@ -361,8 +483,28 @@ void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
       if (blkInfo->type_ == BlockType::kInput) {
         blkInfo->type_ = BlockType::kParam;
       }
+
+      Edge *write_edge = blkInfo->write_edge_;
+      if (write_edge) {
+        if (!write_edge->dst_node_) {
+          write_edge->dst_node_ = node;
+          node->AddInEdge(write_edge);
+        } else {
+          Node *lastNode = write_edge->src_node_;
+          auto outEdges = lastNode->out_edges();
+          for (auto outEdge : outEdges) {
+            if (outEdge->blk_ == blk && outEdge->dst_node_ != node) {
+              Edge *edge =
+                  new Edge(edges_.size(), blk, outEdge->dst_node_, node);
+              outEdge->dst_node_->AddOutEdge(edge);
+              node->AddInEdge(edge);
+            }
+          }
+        }
+      }
     }
 
+    // create new edge for new block
     Edge *edge = new Edge(edges_.size(), blk, node, nullptr);
     blkInfo->write_edge_ = edge;
     blkInfo->graph_ref_ += 1;
@@ -371,19 +513,16 @@ void Graph::AddOperation(OpFunc &&op, const BlockVec &read_blocks,
     edges_.push_back(edge);
   }
 
-  // for sync op
-  write_blocks_ = write_blocks;
-
   // add node into nodes
   nodes_.push_back(node);
 }
 
-void Graph::AddSyncOp(function<void(Context *)> &&op) {
+void Graph::AddSyncOp(function<void(Context *)> &&op, string op_name) {
   // create new node
-  Node *node = new Node(nodes_.size(), std::move(op));
+  Node *node = new Node(nodes_.size(), std::move(op), op_name);
 
-  for (size_t i = 0; i < write_blocks_.size(); ++i) {
-    Block *blk = write_blocks_[i];
+  for (auto it : leaf_blocks_) {
+    Block *blk = it;
     BlkInfo *blkInfo = blocks_[blk];
     Edge *edge = nullptr;
 
@@ -419,6 +558,7 @@ void Graph::AddSyncOp(function<void(Context *)> &&op) {
 
 void Graph::Analyze() {
   begin_nodes_.clear();
+  next_nodes_.clear();
   next_nodes_.resize(nodes_.size());
   free_blocks_.clear();
   free_blocks_.resize(nodes_.size());
@@ -440,12 +580,15 @@ void Graph::AnalyzeNodes() {
   if (in_serial_) {
     begin_nodes_.push_back(nodes_[0]);
 
-    for (size_t i = 0; i < nodes_.size() - 1; ++i) {
+    for (size_t i = 0; i < nodes_.size(); ++i) {
       Node *curNode = nodes_[i];
 
-      next_nodes_[i].push_back(nodes_[i + 1]);
+      next_nodes_[i].clear();
+      if (i + 1 < nodes_.size()) {
+        next_nodes_[i].push_back(nodes_[i + 1]);
+      }
 
-      std::unordered_set<Block *> blks;
+      BlockSet blks;
       for (size_t j = 0; j < curNode->in_edges_.size(); ++j) {
         blks.insert(curNode->in_edges_[j]->blk_);
       }
@@ -510,7 +653,7 @@ void Graph::AnalyzeNodes() {
       }
 
       // step 3: push_back curNode to the used_nodes_ of relevant blocks
-      std::unordered_set<Block *> blks;
+      BlockSet blks;
       for (size_t j = 0; j < curNode->in_edges_.size(); ++j) {
         blks.insert(curNode->in_edges_[j]->blk_);
       }

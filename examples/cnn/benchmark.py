@@ -30,7 +30,7 @@ import numpy as np
 from tqdm import trange
 
 
-def train_resnet(DIST=True, graph=True, sequential=False):
+def train_resnet(DIST=True, graph=True, sequential=False, verbosity=0):
 
     # Define the hypermeters good for the train_resnet
     niters = 100
@@ -40,7 +40,7 @@ def train_resnet(DIST=True, graph=True, sequential=False):
     IMG_SIZE = 224
 
     # For distributed training, sequential has better throughput in the current version
-    if DIST:
+    if DIST == True:
         sgd = opt.DistOpt(sgd)
         world_size = sgd.world_size
         local_rank = sgd.local_rank
@@ -61,23 +61,23 @@ def train_resnet(DIST=True, graph=True, sequential=False):
     tx.copy_from_numpy(x)
     ty.copy_from_numpy(y)
 
+    dev.SetVerbosity(verbosity)
+    dev.SetSkipIteration(5)
+
     # construct the model
     from model import resnet
     model = resnet.resnet50(num_channels=3, num_classes=1000)
 
     model.train()
-    model.on_device(dev)
     model.set_optimizer(sgd)
-    model.graph(graph, sequential)
+    model.compile([tx], is_train=True, use_graph=graph, sequential=sequential)
 
     # train model
     dev.Sync()
     start = time.time()
     with trange(niters) as t:
         for _ in t:
-            out = model(tx)
-            loss = model.loss(out, ty)
-            model.optim(loss, dist_option='fp32', spars=None)
+            model(tx, ty, dist_option='fp32', spars=None)
 
     dev.Sync()
     end = time.time()
@@ -87,6 +87,7 @@ def train_resnet(DIST=True, graph=True, sequential=False):
         print("Throughput = {} per second".format(throughput), flush=True)
         print("TotalTime={}".format(end - start), flush=True)
         print("Total={}".format(titer), flush=True)
+        dev.PrintTimeProfiling()
 
 
 if __name__ == "__main__":
@@ -105,7 +106,16 @@ if __name__ == "__main__":
                         action='store_false',
                         help='disable graph',
                         dest='graph')
+    parser.add_argument('--verbosity',
+                        '--log-verbosity',
+                        default=0,
+                        type=int,
+                        help='logging verbosity',
+                        dest='verbosity')
 
     args = parser.parse_args()
 
-    train_resnet(DIST=args.DIST, graph=args.graph)
+    train_resnet(DIST=args.DIST,
+                 graph=args.graph,
+                 sequential=False,
+                 verbosity=args.verbosity)

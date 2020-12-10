@@ -21,8 +21,8 @@ export PATH="$HOME/miniconda/bin:$PATH"
 
 # pylint
 find python/singa/ \
-    examples/autograd \
-    test/python/ -iname *.py | xargs pylint
+    examples/ \
+    test/python/ -iname "*.py" | xargs pylint
 
 LINTRESULT=$?
 if [ $LINTRESULT == 0 ]; then
