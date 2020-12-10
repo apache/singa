@@ -23,12 +23,9 @@ from PIL import Image
 
 from singa import device
 from singa import tensor
-from singa import autograd
 from singa import sonnx
 import onnx
-from utils import download_model
-from utils import update_batch_size
-from utils import check_exist_or_download
+from utils import download_model, check_exist_or_download
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 
@@ -56,51 +53,53 @@ def get_image_label():
     return img, labels
 
 
-class Infer:
+class MyModel(sonnx.SONNXModel):
 
-    def __init__(self, sg_ir):
-        self.sg_ir = sg_ir
-        for idx, tens in sg_ir.tensor_map.items():
-            tens.require_grad = True
-            tens.store_grad = True
-            sg_ir.tensor_map[idx] = tens
+    def __init__(self, onnx_model):
+        super(MyModel, self).__init__(onnx_model)
 
-    def forward(self, x):
-        return sg_ir.run([x])[0]
+    def forward(self, *x):
+        y = super(MyModel, self).forward(*x)
+        return y[0]
+
+    def train_one_batch(self, x, y):
+        pass
 
 
 if __name__ == '__main__':
+    download_dir = '/tmp'
     url = 'https://github.com/onnx/models/raw/master/vision/classification/shufflenet/model/shufflenet-9.tar.gz'
-    download_dir = "/tmp/"
     model_path = os.path.join(download_dir, 'shufflenet', 'model.onnx')
-    logging.info("onnx load model....")
+
+    logging.info("onnx load model...")
     download_model(url)
     onnx_model = onnx.load(model_path)
-    # setting batch size
-    onnx_model = update_batch_size(onnx_model, 1)
-    # preparing the model
-    logging.info("preparing model...")
-    dev = device.create_cuda_gpu()
-    sg_ir = sonnx.prepare(onnx_model, device=dev)
-    autograd.training = False
-    model = Infer(sg_ir)
-	
-    # verifying the test dataset
-    #from utils import load_dataset
-    #inputs,ref_outputs = load_dataset(os.path.join('/tmp','shufflenet','test_data_set_0'))
-    #x_batch = tensor.Tensor(device = dev,data=inputs[0])
-    #outputs = model.forward(x_batch)
-    # for ref_o,o in zip(ref_outputs,outputs):
-    #    np.testing.assert_almost_equal(ref_o,tensor.to_numpy(o),4)
-    
-    # inference
+
+    # inference demo
     logging.info("preprocessing...")
     img, labels = get_image_label()
     img = preprocess(img)
-    x_batch = tensor.Tensor(device=dev, data=img)
-    logging.info("model running....")
-    y = model.forward(x_batch)
-    logging.info("postprocessing....")
+    # sg_ir = sonnx.prepare(onnx_model) # run without graph
+    # y = sg_ir.run([img])
+
+    logging.info("model compling...")
+    dev = device.create_cuda_gpu()
+    x = tensor.Tensor(device=dev, data=img)
+    model = MyModel(onnx_model)
+    model.compile([x], is_train=False, use_graph=True, sequential=True)
+
+    # verifty the test
+    # from utils import load_dataset
+    # inputs, ref_outputs = load_dataset(os.path.join('/tmp', 'shufflenet', 'test_data_set_0'))
+    # x_batch = tensor.Tensor(device=dev, data=inputs[0])
+    # outputs = sg_ir.run([x_batch])
+    # for ref_o, o in zip(ref_outputs, outputs):
+    #     np.testing.assert_almost_equal(ref_o, tensor.to_numpy(o), 4)
+
+    logging.info("model running...")
+    y = model.forward(x)
+
+    logging.info("postprocessing...")
     y = tensor.softmax(y)
     scores = tensor.to_numpy(y)
     scores = np.squeeze(scores)

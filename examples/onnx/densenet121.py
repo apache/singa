@@ -22,10 +22,9 @@ from PIL import Image
 
 from singa import device
 from singa import tensor
-from singa import autograd
 from singa import sonnx
 import onnx
-from utils import download_model, update_batch_size, check_exist_or_download
+from utils import download_model, check_exist_or_download
 
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(message)s')
@@ -44,7 +43,7 @@ def preprocess(img):
     return img
 
 
-def get_image_labe():
+def get_image_label():
     # download label
     label_url = 'https://s3.amazonaws.com/onnx-model-zoo/synset.txt'
     with open(check_exist_or_download(label_url), 'r') as f:
@@ -56,56 +55,52 @@ def get_image_labe():
     return img, labels
 
 
-class Infer:
+class MyModel(sonnx.SONNXModel):
 
-    def __init__(self, sg_ir):
-        self.sg_ir = sg_ir
-        for idx, tens in sg_ir.tensor_map.items():
-            # allow the tensors to be updated
-            tens.requires_grad = True
-            tens.stores_grad = True
-            sg_ir.tensor_map[idx] = tens
+    def __init__(self, onnx_model):
+        super(MyModel, self).__init__(onnx_model)
 
-    def forward(self, x):
-        return sg_ir.run([x])[0]
+    def forward(self, *x):
+        y = super(MyModel, self).forward(*x)
+        return y[0]
+
+    def train_one_batch(self, x, y):
+        pass
 
 
 if __name__ == "__main__":
+
+    download_dir = '/tmp'
     url = 'https://s3.amazonaws.com/download.onnx/models/opset_9/densenet121.tar.gz'
-    download_dir = '/tmp/'
     model_path = os.path.join(download_dir, 'densenet121', 'model.onnx')
 
     logging.info("onnx load model...")
     download_model(url)
     onnx_model = onnx.load(model_path)
 
-    # set batch size
-    onnx_model = update_batch_size(onnx_model, 1)
+    # inference demo
+    logging.info("preprocessing...")
+    img, labels = get_image_label()
+    img = preprocess(img)
+    # sg_ir = sonnx.prepare(onnx_model) # run without graph
+    # y = sg_ir.run([img])
 
-    # prepare the model
-    logging.info("prepare model...")
+    logging.info("model compling...")
     dev = device.create_cuda_gpu()
-    sg_ir = sonnx.prepare(onnx_model, device=dev)
-    autograd.training = False
-    model = Infer(sg_ir)
+    x = tensor.Tensor(device=dev, data=img)
+    model = MyModel(onnx_model)
+    model.compile([x], is_train=False, use_graph=True, sequential=True)
 
     # verifty the test
     # from utils import load_dataset
-    # inputs, ref_outputs = load_dataset(
-    #     os.path.join('/tmp', 'densenet121', 'test_data_set_0'))
+    # inputs, ref_outputs = load_dataset(os.path.join('/tmp', 'densenet121', 'test_data_set_0'))
     # x_batch = tensor.Tensor(device=dev, data=inputs[0])
-    # outputs = model.forward(x_batch)
+    # outputs = sg_ir.run([x_batch])
     # for ref_o, o in zip(ref_outputs, outputs):
     #     np.testing.assert_almost_equal(ref_o, tensor.to_numpy(o), 4)
 
-    # inference
-    logging.info("preprocessing...")
-    img, labels = get_image_labe()
-    img = preprocess(img)
-
     logging.info("model running...")
-    x_batch = tensor.Tensor(device=dev, data=img)
-    y = model.forward(x_batch)
+    y = model.forward(x)
 
     logging.info("postprocessing...")
     y = tensor.softmax(y)

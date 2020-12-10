@@ -19,7 +19,6 @@
 import os
 import numpy as np
 from PIL import Image
-# pip install python-resize-image
 from resizeimage import resizeimage
 
 from singa import device
