@@ -330,7 +330,7 @@ class ImageTool(object):
                 small_sizes = get_list_sample(size_list, num_case)
 
             for small_size in small_sizes:
-                new_img = resize_by_hw(img, small_size)
+                new_img = resize_by_hw(img, (small_size[0], small_size[1]))
                 new_imgs.append(new_img)
         if inplace:
             self.imgs = new_imgs
