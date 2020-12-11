@@ -139,9 +139,9 @@ def scale(img, small_size):
     return resize(img, small_size)
 
 
-def resize_by_hw(img, (height, width)):
+def resize_by_hw(img, size):
     '''Resize the image to be the given width and height'''
-    new_img = img.resize((width, height))
+    new_img = img.resize((size[1], size[0]))
     return new_img
 
 
@@ -330,7 +330,7 @@ class ImageTool(object):
                 small_sizes = get_list_sample(size_list, num_case)
 
             for small_size in small_sizes:
-                new_img = resize_by_hw(img, (small_size[0], small_size[1]))
+                new_img = resize_by_hw(img, small_size)
                 new_imgs.append(new_img)
         if inplace:
             self.imgs = new_imgs
