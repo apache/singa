@@ -139,9 +139,9 @@ def scale(img, small_size):
     return resize(img, small_size)
 
 
-def resize_by_hw(img, (height, width)):
+def resize_by_hw(img, size):
     '''Resize the image to be the given width and height'''
-    new_img = img.resize((width, height))
+    new_img = img.resize((size[1], size[0]))
     return new_img
 
 
