@@ -30,11 +30,17 @@ AUX_SOURCE_DIRECTORY(io io_source)
 AUX_SOURCE_DIRECTORY(io/network io_source)
 LIST(APPEND singa_sources ${io_source})
 
+AUX_SOURCE_DIRECTORY(core/common core_source)
 AUX_SOURCE_DIRECTORY(core/device core_source)
 AUX_SOURCE_DIRECTORY(core/memory core_source)
 AUX_SOURCE_DIRECTORY(core/scheduler core_source)
 AUX_SOURCE_DIRECTORY(core/tensor core_source)
 LIST(APPEND singa_sources ${core_source})
+
+IF (USE_DIST)
+    AUX_SOURCE_DIRECTORY(dist dist_source)
+    LIST(APPEND singa_sources ${dist_source})
+ENDIF (USE_DIST)
 
 IF (USE_CUDA)
     FILE(GLOB_RECURSE cuda_source core "*.cu")
@@ -58,6 +64,7 @@ AUX_SOURCE_DIRECTORY(model/optimizer model_source)
 AUX_SOURCE_DIRECTORY(model/loss model_source)
 AUX_SOURCE_DIRECTORY(model/metric model_source)
 AUX_SOURCE_DIRECTORY(model/updater model_source)
+AUX_SOURCE_DIRECTORY(model/operation model_source)
 LIST(APPEND singa_sources ${model_source})
 
 
@@ -97,6 +104,11 @@ IF(UNIX OR APPLE)
   TARGET_LINK_LIBRARIES(singa ${SINGA_LINKER_LIBS})
   SET_TARGET_PROPERTIES(singa PROPERTIES LINK_FLAGS "")
 ENDIF()
+
+IF(CODE_COVERAGE)
+    MESSAGE("-- Enabling Code Coverage")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g --coverage")
+ENDIF(CODE_COVERAGE)
 
 #pass configure infor to swig
 FILE(REMOVE "${CMAKE_CURRENT_SOURCE_DIR}/api/config.i")

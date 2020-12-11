@@ -16,6 +16,6 @@
 # limitations under the License.
 #
 
-pip install /usr/local/lib/singa/python
+pip3 install /usr/local/lib/singa/python
 rm -r /usr/local/lib/singa
 

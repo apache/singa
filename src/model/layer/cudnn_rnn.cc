@@ -125,8 +125,8 @@ void CudnnRNN::SetRNNDescriptor(shared_ptr<Device> dev) {
   CUDNN_CHECK(cudnnDropoutGetStatesSize(ctx->cudnn_handle, &state_size));
   dropout_state_ = Tensor(Shape{state_size}, dev, kChar);
   CUDNN_CHECK(cudnnSetDropoutDescriptor(
-      dropout_desc_, ctx->cudnn_handle, 1 - dropout_,  // keep probability
-      dropout_state_.block()->mutable_data(), state_size, seed_));
+                dropout_desc_, ctx->cudnn_handle, 1 - dropout_,  // keep probability
+                dropout_state_.block()->mutable_data(), state_size, seed_));
 
   CUDNN_CHECK(cudnnCreateRNNDescriptor(&rnn_desc_));
   cudnnRNNInputMode_t input_mode = CUDNN_LINEAR_INPUT;
@@ -144,10 +144,15 @@ void CudnnRNN::SetRNNDescriptor(shared_ptr<Device> dev) {
     rnn_mode = CUDNN_RNN_TANH;
   else if (rnn_mode_ == "gru")
     rnn_mode = CUDNN_GRU;
+#if CUDNN_MAJOR <= 5
   CUDNN_CHECK(cudnnSetRNNDescriptor(rnn_desc_, hidden_size_, num_stacks_,
                                     dropout_desc_, input_mode, direction,
                                     rnn_mode, dtype_));
-
+#else
+  CUDNN_CHECK(cudnnSetRNNDescriptor(ctx->cudnn_handle, rnn_desc_, hidden_size_, num_stacks_,
+                                    dropout_desc_, input_mode, direction,
+                                    rnn_mode, CUDNN_RNN_ALGO_STANDARD, dtype_));
+#endif
   size_t weight_size;
   CUDNN_CHECK(cudnnGetRNNParamsSize(ctx->cudnn_handle, rnn_desc_, x_descs_[0],
                                     &weight_size, dtype_));
@@ -199,7 +204,7 @@ void CudnnRNN::UpdateSpaces(size_t seq_length, shared_ptr<Device> dev) {
   }
 
   CUDNN_CHECK(cudnnGetRNNTrainingReserveSize(ctx->cudnn_handle, rnn_desc_,
-                                             seq_length, x_descs_, &count));
+              seq_length, x_descs_, &count));
   if (reserve_space_.Size() != count) {
     reserve_space_ = Tensor(Shape{count}, dev, kChar);
     // reserve_space_.SetValue(0);
@@ -263,8 +268,8 @@ const vector<Tensor> CudnnRNN::Forward(int flag, const vector<Tensor> &inputs) {
 
   if (rnn_desc_ != nullptr)
     CHECK_EQ(dtype_, GetCudnnDataType(dtype))
-      << "Cannot change cudnn data type during training from " << dtype_
-      << " to " << GetCudnnDataType(dtype);
+        << "Cannot change cudnn data type during training from " << dtype_
+        << " to " << GetCudnnDataType(dtype);
   else
     dtype_ = GetCudnnDataType(dtype);
 
@@ -303,57 +308,57 @@ const vector<Tensor> CudnnRNN::Forward(int flag, const vector<Tensor> &inputs) {
   // LOG(INFO) << "hidden size " << hy.Size();
   // LOG(INFO) << "weight size " << weight_.Size() << " value " << weight_.L1();
   Block *inb = input.block(), *outb = output.block(),
-        *wb = this->weight_.block(), *hxb = hx.block(), *cxb = cx.block(),
-        *hyb = hy.block(), *cyb = cy.block(),
-        *wspace = this->workspace_.block(),
-        *rspace = this->reserve_space_.block();
+         *wb = this->weight_.block(), *hxb = hx.block(), *cxb = cx.block(),
+          *hyb = hy.block(), *cyb = cy.block(),
+           *wspace = this->workspace_.block(),
+            *rspace = this->reserve_space_.block();
   if (flag & kTrain) {
     CHECK_EQ(reserve_space_.device()->lang(), kCuda);
     CHECK_EQ(did, reserve_space_.device()->id());
     dev->Exec(
-        [inb, outb, wb, hxb, cxb, hyb, cyb, wspace, rspace, this](Context *ctx) {
-        // clang-format off
-        cudnnRNNForwardTraining(
-            ctx->cudnn_handle,
-            this->rnn_desc_,
-            this->seq_length_,
-            this->x_descs_, inb->data(),
-            this->hx_desc_, hxb == nullptr ? nullptr : hxb->data(),
-            this->cx_desc_, cxb == nullptr ? nullptr : cxb->data(),
-            this->weight_desc_, wb->data(),
-            this->y_descs_, outb->mutable_data(),
-            this->hy_desc_, hyb->mutable_data(),
-            this->cy_desc_, cyb == nullptr ? nullptr : cyb->mutable_data(),
-            wspace->mutable_data(),
-            this->workspace_.Size(), rspace->mutable_data(),
-            this->reserve_space_.Size());
-        // clang-format on
-        },
-        {inb, wb, hxb, cxb}, {outb, hyb, cyb, wspace, rspace});
+    [inb, outb, wb, hxb, cxb, hyb, cyb, wspace, rspace, this](Context * ctx) {
+      // clang-format off
+      cudnnRNNForwardTraining(
+        ctx->cudnn_handle,
+        this->rnn_desc_,
+        this->seq_length_,
+        this->x_descs_, inb->data(),
+        this->hx_desc_, hxb == nullptr ? nullptr : hxb->data(),
+        this->cx_desc_, cxb == nullptr ? nullptr : cxb->data(),
+        this->weight_desc_, wb->data(),
+        this->y_descs_, outb->mutable_data(),
+        this->hy_desc_, hyb->mutable_data(),
+        this->cy_desc_, cyb == nullptr ? nullptr : cyb->mutable_data(),
+        wspace->mutable_data(),
+        this->workspace_.Size(), rspace->mutable_data(),
+        this->reserve_space_.Size());
+      // clang-format on
+    },
+    {inb, wb, hxb, cxb}, {outb, hyb, cyb, wspace, rspace});
     buf_.push(input);
     buf_.push(output);
     buf_.push(hx);
     buf_.push(cx);
   } else {
-    dev->Exec([inb, outb, wb, hxb, cxb, hyb, cyb, wspace, this](Context *ctx) {
+    dev->Exec([inb, outb, wb, hxb, cxb, hyb, cyb, wspace, this](Context * ctx) {
       // clang-format off
       cudnnRNNForwardInference(
-          ctx->cudnn_handle,
-          this->rnn_desc_,
-          this->seq_length_,
-          this->x_descs_, inb->data(),
-          this->hx_desc_, hxb == nullptr ? nullptr : hxb->data(),
-          this->cx_desc_, cxb == nullptr ? nullptr : cxb->data(),
-          this->weight_desc_, wb->data(),
-          this->y_descs_, outb->mutable_data(),
-          this->hy_desc_, hyb->mutable_data(),
-          this->cy_desc_, cyb == nullptr ? nullptr : cyb->mutable_data(),
-          wspace->mutable_data(), this->workspace_.Size());
+        ctx->cudnn_handle,
+        this->rnn_desc_,
+        this->seq_length_,
+        this->x_descs_, inb->data(),
+        this->hx_desc_, hxb == nullptr ? nullptr : hxb->data(),
+        this->cx_desc_, cxb == nullptr ? nullptr : cxb->data(),
+        this->weight_desc_, wb->data(),
+        this->y_descs_, outb->mutable_data(),
+        this->hy_desc_, hyb->mutable_data(),
+        this->cy_desc_, cyb == nullptr ? nullptr : cyb->mutable_data(),
+        wspace->mutable_data(), this->workspace_.Size());
       // clang-format on
     }, {inb, wb, hxb, cxb}, {outb, hyb, cyb, wspace});
   }
   auto outputs =
-      SplitOutput(num_x, hidden_size_ * num_directions_, inputs, output);
+    SplitOutput(num_x, hidden_size_ * num_directions_, inputs, output);
   outputs.push_back(hy);
   if (has_cell_) outputs.push_back(cy);
   return outputs;
@@ -361,7 +366,7 @@ const vector<Tensor> CudnnRNN::Forward(int flag, const vector<Tensor> &inputs) {
 
 // TODO(wangwei) check Tensor device to be on cuda?
 const std::pair<vector<Tensor>, vector<Tensor>> CudnnRNN::Backward(
-    int flag, const vector<Tensor> &grads) {
+int flag, const vector<Tensor> &grads) {
   // dhy (and dcy) is at last
   const Tensor cx = buf_.top();  // cannot use const Tensor& due to pop()
   buf_.pop();
@@ -395,45 +400,45 @@ const std::pair<vector<Tensor>, vector<Tensor>> CudnnRNN::Backward(
     dcx.ResetLike(dhx);
   dw.SetValue(0.0f);
   Block *yb = y.block(), *dyb = dy.block(), *dhyb = dhy.block(),
-        *dcyb = dcy.block(), *xb = x.block(), *cxb = cx.block(),
-        *wb = weight_.block(), *dwb = dw.block(), *hxb = hx.block(),
-        *dxb = dx.block(), *dhxb = dhx.block(), *dcxb = dcx.block(),
-        *wspace = workspace_.block(), *rspace = reserve_space_.block();
+         *dcyb = dcy.block(), *xb = x.block(), *cxb = cx.block(),
+          *wb = weight_.block(), *dwb = dw.block(), *hxb = hx.block(),
+           *dxb = dx.block(), *dhxb = dhx.block(), *dcxb = dcx.block(),
+            *wspace = workspace_.block(), *rspace = reserve_space_.block();
 
   y.device()->Exec(
-      [yb, dyb, dhyb, dcyb, xb, cxb, wb, dwb, hxb, dxb, dhxb, dcxb, wspace,
-       rspace, this](Context *ctx) {
-        // clang-format off
-        cudnnRNNBackwardData(
-            ctx->cudnn_handle,
-            this->rnn_desc_,
-            this->seq_length_,
-            this->y_descs_, yb->data(),
-            this->dy_descs_, dyb->data(),
-            this->dhy_desc_, dhyb == nullptr ? nullptr : dhyb->data(),
-            this->dcy_desc_, dcyb == nullptr ? nullptr : dcyb->data(),
-            this->weight_desc_, wb->data(),
-            this->hx_desc_, hxb == nullptr ? nullptr : hxb->data(),
-            this->cx_desc_, cxb == nullptr ? nullptr : cxb->data(),
-            this->dx_descs_, dxb->mutable_data(),
-            this->dhx_desc_, dhxb->mutable_data(),
-            this->dcx_desc_, dcxb == nullptr ? nullptr : dcxb->mutable_data(),
-            wspace->mutable_data(), this->workspace_.Size(),
-            rspace->mutable_data(), this->reserve_space_.Size());
-        cudnnRNNBackwardWeights(
-            ctx->cudnn_handle,
-            this->rnn_desc_,
-            this->seq_length_,
-            this->x_descs_, xb->data(),
-            this->hx_desc_, hxb == nullptr ? nullptr : hxb->data(),
-            this->y_descs_, yb->data(),
-            wspace->data(), this->workspace_.Size(),
-            this->dweight_desc_, dwb->mutable_data(),
-            rspace->data(), this->reserve_space_.Size());
-        // clang-format on
-      },
-      {yb, dyb, dhyb, dcyb, xb, wb, wspace, rspace},
-      {dxb, dwb, dhxb, dcxb, wspace, rspace});
+    [yb, dyb, dhyb, dcyb, xb, cxb, wb, dwb, hxb, dxb, dhxb, dcxb, wspace,
+  rspace, this](Context * ctx) {
+    // clang-format off
+    cudnnRNNBackwardData(
+      ctx->cudnn_handle,
+      this->rnn_desc_,
+      this->seq_length_,
+      this->y_descs_, yb->data(),
+      this->dy_descs_, dyb->data(),
+      this->dhy_desc_, dhyb == nullptr ? nullptr : dhyb->data(),
+      this->dcy_desc_, dcyb == nullptr ? nullptr : dcyb->data(),
+      this->weight_desc_, wb->data(),
+      this->hx_desc_, hxb == nullptr ? nullptr : hxb->data(),
+      this->cx_desc_, cxb == nullptr ? nullptr : cxb->data(),
+      this->dx_descs_, dxb->mutable_data(),
+      this->dhx_desc_, dhxb->mutable_data(),
+      this->dcx_desc_, dcxb == nullptr ? nullptr : dcxb->mutable_data(),
+      wspace->mutable_data(), this->workspace_.Size(),
+      rspace->mutable_data(), this->reserve_space_.Size());
+    cudnnRNNBackwardWeights(
+      ctx->cudnn_handle,
+      this->rnn_desc_,
+      this->seq_length_,
+      this->x_descs_, xb->data(),
+      this->hx_desc_, hxb == nullptr ? nullptr : hxb->data(),
+      this->y_descs_, yb->data(),
+      wspace->data(), this->workspace_.Size(),
+      this->dweight_desc_, dwb->mutable_data(),
+      rspace->data(), this->reserve_space_.Size());
+    // clang-format on
+  },
+  {yb, dyb, dhyb, dcyb, xb, wb, wspace, rspace},
+  {dxb, dwb, dhxb, dcxb, wspace, rspace});
 
   vector <Tensor> param_grad{dw};
   auto data_grads = SplitOutput(num_dy, input_size_, grads, dx);

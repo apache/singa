@@ -39,8 +39,8 @@ void CudnnBatchNorm::ToDevice(std::shared_ptr<Device> device) {
 
 void CudnnBatchNorm::Setup(const Shape& in_sample, const LayerConf& conf) {
   BatchNorm::Setup(in_sample, conf);
-  resultSaveMean_.Reshape(Shape{channels_});
-  resultSaveVariance_.Reshape(Shape{channels_});
+  resultSaveMean_.Resize(Shape{channels_});
+  resultSaveVariance_.Resize(Shape{channels_});
 }
 
 void CudnnBatchNorm::InitCudnn(const Shape& shape, DataType dtype) {
@@ -167,7 +167,7 @@ const std::pair<Tensor, vector<Tensor>> CudnnBatchNorm::Backward(
               saveVarBlock->data()));
 
         },
-        {dx.block(), grad.block(), bnScale_.block(), resultSaveMean_.block(),
+        {x.block(), grad.block(), bnScale_.block(), resultSaveMean_.block(),
          resultSaveVariance_.block()},
         {dx.block(), dbnScale_.block(), dbnBias_.block()});
   } else {

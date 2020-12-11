@@ -19,13 +19,30 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 PROJECT(singa)
-SET(PACKAGE_VERSION "1.1.1")
-SET(SINGA_MAJOR_VERSION 1)  # 0 -
-SET(SINGA_MINOR_VERSION 1)  # 0 - 9
-SET(SINGA_PATCH_VERSION 1)  # 0 - 99
-MATH(EXPR SINGA_VERSION "${SINGA_MAJOR_VERSION} * 1000 + ${SINGA_MINOR_VERSION} * 100 + ${SINGA_PATCH_VERSION}")
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Thirdparty)
+
+#include(GetGitRevisionDescription)
+#git_describe(VERSION --tags --dirty=-d)
+#string(REGEX REPLACE "^([0-9]+)\\..*" "\\1" VERSION_MAJOR "${VERSION}")
+#string(REGEX REPLACE "^[0-9]+\\.([0-9]+).*" "\\1" VERSION_MINOR "${VERSION}")
+#string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" VERSION_PATCH "${VERSION}")
+
+
+SET(PACKAGE_VERSION 3.1.0) # ${VERSION})
+SET(VERSION 3.1.0)
+SET(SINGA_MAJOR_VERSION 3)
+SET(SINGA_MINOR_VERSION 1)
+SET(SINGA_PATCH_VERSION 0)
+#SET(SINGA_MAJOR_VERSION ${VERSION_MAJOR})  # 0 -
+#SET(SINGA_MINOR_VERSION ${VERSION_MINOR})  # 0 - 9
+#SET(SINGA_PATCH_VERSION ${VERSION_PATCH})  # 0 - 99
+
+MATH(EXPR SINGA_VERSION "${SINGA_MAJOR_VERSION} * 1000 + ${SINGA_MINOR_VERSION} * 100 + ${SINGA_PATCH_VERSION}")
+
+message(STATUS "SINGA git Version ${VERSION}")
+message(STATUS "SINGA Version ${SINGA_VERSION}")
+
 #message(STATUS "module path: ${CMAKE_MODULE_PATH}")
 
 # Flags
@@ -52,19 +69,23 @@ SET(SINGA_INCLUDE_DIR
     "${CMAKE_SOURCE_DIR}/include;${PROJECT_BINARY_DIR}")
 INCLUDE_DIRECTORIES(${SINGA_INCLUDE_DIR})
 
-#OPTION(USE_CBLAS "Use CBlas libs" ON)
+
 OPTION(USE_CUDA "Use Cuda libs" OFF)
+OPTION(ENABLE_TEST "Enable unit test" OFF)
+option(CODE_COVERAGE "Enable coverage reporting" OFF)
+OPTION(USE_PYTHON "Generate py wrappers" ON)
+OPTION(USE_PYTHON3 "Python 3x" OFF)
+
 OPTION(USE_CUDNN "Use Cudnn libs" ON)
 OPTION(USE_OPENCV "Use opencv" OFF)
 OPTION(USE_LMDB "Use LMDB libs" OFF)
-OPTION(USE_PYTHON "Generate py wrappers" ON)
 OPTION(USE_JAVA "Generate java wrappers" OFF)
 OPTION(USE_OPENCL "Use OpenCL" OFF)
 OPTION(ENABLE_DIST "Enable distributed training" OFF)
-OPTION(ENABLE_TEST "Enable unit test" OFF)
 OPTION(DISABLE_WARNINGS "Disable warnings under windows" ON)
 OPTION(USE_MODULES "Compile dependent libs as submodules together with singa" OFF)
-#OPTION(USE_SHARED_LIBS "Use shared library" OFF)
+OPTION(USE_DNNL "Use dnnl libs" OFF)
+OPTION(USE_DIST "Use nccl distributed module" OFF)
 
 # TODO: remove all USE_CBLAS in codes
 SET(USE_CBLAS ON)
@@ -122,13 +143,13 @@ IF (USE_MODULES)
     #ENDIF()
     ExternalProject_Add(protobuf
         DOWNLOAD_COMMAND "wget"
-        "http://github.com/google/protobuf/releases/download/v2.6.1/protobuf-2.6.1.tar.gz"
-        "-O" "protobuf-2.6.1.tar.gz"
+        "https://github.com/google/protobuf/archive/v3.3.0.tar.gz"
+        "-O" "protobuf-3.3.0.tar.gz"
         UPDATE_COMMAND "tar" "zxvf"
-        "${CMAKE_BINARY_DIR}/protobuf-prefix/src/protobuf-2.6.1.tar.gz" "-C" ".."
-        SOURCE_DIR "protobuf-2.6.1/"
+        "${CMAKE_BINARY_DIR}/protobuf-prefix/src/protobuf-3.3.0.tar.gz" "-C" ".."
+        SOURCE_DIR "protobuf-3.3.0/"
         BUILD_IN_SOURCE 1
-        CONFIGURE_COMMAND "./configure" "--disable-shared"
+        CONFIGURE_COMMAND "./autogen.sh" COMMAND "./configure" "--disable-shared"
         "--prefix=${CMAKE_BINARY_DIR}/" "CXXFLAGS=-fPIC"
         INSTALL_COMMAND "make" "install"
         )
@@ -139,7 +160,7 @@ IF (USE_MODULES)
         GIT_REPOSITORY "https://github.com/xianyi/OpenBLAS.git"
         #GIT_TAG "develop"
         #GIT_TAG "f3419e6"
-        GIT_TAG "optimized_for_deeplearning"
+        GIT_TAG "v0.2.20"
         SOURCE_DIR "openblas/"
         BUILD_IN_SOURCE 1
         CONFIGURE_COMMAND ""
@@ -165,9 +186,9 @@ IF (USE_JAVA)
     ADD_SUBDIRECTORY(java)
 ENDIF()
 
-INSTALL(DIRECTORY ${CMAKE_BINARY_DIR}/include DESTINATION ${CMAKE_INSTALL_PREFIX})
+INSTALL(DIRECTORY ${CMAKE_BINARY_DIR}/include DESTINATION ${CMAKE_INSTALL_PREFIX}/)
 INSTALL(DIRECTORY include/singa DESTINATION ${CMAKE_INSTALL_PREFIX}/include/)
-INSTALL(DIRECTORY ${CMAKE_BINARY_DIR}/lib DESTINATION ${CMAKE_INSTALL_PREFIX} PATTERN "*libgtest.a" EXCLUDE )
+INSTALL(DIRECTORY ${CMAKE_BINARY_DIR}/lib DESTINATION ${CMAKE_INSTALL_PREFIX}/ PATTERN "*libgtest.a" EXCLUDE )
 
 INSTALL(CODE "execute_process(COMMAND python setup.py install --prefix=${CMAKE_INSTALL_PREFIX} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/python)")
 
@@ -192,7 +213,11 @@ IF(PACKAGE)
 		SET(CORE_DEPENDENCIES "libgoogle-glog-dev, libprotobuf-dev, libopenblas-dev, libstdc++6, libc6")
 	ENDIF()
 
-	SET(PYTHON_DEPENDENCIES "${CORE_DEPENDENCIES}, python-dev, libpython2.7, python-pip, python-numpy, python-pillow")
+	IF(USE_PYTHON3)
+		SET(PYTHON_DEPENDENCIES "${CORE_DEPENDENCIES}, python3, python3-dev, python3-pip, python3-numpy, python3-pillow, python3-matplotlib")
+	ELSE()
+		SET(PYTHON_DEPENDENCIES "${CORE_DEPENDENCIES}, python-dev, libpython2.7, python-pip, python-numpy, python-pillow")
+	ENDIF()
 
 	SET(CPACK_GENERATOR "DEB")
 	SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Apache Incubator <dev@singa.incubator.apache.org>")
@@ -206,12 +231,24 @@ IF(PACKAGE)
 		SET(CPACK_DEBIAN_PACKAGE_DEPENDS ${PYTHON_DEPENDENCIES})
 		SET(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${PROJECT_SOURCE_DIR}/tool/debian/postinst" )
 		SET(CPACK_DEBIAN_PACKAGE_PREDEPENDS "ca-certificates")
-		IF (USE_CUDA)
-			SET(CPACK_DEBIAN_PACKAGE_NAME "python-singa-cuda")
-			SET(CPACK_PACKAGE_FILE_NAME "python-singa-cuda-${PACKAGE_VERSION}")
+		IF(USE_PYTHON3)
+			SET(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${PROJECT_SOURCE_DIR}/tool/debian/postinst" )
+			IF (USE_CUDA)
+				SET(CPACK_DEBIAN_PACKAGE_NAME "python3-singa-cuda")
+				SET(CPACK_PACKAGE_FILE_NAME "python3-singa-cuda-${PACKAGE_VERSION}")
+			ELSE()
+				SET(CPACK_DEBIAN_PACKAGE_NAME "python3-singa")
+				SET(CPACK_PACKAGE_FILE_NAME "python3-singa-${PACKAGE_VERSION}")
+			ENDIF()
 		ELSE()
-			SET(CPACK_DEBIAN_PACKAGE_NAME "python-singa")
-			SET(CPACK_PACKAGE_FILE_NAME "python-singa-${PACKAGE_VERSION}")
+			SET(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${PROJECT_SOURCE_DIR}/tool/debian-python2/postinst" )
+			IF (USE_CUDA)
+				SET(CPACK_DEBIAN_PACKAGE_NAME "python-singa-cuda")
+				SET(CPACK_PACKAGE_FILE_NAME "python-singa-cuda-${PACKAGE_VERSION}")
+			ELSE()
+				SET(CPACK_DEBIAN_PACKAGE_NAME "python-singa")
+				SET(CPACK_PACKAGE_FILE_NAME "python-singa-${PACKAGE_VERSION}")
+			ENDIF()
 		ENDIF()
 	ELSE()
 		SET(CPACK_DEBIAN_PACKAGE_NAME "singa")

@@ -20,28 +20,42 @@
 
 namespace singa {
 
-std::shared_ptr<Device> defaultDevice=std::make_shared<CppCPU>();
+std::shared_ptr<Device> defaultDevice = std::make_shared<CppCPU>();
 
 CppCPU::CppCPU() : Device(-1, 1) {
   lang_ = kCpp;
-  //host_ = nullptr;
+#ifdef USE_DNNL
+  ctx_.dnnl_engine = dnnl::engine(dnnl::engine::kind::cpu, 0);
+  ctx_.dnnl_stream = dnnl::stream(ctx_.dnnl_engine);
+#endif  // USE_DNNL
+  // host_ = nullptr;
 }
 
+CppCPU::~CppCPU(){};
 
-void CppCPU::SetRandSeed(unsigned seed) {
-  ctx_.random_generator.seed(seed);
-}
-
+void CppCPU::SetRandSeed(unsigned seed) { ctx_.random_generator.seed(seed); }
 
 void CppCPU::DoExec(function<void(Context*)>&& fn, int executor) {
   CHECK_EQ(executor, 0);
   fn(&ctx_);
 }
 
+void CppCPU::TimeProfilingDoExec(function<void(Context*)>&& fn, int executor,
+                                 Node* node) {
+  CHECK_EQ(executor, 0);
+
+  auto t_start = std::chrono::high_resolution_clock::now();
+  fn(&ctx_);
+  std::chrono::duration<float> duration =
+      std::chrono::high_resolution_clock::now() - t_start;
+  node->time_elapsed_inc(duration.count());
+}
+
+void CppCPU::EvaluateTimeElapsed(Node* node) {}
 
 void* CppCPU::Malloc(int size) {
   if (size > 0) {
-    void *ptr = malloc(size);
+    void* ptr = malloc(size);
     memset(ptr, 0, size);
     return ptr;
   } else {
@@ -49,15 +63,12 @@ void* CppCPU::Malloc(int size) {
   }
 }
 
-
 void CppCPU::Free(void* ptr) {
-  if (ptr != nullptr)
-    free(ptr);
+  if (ptr != nullptr) free(ptr);
 }
 
-
 void CppCPU::CopyToFrom(void* dst, const void* src, size_t nBytes,
-                           CopyDirection direction, Context* ctx) {
+                        CopyDirection direction, Context* ctx) {
   memcpy(dst, src, nBytes);
 }
 

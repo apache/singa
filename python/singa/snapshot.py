@@ -18,6 +18,9 @@
 '''
 This script includes io::snapshot class and its methods.
 
+Note: This module is depreated. Please use the model module for 
+checkpoing and restore.
+
 Example usages::
 
     from singa import snapshot
@@ -29,15 +32,18 @@ Example usages::
     for k, v in params.iteritems():
         sn2.write(k, v)
 '''
+from __future__ import absolute_import
 
+from builtins import object
 from . import singa_wrap as singa
-import tensor
+from . import tensor
 
 
 class Snapshot(object):
     ''' Class and member functions for singa::Snapshot.
 
     '''
+
     def __init__(self, f, mode, buffer_size=10):
         '''Snapshot constructor given file name and R/W mode.
 
@@ -46,7 +52,7 @@ class Snapshot(object):
             mode (boolean): True for write, False for read
             buffer_size (int): Buffer size (in MB), default is 10
         '''
-        self.snapshot = singa.Snapshot(f, mode, buffer_size)
+        self.snapshot = singa.Snapshot(f.encode(), mode, buffer_size)
 
     def write(self, param_name, param_val):
         '''Call Write method to write a parameter
@@ -55,7 +61,7 @@ class Snapshot(object):
             param_name (string): name of the parameter
             param_val (Tensor): value tensor of the parameter
         '''
-        self.snapshot.Write(str(param_name), param_val.singa_tensor)
+        self.snapshot.Write(param_name.encode(), param_val.data)
 
     def read(self):
         '''Call read method to load all (param_name, param_val)

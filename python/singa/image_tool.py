@@ -28,7 +28,10 @@ Example usage::
         img.save('%d.png' % idx)
 
 '''
+from __future__ import division
 
+from builtins import range
+from builtins import object
 import random
 import numpy as np
 from PIL import Image, ImageEnhance
@@ -54,11 +57,11 @@ def crop(img, patch, position):
         and center.
     '''
     if img.size[0] < patch[0]:
-        raise Exception(
-            'img size[0] %d is smaller than patch[0]: %d' % (img[0], patch[0]))
+        raise Exception('img size[0] %d is smaller than patch[0]: %d' %
+                        (img.size[0], patch[0]))
     if img.size[1] < patch[1]:
-        raise Exception(
-            'img size[1] %d is smaller than patch[1]: %d' % (img[1], patch[1]))
+        raise Exception('img size[1] %d is smaller than patch[1]: %d' %
+                        (img.size[1], patch[1]))
 
     if position == 'left_top':
         left, upper = 0, 0
@@ -69,8 +72,8 @@ def crop(img, patch, position):
     elif position == 'right_bottom':
         left, upper = img.size[0] - patch[0], img.size[1] - patch[1]
     elif position == 'center':
-        left, upper = (img.size[0] - patch[0]) / \
-            2, (img.size[1] - patch[1]) / 2
+        left, upper = (img.size[0] - patch[0]) // 2, (img.size[1] -
+                                                      patch[1]) // 2
     else:
         raise Exception('position is wrong')
 
@@ -93,8 +96,8 @@ def crop_and_resize(img, patch, position):
         left, upper = 0, 0
         right, bottom = size[1], size[1]
     elif position == 'center':
-        left, upper = (size[0] - size[1]) / 2, 0
-        right, bottom = (size[0] + size[1]) / 2, size[1]
+        left, upper = (size[0] - size[1]) // 2, 0
+        right, bottom = (size[0] + size[1]) // 2, size[1]
     elif position == 'right':
         left, upper = size[0] - size[1], 0
         right, bottom = size[0], size[1]
@@ -102,8 +105,8 @@ def crop_and_resize(img, patch, position):
         left, upper = 0, 0
         right, bottom = size[0], size[0]
     elif position == 'middle':
-        left, upper = 0, (size[1] - size[0]) / 2
-        right, bottom = size[0], (size[1] + size[0]) / 2
+        left, upper = 0, (size[1] - size[0]) // 2
+        right, bottom = size[0], (size[1] + size[0]) // 2
     elif position == 'bottom':
         left, upper = 0, size[1] - size[0]
         right, bottom = size[0], size[1]
@@ -112,7 +115,7 @@ def crop_and_resize(img, patch, position):
     box = (left, upper, right, bottom)
     new_img = img.crop(box)
 
-    new_img = img.resize(patch)
+    new_img = new_img.resize(patch, Image.BILINEAR)
     # print box+crop
     # print "crop to box %d,%d,%d,%d and scale to %d,%d" % (box+crop)
     return new_img
@@ -125,7 +128,7 @@ def resize(img, small_size):
         new_size = (small_size, int(small_size * size[1] / size[0]))
     else:
         new_size = (int(small_size * size[0] / size[1]), small_size)
-    new_img = img.resize(new_size)
+    new_img = img.resize(new_size, Image.BILINEAR)
     # print 'resize to (%d,%d)' % new_size
     return new_img
 
@@ -205,10 +208,10 @@ def flip_down(img):
 
 
 def get_list_sample(l, sample_size):
-    return [l[i] for i in sorted(random.sample(xrange(len(l)), sample_size))]
+    return [l[i] for i in sorted(random.sample(range(len(l)), sample_size))]
 
 
-class ImageTool():
+class ImageTool(object):
     '''A tool for image augmentation.
 
     For operations with inplace=True, the returned value is the ImageTool
@@ -267,7 +270,7 @@ class ImageTool():
             rng: a tuple (begin,end), include begin, exclude end
             inplace: inplace imgs or not ( return new_imgs)
         '''
-        size_list = range(rng[0], rng[1])
+        size_list = list(range(rng[0], rng[1]))
         return self.resize_by_list(size_list, 1, inplace)
 
     def resize_by_list(self, size_list, num_case=1, inplace=True):
@@ -341,7 +344,7 @@ class ImageTool():
             rng: a tuple (begin,end) in degree, include begin, exclude end
             inplace: inplace imgs or not ( return new_imgs)
         '''
-        angle_list = range(rng[0], rng[1])
+        angle_list = list(range(rng[0], rng[1]))
         return self.rotate_by_list(angle_list, 1, inplace)
 
     def rotate_by_list(self, angle_list, num_case=1, inplace=True):
@@ -382,16 +385,13 @@ class ImageTool():
         '''
         new_imgs = []
         positions = [
-            "left_top",
-            "left_bottom",
-            "right_top",
-            "right_bottom",
-            "center"]
+            "left_top", "left_bottom", "right_top", "right_bottom", "center"
+        ]
         if num_case > 5 or num_case < 1:
             raise Exception('num_case must be in [1,5]')
         for img in self.imgs:
 
-            if num_case > 0 and num_case < 5:
+            if num_case < 5:
                 positions = get_list_sample(positions, num_case)
 
             for position in positions:
@@ -426,12 +426,12 @@ class ImageTool():
         for img in self.imgs:
             size = img.size
             if size[0] > size[1]:
-                if num_case > 0 and num_case < 3:
+                if num_case < 3:
                     positions = get_list_sample(positions_horizental, num_case)
                 else:
                     positions = positions_horizental
             else:
-                if num_case > 0 and num_case < 3:
+                if num_case < 3:
                     positions = get_list_sample(positions_vertical, num_case)
                 else:
                     positions = positions_vertical
@@ -454,12 +454,11 @@ class ImageTool():
         patch5 = 5
         patch3 = 3
         if num_case < 1 or num_case > patch5 + patch3:
-            raise Exception(
-                'num_case must be in [0,%d]' % (patch5 + patch3))
+            raise Exception('num_case must be in [0,%d]' % (patch5 + patch3))
         if num_case == patch5 + patch3:
             count = patch5
         else:
-            sample_list = range(0, patch5 + patch3)
+            sample_list = list(range(0, patch5 + patch3))
             samples = get_list_sample(sample_list, num_case)
             count = 0
             for s in samples:
@@ -492,8 +491,8 @@ class ImageTool():
                 (img.size[0], img.size[1], patch[0], patch[1])
             left_offset = random.randint(0, img.size[0] - patch[0])
             top_offset = random.randint(0, img.size[1] - patch[1])
-            box = (left_offset, top_offset,
-                   left_offset + patch[0], top_offset + patch[1])
+            box = (left_offset, top_offset, left_offset + patch[0],
+                   top_offset + patch[1])
             new_imgs.append(img.crop(box))
 
         if inplace:
@@ -502,10 +501,11 @@ class ImageTool():
         else:
             return new_imgs
 
-    def random_crop_resize(self,patch,inplace=True):
-        ''' Crop of the image at a random size between 0.08 to 1 of input image size
-            and random aspect ratio between 3/4 to 4/3 of input image aspect ratio is made.
+    def random_crop_resize(self, patch, inplace=True):
+        ''' Crop of the image at a random size between 0.08 to 1 of input image
+            and random aspect ratio between 3/4 to 4/3.
             This crop is then resized to the given patch size.
+
         Args:
             patch(tuple): width and height of the patch
             inplace(Boolean): replace the internal images list with the patches
@@ -513,20 +513,23 @@ class ImageTool():
         '''
         new_imgs = []
         for img in self.imgs:
-            area=img.size[0]*img.size[1]
-            target_area = random.uniform(0.08, 1.0) * area
-            aspect_ratio = random.uniform(3. / 4, 4. / 3)
-            crop_x = int(round(math.sqrt(target_area * aspect_ratio)))
-            crop_y = int(round(math.sqrt(target_area / aspect_ratio)))
-            assert img.size[0] >= patch[0] and img.size[1] >= patch[1],\
-                'img size (%d, %d), patch size (%d, %d)' % \
-                (img.size[0], img.size[1], patch[0], patch[1])
-            left_offset = random.randint(0, img.size[0] - crop_x)
-            top_offset = random.randint(0, img.size[1] - crop_y)
-            box = (left_offset, top_offset,
-                   left_offset + crop_x, top_offset + crop_y)
-            img_croped=img.crop(box)
-            img_resized=img_croped.resize(patch)
+            area = img.size[0] * img.size[1]
+            img_resized = None
+            for attempt in range(10):
+                target_area = random.uniform(0.08, 1.0) * area
+                aspect_ratio = random.uniform(3. / 4, 4. / 3)
+                crop_x = int(round(math.sqrt(target_area * aspect_ratio)))
+                crop_y = int(round(math.sqrt(target_area / aspect_ratio)))
+                if img.size[0] > crop_x and img.size[1] > crop_y:
+                    left_offset = random.randint(0, img.size[0] - crop_x)
+                    top_offset = random.randint(0, img.size[1] - crop_y)
+                    box = (left_offset, top_offset, left_offset + crop_x,
+                           top_offset + crop_y)
+                    img_croped = img.crop(box)
+                    img_resized = img_croped.resize(patch, Image.BILINEAR)
+                    break
+            if img_resized is None:
+                img_resized = img.resize(patch, Image.BILINEAR)
             new_imgs.append(img_resized)
 
         if inplace:

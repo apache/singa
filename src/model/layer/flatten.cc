@@ -49,8 +49,7 @@ const Tensor Flatten::Forward(int flag, const Tensor &input) {
 const std::pair<Tensor, vector<Tensor> > Flatten::Backward(int flag,
                                                            const Tensor &grad) {
   vector<Tensor> param_grad;
-  Tensor input_grad = grad;
-  input_grad.Reshape(input_shape_);
+  Tensor input_grad = Reshape(grad, input_shape_);
   return std::make_pair(input_grad, param_grad);
 }
 

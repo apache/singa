@@ -1,0 +1,64 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# This is a basic workflow to help you get started with Actions
+
+name: Native-Ubuntu
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+  pull_request:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # build-ubuntu-cpp:
+  #  runs-on: ubuntu-latest
+
+  #  steps:
+  #    - uses: actions/checkout@v1
+  #    - name: install-build-dependencies
+  #      run: sudo apt-get install -y libgoogle-glog-dev libprotobuf-dev protobuf-compiler libncurses-dev libopenblas-dev gfortran libblas-dev liblapack-dev libatlas-base-dev swig libcurl3-dev cmake dh-autoreconf  
+  #    - name: configure
+  #      run: mkdir build && cd build && cmake -DUSE_PYTHON=NO -DENABLE_TEST=YES ..
+  #    - name: build
+  #      run: cd build && make
+  #    - name: C++ test
+  #      run: build/bin/test_singa
+ 
+  build-cpptest-on-cpu:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: get-oneDNN
+        run: wget https://github.com/oneapi-src/oneDNN/releases/download/v1.1/dnnl_lnx_1.1.0_cpu_gomp.tgz -P /tmp/ && tar zxf /tmp/dnnl_lnx_1.1.0_cpu_gomp.tgz -C /tmp
+      - name: install-build-dependencies
+        run: sudo apt-get install -y libgoogle-glog-dev libprotobuf-dev protobuf-compiler libncurses-dev libopenblas-dev gfortran libblas-dev liblapack-dev libatlas-base-dev swig dh-autoreconf lcov
+      - name: configure
+        run: mkdir build && cd build && cmake -DUSE_PYTHON=NO -DENABLE_TEST=YES -DCODE_COVERAGE=YES -DUSE_DNNL=YES ..
+        env:
+         DNNL_ROOT: /tmp/dnnl_lnx_1.1.0_cpu_gomp/
+      - name: build
+        run: cd build && make
+      - name: C++ test
+        run: build/bin/test_singa
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          flags: singa-cpp

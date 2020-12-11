@@ -23,6 +23,7 @@ Example usage::
 
     import image_tool
     from PIL import Image
+    from singa.data import ImageBatchIter
 
     tool = image_tool.ImageTool()
 
@@ -48,7 +49,11 @@ Example usage::
         img.save('img%d.png' % idx)
     data.end()
 '''
+from __future__ import print_function
+from __future__ import absolute_import
 
+from builtins import range
+from builtins import object
 import os
 import random
 import time
@@ -56,7 +61,7 @@ from multiprocessing import Process, Queue
 import numpy as np
 
 
-class ImageBatchIter:
+class ImageBatchIter(object):
     '''Utility for iterating over an image dataset to get mini-batches.
 
     Args:
@@ -78,8 +83,14 @@ class ImageBatchIter:
         capacity(int): the max num of mini-batches in the internal queue.
     '''
 
-    def __init__(self, img_list_file, batch_size, image_transform,
-                 shuffle=True, delimiter=' ', image_folder=None, capacity=10):
+    def __init__(self,
+                 img_list_file,
+                 batch_size,
+                 image_transform,
+                 shuffle=True,
+                 delimiter=' ',
+                 image_folder=None,
+                 capacity=10):
         self.img_list_file = img_list_file
         self.queue = Queue(capacity)
         self.batch_size = batch_size
@@ -97,15 +108,12 @@ class ImageBatchIter:
         self.p.start()
         return
 
-    def next(self):
+    def __next__(self):
         assert self.p is not None, 'call start before next'
         while self.queue.empty():
             time.sleep(0.1)
         x, y = self.queue.get()  # dequeue one mini-batch
         return x, y
-
-    def stop(self):
-        self.end();
 
     def end(self):
         if self.p is not None:
@@ -136,7 +144,7 @@ class ImageBatchIter:
                 while i < self.batch_size:
                     img_path, img_meta = img_list[index]
                     aug_images = self.image_transform(
-                            os.path.join(self.image_folder, img_path))
+                        os.path.join(self.image_folder, img_path))
                     assert i + len(aug_images) <= self.batch_size, \
                         'too many images (%d) in a batch (%d)' % \
                         (i + len(aug_images), self.batch_size)
@@ -155,7 +163,8 @@ class ImageBatchIter:
                             random.shuffle(img_list)
                 # enqueue one mini-batch
                 if is_label_index:
-                    self.queue.put((np.asarray(x), np.asarray(y, dtype=np.int32)))
+                    self.queue.put((np.asarray(x), np.asarray(y,
+                                                              dtype=np.int32)))
                 else:
                     self.queue.put((np.asarray(x), y))
             else:
@@ -164,23 +173,25 @@ class ImageBatchIter:
 
 
 if __name__ == '__main__':
-    import image_tool
+    from . import image_tool
     from PIL import Image
     tool = image_tool.ImageTool()
 
     def image_transform(img_path):
         global tool
-        return tool.load(img_path).resize_by_range(
-            (112, 128)).random_crop(
+        return tool.load(img_path).resize_by_range((112, 128)).random_crop(
             (96, 96)).flip().get()
 
-    data = ImageBatchIter('train.txt', 3,
-                          image_transform, shuffle=False, delimiter=',',
+    data = ImageBatchIter('train.txt',
+                          3,
+                          image_transform,
+                          shuffle=False,
+                          delimiter=',',
                           image_folder='images/',
                           capacity=10)
     data.start()
-    imgs, labels = data.next()
-    print labels
+    imgs, labels = next(data)
+    print(labels)
     for idx in range(imgs.shape[0]):
         img = Image.fromarray(imgs[idx].astype(np.uint8).transpose(1, 2, 0),
                               'RGB')

@@ -18,29 +18,19 @@
 # * limitations under the License.
 # */
 
-# build all docker images, must be exected under the root directory, i.e., incubator-singa/
+# build all docker images, must be exected under the root directory, i.e., singa/
 # ./build.sh PUSH would push the images to dockerhub/nusdbsystem and then delete the local image
 #   (used by Jenkins to avoid dangling images from multiple building)
 
 echo "###################"
-echo "build singa:runtime"
+echo "build singa:conda-cudax.y"
 echo "###################"
-docker build tool/docker/runtime/ --force-rm -t nusdbsystem/singa:runtime -t nusdbsystem/singa:latest
+# docker build tool/docker/devel/conda/cuda/ --force-rm -t nusdbsystem/singa:conda-cuda9.0-cudnn7.1.2
 
 echo "###################"
-echo "build singa:runtime-cuda"
+echo "build singa:cudax.y"
 echo "###################"
-docker build tool/docker/runtime/cuda --force-rm -t nusdbsystem/singa:runtime-cuda
-
-echo "###################"
-echo "build singa:devel"
-echo "###################"
-docker build tool/docker/devel/ --force-rm -t nusdbsystem/singa:devel
-
-echo "###################"
-echo "build singa:devel-cuda"
-echo "###################"
-docker build tool/docker/devel/cuda --force-rm -t nusdbsystem/singa:devel-cuda
+docker build tool/docker/devel/native/ubuntu/cuda9 --force-rm -t nusdbsystem/singa:cuda9-cudnn7
 
 if [ $1 = "PUSH" ]; then
   echo "##########################################"

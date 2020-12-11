@@ -36,6 +36,8 @@
 
 #cmakedefine ENABLE_DIST
 
+#cmakedefine USE_DIST
+
 // lmdb
 #cmakedefine USE_LMDB
 
@@ -51,3 +53,5 @@
 // #cmakedefine CUDNN_MINOR_VERSION @CUDNN_MINOR_VERSION@
 // #cmakedefine CUDNN_PATCH_VERSION @CUDNN_PATCH_VERSION@
 // #cmakedefine CUDNN_VERSION @CUDNN_VERSION@
+
+#cmakedefine USE_DNNL

@@ -1,41 +1,56 @@
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+-->
 # Jenkins CI Support
 
 ## Introduction
-This documentation is to guide SINGA developers to setup Jenkins service to support continuous integration on GPU systems. After each commit,
-1. SINGA should be compiled and tested automatically under different settings (e.g., OS and hardware).
-2. Convenient binaries should be generated automatically and archived.
+This documentation is to guide Singa developers to setup Jenkins service for continuous integration of Singa. After each commit,
+1. Singa should be compiled and tested automatically under different settings (e.g.,OS, python version and hardware).
+2. Binary packages should be generated automatically and archived.
 
 Continuous integration for CPU systems is enabled via [Travis](../travis).
+Hence, Jenkins is mainly used for CI on GPUs.
 
 ## Install Jenkins
 [Jenkins Official Wiki](https://wiki.jenkins-ci.org/display/JENKINS/Installing+Jenkins)
 The slave nodes for running different building environments are configured under 'Manage Jenkins'->'Manage nodes'.
 
+Change Jenkins time zone by executing the following code in 'Mange jenkins' -> 'Script Console':
+
+    System.setProperty('org.apache.commons.jelly.tags.fmt.timeZone', 'Asia/Singapore')
+
 ## Configure Jenkins for Unit Testing and Binary Package Generation
 Create a multi-configuration project and configure project as follows:
 
 ### Description
-This job automatically pulls latest commits from Apache incubator-singa github repository, then for different environments
+This job automatically pulls latest commits from Apache singa github repository, then for different environments
 
-* compile and test SINGA on GPUs
-* create Debian GPU packages
-* create anaconda GPU packages
-
-The working nodes (or Docker containers) are configured in Jenkins-Manage Jenkins-Mange Nodes.
-Each node should configure the following environment variable
-1. CUDA_VERSION, e.g., 7.5
-2. CUDNN_VERSION e.g, 5
-3. ANACONDA_UPLOAD_TOKEN
-4. SINGA_NAME=singa-cuda${CUDA_VERSION}-cudnn${CUDNN_VERSION}
-5. OS_VERSION, e.g., ubuntu14.04
-6. SINGA_INCLUDE_PATH and SINGA_LIBRARY_PATH for the cudnn.h and libcudnn.so folder respectively
+* compile and test Singa on GPUs
+* generate conda package of Singa with CUDA enabled
+* invoke the CPU test and packaging on Travis
+* (optional) create Debian GPU packages
 
 ### General
   * Discard old builds - Max # of builds to keep - 50
-  * GitHub project - ``https://github.com/apache/incubator-singa``
+  * GitHub project - ``https://github.com/apache/singa``
 
 ### Source Code Management
-  * Git - Repository URL - ``https://github.com/apache/incubator-singa``
+  * Git - Repository URL - ``https://github.com/apache/singa``
   * Git - Branch Specifier - ``*/master``
 
 ### Build Triggers
@@ -46,27 +61,22 @@ Each node should configure the following environment variable
   * Slave - name ``env`` Node/label: tick available nodes
 
 ### Build
+The building script can do the following tasks:
+
   * compile and do unit test on GPU
-    Execute shell - command - ``bash -ex tool/jenkins/test.sh $lang``
-    `$lang` is set in **Configuration Matrix* section
+    Execute shell - command - ``bash -ex tool/jenkins/test.sh``
 
-  * create Debian package
+  * update another github repo with the new commits to invoke travis (for cpu test and conda package generation)
+    Execute shell - command - ``git push https://<username:token>@github.com/nusdbsystem/singa.git -f``
+
+  * create conda package and upload it to anaconda cloud
+    Execute shell - command
+
+        /root/miniconda/bin/conda-build tool/conda/singa
+        /root/miniconda/bin/anaconda -t <ANACONDA_UPLOAD_TOKEN> upload -u nusdbsystem -l main /root/miniconda/linux-64/singa-*.so.*.tar.bz2 --force
+
+  * (optional) create Debian package
     Execute shell - command - ``bash -ex tool/debian/build.sh --python --$lang``
-
-  * create conda package
-    Execute shell - command -
-
-        git push https://username:token@github.com/nusdbsystem/incubator-singa.git -f
-        bash -ex tool/jenkins/jenkins_test.sh $lang
-        export CONDA_BLD_PATH=/root/conda-bld-$BUILD_NUMBER
-        mkdir $CONDA_BLD_PATH
-        /root/miniconda/bin/conda-build tool/conda
-        /root/miniconda/bin/anaconda -t ANACONDA_UPLOAD_TOKEN upload -u nusdbsystem -l main $CONDA_BLD_PATH/linux-64/singa-*.tar.bz2 --force
-
-
-    It first pushes to a mirror site to invoke travis-ci for CPU package creation;
-    Then it compiles and runs unit tests;
-    Finally it creates the conda package for GPU and upload it.
 
 ### Post-build Actions
   * Publish JUnit test result report - Test report XMLs - ``**/gtest.xml, **/unittest.xml``
@@ -87,43 +97,71 @@ Each node should configure the following environment variable
             debian/32/84d56b7/ubuntu14.04-cpp/singa-1.0.1.deb
             debian/32/84d56b7/ubuntu14.04-cuda8.0-cudnn5/singa-1.0.1.deb
 
-### Docker Images
-We provide in a number of singa docker [images](./docker) for Jenkins to use as slaves.
+### Jenkins Nodes
+
+We provide different Singa [Dockerfiles](../docker/README.md) for Jenkins to use as working nodes.
+
 To run the docker images,
 
-    nvidia-docker run --name <jenkins-slaveXX> -d <Image ID>
+    nvidia-docker run --name <node name> -P -d <Image ID>
 
-## Configure Jenkins for SINGA Website Updates
+To add the container into a network for easy access
+
+    docker network create <network name>
+    docker network connect <network name> <node name>
+
+After connecting both the jenkins and node contaniners into the same network, we can ssh to the node from jenkins container like
+
+
+    # inside jenkins container
+    ssh root@<node name>
+
+You need execute the above command manually for the first ssh login.
+
+In the Jenkins node configuration page, the container name is used to configure the `Host` field.
+Notice that Oracle username and account are required to luanch the node by Jenkins.
+
+The working nodes (or Docker containers) are configured in Jenkins-Manage Jenkins-Mange Nodes.
+Each node should configure the following environment variable
+
+    export CUDA=<cuda version, e.g., 9.0>
+
+[Dockerfiles](../conda/docker) are provided to create the working nodes.
+
+## Configure Jenkins for Singa Website Updates
 
 ### Description and Configuration
 
 This job is triggered upon any changes to the files of the `doc/` folder.
 It does the following tasks,
 
-1. installs the latest PySINGA
+1. installs the latest Singa
 2. pull the latest source code
 3. generate the html files for the documentation
-4. update the SINGA website
+4. update the Singa website
 
 The Jenkins job configuration is similar as above except the following fields,
 
 * Source Code Management - Git - Additional Behaviors - Include Region `doc/*`
-* Build - Execute Shell - Command `bash -ex tool/jenkins/jenkins_doc.sh`
+* Build - Execute Shell - Command
+
+      bash -ex tool/jenkins/gen_doc.sh
+
 * No `Post-build Actions`
 
-### Docker Images
+### Jenkins Node
 
-The Docker image for the Jenkins slave node is at `docker/ubuntu16.04/runtime/Dockerfile`.
-To build the docker image,
+The docker images used for testing also be used for document generation.
+We have to manually configure something inside the docker container.
+First, we start the container
 
-    # under the docker/ubuntu16.04/runtime/ folder
-    $ docker built -t singa:doc .
-
-To start the slave node
-
-    $ docker run --name singa-doc -d singa:doc
+    $docker run --name singa-doc -d <docker image>
+    # docker network connect jenkins singa-doc
     $ docker exec -it singa-doc /bin/bash
-    $ svn co https://svn.apache.org/repos/asf/incubator/singa/site/trunk
+
+Next, we do the first commit to the svn repo.
+
+    $ svn co https://svn.apache.org/repos/asf/singa/site/trunk
     # update ~/.subversion/config to set 'store-password=yes'
     # to set password free commit, we have to do a manual commit at first.
     # change any file (add spaces) inside trunk/ to commit a message

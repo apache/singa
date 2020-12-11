@@ -96,9 +96,9 @@ void Convolution::Setup(const Shape &in_sample, const LayerConf &conf) {
   col_width_ = conv_height_ * conv_width_;
 
   // Setup shape of weight_ and bias_
-  weight_.Reshape(Shape{num_filters_, col_height_});
+  weight_.Resize(Shape{num_filters_, col_height_});
   if (bias_term_)
-    bias_.Reshape(Shape{num_filters_});
+    bias_.Resize(Shape{num_filters_});
   // Assume the order of param is: weight, bias
   for (const auto &spec : conf.param()) param_specs_.push_back(spec);
 }
@@ -174,8 +174,8 @@ const std::pair<Tensor, vector<Tensor>> Convolution::Backward(
     col_data.CopyDataFromHostPtr(data_col, col_height_ * col_width_);
     Tensor grad_b(Shape{num_filters_, conv_height_ * conv_width_});
     CopyDataToFrom(&grad_b, grad, grad_b.Size(), 0, b * grad_b.Size());
-    dw += Mult(grad_b, col_data.T());
-    Tensor dcol_b = Mult(weight_.T(), grad_b);
+    dw += Mult(grad_b, Transpose(col_data));
+    Tensor dcol_b = Mult(Transpose(weight_), grad_b);
     auto dcol_data = dcol_b.data<float>();
     Col2im(dcol_data, channels_, height_, width_, kernel_h_, kernel_w_, pad_h_,
            pad_w_, stride_h_, stride_w_, dx_b);
@@ -194,7 +194,7 @@ void Convolution::ToDevice(std::shared_ptr<Device> device) {
   bias_.ToDevice(device);
 }
 
-void Convolution::Im2col(const float *data_im, const int channels,
+void Im2col(const float *data_im, const int channels,
                          const int height, const int width,
                          const int kernel_h, const int kernel_w,
                          const int pad_h, const int pad_w,
@@ -221,13 +221,13 @@ void Convolution::Im2col(const float *data_im, const int channels,
   }
 }
 
-void Convolution::Col2im(const float *data_col, const int channels,
+void Col2im(const float *data_col, const int channels,
                          const int height, const int width,
                          const int kernel_h, const int kernel_w,
                          const int pad_h, const int pad_w,
                          const int stride_h, const int stride_w,
                          float *data_im) {
-  memset(data_im, 0, height * width * channels * sizeof(float));
+  memset(data_im, 0, (unsigned long) height * width * channels * sizeof(float));
   int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
   int width_col  = ( width + 2 * pad_w - kernel_w) / stride_w + 1;
   int channels_col = channels * kernel_h * kernel_w;

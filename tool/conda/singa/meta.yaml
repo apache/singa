@@ -1,0 +1,92 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+# https://docs.conda.io/projects/conda-build/en/latest/resources/define-metadata.html#templating-with-jinja
+# {% set data = load_setup_py_data(setup_file='../../../python/singa/setup.py', from_recipe_dir=True) %}
+
+{% set version = "2.1.0.dev" %}
+
+package:
+  name: singa
+  version: {{ environ.get('GIT_DESCRIBE_TAG', version) | replace("-", ".") }}
+
+source:
+  path: ../../../
+  # git_url: https://github.com/apache/singa.git
+
+build:
+  number: 0
+  script_env:
+    - CUDA   # run `export CUDA=9.0` in the terminal
+    - DIST   # run `export DIST=ON` in the terminal
+  string: {{ build_str }}_py{{ py }}
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}
+    - {{ compiler('c') }}
+    - cmake >=3.12.2
+    - make # [unix]
+
+  host:
+    - swig 3.0.12
+    - openblas 0.3.9
+    - protobuf 3.10.0         # [osx]
+    - protobuf 3.9.2          # [linux]
+    - glog 0.3.5
+    - numpy >=1.16,<2.0
+    - pytest
+    - deprecated 1.2.7
+    - cudnn {{ cudnn }}       # ['cudnn' in str(build_str)]
+    - dnnl {{ dnnl }}
+    - python {{ python }}
+    - nccl {{ nccl }}         # ['nccl' in str(build_str)]
+    - mpich {{ mpich }}       # ['mpich' in str(build_str)]
+
+  run:
+    - {{ pin_compatible('glog', max_pin='x.x') }}
+    - {{ pin_compatible('numpy', max_pin='x.x') }}
+    - {{ pin_compatible('dnnl', max_pin='x.x') }}
+    - cudnn {{ cudnn }}       # ['cudnn' in str(build_str)]
+    - python {{ python }}
+    - nccl {{ nccl }}         # ['nccl' in str(build_str)]
+    - mpich {{ mpich }}       # ['mpich' in str(build_str)]
+    - libprotobuf 3.10.0      # [osx]
+    - libprotobuf 3.9.2       # [linux]
+    - libopenblas 0.3.9
+    - pillow
+    - future
+    - tqdm
+    - onnx 1.6.0
+    - deprecated 1.2.7
+    
+test:
+  requires:
+    - pytest-cov
+    - tabulate
+    - codecov
+  source_files:
+    - test/python/*.py
+  commands:
+    - {{ environ.get('TEST_COMMAND', 'cd test/python && python run.py') }}
+about:
+  home: http://singa.apache.org/
+  license: Apache V2
+  license_file: LICENSE
+  summary: SINGA is an Apache project for distributed deep learning.

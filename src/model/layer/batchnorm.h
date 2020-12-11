@@ -48,27 +48,27 @@ class BatchNorm : public Layer {
     return std::vector<Tensor> { bnScale_, bnBias_, runningMean_,
                                  runningVariance_ };
   }
-  const float factor() const { return factor_; }
+  float factor() const { return factor_; }
   const Tensor& bnScale() const { return bnScale_; }
   const Tensor& bnBias() const { return bnBias_; }
   const Tensor& runningMean() const { return runningMean_; }
   const Tensor& runningVariance() const { return runningVariance_; }
-  const size_t channels() const { return channels_; }
-  const size_t height() const { return height_; }
-  const size_t width() const { return width_; }
-  void set_bnScale(Tensor x) {
+  size_t channels() const { return channels_; }
+  size_t height() const { return height_; }
+  size_t width() const { return width_; }
+  void set_bnScale(const Tensor& x) {
     bnScale_.ResetLike(x);
     bnScale_.CopyData(x);
   }
-  void set_bnBias(Tensor x) {
+  void set_bnBias(const Tensor& x) {
     bnBias_.ResetLike(x);
     bnBias_.CopyData(x);
   }
-  void set_runningMean(Tensor x) {
+  void set_runningMean(const Tensor& x) {
     runningMean_.ResetLike(x);
     runningMean_.CopyData(x);
   }
-  void set_runningVariance(Tensor x) {
+  void set_runningVariance(const Tensor& x) {
     runningVariance_.ResetLike(x);
     runningVariance_.CopyData(x);
   }
