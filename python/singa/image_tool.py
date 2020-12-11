@@ -133,6 +133,18 @@ def resize(img, small_size):
     return new_img
 
 
+def scale(img, small_size):
+    '''Scale the image to make the smaller side be at the give size
+        This method is to replace original resize'''
+    return resize(img, small_size)
+
+
+def resize_by_hw(img, (height, width)):
+    '''Resize the image to be the given width and height'''
+    new_img = img.resize((width, height))
+    return new_img
+
+
 def color_cast(img, offset):
     '''Add a random value from [-offset, offset] to each channel'''
     x = np.asarray(img, dtype='uint8')
@@ -236,6 +248,22 @@ class ImageTool(object):
         '''Return the total number of augmentations to each image'''
         pass
 
+    def scale_by_range(self, rng, inplace=True):
+        '''
+        Args:
+            rng: a tuple (begin,end), include begin, exclude end
+            inplace: inplace imgs or not ( return new_imgs)
+        '''
+        return self.resize_by_range(rng, inplace)
+
+    def scale_by_list(self, size_list, num_case=1, inplace=True):
+        '''
+        Args:
+            num_case: num of resize cases, must be <= the length of size_list
+            inplace: inplace imgs or not ( return new_imgs)
+        '''
+        return self.resize_by_list(size_list, num_case, inplace)
+
     def resize_by_range(self, rng, inplace=True):
         '''
         Args:
@@ -264,6 +292,45 @@ class ImageTool(object):
 
             for small_size in small_sizes:
                 new_img = resize(img, small_size)
+                new_imgs.append(new_img)
+        if inplace:
+            self.imgs = new_imgs
+            return self
+        else:
+            return new_imgs
+
+    def resize_by_hw_range(self, rng, inplace=True):
+        '''
+        Args:
+            rng: a tuple ((hbegin[0], hend[0]), (wbegin[1], wend[1])), include begin, exclude end
+            inplace: inplace imgs or not (return new_imgs)
+        '''
+        if rng[0][1] - rng[0][0] != rng[1][1] - rng[1][0]:
+            raise Exception('num of widths and heights must be the same!')
+        heights = range(rng[0][0], rng[0][1])
+        widths = range(rng[1][0], rng[1][1])
+        size_list = zip(heights, widths)
+        return self.resize_by_hw_list(size_list, 1, inplace)
+
+    def resize_by_hw_list(self, size_list, num_case=1, inplace=True):
+        '''
+        Args:
+            num_case: num of resize cases, must be <= the length of size_list
+            inplace: inplace imgs or not (return new_imgs)
+        '''
+        new_imgs = []
+        if num_case < 1 or num_case > len(size_list):
+            raise Exception(
+                'num_case must be smaller in [0,%d(length of size_list)]' %
+                len(size_list))
+        for img in self.imgs:
+            if num_case == len(size_list):
+                small_sizes = size_list
+            else:
+                small_sizes = get_list_sample(size_list, num_case)
+
+            for small_size in small_sizes:
+                new_img = resize_by_hw(img, small_size)
                 new_imgs.append(new_img)
         if inplace:
             self.imgs = new_imgs
