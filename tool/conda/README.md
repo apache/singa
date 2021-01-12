@@ -47,6 +47,7 @@ To build the specific versions, follow the steps:
 
 For example, for CPU version:
 
+    cd tool/conda/singa
     conda config --add channels conda-forge
     conda config --add channels nusdbsystem
     conda-build .  --python 3.6
@@ -64,8 +65,7 @@ For DIST version, cd to tool/conda/dist
 
 For an example of SINGA-CPU version:
 
-    conda config --add channels conda-forge
-    conda config --add channels nusdbsystem
+    cd tool/conda/cpu
     conda-build .  --python 3.6
     anaconda -t $ANACONDA_UPLOAD_TOKEN upload -u nusdbsystem -l main /root/miniconda/conda-bld/linux-64/singa-cpu-3.1.0-py36.tar.bz2
 
