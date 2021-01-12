@@ -42,7 +42,7 @@ change the dependency.
 To build this package and upload it
 
     conda config --add channels nusdbsystem
-    conda build .
+    conda-build .  --python 3.6
     anaconda -t $ANACONDA_UPLOAD_TOKEN upload -u nusdbsystem -l main <path to the singa-cpu package>
 
 where $ANACONDA_UPLOAD_TOKEN is the upload token associated with nusdbsystem account on anaconda cloud.
