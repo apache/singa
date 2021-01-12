@@ -23,7 +23,9 @@ This note is written for the repo maintainer.
 
 To create conda package and upload, you can follow the following steps:
 
-## 1. Build the docker image from https://github.com/apache/singa/blob/dev/tool/conda/docker/cuda10/Dockerfile
+## 1. Build the docker image
+
+To have the build environment, use the dockerfile from https://github.com/apache/singa/blob/dev/tool/conda/docker/cuda10/Dockerfile
 
 For example:
 
