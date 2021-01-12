@@ -23,19 +23,21 @@ This note is written for the repo maintainer.
 
 To create conda package and upload, you can follow the following steps:
 
-1. Build the docker image from https://github.com/apache/singa/blob/dev/tool/conda/docker/cuda10/Dockerfile
+## 1. Build the docker image from https://github.com/apache/singa/blob/dev/tool/conda/docker/cuda10/Dockerfile
 
 For example:
 
     docker build SINGA_DIR/singa/tool/conda/docker/cpu -t nusdbsystem/singa:conda-cpu
 
-2. Build the container from the image and access the container
+## 2. Build the container from the image and access the container
 
 For example:
 
     docker run -it -p 2222:22 --runtime nvidia --name singa_conda_cpu --rm nusdbsystem/singa:conda-cpu bash
 
-3. There are three versions of conda package: (i) CPU, (ii) GPU, and (iii) DIST (distributed training)
+## 3. Build conda packages
+
+There are three versions of conda package: (i) CPU, (ii) GPU, and (iii) DIST (distributed training)
 
 To build the specific versions, follow the steps: 
 
