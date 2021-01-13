@@ -1209,7 +1209,7 @@ class SingaBackend(Backend):
         Returns: 
             singa operator instance
         """
-        mode = onnx_node.getattr("mode", "constant")
+        mode = utils.force_unicode(onnx_node.getattr("mode", "constant"))
         onnx_node.set_attr_inputs(onnx_node.inputs[1], 'pads')
         if len(onnx_node.inputs) == 3:
             onnx_node.set_attr_inputs(onnx_node.inputs[2], 'constant')
