@@ -1,6 +1,5 @@
 import os
 import imghdr
-import pickle as pkl
 import numpy as np
 from PIL import Image
 
@@ -23,7 +22,6 @@ def process_data(dataset_root, classes):
     with open(classes, 'r', encoding='utf-8') as f:
         classes = f.readlines()
         classes = list(map(lambda x: x.strip(), classes))
-        num_classes = len(classes)
 
     # make input_paths and labels
     input_paths, labels = [], []

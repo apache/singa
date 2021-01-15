@@ -165,7 +165,6 @@ def run(global_rank,
     idx = np.arange(train_x.shape[0], dtype=np.int32)
 
     # attached model to graph
-    model.on_device(dev)
     model.set_optimizer(sgd)
     model.compile([tx], is_train=True, use_graph=graph, sequential=sequential)
     dev.SetVerbosity(verbosity)
