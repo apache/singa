@@ -33,7 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: install-conda-build
-        run: conda install conda-build anaconda-client
+        run: conda install conda-build=3.20.4 anaconda-client
       - name: conda-config
         run: conda config --add channels conda-forge && conda config --add channels nusdbsystem && conda config --set anaconda_upload no
       - name: build-pytest
