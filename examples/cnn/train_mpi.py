@@ -31,9 +31,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Training using the autograd and graph.')
     parser.add_argument('model',
-                        choices=['resnet', 'xceptionnet', 'cnn', 'mlp'],
+                        choices=['cnn', 'resnet', 'xceptionnet', 'mlp'],
                         default='cnn')
-    parser.add_argument('data', choices=['cifar10', 'cifar100', 'mnist'], default='mnist')
+    parser.add_argument('data', choices=['mnist', 'cifar10', 'cifar100'], default='mnist')
     parser.add_argument('-p',
                         choices=['float32', 'float16'],
                         default='float32',
