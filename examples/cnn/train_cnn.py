@@ -272,10 +272,10 @@ if __name__ == '__main__':
         description='Training using the autograd and graph.')
     parser.add_argument(
         'model',
-        choices=['resnet', 'xceptionnet', 'cnn', 'mlp', 'alexnet'],
+        choices=['cnn', 'resnet', 'xceptionnet', 'mlp', 'alexnet'],
         default='cnn')
     parser.add_argument('data',
-                        choices=['cifar10', 'cifar100', 'mnist'],
+                        choices=['mnist', 'cifar10', 'cifar100'],
                         default='mnist')
     parser.add_argument('-p',
                         choices=['float32', 'float16'],
