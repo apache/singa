@@ -76,7 +76,10 @@ def create_model(pretrained=False, **kwargs):
     """Constructs a CNN model.
 
     Args:
-        pretrained (bool): If True, returns a model pre-trained
+        pretrained (bool): If True, returns a pre-trained model.
+    
+    Returns:
+        The created CNN model.
     """
     model = MLP(**kwargs)
 
@@ -111,6 +114,7 @@ if __name__ == "__main__":
     f = lambda x: (5 * x + 1)
     bd_x = np.linspace(-1.0, 1, 200)
     bd_y = f(bd_x)
+
     # generate the training data
     x = np.random.uniform(-1, 1, 400)
     y = f(x) + 2 * np.random.randn(len(x))
@@ -129,7 +133,7 @@ if __name__ == "__main__":
     ty = tensor.Tensor((400,), dev, tensor.int32)
     model = MLP(data_size=2, perceptron_size=3, num_classes=2)
 
-    # attached model to graph
+    # attach model to graph
     model.set_optimizer(sgd)
     model.compile([tx], is_train=True, use_graph=args.graph, sequential=True)
     model.train()
