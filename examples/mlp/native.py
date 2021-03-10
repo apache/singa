@@ -53,9 +53,11 @@ if __name__ == "__main__":
     f = lambda x: (5 * x + 1)
     bd_x = np.linspace(-1.0, 1, 200)
     bd_y = f(bd_x)
+
     # generate the training data
     x = np.random.uniform(-1, 1, 400)
     y = f(x) + 2 * np.random.randn(len(x))
+
     # convert training data to 2d space
     label = np.asarray([5 * a + 1 > b for (a, b) in zip(x, y)])
     data = np.array([[a, b] for (a, b) in zip(x, y)], dtype=np.float32)
@@ -64,12 +66,12 @@ if __name__ == "__main__":
         """
         Converts a class vector (integers) to binary class matrix.
 
-        Args
+        Args:
             y: class vector to be converted into a matrix
                 (integers from 0 to num_classes).
             num_classes: total number of classes.
 
-        Return
+        Returns:
             A binary matrix representation of the input.
         """
         y = np.array(y, dtype="int")
