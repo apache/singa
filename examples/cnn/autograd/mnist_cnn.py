@@ -126,7 +126,7 @@ def accuracy(pred, target):
     return np.array(a, "int").sum()
 
 
-# Function to all reduce NUMPY Accuracy and Loss from Multiple Devices
+# Function to all reduce NUMPY accuracy and loss from multiple devices
 def reduce_variable(variable, dist_opt, reducer):
     reducer.copy_from_numpy(variable)
     dist_opt.all_reduce(reducer.data)
@@ -171,7 +171,7 @@ def train_mnist_cnn(DIST=False,
                     topK=False,
                     corr=True):
 
-    # Define the hypermeters good for the mnist_cnn
+    # Define the hypermeters for the mnist_cnn
     max_epoch = 10
     batch_size = 64
     sgd = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)
@@ -188,12 +188,13 @@ def train_mnist_cnn(DIST=False,
     test_x = test_x / 255
 
     if DIST:
-        # For Distributed GPU Training
+        # For distributed GPU training
         sgd = opt.DistOpt(sgd,
                           nccl_id=nccl_id,
                           local_rank=local_rank,
                           world_size=world_size)
         dev = device.create_cuda_gpu_on(sgd.local_rank)
+
         # Dataset partition for distributed training
         train_x, train_y = data_partition(train_x, train_y, sgd.global_rank,
                                           sgd.world_size)
@@ -201,11 +202,11 @@ def train_mnist_cnn(DIST=False,
                                         sgd.world_size)
         world_size = sgd.world_size
     else:
-        # For Single GPU
+        # For single GPU
         dev = device.create_cuda_gpu()
         world_size = 1
 
-    # create model
+    # Create model
     model = CNN()
 
     tx = tensor.Tensor((batch_size, 1, IMG_SIZE, IMG_SIZE), dev, tensor.float32)
@@ -227,7 +228,7 @@ def train_mnist_cnn(DIST=False,
         for p, g in autograd.backward(loss):
             synchronize(p, sgd)
 
-    # Training and Evaulation Loop
+    # Training and evaulation loop
     for epoch in range(max_epoch):
         start_time = time.time()
         np.random.shuffle(idx)
@@ -235,7 +236,7 @@ def train_mnist_cnn(DIST=False,
         if ((DIST == False) or (sgd.global_rank == 0)):
             print('Starting Epoch %d:' % (epoch))
 
-        # Training Phase
+        # Training phase
         autograd.training = True
         train_correct = np.zeros(shape=[1], dtype=np.float32)
         test_correct = np.zeros(shape=[1], dtype=np.float32)
@@ -263,19 +264,19 @@ def train_mnist_cnn(DIST=False,
                 sgd(loss)
 
         if DIST:
-            # Reduce the Evaluation Accuracy and Loss from Multiple Devices
+            # Reduce the evaluation accuracy and loss from multiple devices
             reducer = tensor.Tensor((1,), dev, tensor.float32)
             train_correct = reduce_variable(train_correct, sgd, reducer)
             train_loss = reduce_variable(train_loss, sgd, reducer)
 
-        # Output the Training Loss and Accuracy
+        # Output the training loss and accuracy
         if ((DIST == False) or (sgd.global_rank == 0)):
             print('Training loss = %f, training accuracy = %f' %
                   (train_loss, train_correct /
                    (num_train_batch * batch_size * world_size)),
                   flush=True)
 
-        # Evaluation Phase
+        # Evaluation phase
         autograd.training = False
         for b in range(num_test_batch):
             x = test_x[b * batch_size:(b + 1) * batch_size]
@@ -286,10 +287,10 @@ def train_mnist_cnn(DIST=False,
             test_correct += accuracy(tensor.to_numpy(out_test), y)
 
         if DIST:
-            # Reduce the Evaulation Accuracy from Multiple Devices
+            # Reduce the evaulation accuracy from multiple devices
             test_correct = reduce_variable(test_correct, sgd, reducer)
 
-        # Output the Evaluation Accuracy
+        # Output the evaluation accuracy
         if ((DIST == False) or (sgd.global_rank == 0)):
             print('Evaluation accuracy = %f, Elapsed Time = %fs' %
                   (test_correct / (num_test_batch * batch_size * world_size),

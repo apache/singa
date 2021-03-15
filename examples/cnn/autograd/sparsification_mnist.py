@@ -26,7 +26,7 @@ if __name__ == '__main__':
     # Generate a NCCL ID to be used for collective communication
     nccl_id = singa.NcclIdHolder()
 
-    # number of GPUs to be used
+    # Number of GPUs to be used
     world_size = int(sys.argv[1])
 
     # Use sparsification with parameters
