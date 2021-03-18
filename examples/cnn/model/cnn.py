@@ -77,7 +77,10 @@ def create_model(pretrained=False, **kwargs):
     """Constructs a CNN model.
 
     Args:
-        pretrained (bool): If True, returns a model pre-trained
+        pretrained (bool): If True, returns a pre-trained model.
+
+    Returns:
+        The created CNN model.
     """
     model = CNN(**kwargs)
 

@@ -105,7 +105,11 @@ def create_model(pretrained=False, **kwargs):
     """Constructs a AlexNet model.
 
     Args:
-        pretrained (bool): If True, returns a model pre-trained
+        pretrained (bool): If True, returns a pre-trained model.
+    
+    Returns:
+        The created AlexNet model.
+    
     """
     model = AlexNet(**kwargs)
 
