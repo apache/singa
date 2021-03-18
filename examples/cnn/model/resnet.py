@@ -229,7 +229,10 @@ def resnet18(pretrained=False, **kwargs):
     """Constructs a ResNet-18 model.
 
     Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
+        pretrained (bool): If True, returns a model pre-trained on ImageNet.
+    
+    Returns:
+        The created ResNet-18 model.
     """
     model = ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
 
@@ -240,7 +243,10 @@ def resnet34(pretrained=False, **kwargs):
     """Constructs a ResNet-34 model.
 
     Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
+        pretrained (bool): If True, returns a model pre-trained on ImageNet.
+
+    Returns:
+        The created ResNet-34 model.
     """
     model = ResNet(BasicBlock, [3, 4, 6, 3], **kwargs)
 
@@ -251,7 +257,10 @@ def resnet50(pretrained=False, **kwargs):
     """Constructs a ResNet-50 model.
 
     Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
+        pretrained (bool): If True, returns a model pre-trained on ImageNet.
+
+    Returns:
+        The created ResNet-50 model.
     """
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
 
@@ -262,7 +271,10 @@ def resnet101(pretrained=False, **kwargs):
     """Constructs a ResNet-101 model.
 
     Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
+        pretrained (bool): If True, returns a model pre-trained on ImageNet.
+
+    Returns:
+        The created ResNet-101 model.
     """
     model = ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
 
@@ -273,7 +285,10 @@ def resnet152(pretrained=False, **kwargs):
     """Constructs a ResNet-152 model.
 
     Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
+        pretrained (bool): If True, returns a model pre-trained on ImageNet.
+
+    Returns:
+        The created ResNet-152 model.
     """
     model = ResNet(Bottleneck, [3, 8, 36, 3], **kwargs)
 
