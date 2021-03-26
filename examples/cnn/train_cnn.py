@@ -153,7 +153,7 @@ def run(global_rank,
         model = model.create_model(data_size=data_size,
                                     num_classes=num_classes)
 
-    # For distributed training, sequential gives better performance
+    # For distributed training, sequential has better performance
     if hasattr(sgd, "communicator"):
         DIST = True
         sequential = True
