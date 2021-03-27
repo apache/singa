@@ -36,7 +36,7 @@ def run(args, local_rank, world_size, nccl_id):
 
 
 if __name__ == '__main__':
-    # use argparse to get command config: max_epoch, model, data, etc. for single gpu training
+    # Use argparse to get command config: max_epoch, model, data, etc., for single gpu training
     parser = argparse.ArgumentParser(
         description='Training using the autograd and graph.')
     parser.add_argument('model',
