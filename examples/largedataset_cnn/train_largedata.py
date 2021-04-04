@@ -107,7 +107,7 @@ def run(global_rank,
     np.random.seed(0)
 
 
-    train_x, train_y, val_x, val_y = process_data.loadfood172()
+    train_x, train_y, val_x, val_y = process_data.loaddata()
 
     num_channels = 3
     num_classes = (np.max(train_y) + 1).item()
