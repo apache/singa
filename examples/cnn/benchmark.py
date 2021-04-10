@@ -84,7 +84,7 @@ def train_resnet(DIST=True, graph=True, sequential=False, verbosity=0):
     titer = (end - start) / float(niters)
     throughput = float(niters * batch_size * world_size) / (end - start)
     if global_rank == 0:
-        print("Throughput = {} per second".format(throughput), flush=True)
+        print("\nThroughput = {} per second".format(throughput), flush=True)
         print("TotalTime={}".format(end - start), flush=True)
         print("Total={}".format(titer), flush=True)
         dev.PrintTimeProfiling()
