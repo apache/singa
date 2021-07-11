@@ -26,8 +26,12 @@ import time
 import argparse
 from PIL import Image
 
+np_dtype = {"float16": np.float16, "float32": np.float32}
 
-# Data Augmentation
+singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
+
+
+# Data augmentation
 def augmentation(x, batch_size):
     xpad = np.pad(x, [[0, 0], [0, 0], [4, 4], [4, 4]], 'symmetric')
     for data_num in range(0, batch_size):
@@ -41,13 +45,12 @@ def augmentation(x, batch_size):
     return x
 
 
-# Calculate Accuracy
+# Calculate accuracy
 def accuracy(pred, target):
     # y is network output to be compared with ground truth (int)
     y = np.argmax(pred, axis=1)
     a = y == target
     correct = np.array(a, "int").sum()
-    # print(correct)
     return correct
 
 
@@ -59,6 +62,7 @@ def partition(global_rank, world_size, train_x, train_y, val_x, val_y):
     idx_end = (global_rank + 1) * data_per_rank
     train_x = train_x[idx_start:idx_end]
     train_y = train_y[idx_start:idx_end]
+
     # Partition evaluation data
     data_per_rank = val_x.shape[0] // world_size
     idx_start = global_rank * data_per_rank
@@ -68,7 +72,7 @@ def partition(global_rank, world_size, train_x, train_y, val_x, val_y):
     return train_x, train_y, val_x, val_y
 
 
-# Function to all reduce NUMPY Accuracy and Loss from Multiple Devices
+# Function to all reduce NUMPY accuracy and loss from multiple devices
 def reduce_variable(variable, dist_opt, reducer):
     reducer.copy_from_numpy(variable)
     dist_opt.all_reduce(reducer.data)
@@ -100,8 +104,9 @@ def run(global_rank,
         sgd,
         graph,
         verbosity,
-        dist_option='fp32',
-        spars=None):
+        dist_option='plain',
+        spars=None,
+        precision='float32'):
     dev = device.create_cuda_gpu_on(local_rank)
     dev.SetRandSeed(0)
     np.random.seed(0)
@@ -116,11 +121,11 @@ def run(global_rank,
         from data import mnist
         train_x, train_y, val_x, val_y = mnist.load()
 
+
     num_channels = train_x.shape[1]
     image_size = train_x.shape[2]
     data_size = np.prod(train_x.shape[1:train_x.ndim]).item()
     num_classes = (np.max(train_y) + 1).item()
-    #print(num_classes)
 
     if model == 'resnet':
         from model import resnet
@@ -148,7 +153,7 @@ def run(global_rank,
         model = model.create_model(data_size=data_size,
                                     num_classes=num_classes)
 
-    # For distributed training, sequential gives better performance
+    # For distributed training, sequential has better performance
     if hasattr(sgd, "communicator"):
         DIST = True
         sequential = True
@@ -171,9 +176,9 @@ def run(global_rank,
     if model.dimension == 4:
         tx = tensor.Tensor(
             (batch_size, num_channels, model.input_size, model.input_size), dev,
-            tensor.float32)
+            singa_dtype[precision])
     elif model.dimension == 2:
-        tx = tensor.Tensor((batch_size, data_size), dev, tensor.float32)
+        tx = tensor.Tensor((batch_size, data_size), dev, singa_dtype[precision])
         np.reshape(train_x, (train_x.shape[0], -1))
         np.reshape(val_x, (val_x.shape[0], -1))
 
@@ -182,12 +187,12 @@ def run(global_rank,
     num_val_batch = val_x.shape[0] // batch_size
     idx = np.arange(train_x.shape[0], dtype=np.int32)
 
-    # attached model to graph
+    # Attach model to graph
     model.set_optimizer(sgd)
     model.compile([tx], is_train=True, use_graph=graph, sequential=sequential)
     dev.SetVerbosity(verbosity)
 
-    # Training and Evaluation Loop
+    # Training and evaluation loop
     for epoch in range(max_epoch):
         start_time = time.time()
         np.random.shuffle(idx)
@@ -195,7 +200,7 @@ def run(global_rank,
         if global_rank == 0:
             print('Starting Epoch %d:' % (epoch))
 
-        # Training Phase
+        # Training phase
         train_correct = np.zeros(shape=[1], dtype=np.float32)
         test_correct = np.zeros(shape=[1], dtype=np.float32)
         train_loss = np.zeros(shape=[1], dtype=np.float32)
@@ -208,6 +213,7 @@ def run(global_rank,
                 x = augmentation(x, batch_size)
                 if (image_size != model.input_size):
                     x = resize_dataset(x, model.input_size)
+            x = x.astype(np_dtype[precision])
             y = train_y[idx[b * batch_size:(b + 1) * batch_size]]
 
             # Copy the patch data into input tensors
@@ -220,7 +226,7 @@ def run(global_rank,
             train_loss += tensor.to_numpy(loss)[0]
 
         if DIST:
-            # Reduce the Evaluation Accuracy and Loss from Multiple Devices
+            # Reduce the evaluation accuracy and loss from multiple devices
             reducer = tensor.Tensor((1,), dev, tensor.float32)
             train_correct = reduce_variable(train_correct, sgd, reducer)
             train_loss = reduce_variable(train_loss, sgd, reducer)
@@ -231,13 +237,14 @@ def run(global_rank,
                    (num_train_batch * batch_size * world_size)),
                   flush=True)
 
-        # Evaluation Phase
+        # Evaluation phase
         model.eval()
         for b in range(num_val_batch):
             x = val_x[b * batch_size:(b + 1) * batch_size]
             if model.dimension == 4:
                 if (image_size != model.input_size):
                     x = resize_dataset(x, model.input_size)
+            x = x.astype(np_dtype[precision])
             y = val_y[b * batch_size:(b + 1) * batch_size]
             tx.copy_from_numpy(x)
             ty.copy_from_numpy(y)
@@ -245,10 +252,10 @@ def run(global_rank,
             test_correct += accuracy(tensor.to_numpy(out_test), y)
 
         if DIST:
-            # Reduce the Evaulation Accuracy from Multiple Devices
+            # Reduce the evaulation accuracy from multiple devices
             test_correct = reduce_variable(test_correct, sgd, reducer)
 
-        # Output the Evaluation Accuracy
+        # Output the evaluation accuracy
         if global_rank == 0:
             print('Evaluation accuracy = %f, Elapsed Time = %fs' %
                   (test_correct / (num_val_batch * batch_size * world_size),
@@ -259,15 +266,20 @@ def run(global_rank,
 
 
 if __name__ == '__main__':
-    # use argparse to get command config: max_epoch, model, data, etc. for single gpu training
+    # Use argparse to get command config: max_epoch, model, data, etc., for single gpu training
     parser = argparse.ArgumentParser(
         description='Training using the autograd and graph.')
-    parser.add_argument('model',
-                        choices=['resnet', 'xceptionnet', 'cnn', 'mlp', 'alexnet'],
-                        default='cnn')
+    parser.add_argument(
+        'model',
+        choices=['cnn', 'resnet', 'xceptionnet', 'mlp', 'alexnet'],
+        default='cnn')
     parser.add_argument('data',
-                        choices=['cifar10', 'cifar100', 'mnist'],
+                        choices=['mnist', 'cifar10', 'cifar100'],
                         default='mnist')
+    parser.add_argument('-p',
+                        choices=['float32', 'float16'],
+                        default='float32',
+                        dest='precision')
     parser.add_argument('-m',
                         '--max-epoch',
                         default=10,
@@ -286,7 +298,7 @@ if __name__ == '__main__':
                         type=float,
                         help='initial learning rate',
                         dest='lr')
-    # determine which gpu to use
+    # Determine which gpu to use
     parser.add_argument('-i',
                         '--device-id',
                         default=0,
@@ -308,6 +320,15 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5)
-    run(0, 1, args.device_id, args.max_epoch, args.batch_size, args.model,
-        args.data, sgd, args.graph, args.verbosity)
+    sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5, dtype=singa_dtype[args.precision])
+    run(0,
+        1,
+        args.device_id,
+        args.max_epoch,
+        args.batch_size,
+        args.model,
+        args.data,
+        sgd,
+        args.graph,
+        args.verbosity,
+        precision=args.precision)

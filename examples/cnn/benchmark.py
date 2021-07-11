@@ -32,7 +32,7 @@ from tqdm import trange
 
 def train_resnet(DIST=True, graph=True, sequential=False, verbosity=0):
 
-    # Define the hypermeters good for the train_resnet
+    # Define the hypermeters for the train_resnet
     niters = 100
     batch_size = 32
     sgd = opt.SGD(lr=0.1, momentum=0.9, weight_decay=1e-5)
@@ -64,7 +64,7 @@ def train_resnet(DIST=True, graph=True, sequential=False, verbosity=0):
     dev.SetVerbosity(verbosity)
     dev.SetSkipIteration(5)
 
-    # construct the model
+    # Construct the model
     from model import resnet
     model = resnet.resnet50(num_channels=3, num_classes=1000)
 
@@ -72,7 +72,7 @@ def train_resnet(DIST=True, graph=True, sequential=False, verbosity=0):
     model.set_optimizer(sgd)
     model.compile([tx], is_train=True, use_graph=graph, sequential=sequential)
 
-    # train model
+    # Train model
     dev.Sync()
     start = time.time()
     with trange(niters) as t:
@@ -84,7 +84,7 @@ def train_resnet(DIST=True, graph=True, sequential=False, verbosity=0):
     titer = (end - start) / float(niters)
     throughput = float(niters * batch_size * world_size) / (end - start)
     if global_rank == 0:
-        print("Throughput = {} per second".format(throughput), flush=True)
+        print("\nThroughput = {} per second".format(throughput), flush=True)
         print("TotalTime={}".format(end - start), flush=True)
         print("Total={}".format(titer), flush=True)
         dev.PrintTimeProfiling()

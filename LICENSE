@@ -297,6 +297,7 @@ license and copyright terms herein.
 =====================================================================
 SINGA bundles the following under MIT license:
 cmake/ThirdParty/FindOpenCL.cmake
+include/half.hpp
 
 Copyright (c) 2010-2016 Institute for Microelectronics,
                         Institute for Analysis and Scientific Computing, TU Wien.

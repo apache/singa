@@ -24,6 +24,7 @@
 #ifndef SINGA_UTILS_LOGGING_H_
 #define SINGA_UTILS_LOGGING_H_
 
+#include "singa/singa_config.h"
 #include <stdlib.h>
 
 #include <sstream>

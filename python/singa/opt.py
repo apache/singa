@@ -75,7 +75,7 @@ class Optimizer(object):
         config (Dict): specify the default values of configurable variables.
     """
 
-    def __init__(self, lr):
+    def __init__(self, lr, dtype=tensor.float32):
         # init lr(could be a constant scalar or a learning rate scheduler)
         if type(lr) == float or type(lr) == int:
             self.lr = Constant(lr)
@@ -85,6 +85,7 @@ class Optimizer(object):
             raise TypeError("Wrong learning rate type")
 
         # init step counter
+        self.dtype = dtype
         # TODO change type to int32
         self.step_counter = Tensor((1,), dtype=tensor.float32)
         self.step_counter.set_value(0)
@@ -217,8 +218,9 @@ class SGD(Optimizer):
                  momentum=0,
                  dampening=0,
                  weight_decay=0,
-                 nesterov=False):
-        super(SGD, self).__init__(lr)
+                 nesterov=False,
+                 dtype=tensor.float32):
+        super(SGD, self).__init__(lr, dtype)
 
         # init momentum
         if type(momentum) == float or type(momentum) == int:
@@ -230,7 +232,7 @@ class SGD(Optimizer):
             momentum = momentum.init_value
         else:
             raise TypeError("Wrong momentum type")
-        self.mom_value = self.momentum(self.step_counter)
+        self.mom_value = self.momentum(self.step_counter).as_type(self.dtype)
 
         # init dampening
         if type(dampening) == float or type(dampening) == int:
@@ -240,7 +242,7 @@ class SGD(Optimizer):
             dampening = dampening.init_value
         else:
             raise TypeError("Wrong dampening type")
-        self.dam_value = self.dampening(self.step_counter)
+        self.dam_value = self.dampening(self.step_counter).as_type(self.dtype)
 
         # init weight_decay
         if type(weight_decay) == float or type(weight_decay) == int:
@@ -252,7 +254,8 @@ class SGD(Optimizer):
             self.weight_decay = weight_decay
         else:
             raise TypeError("Wrong weight_decay type")
-        self.decay_value = self.weight_decay(self.step_counter)
+        self.decay_value = self.weight_decay(self.step_counter).as_type(
+            self.dtype)
 
         # init other params
         self.nesterov = nesterov
@@ -277,6 +280,9 @@ class SGD(Optimizer):
                                                        param_grad.shape)
         self.device_check(param_value, self.step_counter, self.lr_value,
                           self.mom_value, self.dam_value, self.decay_value)
+
+        # derive dtype from input
+        assert param_value.dtype == self.dtype
 
         # TODO add branch operator
         # if self.decay_value != 0:
@@ -306,9 +312,9 @@ class SGD(Optimizer):
     def step(self):
         # increment step counter, lr and moment
         super().step()
-        mom_value = self.momentum(self.step_counter)
-        dam_value = self.dampening(self.step_counter)
-        decay_value = self.weight_decay(self.step_counter)
+        mom_value = self.momentum(self.step_counter).as_type(self.dtype)
+        dam_value = self.dampening(self.step_counter).as_type(self.dtype)
+        decay_value = self.weight_decay(self.step_counter).as_type(self.dtype)
         self.mom_value.copy_from(mom_value)
         self.dam_value.copy_from(dam_value)
         self.decay_value.copy_from(decay_value)
@@ -888,6 +894,9 @@ class DistOpt(object):
         acc = 0
         glist = []
         for p, g in autograd.backward(loss):
+            assert p.dtype == tensor.float32, (
+                'This function is only available for input tensor precision 32 bit, '
+                'which are converted into 16 bits before transmit')
             if clipping:
                 g = autograd.clip(g, -clip_Value, clip_Value)
             if g.size() > threshold:

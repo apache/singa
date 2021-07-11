@@ -30,9 +30,11 @@
 #include <stdio.h>
 
 #include "gtest/gtest.h"
+#include "singa/utils/logging.h"
 
 GTEST_API_ int main(int argc, char **argv) {
   printf("Running main() from gtest_main.cc\n");
+  singa::InitLogging("");
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

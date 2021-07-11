@@ -129,7 +129,7 @@ def to_categorical(y, num_classes):
     return categorical
 
 
-# Function to all reduce NUMPY Accuracy and Loss from Multiple Devices
+# Function to all reduce NUMPY accuracy and loss from multiple devices
 def reduce_variable(variable, dist_opt, reducer):
     reducer.copy_from_numpy(variable)
     dist_opt.all_reduce(reducer.data)
@@ -159,7 +159,7 @@ def train_cifar10(DIST=False,
                   nccl_id=None,
                   partial_update=False):
 
-    # Define the hypermeters good for the train_cifar10
+    # Define the hypermeters for the train_cifar10
     sgd = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)
     max_epoch = 5
     batch_size = 32
@@ -171,12 +171,13 @@ def train_cifar10(DIST=False,
     num_classes = 10
 
     if DIST:
-        # For Distributed GPU Training
+        # For distributed GPU training
         sgd = opt.DistOpt(sgd,
                           nccl_id=nccl_id,
                           local_rank=local_rank,
                           world_size=world_size)
         dev = device.create_cuda_gpu_on(sgd.local_rank)
+
         # Dataset partition for distributed training
         train_x, train_y = data_partition(train_x, train_y, sgd.global_rank,
                                           sgd.world_size)
@@ -184,7 +185,7 @@ def train_cifar10(DIST=False,
                                         sgd.world_size)
         world_size = sgd.world_size
     else:
-        # For Single GPU
+        # For single GPU
         dev = device.create_cuda_gpu()
         world_size = 1
 
@@ -219,7 +220,7 @@ def train_cifar10(DIST=False,
         if ((DIST == False) or (sgd.global_rank == 0)):
             print('Starting Epoch %d:' % (epoch))
 
-        #Training Phase
+        #Training phase
         autograd.training = True
         train_correct = np.zeros(shape=[1], dtype=np.float32)
         test_correct = np.zeros(shape=[1], dtype=np.float32)
@@ -244,12 +245,12 @@ def train_cifar10(DIST=False,
                 sgd.backward_and_partial_update(loss)
 
         if DIST:
-            # Reduce the Evaluation Accuracy and Loss from Multiple Devices
+            # Reduce the evaluation accuracy and loss from multiple devices
             reducer = tensor.Tensor((1,), dev, tensor.float32)
             train_correct = reduce_variable(train_correct, sgd, reducer)
             train_loss = reduce_variable(train_loss, sgd, reducer)
 
-        # Output the Training Loss and Accuracy
+        # Output the training loss and accuracy
         if ((DIST == False) or (sgd.global_rank == 0)):
             print('Training loss = %f, training accuracy = %f' %
                   (train_loss, train_correct /
@@ -257,11 +258,11 @@ def train_cifar10(DIST=False,
                   flush=True)
 
         if partial_update:
-            # sychronize parameters before evaluation phase
+            # Sychronize parameters before evaluation phase
             for p in param:
                 synchronize(p, sgd)
 
-        #Evaulation Phase
+        #Evaulation phase
         autograd.training = False
         for b in range(num_test_batch):
             x = test_x[b * batch_size:(b + 1) * batch_size]
@@ -274,10 +275,10 @@ def train_cifar10(DIST=False,
                                      to_categorical(y, num_classes))
 
         if DIST:
-            # Reduce the Evaulation Accuracy from Multiple Devices
+            # Reduce the evaulation accuracy from multiple devices
             test_correct = reduce_variable(test_correct, sgd, reducer)
 
-        # Output the Evaluation Accuracy
+        # Output the evaluation accuracy
         if ((DIST == False) or (sgd.global_rank == 0)):
             print('Evaluation accuracy = %f, Elapsed Time = %fs' %
                   (test_correct / (num_test_batch * batch_size * world_size),
