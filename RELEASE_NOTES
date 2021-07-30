@@ -1,3 +1,40 @@
+Release Notes - SINGA - Version singa-3.2.0
+
+SINGA is a distributed deep learning library.
+
+This release includes following changes:
+
+  * New examples:
+    * Add one cifar-10 distributed CNN example for benchmarking the performance of the distributed
+      training.
+    * Add one large CNN example for training with a dataset from the filesysetm.
+
+  * Enhance distributed training
+    * Improve the data augmentation module for faster distributed training.
+    * Add device synchronization for more accurate time measurements during the distributed training.
+
+  * Add Support for half-precision floating-point format (fp16) in deep learning models and 
+    computational kernels.
+
+  * Update new onnx APIs and fix onnx examples accordingly, namely, DenseNet121, ShuffleNetv1, 
+    ShuffleNetv2, SqueezeNet, VGG19.
+
+  * Add a new method to resize images by given width and height.
+
+  * Use docusaurus versioning to simplify the process of generating the project homepage.
+
+  * Promote code quality
+    * Unify the formats of docstrings that describe the contents and usage of the module.
+    * Unify the parameters of command-line arguments.
+
+  * Fix bugs
+    * Fix the CI build error by downloading the tbb binaries.
+    * Add disabling graph option for accessing parameter or gradient tensors during distributed  
+      training.
+    * Solve the warnings of deprecated functions in the distributed optimizer module.
+
+----------------------------------------------------------------------------------------------
+
 Release Notes - SINGA - Version singa-3.1.0
 
 SINGA is a distributed deep learning library.
