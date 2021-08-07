@@ -119,7 +119,7 @@ void RoundE(const Tensor &in, Tensor *out, Context *ctx) {
 /// out[i] = in[i] + x
 template <typename DType, typename Lang>
 void Add(const Tensor &in, const DType x, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Add Not Implemented";
+  LOG(FATAL) << "Add Not Implemented for DType=" << typeid(DType).name() << " Lang=" << typeid(Lang).name();
 }
 
 /// out[i] = in1[i] + in2[i]
