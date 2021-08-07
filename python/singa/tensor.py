@@ -674,7 +674,13 @@ class Tensor(object):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(singa.__add__(self.data, rhs.data))
         else:
-            return _call_singa_func(singa.AddFloat, self.data, rhs)
+            if self.dtype == float32:
+                return _call_singa_func(singa.AddFloat, self.data, float(rhs))
+            elif type(rhs) == float:
+                t = self.as_type(float32)
+                return _call_singa_func(singa.AddFloat, t.data, rhs)
+            else:
+                raise Exception("Add not implemented for tensor type = " + str(self.dtype) + " rhs type=" + type(rhs))
 
     def __sub__(self, rhs):
         if isinstance(rhs, Tensor):
