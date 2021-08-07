@@ -55,6 +55,9 @@ namespace singa {
 /// 7. Use size_t for the number of elements, rows or columns.
 /// 8. Use the same name for the Tensor and Tensor level math functions.
 
+define LOG_FATAL(Op, DType, Lang)  \
+  LOG(FATAL) << Op << " not Implemented for DType=" << typeid(DType).name() << " Lang=" << typeid(Lang).name()
+
 const std::string vec2str(const std::vector<int> &vec) {
   std::ostringstream vts;
   if (!vec.empty()) {
@@ -83,62 +86,62 @@ const std::string vec2str(const std::vector<size_t> &vec) {
 /// out[i] = |in[i]|
 template <typename DType, typename Lang>
 void Abs(const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Abs Not Implemented";
+  LOG_FATAL("Abs", DType, Lang);
 }
 
 template <typename DType, typename Lang>
 void Erf(const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Erf Not Implemented";
+  LOG_FATAL("Erf", DType, Lang);
 }
 
 template <typename DTypeSrc, typename DTypeDst, typename Lang>
 void CastCopy(const Tensor *src, Tensor *dst, Context *ctx) {
-  LOG(FATAL) << "CastCopy Not Implemented";
+  LOG_FATAL("CastCopy", DType, Lang);
 }
 
 template <typename DType, typename Lang>
 void Ceil(const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Ceil Not Implemented";
+  LOG_FATAL("Ceil", DType, Lang);
 }
 
 template <typename DType, typename Lang>
 void Floor(const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Floor Not Implemented";
+  LOG_FATAL("Floor", DType, Lang);
 }
 
 template <typename DType, typename Lang>
 void Round(const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Round Not Implemented";
+  LOG_FATAL("Round", DType, Lang);
 }
 
 template <typename DType, typename Lang>
 void RoundE(const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Round Not Implemented";
+  LOG_FATAL("RoundE", DType, Lang);
 }
 
 /// out[i] = in[i] + x
 template <typename DType, typename Lang>
 void Add(const Tensor &in, const DType x, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Add Not Implemented for DType=" << typeid(DType).name() << " Lang=" << typeid(Lang).name();
+  LOG_FATAL("Add", DType, Lang);
 }
 
 /// out[i] = in1[i] + in2[i]
 template <typename DType, typename Lang>
 void Add(const Tensor &in1, const Tensor &in2, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Add-Pair Not Implemented";
+  LOG_FATAL("Add-Pair", DType, Lang);
 }
 /// Clamp every element into [low, high]
 /// if in[i]>high, then out[i]=high; if in[i]<low, then out[i]=low.
 template <typename DType, typename Lang>
 void Clamp(const DType low, const DType high, const Tensor &in, Tensor *out,
            Context *ctx) {
-  LOG(FATAL) << "Clamp Not Implemented";
+  LOG_FATAL("Clamp", DType, Lang);
 }
 
 /// out[i] = x / in[i]
 template <typename DType, typename Lang>
 void Div(const DType x, const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Div Not Implemented";
+  LOG_FATAL("Div", DType, Lang);
 }
 
 /// out[i] = in[i] / x
@@ -151,140 +154,140 @@ void Div(const Tensor &in, const DType x, Tensor *out, Context *ctx) {
 /// out[i] = in1[i] / in2[i]
 template <typename DType, typename Lang>
 void Div(const Tensor &in1, const Tensor &in2, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Div-Pair Not Implemented";
+  LOG_FATAL("Div-Pair", DType, Lang);
 }
 
 /// out[i] = in[i] * x
 template <typename DType, typename Lang>
 void EltwiseMult(const Tensor &in, const DType x, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "EltwiseMult Not Implemented";
+  LOG_FATAL("EltwiseMult", DType, Lang);
 }
 
 /// out[i] = in1[i] * in2[i]
 template <typename DType, typename Lang>
 void EltwiseMult(const Tensor &in1, const Tensor &in2, Tensor *out,
                  Context *ctx) {
-  LOG(FATAL) << "EltwiseMult-Pair Not Implemented";
+  LOG_FATAL("EltwiseMult-Pair", DType, Lang);
 }
 
 /// out[i]=(in2[i]>0)?in1[i]:0.f
 template <typename DType, typename Lang>
 void ReLUBackward(const Tensor &in1, const Tensor &in2, Tensor *out,
                   Context *ctx) {
-  LOG(FATAL) << "ReLUBackward Not Implemented";
+  LOG_FATAL("ReLUBackward", DType, Lang);
 }
 
 /// Base is e, Neper number. out[i]=exp(in[i])
 template <typename DType, typename Lang>
 void Exp(const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Exp Not Implemented";
+  LOG_FATAL("Exp", DType, Lang);
 }
 
 /// out[i]=(in[i]<=x)?1.f:0.f
 template <typename DType, typename Lang>
 void LE(const Tensor &in, const DType x, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "LE Not Implemented";
+  LOG_FATAL("LE", DType, Lang);
 }
 /// out[i]=(in1[i]<=in2[i])?1.f:0.f
 template <typename DType, typename Lang>
 void LE(const Tensor &in1, const Tensor &in2, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Tensor-Tensor LE Not Implemented";
+  LOG_FATAL("Tensor <= Tensor", DType, Lang);
 }
 /// Natural logarithm, the base is e, Neper number out[i]=log(in[i]).
 template <typename DType, typename Lang>
 void Log(const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Log Not Implemented";
+  LOG_FATAL("Log", DType, Lang);
 }
 /// out[i]=(in[i]<x)?1.f:0.f
 template <typename DType, typename Lang>
 void LT(const Tensor &in, const DType x, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "LT Not Implemented";
+  LOG_FATAL("LT", DType, Lang);
 }
 /// out[i]=(in1[i]<in2[i])?1.f:0.f
 template <typename DType, typename Lang>
 void LT(const Tensor &in1, const Tensor &in2, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Tensor-Tensor LT Not Implemented";
+  LOG_FATAL("Tensor Tensor LT", DType, Lang);
 }
 /// out[i]=(in[i]>=x)?1.f:0.f
 template <typename DType, typename Lang>
 void GE(const Tensor &in, const DType x, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "GE Not Implemented";
+  LOG_FATAL("GE", DType, Lang);
 }
 /// out[i]=(in1[i]>=in2[i])?1.f:0.f
 template <typename DType, typename Lang>
 void GE(const Tensor &in1, const Tensor &in2, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Tensor-Tensor GE Not Implemented";
+  LOG_FATAL("Tensor Tensor GE", DType, Lang);
 }
 /// out[i]=(in[i]>x)?1.f:0.f
 template <typename DType, typename Lang>
 void GT(const Tensor &in, const DType x, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "GT Not Implemented";
+  LOG_FATAL("GT", DType, Lang);
 }
 /// out[i]=(in[i]>in2[i])?1.f:0.f
 template <typename DType, typename Lang>
 void GT(const Tensor &in, const Tensor &in2, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Tensor-Tensor GT Not Implemented";
+  LOG_FATAL("Tensor Tensor GT", DType, Lang);
 }
 /// out[i]=(in[i]==x)?1.f:0.f
 template <typename DType, typename Lang>
 void EQ(const Tensor &in, const DType x, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "EQ Not Implemented";
+  LOG_FATAL("EQ", DType, Lang);
 }
 /// out[i]=(in[i]==in2[i])?1.f:0.f
 template <typename DType, typename Lang>
 void EQ(const Tensor &in, const Tensor &in2, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Tensor-Tensor EQ Not Implemented";
+  LOG_FATAL("Tensor Tensor EQ", DType, Lang);
 }
 /// out[i] = pow(in[i], x)
 template <typename DType, typename Lang>
 void Pow(const Tensor &in, const DType x, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Pow Not Implemented";
+  LOG_FATAL("Pow", DType, Lang);
 }
 
 /// out[i]=pow(in1[i], in2[i])
 template <typename DType, typename Lang>
 void Pow(const Tensor &in1, const Tensor &in2, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Pow-Pair Not Implemented";
+  LOG_FATAL("Tensor Tensor Pow", DType, Lang);
 }
 
 /// out[i]=max(0, in[i])
 template <typename DType, typename Lang>
 void ReLU(const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "ReLU Not Implemented";
+  LOG_FATAL("ReLU", DType, Lang);
 }
 
 /// out[i] = x
 template <typename DType, typename Lang>
 void Set(const DType x, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Set Not Implemented";
+  LOG_FATAL("Set", DType, Lang);
 }
 /// out[i]=sigmoid(in[i])
 template <typename DType, typename Lang>
 void Sigmoid(const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Sigmoid Not Implemented";
+  LOG_FATAL("Sigmoid", DType, Lang);
 }
 
 /// out[i] = log(exp(in[i]) + 1)
 template <typename DType, typename Lang>
 void SoftPlus(const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "SoftPlus Not Implemented";
+  LOG_FATAL("SoftPlus", DType, Lang);
 }
 
 /// out[i] = in[i] / (abs(in[i]) + 1)
 template <typename DType, typename Lang>
 void SoftSign(const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "SoftSign Not Implemented";
+  LOG_FATAL("SoftSign", DType, Lang);
 }
 
 /// out[i] = sign(in[i])
 template <typename DType, typename Lang>
 void Sign(const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Sign Not Implemented";
+  LOG_FATAL("Sign", DType, Lang);
 }
 /// out[i]=sqrt(in[i])
 template <typename DType, typename Lang>
 void Sqrt(const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Sqrt Not Implemented";
+  LOG_FATAL("Sqrt", DType, Lang);
 }
 
 /// out[i]=square(in[i])
@@ -302,13 +305,13 @@ void Sub(const Tensor &in, const DType x, Tensor *out, Context *ctx) {
 /// out[i] = in1[i] - in2[i]
 template <typename DType, typename Lang>
 void Sub(const Tensor &in1, const Tensor &in2, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Sub-Pair Not Implemented";
+  LOG_FATAL("Tensor Tensor Sub", DType, Lang);
 }
 
 /// sum all elements of in into out
 template <typename DType, typename Lang>
 void Sum(const Tensor &in, DType *out, Context *ctx) {
-  LOG(FATAL) << "Sum Not Implemented";
+  LOG_FATAL("Sum", DType, Lang);
 }
 
 /// out[i]=fn(in[i])
@@ -316,8 +319,7 @@ void Sum(const Tensor &in, DType *out, Context *ctx) {
   template <typename DType, typename Lang>               \
   void fn(const Tensor &in, Tensor *out, Context *ctx) { \
     std::string str = stringfn;                          \
-    str += " Not Implemented";                           \
-    LOG(FATAL) << str;                                   \
+    LOG_FATAL(str, DType, Lang);                         \
   }
 
 GenUnaryNotImplemented(Cos, "Cos");
@@ -339,7 +341,7 @@ GenUnaryNotImplemented(Atanh, "Atanh");
 /// strides
 template <typename DType, typename Lang>
 void Transform(const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Transform Not Implemented";
+  LOG_FATAL("Transform", DType, Lang);
 }
 
 // **************************************
@@ -350,19 +352,19 @@ void Transform(const Tensor &in, Tensor *out, Context *ctx) {
 // If DType is not float, then convert the threshold to DType
 template <typename DType, typename Lang>
 void Bernoulli(const float p, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Bernoulli Not Implemented";
+  LOG_FATAL("Bernoulli", DType, Lang);
 }
 // The random generator should be extracted from ctx.
 // If DType is not float, then convert the mean and std to DType
 template <typename DType, typename Lang>
 void Gaussian(const DType mean, const DType std, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Gaussian Not Implemented";
+  LOG_FATAL("Gaussian", DType, Lang);
 }
 // The random generator should be extracted from ctx.
 // If DType is not float, then convert the low and high to DType
 template <typename DType, typename Lang>
 void Uniform(const DType low, const DType high, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Uniform Not Implemented";
+  LOG_FATAL("Uniform", DType, Lang);
 }
 
 // *********************************************************
@@ -372,52 +374,52 @@ void Uniform(const DType low, const DType high, Tensor *out, Context *ctx) {
 /// outurn the index of the element with the max value.
 template <typename DType, typename Lang>
 void Amax(const Tensor &in, size_t *out, Context *ctx) {
-  LOG(FATAL) << "Amax Not Implemented";
+  LOG_FATAL("Amax", DType, Lang);
 }
 
 /// outurn the index of the element with the min value.
 template <typename DType, typename Lang>
 void Amin(const Tensor &in, size_t *out, Context *ctx) {
-  LOG(FATAL) << "Amin Not Implemented";
+  LOG_FATAL("Amin", DType, Lang);
 }
 /// out = sum |x| for all x in in
 template <typename DType, typename Lang>
 void Asum(const Tensor &in, DType *out, Context *ctx) {
-  LOG(FATAL) << "Asum Not Implemented";
+  LOG_FATAL("Asum", DType, Lang);
 }
 
 /// out = alpha * in + out
 template <typename DType, typename Lang>
 void Axpy(const DType alpha, const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Axpy Not Implemented";
+  LOG_FATAL("Axpy", DType, Lang);
 }
 
 /// out = alpha * in + out
 template <typename DType, typename Lang>
 void Axpy(const Tensor &alpha, const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Axpy Not Implemented";
+  LOG_FATAL("Axpy Tensor alpha", DType, Lang);
 }
 
 /// out = ||in||_2^2, i.e, L2 norm.
 template <typename DType, typename Lang>
 void Nrm2(const Tensor &in, float *out, Context *ctx) {
-  LOG(FATAL) << "Nrm2 Not Implemented";
+  LOG_FATAL("Nrm2", DType, Lang);
 }
 
 /// out *= x
 template <typename DType, typename Lang>
 void Scale(const DType x, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Scale Not Implemented";
+  LOG_FATAL("Scale", DType, Lang);
 }
 
 /// inner product of array in1 and in2
 template <typename DType, typename Lang>
 void Dot(const Tensor &in1, const Tensor &in2, DType *out, Context *ctx) {
-  LOG(FATAL) << "Dot Not Implemented";
+  LOG_FATAL("Inner-product Dot", DType, Lang);
 }
 template <typename DType, typename Lang>
 void Dot(const Tensor &in1, const Tensor &in2, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Dot Not Implemented";
+  LOG_FATAL("Dot", DType, Lang);
 }
 
 /// out = alpha * A * v + beta * out.
@@ -425,7 +427,7 @@ void Dot(const Tensor &in1, const Tensor &in2, Tensor *out, Context *ctx) {
 template <typename DType, typename Lang>
 void GEMV(const DType alpha, const Tensor &A, const Tensor &v, const DType beta,
           Tensor *out, Context *ctx) {
-  LOG(FATAL) << "GEMV Not Implemented";
+  LOG_FATAL("GEMV", DType, Lang);
 }
 
 /// multiply a matrix with a diagnoal matrix constructed using values from 'v'.
@@ -433,7 +435,7 @@ void GEMV(const DType alpha, const Tensor &A, const Tensor &v, const DType beta,
 template <typename DType, typename Lang>
 void DGMM(const bool side_right, const Tensor &M, const Tensor &v, Tensor *out,
           Context *ctx) {
-  LOG(FATAL) << "DGMM Not Implemented";
+  LOG_FATAL("DGMM", DType, Lang);
 }
 
 /// C = alpha * A * B + beta * C.
@@ -441,24 +443,24 @@ void DGMM(const bool side_right, const Tensor &M, const Tensor &v, Tensor *out,
 template <typename DType, typename Lang>
 void GEMM(const DType alpha, const Tensor &A, const Tensor &B, const DType beta,
           Tensor *C, Context *ctx) {
-  LOG(FATAL) << "GEMM Not Implemented";
+  LOG_FATAL("GEMM", DType, Lang);
 }
 
 template <typename DType, typename Lang>
 void GEMMBatched(const DType alpha, const Tensor &A, const Tensor &B,
                  const DType beta, Tensor *C, Context *ctx) {
-  LOG(FATAL) << "GEMM Batched Not Implemented";
+  LOG_FATAL("GEMMBatched", DType, Lang);
 }
 
 template <typename DType, typename Lang>
 void SoftMax(const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Not Implemented";
+  LOG_FATAL("SoftMax", DType, Lang);
 }
 
 template <typename DType, typename Lang>
 void SoftMaxBackward(const Tensor &in, Tensor *out, const Tensor &fdout,
                      Context *ctx) {
-  LOG(FATAL) << "Not Implemented";
+  LOG_FATAL("SoftMaxBackend", DType, Lang);
 }
 
 // yisen todo
@@ -466,68 +468,20 @@ template <typename DType, typename Lang>
 void ComputeCrossEntropy(bool int_target, const size_t batchsize,
                          const size_t dim, const Tensor &p, const Tensor &t,
                          Tensor *loss, Context *ctx) {
-  LOG(FATAL) << "Not Implemented";
+  LOG_FATAL("ComputeCrossEntropy", DType, Lang);
 }
 
 template <typename DType, typename Lang>
 void SoftmaxCrossEntropyBwd(bool int_target, const size_t batchsize,
                             const size_t dim, const Tensor &p, const Tensor &t,
                             Tensor *grad, Context *ctx) {
-  LOG(FATAL) << "Not Implemented";
+  LOG_FATAL("ComputeCrossEntropyBwd", DType, Lang);
 }
 
 template <typename DType, typename Lang>
 void RowMax(const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Not Implemented";
+  LOG_FATAL("RowMax", DType, Lang);
 }
-// **************************************
-// Matrix functions
-// **************************************
-/*
-/// Add the vector v to every column of A as the column of out
-template <typename DType, typename Lang>
-void AddCol(const size_t nrow, const size_t ncol, const Tensor &A, const Tensor
-&v,
-            Tensor *out, Context *ctx) {
-  LOG(FATAL) << "AddCol Not Implemented";
-}
-// TODO(wangwei) unify AddRow and AddCol.
-/// Add the vector v to every row of A as the row of out
-template <typename DType, typename Lang>
-void AddRow(const size_t nrow, const size_t ncol, const Tensor &A, const Tensor
-&v,
-            Tensor *out, Context *ctx) {
-  LOG(FATAL) << "AddRow Not Implemented";
-}
-/// outer-product.
-/// in1 and in2 are vectors of len m and n. out is matrix of shape m * n
-template <typename DType, typename Lang>
-void Outer(const size_t m, const size_t n, const Tensor &in1, const Tensor &in2,
-           Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Outer Not Implemented";
-}
-
-/// Sum the columns of the in matrix into a vector
-template <typename DType, typename Lang>
-void SumColumns(const size_t nrow, const size_t ncol, const Tensor &in, Tensor
-*out,
-                Context *ctx) {
-  LOG(FATAL) << "SumColumns Not Implemented";
-}
-template <typename DType, typename Lang>
-void Set(const DType x, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Not Implemented";
-}
-
-// TODO(wangwei) unify SumRow and SumCol.
-/// Sum the rows of the in matrix into a vector
-template <typename DType, typename Lang>
-void SumRows(const size_t nrow, const size_t ncol, const Tensor &in, Tensor
-*out,
-             Context *ctx) {
-  LOG(FATAL) << "SumRows Not Implemented";
-}
-*/
 
 }  // namespace singa
 #endif  // SINGA_CORE_MATH_H_
