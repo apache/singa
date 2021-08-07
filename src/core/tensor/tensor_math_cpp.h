@@ -785,20 +785,6 @@ void Asum<float, lang::Cpp>(const Tensor &in, float *out, Context *ctx) {
   *out = cblas_sasum(in.Size(), inPtr, 1);  // not using strided traversal
 }
 
-// template <>
-// void Axpy<float, lang::Cpp>(const float alpha,
-//                             const Tensor& in, Tensor *out, Context *ctx) {
-//   //check input tensor for strides first
-//   if (in.stride() == out->stride()) {
-//     const float *inPtr = static_cast<const float *>(in.block()->data());
-//     float *outPtr = static_cast<float *>(out->block()->mutable_data());
-//     cblas_saxpy(in.Size(), alpha, inPtr, 1, outPtr, 1);
-//   } else {
-//     //LOG(FATAL) << "Axpy, input and output strides do not match." ;
-//     EltwiseMult<float, lang::Cpp>(in, alpha, out, ctx);
-//   }
-// }
-
 template <>
 void Axpy<float, lang::Cpp>(const float alpha, const Tensor &in, Tensor *out,
                             Context *ctx) {
@@ -817,20 +803,25 @@ void Axpy<float, lang::Cpp>(const float alpha, const Tensor &in, Tensor *out,
   }
 }
 
-// template <>
-// void Axpy<float, lang::Cpp>(const float alpha,
-//                            const Tensor& in, Tensor *out, Context *ctx) {
-//  //check input tensor for strides first
-//  if (in.stride() == out->stride()) {
-//    const float *inPtr = static_cast<const float *>(in.block()->data());
-//    float *outPtr = static_cast<float *>(out->block()->mutable_data());
-//    cblas_saxpy(in.Size(), alpha, inPtr, 1, outPtr, 1);
-//  } else if(out->transpose()) {
-//    LOG(FATAL) << "output is already transposed." ;
-//  } else {
-//    LOG(FATAL) << "Axpy, input and output strides do not match." ;
-//  }
-// }
+template <>
+void Axpy<float, lang::Cpp>(const Tensor &alpha, const Tensor &in, Tensor *out,
+                            Context *ctx) {
+  // check input tensor for strides first
+  const float *inPtr = static_cast<const float *>(in.block()->data());
+  float *outPtr = static_cast<float *>(out->block()->mutable_data());
+  const float a = *static_cast<const float*>(alpha.block()->data());
+
+  if (in.stride() == out->stride()) {
+    cblas_saxpy(in.Size(), a, inPtr, 1, outPtr, 1);
+  } else {
+    // LOG(FATAL) << "Axpy, input and output strides do not match." ;
+    Tensor t(in.shape(), in.device(), in.data_type());
+    EltwiseMult<float, lang::Cpp>(in, a, &t, ctx);
+    float *tPtr = static_cast<float *>(t.block()->mutable_data());
+    cblas_saxpy(in.Size(), 1, tPtr, 1, outPtr, 1);
+  }
+}
+
 
 template <>
 void Dot<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, float *out,
@@ -1148,121 +1139,7 @@ void RowMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
   }
 }
 
-// =========Matrix operations ================================================
-/*
-template <>
-void SoftMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context* ctx) {
-  CHECK_LE(in.nDim(), 2u) << "Axis is required for SoftMax on multi dimemsional
-tensor";
-  out->CopyData(in);
-  size_t nrow = 1, ncol = in.Size(), size = ncol;
-  if (in.nDim() == 2u) {
-    nrow = in.shape(0);
-    ncol = size / nrow;
-    out->Reshape(Shape{nrow, ncol});
-  }
-  Tensor tmp = RowMax(*out);
-  SubColumn(tmp, out);
-  Exp(*out, out);
 
-  SumColumns(*out, &tmp);
-  DivColumn(tmp, out);
-  out->Reshape(in.shape());
-}
-
-template <>
-void AddCol<float, lang::Cpp>(const size_t nrow, const size_t ncol,
-                              const Tensor& A, const Tensor& v, Tensor* out,
-                              Context *ctx) {
-  float *outPtr = static_cast<float *>(out->mutable_data());
-  const float *APtr = static_cast<const float *>(A.data());
-  const float *vPtr = static_cast<const float *>(v.data());
-  for (size_t r = 0; r < nrow; r++) {
-    size_t offset = r * ncol;
-    for (size_t c = 0; c < ncol; c++) {
-      outPtr[offset + c] = APtr[offset + c] + vPtr[r];
-    }
-  }
-}
-
-template <>
-void AddRow<float, lang::Cpp>(const size_t nrow, const size_t ncol,
-                              const Tensor& A, const Tensor& v, Tensor* out,
-                              Context *ctx) {
-  float *outPtr = static_cast<float *>(out->mutable_data());
-  const float *APtr = static_cast<const float *>(A.data());
-  const float *vPtr = static_cast<const float *>(v.data());
-  for (size_t r = 0; r < nrow; r++) {
-    size_t offset = r * ncol;
-    for (size_t c = 0; c < ncol; c++) {
-      outPtr[offset + c] = APtr[offset + c] + vPtr[c];
-    }
-  }
-}
-template <>
-void Outer<float, lang::Cpp>(const size_t m, const size_t n, const Tensor& in1,
-                             const Tensor& in2, Tensor* out, Context *ctx) {
-  float *outPtr = static_cast<float *>(out->mutable_data());
-  const float *in1Ptr = static_cast<const float *>(in1.data());
-  const float *in2Ptr = static_cast<const float *>(in2.data());
-  for (size_t r = 0; r < m; r++) {
-    size_t offset = r * n;
-    for (size_t c = 0; c < n; c++) {
-      outPtr[offset + c] = in1Ptr[r] * in2Ptr[c];
-    }
-  }
-}
-template <>
-void Softmax<float, lang::Cpp>(const size_t nrow, const size_t ncol,
-                               const Tensor& in, Tensor* out, Context *ctx) {
-  float *outPtr = static_cast<float *>(out->mutable_data());
-  const float *inPtr = static_cast<const float *>(in.data());
-  float *bPtr = new float[ncol];
-  for (size_t r = 0; r < nrow; r++) {
-    size_t offset = r * ncol;
-    float denom = 0.f;
-    for (size_t c = 0; c < ncol; c++) {
-      bPtr[c] = exp(inPtr[offset + c]);
-      denom += bPtr[c];
-    }
-    for (size_t c = 0; c < ncol; c++) {
-      size_t idx = offset + c;
-      outPtr[idx] = bPtr[c] / denom;
-    }
-  }
-  delete bPtr;
-}
-
-template <>
-void SumColumns<float, lang::Cpp>(const size_t nrow, const size_t ncol,
-                                  const Tensor& in, Tensor* out, Context *ctx) {
-  float *outPtr = static_cast<float *>(out->mutable_data());
-  const float *inPtr = static_cast<const float *>(in.data());
-  for (size_t c = 0; c < ncol; c++) {
-    outPtr[c] = 0.f;
-  }
-  for (size_t r = 0; r < nrow; r++) {
-    size_t offset = r * ncol;
-    for (size_t c = 0; c < ncol; c++) {
-      outPtr[c] += inPtr[offset + c];
-    }
-  }
-}
-
-template <>
-void SumRows<float, lang::Cpp>(const size_t nrow, const size_t ncol,
-                               const Tensor& in, Tensor* out, Context *ctx) {
-  float *outPtr = static_cast<float *>(out->mutable_data());
-  const float *inPtr = static_cast<const float *>(in.data());
-  for (size_t r = 0; r < nrow; r++) {
-    size_t offset = r * ncol;
-    outPtr[r] = 0.f;
-    for (size_t c = 0; c < ncol; c++) {
-      outPtr[r] += inPtr[offset + c];
-    }
-  }
-}
-*/
 }  // namespace singa
 
 #endif  // SINGA_CORE_TENSOR_TENSOR_MATH_CPP_H_
