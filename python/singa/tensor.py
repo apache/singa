@@ -674,50 +674,26 @@ class Tensor(object):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(singa.__add__(self.data, rhs.data))
         else:
-            if self.dtype == float32:
-                return _call_singa_func(singa.AddFloat, self.data, float(rhs))
-            elif type(rhs) == float:
-                t = self.as_type(float32)
-                return _call_singa_func(singa.AddFloat, t.data, rhs)
-            else:
-                raise Exception("Add not implemented for tensor type = " + str(self.dtype) + " and rhs type=" + type(rhs))
-
+            return _call_singa_func(singa.AddFloat, self.data, float(rhs))
+            
     def __sub__(self, rhs):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(singa.__sub__(self.data, rhs.data))
         else:
-            if self.dtype == float32:
-                return _call_singa_func(singa.SubFloat, self.data, float(rhs))
-            elif type(rhs) == float:
-                t = self.as_type(float32)
-                return _call_singa_func(singa.SubFloat, t.data, rhs)
-            else:
-                raise Exception("Sub not implemented for tensor type = " + str(self.dtype) + " and rhs type=" + type(rhs))
-
+            return _call_singa_func(singa.SubFloat, self.data, float(rhs))
+            
     def __mul__(self, rhs):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(singa.__mul__(self.data, rhs.data))
         else:
-            if self.dtype == float32:
-                return _call_singa_func(singa.MultFloat, self.data, float(rhs))
-            elif type(rhs) == float:
-                t = self.as_type(float32)
-                return _call_singa_func(singa.MultFloat, t.data, rhs)
-            else:
-                raise Exception("Mult not implemented for tensor type = " + str(self.dtype) + " and rhs type=" + type(rhs))
-
+            return _call_singa_func(singa.MultFloat, self.data, float(rhs))
+            
     def __div__(self, rhs):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(singa.__div__(self.data, rhs.data))
         else:
-            if self.dtype == float32:
-                return _call_singa_func(singa.DivFloat, self.data, float(rhs))
-            elif type(rhs) == float:
-                t = self.as_type(float32)
-                return _call_singa_func(singa.DivFloat, t.data, rhs)
-            else:
-                raise Exception("Sub not implemented for tensor type = " + str(self.dtype) + " and rhs type=" + type(rhs))
-
+            return _call_singa_func(singa.DivFloat, self.data, float(rhs))
+            
     def __truediv__(self, rhs):
         return self.__div__(rhs)
     
@@ -729,64 +705,34 @@ class Tensor(object):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(singa.__lt__(self.data, rhs.data))
         else:
-            if self.dtype == float32:
-                return _call_singa_func(singa.LTFloat, self.data, float(rhs))
-            elif type(rhs) == float:
-                t = self.as_type(float32)
-                return _call_singa_func(singa.LTFloat, t.data, rhs)
-            else:
-                raise Exception("lt not implemented for tensor type = " + str(self.dtype) + " and rhs type=" + type(rhs))
-
+            return _call_singa_func(singa.LTFloat, self.data, float(rhs))
+            
     def __le__(self, rhs):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(singa.__le__(self.data, rhs.data))
         else:
-            if self.dtype == float32:
-                return _call_singa_func(singa.LEFloat, self.data, float(rhs))
-            elif type(rhs) == float:
-                t = self.as_type(float32)
-                return _call_singa_func(singa.LEFloat, t.data, rhs)
-            else:
-                raise Exception("le not implemented for tensor type = " + str(self.dtype) + " and rhs type=" + type(rhs))
-
+            return _call_singa_func(singa.LEFloat, self.data, float(rhs))
+            
     def __gt__(self, rhs):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(singa.__gt__(self.data, rhs.data))
         else:
-            if self.dtype == float32:
-                return _call_singa_func(singa.GTFloat, self.data, float(rhs))
-            elif type(rhs) == float:
-                t = self.as_type(float32)
-                return _call_singa_func(singa.GTFloat, t.data, rhs)
-            else:
-                raise Exception("gt not implemented for tensor type = " + str(self.dtype) + " and rhs type=" + type(rhs))
-
+            return _call_singa_func(singa.GTFloat, self.data, float(rhs))
+            
     def __ge__(self, rhs):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(singa.__ge__(self.data, rhs.data))
         else:
-            if self.dtype == float32:
-                return _call_singa_func(singa.GEFloat, self.data, float(rhs))
-            elif type(rhs) == float:
-                t = self.as_type(float32)
-                return _call_singa_func(singa.GEFloat, t.data, rhs)
-            else:
-                raise Exception("ge not implemented for tensor type = " + str(self.dtype) + " and rhs type=" + type(rhs))
-
+            return _call_singa_func(singa.GEFloat, self.data, float(rhs))
+            
     def __eq__(self, rhs):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(singa.__eq__(self.data, rhs.data))
         elif rhs is None:
             return False
         else:
-            if self.dtype == float32:
-                return _call_singa_func(singa.EQFloat, self.data, float(rhs))
-            elif type(rhs) == float:
-                t = self.as_type(float32)
-                return _call_singa_func(singa.EQFloat, t.data, rhs)
-            else:
-                raise Exception("eq not implemented for tensor type = " + str(self.dtype) + " and rhs type=" + type(rhs))
-
+            return _call_singa_func(singa.EQFloat, self.data, float(rhs))
+            
     def __radd__(self, lhs):
         lhs = float(lhs)
         one = Tensor(self.shape, self.device, self.dtype)
