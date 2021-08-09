@@ -83,7 +83,7 @@ can be installed via
 from datetime import date
 
 # stable version
-VERSION = '3.1.0.rc1'
+VERSION = '3.2.0'
 # get the git hash
 # git_hash = subprocess.check_output(["git", "describe"]).strip().split('-')[-1][1:]
 # comment the next line to build wheel for stable version
@@ -422,6 +422,7 @@ setup(
         'numpy >=1.16,<2.0',  #1.16
         'onnx==1.6',
         'deprecated',
+        'pytest',
         'unittest-xml-reporting',
         'future',
         'pillow',
