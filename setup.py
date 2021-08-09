@@ -267,9 +267,9 @@ def prepare_extension_options():
     extra_compile_args = {'gcc': get_cpp_flags()}
 
     if with_cuda:
-        cuda9_gencode = (' -gencode arch=compute_35,code=sm_35'
-                         ' -gencode arch=compute_50,code=sm_50'
-                         ' -gencode arch=compute_60,code=sm_60'
+        # compute_35 and compute_50 are removed because 1. they do not support half float;
+        # 2. google colab's GPU has been updated from K80 (compute_35) to T4 (compute_75).
+        cuda9_gencode = (' -gencode arch=compute_60,code=sm_60'
                          ' -gencode arch=compute_70,code=sm_70')
         cuda10_gencode = ' -gencode arch=compute_75,code=sm_75'
         cuda11_gencode = ' -gencode arch=compute_80,code=sm_80'
