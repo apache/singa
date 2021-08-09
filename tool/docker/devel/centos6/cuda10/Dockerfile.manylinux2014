@@ -28,6 +28,7 @@ RUN yum install -y \
     openssh-server \
     pcre-devel \
     cmake \
+    rpm-build rpmdevtools \
     && yum clean all \
     && rm -rf /var/cache/yum/*
 
@@ -123,12 +124,7 @@ RUN CUDNN_DOWNLOAD_SUM=600267f2caaed2fd58eb214ba669d8ea35f396a7d19b94822e6b36f9f
 RUN git clone https://github.com/NVIDIA/nccl.git $HOME/nccl \
     && cd $HOME/nccl \
     && git checkout v2.4.8-1 \
-    && make -j src.build \
-    && apt-get update \
-    && apt install build-essential devscripts debhelper fakeroot -y \
-    && make pkg.debian.build \
-    && dpkg -i build/pkg/deb/libnccl2_2.4.8-1+cuda10.0_amd64.deb \
-    && dpkg -i build/pkg/deb/libnccl-dev_2.4.8-1+cuda10.0_amd64.deb
+    && make BUILDDIR=/usr/local/ -j$(nproc) src.build
 
 # install cnmem to /usr/local/include  /usr/local/lib
 RUN git clone https://github.com/NVIDIA/cnmem.git cnmem \
