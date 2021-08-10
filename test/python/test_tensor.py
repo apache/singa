@@ -19,6 +19,7 @@ from __future__ import division
 
 import math
 import unittest
+import random
 import numpy as np
 
 from singa import tensor
@@ -546,10 +547,10 @@ class TestTensorMethods(unittest.TestCase):
         x_val = np.random.randint(0, 10, (2, 3))
         x = tensor.from_numpy(x_val)
         x.to_device(dev)
-        scalar = np.random.random((1,))[0] * 100
+        scalar = random.random() * 100
         y = x + scalar
         self.assertEqual(y.dtype, tensor.float32)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), x_val + scalar)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), x_val + scalar, 5)
 
     @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
     def test_kint_float_gpu(self):

@@ -83,7 +83,7 @@ can be installed via
 from datetime import date
 
 # stable version
-VERSION = '3.1.0.rc1'
+VERSION = '3.2.0'
 # get the git hash
 # git_hash = subprocess.check_output(["git", "describe"]).strip().split('-')[-1][1:]
 # comment the next line to build wheel for stable version
@@ -267,9 +267,9 @@ def prepare_extension_options():
     extra_compile_args = {'gcc': get_cpp_flags()}
 
     if with_cuda:
-        cuda9_gencode = (' -gencode arch=compute_35,code=sm_35'
-                         ' -gencode arch=compute_50,code=sm_50'
-                         ' -gencode arch=compute_60,code=sm_60'
+        # compute_35 and compute_50 are removed because 1. they do not support half float;
+        # 2. google colab's GPU has been updated from K80 (compute_35) to T4 (compute_75).
+        cuda9_gencode = (' -gencode arch=compute_60,code=sm_60'
                          ' -gencode arch=compute_70,code=sm_70')
         cuda10_gencode = ' -gencode arch=compute_75,code=sm_75'
         cuda11_gencode = ' -gencode arch=compute_80,code=sm_80'
@@ -422,6 +422,7 @@ setup(
         'numpy >=1.16,<2.0',  #1.16
         'onnx==1.6',
         'deprecated',
+        'pytest',
         'unittest-xml-reporting',
         'future',
         'pillow',

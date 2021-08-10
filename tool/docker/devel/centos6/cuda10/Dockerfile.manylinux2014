@@ -119,6 +119,14 @@ RUN CUDNN_DOWNLOAD_SUM=600267f2caaed2fd58eb214ba669d8ea35f396a7d19b94822e6b36f9f
     rm cudnn-10.2-linux-x64-v7.6.5.32.tgz && \
     ldconfig
 
+# install nccl for distributed training
+RUN git clone https://github.com/NVIDIA/nccl.git $HOME/nccl \
+    && cd $HOME/nccl \
+    && git checkout v2.4.8-1 \
+    && make BUILDDIR=/usr/local/ -j$(nproc) src.build \
+    && rm -rf /usr/local/obj \
+    && rm -rf $HOME/nccl
+
 # install cnmem to /usr/local/include  /usr/local/lib
 RUN git clone https://github.com/NVIDIA/cnmem.git cnmem \
     && cd cnmem && mkdir build && cd build && cmake .. && make && make install && cd ../.. && rm -rf cnmem
