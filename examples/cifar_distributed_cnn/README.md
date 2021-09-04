@@ -20,7 +20,8 @@
 # Image Classification using Convolutional Neural Networks
 
 Examples inside this folder show how to train CNN models using 
-SINGA for image classification.
+SINGA for image classification. In this folder, the data augmentation 
+is done once before the training.
 
 * `data` includes the scripts for preprocessing image datasets.
   Currently, MNIST, CIFAR10 and CIFAR100 are included.
