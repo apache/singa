@@ -19,7 +19,8 @@
 
 # Image Classification using Convolutional Neural Networks with a dataset from the filesysetm
 
-Examples inside this folder show how to train CNN models using SINGA for image classification.
+Examples inside this folder show how to train CNN models using SINGA for image classification where the dataset
+is from the filesystem.
 
 It reads the dataset from the filesystem defined by `process_data.py`. Hence, users can modify `process_data.py`
 for their perference of dataset format.
