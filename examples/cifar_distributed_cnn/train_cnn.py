@@ -170,9 +170,6 @@ def run(global_rank,
                                                    train_x, train_y, val_x,
                                                    val_y)
 
-
-
-
     if model.dimension == 4:
         tx = tensor.Tensor(
             (batch_size, num_channels, model.input_size, model.input_size), dev,
@@ -192,6 +189,7 @@ def run(global_rank,
     dev.SetVerbosity(verbosity)
     model.train()
 
+    # Augmentation is done only once before training
     b = 0
     x = train_x[idx[b * batch_size:(b + 1) * batch_size]]
     if model.dimension == 4:
