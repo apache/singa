@@ -21,14 +21,18 @@ from singa import singa_wrap as singa
 from singa import device
 from singa import tensor
 from singa import opt
+# import opt
 import numpy as np
 import time
 import argparse
 from PIL import Image
 
-np_dtype = {"float16": np.float16, "float32": np.float32}
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
+np_dtype = {"float32": np.float32}
+
+singa_dtype = {"float32": tensor.float32}
 
 
 # Data augmentation
@@ -165,13 +169,6 @@ def run(global_rank,
         train_x, train_y, val_x, val_y = partition(global_rank, world_size,
                                                    train_x, train_y, val_x,
                                                    val_y)
-    '''
-    # check dataset shape correctness
-    if global_rank == 0:
-        print("Check the shape of dataset:")
-        print(train_x.shape)
-        print(train_y.shape)
-    '''
 
     if model.dimension == 4:
         tx = tensor.Tensor(
@@ -184,83 +181,69 @@ def run(global_rank,
 
     ty = tensor.Tensor((batch_size,), dev, tensor.int32)
     num_train_batch = train_x.shape[0] // batch_size
-    num_val_batch = val_x.shape[0] // batch_size
     idx = np.arange(train_x.shape[0], dtype=np.int32)
 
     # Attach model to graph
     model.set_optimizer(sgd)
     model.compile([tx], is_train=True, use_graph=graph, sequential=sequential)
     dev.SetVerbosity(verbosity)
+    model.train()
+
+    # Augmentation is done only once before training
+    b = 0
+    x = train_x[idx[b * batch_size:(b + 1) * batch_size]]
+    if model.dimension == 4:
+        x = augmentation(x, batch_size)
+        if (image_size != model.input_size):
+            x = resize_dataset(x, model.input_size)
+    x = x.astype(np_dtype[precision])
+    y = train_y[idx[b * batch_size:(b + 1) * batch_size]]
+
+    # Copy the patch data into input tensors
+    tx.copy_from_numpy(x)
+    ty.copy_from_numpy(y)
+
+    niters = 100
+
+    # check dataset shape correctness
+    if global_rank == 0:
+        print("Check the shape of dataset:")
+        print(tx.shape)
+        print(ty.shape)
 
     # Training and evaluation loop
-    for epoch in range(max_epoch):
-        start_time = time.time()
-        np.random.shuffle(idx)
+    # for epoch in range(max_epoch):
+    #     start_time = time.time()
+    #     np.random.shuffle(idx)
+    #
+    #     if global_rank == 0:
+    #         print('Starting Epoch %d:' % (epoch))
 
-        if global_rank == 0:
-            print('Starting Epoch %d:' % (epoch))
+    # Training phase
+    dev.Sync()
+    start = time.time()
 
-        # Training phase
-        train_correct = np.zeros(shape=[1], dtype=np.float32)
-        test_correct = np.zeros(shape=[1], dtype=np.float32)
-        train_loss = np.zeros(shape=[1], dtype=np.float32)
+    for b in range(niters):
+        # Generate the patch data in this iteration
+        # Train the model
+        model(tx, ty, dist_option, spars)
 
-        model.train()
-        for b in range(num_train_batch):
-            # Generate the patch data in this iteration
-            x = train_x[idx[b * batch_size:(b + 1) * batch_size]]
-            if model.dimension == 4:
-                x = augmentation(x, batch_size)
-                if (image_size != model.input_size):
-                    x = resize_dataset(x, model.input_size)
-            x = x.astype(np_dtype[precision])
-            y = train_y[idx[b * batch_size:(b + 1) * batch_size]]
+    dev.Sync()
+    end = time.time()
+    titer = (end - start) / float(niters)
+    throughput = float(niters * batch_size * world_size) / (end - start)
 
-            # Copy the patch data into input tensors
-            tx.copy_from_numpy(x)
-            ty.copy_from_numpy(y)
-
-            # Train the model
-            out, loss = model(tx, ty, dist_option, spars)
-            train_correct += accuracy(tensor.to_numpy(out), y)
-            train_loss += tensor.to_numpy(loss)[0]
-
-        if DIST:
-            # Reduce the evaluation accuracy and loss from multiple devices
-            reducer = tensor.Tensor((1,), dev, tensor.float32)
-            train_correct = reduce_variable(train_correct, sgd, reducer)
-            train_loss = reduce_variable(train_loss, sgd, reducer)
-
-        if global_rank == 0:
-            print('Training loss = %f, training accuracy = %f' %
-                  (train_loss, train_correct /
-                   (num_train_batch * batch_size * world_size)),
-                  flush=True)
-
-        # Evaluation phase
-        model.eval()
-        for b in range(num_val_batch):
-            x = val_x[b * batch_size:(b + 1) * batch_size]
-            if model.dimension == 4:
-                if (image_size != model.input_size):
-                    x = resize_dataset(x, model.input_size)
-            x = x.astype(np_dtype[precision])
-            y = val_y[b * batch_size:(b + 1) * batch_size]
-            tx.copy_from_numpy(x)
-            ty.copy_from_numpy(y)
-            out_test = model(tx)
-            test_correct += accuracy(tensor.to_numpy(out_test), y)
-
-        if DIST:
-            # Reduce the evaulation accuracy from multiple devices
-            test_correct = reduce_variable(test_correct, sgd, reducer)
-
-        # Output the evaluation accuracy
-        if global_rank == 0:
-            print('Evaluation accuracy = %f, Elapsed Time = %fs' %
-                  (test_correct / (num_val_batch * batch_size * world_size),
-                   time.time() - start_time),
-                  flush=True)
+    if global_rank == 0:
+        print("Throughput = {} per second".format(throughput), flush=True)
+        print("TotalTime={}".format(end - start), flush=True)
+        print("Total={}".format(titer), flush=True)
+        print("world_size={}".format(world_size), flush=True)
+        print("batch_size={}".format(batch_size), flush=True)
+        print("model.input_size={}".format(model.input_size), flush=True)
+        print("num_channels={}".format(num_channels), flush=True)
+        print("num_classes={}".format(num_classes), flush=True)
+        print("data_size={}".format(data_size), flush=True)
+        print("image_size={}".format(image_size), flush=True)
 
     dev.PrintTimeProfiling()
 
@@ -288,7 +271,7 @@ if __name__ == '__main__':
                         dest='max_epoch')
     parser.add_argument('-b',
                         '--batch-size',
-                        default=64,
+                        default=32,
                         type=int,
                         help='batch size',
                         dest='batch_size')
