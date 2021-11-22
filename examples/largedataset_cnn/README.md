@@ -17,7 +17,7 @@
     under the License.
 -->
 
-# Image Classification using Convolutional Neural Networks with a dataset from the filesysetm
+# Image Classification using Convolutional Neural Networks with datasets from the filesysetm
 
 Examples inside this folder show how to train CNN models using SINGA for image classification where the dataset
 is from the filesystem.
