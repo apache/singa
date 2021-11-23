@@ -35,7 +35,6 @@ def paths_to_images(paths, image_size):
 
     return im
 
-
 def process_data(dataset_root, classes):
     # load class names
     with open(classes, 'r', encoding='utf-8') as f:
@@ -79,7 +78,7 @@ def process_data(dataset_root, classes):
     return train_input_paths, train_labels, val_input_paths, val_labels
 
 def loaddata():
-    dataset_root = '/Dataset/Data/'
+    dataset_root = '/Dataset/Data/'  # need to set this path an argument
     classes = '/Dataset/classes.txt'
     return process_data(dataset_root, classes)
 
