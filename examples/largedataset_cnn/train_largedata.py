@@ -193,7 +193,7 @@ def run(global_rank,
             # Generate the patch data in this iteration
             x = train_x[idx[b * batch_size:(b + 1) * batch_size]]
             x = process_data.paths_to_images(x,model.input_size)
-            if model.dimension == 4:
+            if model.dimension == 4:  # Move the augmentation outside the for loop for better efficiency
                 x = augmentation(x, batch_size)
             y = train_y[idx[b * batch_size:(b + 1) * batch_size]]
 
