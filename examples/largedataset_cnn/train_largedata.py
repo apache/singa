@@ -27,7 +27,7 @@ import argparse
 from PIL import Image
 import process_data
 
-# Data Augmentation
+# Data augmentation
 def augmentation(x, batch_size):
     xpad = np.pad(x, [[0, 0], [0, 0], [4, 4], [4, 4]], 'symmetric')
     for data_num in range(0, batch_size):
@@ -41,7 +41,7 @@ def augmentation(x, batch_size):
     return x
 
 
-# Calculate Accuracy
+# Calculate accuracy
 def accuracy(pred, target):
     # y is network output to be compared with ground truth (int)
     y = np.argmax(pred, axis=1)
@@ -68,7 +68,7 @@ def partition(global_rank, world_size, train_x, train_y, val_x, val_y):
     return train_x, train_y, val_x, val_y
 
 
-# Function to all reduce NUMPY Accuracy and Loss from Multiple Devices
+# Function to all reduce NUMPY accuracy and loss from multiple devices
 def reduce_variable(variable, dist_opt, reducer):
     reducer.copy_from_numpy(variable)
     dist_opt.all_reduce(reducer.data)
@@ -130,7 +130,7 @@ def run(global_rank,
         model = alexnet.create_model(num_channels=num_channels,
                                      num_classes=num_classes)
 
-    # For distributed training, sequential gives better performance
+    # For distributed training, sequential method gives better performance
     if hasattr(sgd, "communicator"):
         DIST = True
         sequential = True
