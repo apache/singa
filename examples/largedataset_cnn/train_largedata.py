@@ -164,7 +164,7 @@ def run(global_rank,
     num_val_batch = val_x.shape[0] // batch_size
     idx = np.arange(train_x.shape[0], dtype=np.int32)
 
-    # attached model to graph
+    # Attached model to graph
     model.set_optimizer(sgd)
     model.compile([tx], is_train=True, use_graph=graph, sequential=sequential)
     dev.SetVerbosity(verbosity)
@@ -207,7 +207,7 @@ def run(global_rank,
             train_loss += tensor.to_numpy(loss)[0]
 
         if DIST:
-            # Reduce the Evaluation Accuracy and Loss from Multiple Devices
+            # Reduce the evaluation accuracy and loss from multiple devices
             reducer = tensor.Tensor((1,), dev, tensor.float32)
             train_correct = reduce_variable(train_correct, sgd, reducer)
             train_loss = reduce_variable(train_loss, sgd, reducer)
@@ -230,7 +230,7 @@ def run(global_rank,
             test_correct += accuracy(tensor.to_numpy(out_test), y)
 
         if DIST:
-            # Reduce the Evaulation Accuracy from Multiple Devices
+            # Reduce the evaulation accuracy from multiple devices
             test_correct = reduce_variable(test_correct, sgd, reducer)
 
         # Output the Evaluation Accuracy
