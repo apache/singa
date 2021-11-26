@@ -175,7 +175,7 @@ def run(global_rank,
     if os.path.exists(checkpointpath):
         model.load_states(fpath=checkpointpath)
 
-    # Training and Evaluation Loop
+    # Training and evaluation Loop
     for epoch in range(max_epoch):
         start_time = time.time()
         np.random.shuffle(idx)
@@ -233,7 +233,7 @@ def run(global_rank,
             # Reduce the evaulation accuracy from multiple devices
             test_correct = reduce_variable(test_correct, sgd, reducer)
 
-        # Output the Evaluation Accuracy
+        # Output the evaluation accuracy
         if global_rank == 0:
             print('Evaluation accuracy = %f, Elapsed Time = %fs' %
                   (test_correct / (num_val_batch * batch_size * world_size),
@@ -249,7 +249,7 @@ def run(global_rank,
 
 
 if __name__ == '__main__':
-    # use argparse to get command config: max_epoch, model, data, etc. for single gpu training
+    # Use argparse to get command config: max_epoch, model, data, etc. for single gpu training
     parser = argparse.ArgumentParser(
         description='Training using the autograd and graph.')
     parser.add_argument('model',
@@ -273,7 +273,7 @@ if __name__ == '__main__':
                         type=float,
                         help='initial learning rate',
                         dest='lr')
-    # determine which gpu to use
+    # Determine which gpu to use
     parser.add_argument('--id',
                         '--device-id',
                         default=0,
