@@ -84,7 +84,7 @@ def loaddata():
 
 if __name__ == '__main__':
 
-    # test script in main
+    # Test loaddata() function in main
     train_input_paths, train_labels, val_input_paths, val_labels = loaddata()
 
     print(train_input_paths.shape)
