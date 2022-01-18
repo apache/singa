@@ -18,5 +18,9 @@
 #
 
 #!/usr/bin/env python -W ignore::DeprecationWarning
+
+# resnet
 mpiexec -np 8 python train_mpi.py resnet cifar10 -l 0.015 -b 32
 
+# cnn
+mpiexec -np 8 python train_mpi.py cnn cifar10 -l 0.015 -b 32
