@@ -29,3 +29,10 @@ test/samples/
 # Sphinx and Doxygen Doc-Site
 doc/_build/*
 doc/en/docs/model_zoo/
+
+# Datasets
+bloodmnist/
+polyp/
+
+# local history
+.history/
