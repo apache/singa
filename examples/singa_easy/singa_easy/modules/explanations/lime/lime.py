@@ -1,28 +1,6 @@
-
-#
-# Licensed to the Apache Software Foundation (ASF) under one
-# or more contributor license agreements.  See the NOTICE file
-# distributed with this work for additional information
-# regarding copyright ownership.  The ASF licenses this file
-# to you under the Apache License, Version 2.0 (the
-# "License"); you may not use this file except in compliance
-# with the License.  You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.
-#
-
 from lime import lime_image
 
 from skimage.segmentation import mark_boundaries
-import torch
-import torch.nn.functional as F
 from singa_auto.model import utils
 
 
@@ -58,13 +36,8 @@ class Lime:
 
         self._model.eval()
 
-        # images are size of (B, W, H, C)
-        with torch.no_grad():
-            images = torch.FloatTensor(images).permute(0, 3, 1, 2).to(self.device)
-
         images = images.to(self.device)
         logits = self._model(images).to(self.device)
-        probs = F.softmax(logits, dim=1)
 
         return probs.detach().cpu().numpy()
 
