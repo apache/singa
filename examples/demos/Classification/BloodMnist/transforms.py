@@ -44,21 +44,6 @@ class Compose:
 
 
 class ToTensor:
-    """Convert a ``PIL Image`` to numpy.ndarray. This transform does not support torchscript.
-
-    Converts a PIL Image (H x W x C) in the range [0, 255] to a torch.FloatTensor of shape 
-    (H x W x C) in the range [0.0, 1.0]
-    if the PIL Image belongs to one of the modes (L, LA, P, I, F, RGB, YCbCr, RGBA, CMYK, 1)
-
-    In the other cases, tensors are returned without scaling.
-
-    .. note::
-        Because the input image is scaled to [0.0, 1.0], this transformation should not be used when
-        transforming target image masks. See the `references`_ for implementing the transforms for image masks.
-
-    .. _references: https://github.com/pytorch/vision/tree/main/references/segmentation
-    """
-
     def forward(self, pic):
         """
         Args:
