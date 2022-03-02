@@ -243,7 +243,6 @@ batch_size = 256
 # %% model configuration
 model = CNNModel(num_classes=num_class)
 criterion = layer.SoftMaxCrossEntropy()
-# optimizer_ft = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5, dtype=singa_dtype["float32"])
 optimizer_ft = opt.Adam(lr=1e-3)
 # optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=lr)
 
