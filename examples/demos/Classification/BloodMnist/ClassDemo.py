@@ -40,13 +40,13 @@ np_dtype = {"float16": np.float16, "float32": np.float32}
 
 singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 
-# %%
+
 transforms = Compose([
     ToTensor(),
     Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
-# %%
+
 class ClassDataset:
     def __init__(self, img_folder, transforms):
         super(ClassDataset, self).__init__()
@@ -83,7 +83,7 @@ class ClassDataset:
 
 
 
-# %%
+
 class Sequential:
     def __init__(self, *args):
         # super(Sequential, self).__init__()
@@ -203,7 +203,7 @@ class CNNModel(model.Model):
                                                       spars=spars)
         return out, loss
 
-# %%
+
 def getACC(y_true, y_score):
     '''Accuracy metric.
     :param y_true: the ground truth labels, shape: (n_samples, n_labels) or (n_samples,) if n_labels==1
