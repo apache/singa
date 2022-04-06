@@ -154,7 +154,6 @@ class Normalize(object):
         std = np.array(self.std, dtype=dtype)
         if (std == 0).any():
             raise ValueError('std evaluated to zero after conversion to {}, leading to division by zero.'.format(dtype))
-
         s_res = np.subtract(img, mean[:, None, None])
         d_res = np.divide(s_res, std[:, None, None])
 

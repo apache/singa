@@ -80,6 +80,7 @@ def train_resnet(DIST=True, graph=True, sequential=False, verbosity=0):
         for _ in t:
             model(tx, ty, dist_option='fp32', spars=None)
 
+    # Device synchronization for more accurate time measurements during the distributed training 
     dev.Sync()
     end = time.time()
     titer = (end - start) / float(niters)
