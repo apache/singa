@@ -16,38 +16,32 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-from singa import singa_wrap as singa
-from singa import device
-from singa import tensor
-from singa import opt
-from singa import layer
-from singa.layer import Layer
-from singa import model
+
+import json
+import os
+import time
+from glob import glob
 
 import numpy as np
-import time
-import argparse
 from PIL import Image
-import os
-from glob import glob
-from sklearn.metrics import accuracy_score
-import json
+from singa import device, layer, model, opt, tensor
 from tqdm import tqdm
 
-from transforms import Compose, ToTensor, Normalize
+from transforms import Compose, Normalize, ToTensor
 
 np_dtype = {"float16": np.float16, "float32": np.float32}
-
 singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 
 
-transforms = Compose([
-    ToTensor(),
-    Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-])
+class ClassDataset(object):
+    """Fetch data from file and generate batches.
 
+    Load data from folder as PIL.Images and convert them into batch array.
 
-class ClassDataset:
+    Args:
+        img_folder (Str): Folder path of the training/validation images.
+        transforms (Transform):  Preprocess transforms.
+    """
     def __init__(self, img_folder, transforms):
         super(ClassDataset, self).__init__()
 
@@ -72,6 +66,17 @@ class ClassDataset:
         return img, label
     
     def batchgenerator(self, indexes, batch_size, data_size):
+        """Generate batch arrays from transformed image list.
+
+        Args:
+            indexes (Sequence): current batch indexes list, e.g. [n, n + 1, ..., n + batch_size]
+            batch_size (int): 
+            data_size (Tuple): input image size of shape (C, H, W) 
+
+        Return:
+            batch_x (Numpy ndarray): batch array of input images (B, C, H, W)
+            batch_y (Numpy ndarray): batch array of ground truth lables (B,)
+        """
         batch_x = np.zeros((batch_size,) + data_size)
         batch_y = np.zeros((batch_size,) + (1,), dtype=np.int32)
         for idx, i in enumerate(indexes):
@@ -82,19 +87,6 @@ class ClassDataset:
         return batch_x, batch_y
 
 
-
-
-class Sequential:
-    def __init__(self, *args):
-        # super(Sequential, self).__init__()
-        self.mod_list = []
-        for i in args:
-            self.mod_list.append(i)
-    def __call__(self, input):
-        for module in self.mod_list:
-            input = module(input)
-        return input
-
 class CNNModel(model.Model):
     def __init__(self, num_classes):
         super(CNNModel, self).__init__()
@@ -102,52 +94,21 @@ class CNNModel(model.Model):
         self.dimension = 4
         self.num_classes = num_classes
         
-        # self.layer1 = Sequential(
-        #     layer.Conv2d(16, kernel_size=3),
-        #     layer.BatchNorm2d(),
-        #     layer.ReLU())
         self.layer1 = layer.Conv2d(16, kernel_size=3, activation="RELU")
         self.bn1 = layer.BatchNorm2d()
-        # self.layer2 = Sequential(
-        #     layer.Conv2d(16, kernel_size=3),
-        #     layer.BatchNorm2d(),
-        #     layer.ReLU(),
-        #     layer.MaxPool2d(kernel_size=2, stride=2))
         self.layer2 = layer.Conv2d(16, kernel_size=3, activation="RELU")
         self.bn2 = layer.BatchNorm2d()        
         self.pooling2 = layer.MaxPool2d(kernel_size=2, stride=2)
-
-        # self.layer3 = Sequential(
-        #     layer.Conv2d(64, kernel_size=3),
-        #     layer.BatchNorm2d(),
-        #     layer.ReLU())
         self.layer3 = layer.Conv2d(64, kernel_size=3, activation="RELU")
         self.bn3 = layer.BatchNorm2d()
-        
-        # self.layer4 = Sequential(
-        #     layer.Conv2d(64, kernel_size=3),
-        #     layer.BatchNorm2d(),
-        #     layer.ReLU())
         self.layer4 = layer.Conv2d(64, kernel_size=3, activation="RELU")
         self.bn4 = layer.BatchNorm2d()
-
-        # self.layer5 = Sequential(
-        #     layer.Conv2d(64, kernel_size=3, padding=1),
-        #     layer.BatchNorm2d(),
-        #     layer.ReLU(),
-        #     layer.MaxPool2d(kernel_size=2, stride=2))
         self.layer5 = layer.Conv2d(64, kernel_size=3, padding=1, activation="RELU")
         self.bn5 = layer.BatchNorm2d()
         self.pooling5 = layer.MaxPool2d(kernel_size=2, stride=2)
 
         self.flatten = layer.Flatten()
 
-        # self.fc = Sequential(
-        #     layer.Linear(128),
-        #     layer.ReLU(),
-        #     layer.Linear(128),
-        #     layer.ReLU(),
-        #     layer.Linear(num_classes))
         self.linear1 = layer.Linear(128)
         self.linear2 = layer.Linear(128)
         self.linear3 = layer.Linear(self.num_classes)
@@ -177,7 +138,6 @@ class CNNModel(model.Model):
         x = self.linear2(x)
         x = self.relu(x)
         x = self.linear3(x)
-        # x = self.fc(x)
         return x
 
     def set_optimizer(self, optimizer):
@@ -204,29 +164,30 @@ class CNNModel(model.Model):
         return out, loss
 
 
-def getACC(y_true, y_score):
-    '''Accuracy metric.
-    :param y_true: the ground truth labels, shape: (n_samples, n_labels) or (n_samples,) if n_labels==1
-    :param y_score: the predicted score of each class,
-    shape: (n_samples, n_labels) or (n_samples, n_classes) or (n_samples,) if n_labels==1 or n_classes==1
-    :param task: the task of current dataset
-    :param threshold: the threshold for multilabel and binary-class tasks
-    '''
-    y_true = y_true.squeeze()
-    y_score = y_score.squeeze()
-
-    
-    ret = accuracy_score(y_true, np.argmax(y_score, axis=-1))
-
-    return ret
 def accuracy(pred, target):
+    """Compute recall accuracy.
+
+    Args:
+        pred (Numpy ndarray): Prediction array, should be in shape (B, C)
+        target (Numpy ndarray): Ground truth array, should be in shape (B, ) 
+
+    Return:
+        correct (Float): Recall accuracy
+    """
     # y is network output to be compared with ground truth (int)
     y = np.argmax(pred, axis=1)
     a = (y[:,None]==target).sum()
     correct = np.array(a, "int").sum()
     return correct
 
-# %% dataset configuration
+
+# define pre-processing methods (transforms)
+transforms = Compose([
+    ToTensor(),
+    Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+# dataset loading
 dataset_path = "./bloodmnist"
 train_path = os.path.join(dataset_path, "train")
 val_path = os.path.join(dataset_path, "val") 
@@ -240,13 +201,12 @@ val_dataset = ClassDataset(val_path, transforms)
 
 batch_size = 256
 
-# %% model configuration
+# model configuration
 model = CNNModel(num_classes=num_class)
 criterion = layer.SoftMaxCrossEntropy()
 optimizer_ft = opt.Adam(lr=1e-3)
-# optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=lr)
 
-# %% start training
+# start training
 dev = device.create_cpu_device()
 dev.SetRandSeed(0)
 np.random.seed(0)
@@ -266,41 +226,35 @@ dev.SetVerbosity(0)
 
 max_epoch = 100
 for epoch in range(max_epoch):
-    print('start**************************************************')
+    print(f'Epoch {epoch}:')
     
     start_time = time.time()
-    # np.random.shuffle(idx)
 
     train_correct = np.zeros(shape=[1], dtype=np.float32)
     test_correct = np.zeros(shape=[1], dtype=np.float32)
     train_loss = np.zeros(shape=[1], dtype=np.float32)
 
+    # training part
     model.train()
     for b in tqdm(range(num_train_batch)):
-        # forward + backward + optimize
-
+        # extract batch from image list
         x, y = train_dataset.batchgenerator(idx[b * batch_size:(b + 1) * batch_size], 
             batch_size=batch_size, data_size=(3, model.input_size, model.input_size))
         x = x.astype(np_dtype['float32'])
-        # print(tx.size())
-        # print(y.dtype)
 
         tx.copy_from_numpy(x)
         ty.copy_from_numpy(y)
 
         out, loss = model(tx, ty, dist_option="plain", spars=None)
-        # print(out)
-        # print(loss)
-        # train_correct += getACC(y, tensor.to_numpy(out))
         train_correct += accuracy(tensor.to_numpy(out), y)
         train_loss += tensor.to_numpy(loss)[0]
     print('Training loss = %f, training accuracy = %f' %
                   (train_loss, train_correct /
                    (num_train_batch * batch_size)))
-    model.eval()
 
+    # validation part
+    model.eval()
     for b in tqdm(range(num_val_batch)):
-        # forward + backward + optimize
         x, y = train_dataset.batchgenerator(idx[b * batch_size:(b + 1) * batch_size], 
             batch_size=batch_size, data_size=(3, model.input_size, model.input_size))
         x = x.astype(np_dtype['float32'])
@@ -309,8 +263,6 @@ for epoch in range(max_epoch):
         ty.copy_from_numpy(y)
 
         out = model(tx)
-
-        # test_correct += getACC(y, tensor.to_numpy(out))
         test_correct += accuracy(tensor.to_numpy(out), y)
     
     print('Evaluation accuracy = %f, Elapsed Time = %fs' %
