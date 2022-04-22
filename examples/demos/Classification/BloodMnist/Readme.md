@@ -19,10 +19,6 @@ The source images with resolution 3×360×363 pixels are center-cropped into 3×
 "6": "neutrophil",
 "7": "platelet"
 ```
-To generate “real” image data, run
-```shell
-python bloodmnist/make_data.py
-```
 
 # Run the demo
 Run
