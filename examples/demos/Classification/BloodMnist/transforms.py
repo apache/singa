@@ -17,19 +17,35 @@
 # under the License.
 #
 
-from textwrap import fill
-from turtle import forward
+
 import numpy as np
-from PIL import Image, ImageOps
-from collections.abc import Sequence
-import numbers
+from PIL import Image
 
 
-class Compose:
+class Compose(object):
+    """Compose several transforms together.
+
+    Args:
+        transforms: list of transforms to compose.
+
+    Example:
+        >>> transforms.Compose([
+        >>>     transforms.ToTensor(),
+        >>>     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        >>> ])
+
+    """
     def __init__(self, transforms):
         self.transforms = transforms
 
     def forward(self, img):
+        """
+        Args:
+            img (PIL Image or numpy array): Image to be processed.
+
+        Returns:
+            PIL Image or numpy array: Processed image.
+        """
         for t in self.transforms:
             img = t.forward(img)
         return img
@@ -43,17 +59,30 @@ class Compose:
         return format_string
 
 
-class ToTensor:
+class ToTensor(object):
+    """Convert a ``PIL Image`` to ``numpy.ndarray``.
+
+    Converts a PIL Image (H x W x C) in the range [0, 255] to a ``numpy.array`` of shape 
+    (C x H x W) in the range [0.0, 1.0]
+    if the PIL Image belongs to one of the modes (L, LA, P, I, F, RGB, YCbCr, RGBA, CMYK, 1).
+
+    In the other cases, tensors are returned without scaling.
+
+    .. note::
+        Because the input image is scaled to [0.0, 1.0], this transformation should not be used when
+        transforming target image masks. 
+    """
+
     def forward(self, pic):
         """
         Args:
-            pic (PIL Image): Image to be converted to tensor.
+            pic (PIL Image): Image to be converted to array.
 
         Returns:
-            Tensor: Converted image.
+            Array: Converted image.
         """
         if not isinstance(pic, Image.Image):
-           raise TypeError('pic should be PIL Image or ndarray. Got {}'.format(type(pic)))
+           raise TypeError('pic should be PIL Image. Got {}'.format(type(pic)))
 
         # handle PIL Image
         mode_to_nptype = {'I': np.int32, 'I;16': np.int16, 'F': np.float32}
@@ -74,7 +103,24 @@ class ToTensor:
         return self.__class__.__name__ + '()'
 
 
-class Normalize:
+class Normalize(object):
+    """Normalize a ``numpy.array`` image with mean and standard deviation.
+    
+    This transform does not support PIL Image.
+    Given mean: ``(mean[1],...,mean[n])`` and std: ``(std[1],..,std[n])`` for ``n``
+    channels, this transform will normalize each channel of the input
+    ``numpy.array`` i.e.,
+    ``output[channel] = (input[channel] - mean[channel]) / std[channel]``
+
+    .. note::
+        This transform acts out of place, i.e., it does not mutate the input array.
+
+    Args:
+        mean (Sequence): Sequence of means for each channel.
+        std (Sequence): Sequence of standard deviations for each channel.
+        inplace(bool, optional): Bool to make this operation in-place.
+
+    """
 
     def __init__(self, mean, std, inplace=False):
         super().__init__()
@@ -85,19 +131,19 @@ class Normalize:
     def forward(self, img: np.ndarray) -> np.ndarray:
         """
         Args:
-            tensor (Tensor): Tensor image to be normalized.
+            img (Numpy ndarray): Array image to be normalized.
 
         Returns:
-            Tensor: Normalized Tensor image.
+            d_res (Numpy ndarray): Normalized Tensor image.
         """
         if not isinstance(img, np.ndarray):
             raise TypeError('Input img should be a numpy array. Got {}.'.format(type(img)))
 
         if not img.dtype == np.float:
-            raise TypeError('Input tensor should be a float tensor. Got {}.'.format(img.dtype))
+            raise TypeError('Input array should be a float array. Got {}.'.format(img.dtype))
 
         if img.ndim < 3:
-            raise ValueError('Expected tensor to be a tensor image of size (..., C, H, W). Got img.shape = '
+            raise ValueError('Expected array to be an array image of size (..., C, H, W). Got img.shape = '
                             '{}.'.format(img.shape))
 
         if not self.inplace:
@@ -108,11 +154,6 @@ class Normalize:
         std = np.array(self.std, dtype=dtype)
         if (std == 0).any():
             raise ValueError('std evaluated to zero after conversion to {}, leading to division by zero.'.format(dtype))
-        # if mean.ndim == 1:
-        #     mean = mean.view(-1, 1, 1)
-        # if std.ndim == 1:
-        #     std = std.view(-1, 1, 1)
-        # tensor.sub_(mean).div_(std)
         s_res = np.subtract(img, mean[:, None, None])
         d_res = np.divide(s_res, std[:, None, None])
 
@@ -122,103 +163,4 @@ class Normalize:
     def __repr__(self):
         return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
 
-
-class Resize:
-    def __init__(self, size, interpolation="BILINEAR"):
-        if not isinstance(size, (int, Sequence)):
-            raise TypeError("Size should be int or sequence. Got {}".format(type(size)))
-        if isinstance(size, Sequence) and len(size) not in (1, 2):
-            raise ValueError("If size is a sequence, it should have 1 or 2 values")
-        self.size = size
-
-        # Backward compatibility with integer value
-        interpolation_method = {
-            'BILINEAR': Image.BILINEAR,
-            'CUBIC': Image.BICUBIC,
-            'NEAREST': Image.NEAREST,
-            'BOX': Image.BOX,
-            'HAMMING': Image.HAMMING,
-            'LANCZOS': Image.LANCZOS
-        }
-
-        self.interpolation = interpolation_method[interpolation]
-    def forward(self, image):
-        return image.resize(self.size, resample=self.interpolation, box=None, reducing_gap=None)
-
-
-    def __repr__(self):
-        interpolate_str = self.interpolation
-        return self.__class__.__name__ + '(size={0}, interpolation={1})'.format(
-            self.size, interpolate_str)
-
-
-class Pad:
-    def __init__(self, padding, fill=0, padding_mode="constant"):
-        if not isinstance(padding, (numbers.Number, tuple, list)):
-            raise TypeError("Got inappropriate padding arg")
-
-        if not isinstance(fill, (numbers.Number, str, tuple)):
-            raise TypeError("Got inappropriate fill arg")
-
-        if padding_mode not in ["constant", "edge", "reflect", "symmetric"]:
-            raise ValueError("Padding mode should be either constant, edge, reflect or symmetric")
-
-        if isinstance(padding, Sequence) and len(padding) not in [1, 2, 4]:
-            raise ValueError("Padding must be an int or a 1, 2, or 4 element tuple, not a " +
-                             "{} element tuple".format(len(padding)))
-
-        self.padding = padding
-        self.fill = fill
-    
-    def forward(self, img):
-        return ImageOps.expand(img, border=self.padding, fill=self.fill)
-    
-    def __repr__(self):
-        return self.__class__.__name__ + '(padding={0}, fill={1}'.\
-            format(self.padding, self.fill)
-
-
-class SquareResizePad:
-    def __init__(self, target_length, interpolation_strategy="BILINEAR", pad_value=255):
-        self.target_length = target_length
-        self.interpolation_strategy = interpolation_strategy
-        self.pad_value = pad_value
-
-        # Pad.__init__(self, padding=(0, 0, 0, 0),
-        #              fill=self.pad_value, padding_mode="constant")
-        # Resize.__init__(self, size=(512, 512),
-        #                 interpolation=self.interpolation_strategy)
-
-    def forward(self, img):
-        w, h = img.size
-        if w > h:
-            target_size = (
-                int(np.round(self.target_length * (h / w))), self.target_length)
-            # self.size = (int(np.round(self.target_length * (h / w))), self.target_length)
-            # img = Resize.forward(self, img)
-            resize = Resize(size=target_size, interpolation=self.interpolation_strategy)
-            img = resize.forward(img)
-
-            total_pad = target_size[1] - target_size[0]
-            # total_pad = self.size[1] - self.size[0]
-            half_pad = total_pad // 2
-            padding = (0, half_pad, 0, total_pad - half_pad)
-            # self.padding = (0, half_pad, 0, total_pad - half_pad)
-            pad = Pad(padding=padding, fill=self.pad_value)
-            return pad.forward(self, img)
-        else:
-            target_size = (self.target_length, 
-                int(np.round(self.target_length * (w / h))))
-            # self.size = (int(np.round(self.target_length * (h / w))), self.target_length)
-            # img = Resize.forward(self, img)
-            resize = Resize(size=target_size, interpolation=self.interpolation_strategy)
-            img = resize.forward(img)
-
-            total_pad = target_size[0] - target_size[1]
-            # total_pad = self.size[0] - self.size[1]
-            half_pad = total_pad // 2
-            padding = (half_pad, 0, total_pad - half_pad, 0)
-            # self.padding = (half_pad, 0, total_pad - half_pad, 0)
-            pad = Pad(padding=padding, fill=self.pad_value)
-            return pad.forward(img)
 
