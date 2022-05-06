@@ -29,10 +29,10 @@ LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Thirdparty)
 #string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" VERSION_PATCH "${VERSION}")
 
 
-SET(PACKAGE_VERSION 3.2.0) # ${VERSION})
-SET(VERSION 3.2.0)
+SET(PACKAGE_VERSION 3.3.0) # ${VERSION})
+SET(VERSION 3.3.0)
 SET(SINGA_MAJOR_VERSION 3)
-SET(SINGA_MINOR_VERSION 2)
+SET(SINGA_MINOR_VERSION 3)
 SET(SINGA_PATCH_VERSION 0)
 #SET(SINGA_MAJOR_VERSION ${VERSION_MAJOR})  # 0 -
 #SET(SINGA_MINOR_VERSION ${VERSION_MINOR})  # 0 - 9
@@ -47,26 +47,26 @@ message(STATUS "SINGA Version ${SINGA_VERSION}")
 
 # Flags
 IF(UNIX)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -O2 -fPIC -Wall -pthread")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -O2 -fPIC -Wall -pthread")
 ENDIF()
 IF(APPLE)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -g -O2 -fPIC -Wall -pthread")
-    SET(CMAKE_MACOSX_RPATH 1)
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -g -O2 -fPIC -Wall -pthread")
+	SET(CMAKE_MACOSX_RPATH 1)
 ENDIF()
 
 IF(WIN32)
-    IF (MSVC)
-        MESSAGE(STATUS "Using msvc compiler")
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D_SCL_SECURE_NO_WARNINGS")
-        #MESSAGE(STATUS "Using msvc compiler ${CMAKE_CXX_FLAGS}")
-    ENDIF()
+	IF (MSVC)
+		MESSAGE(STATUS "Using msvc compiler")
+		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D_SCL_SECURE_NO_WARNINGS")
+		#MESSAGE(STATUS "Using msvc compiler ${CMAKE_CXX_FLAGS}")
+	ENDIF()
 ENDIF()
 IF(CMAKE_BUILD_TYPE=Debug)
-    SET(NVCC_FLAG "${NVCC_FLAG} -g -G ")
+	SET(NVCC_FLAG "${NVCC_FLAG} -g -G ")
 ENDIF()
 #message(STATUS "${CMAKE_CXX_FLAGS}")
 SET(SINGA_INCLUDE_DIR
-    "${CMAKE_SOURCE_DIR}/include;${PROJECT_BINARY_DIR}")
+		"${CMAKE_SOURCE_DIR}/include;${PROJECT_BINARY_DIR}")
 INCLUDE_DIRECTORIES(${SINGA_INCLUDE_DIR})
 
 
@@ -96,8 +96,8 @@ ADD_DEFINITIONS(-DUSE_CMAKE)
 #message(STATUS "${SINGA_INCLUDE_DIR}")
 
 CONFIGURE_FILE (
-    "${PROJECT_SOURCE_DIR}/cmake/Templates/singa_config.h.in"
-    "${PROJECT_BINARY_DIR}/include/singa/singa_config.h")
+		"${PROJECT_SOURCE_DIR}/cmake/Templates/singa_config.h.in"
+		"${PROJECT_BINARY_DIR}/include/singa/singa_config.h")
 
 #set(SINGA_CONFIGURE_SRC "${PROJECT_BINARY_DIR}/singa_config.h")
 #LIST(APPEND SRCS ${SINGA_CONFIGURE_SRCS} ${PROJECT_BINARY_DIR}/singa_config.h)
@@ -106,86 +106,86 @@ SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 
 IF (USE_CUDA)
-    include(ExternalProject)
-    ExternalProject_Add(cnmem
-        GIT_REPOSITORY "https://github.com/nusdbsystem/cnmem.git"
-        GIT_TAG "master"
-        SOURCE_DIR "cnmem/"
-        CONFIGURE_COMMAND "${CMAKE_COMMAND}"
-        "-H${CMAKE_BINARY_DIR}/cnmem" "-B."
-        "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}"
-        )
-    #ADD_SUBDIRECTORY(lib/cnmem)
-    #LIST(APPEND SINGA_LINKER_LIBS cnmem)
-    SET(global_cuda_objs "")
-    # add support cuda fp16
-    SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --gpu-architecture=compute_75")
+	include(ExternalProject)
+	ExternalProject_Add(cnmem
+			GIT_REPOSITORY "https://github.com/nusdbsystem/cnmem.git"
+			GIT_TAG "master"
+			SOURCE_DIR "cnmem/"
+			CONFIGURE_COMMAND "${CMAKE_COMMAND}"
+			"-H${CMAKE_BINARY_DIR}/cnmem" "-B."
+			"-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}"
+			)
+	#ADD_SUBDIRECTORY(lib/cnmem)
+	#LIST(APPEND SINGA_LINKER_LIBS cnmem)
+	SET(global_cuda_objs "")
+	# add support cuda fp16
+	SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --gpu-architecture=compute_75")
 ENDIF()
 
 # TODO(wangwei) detect the ev lib
 IF (ENABLE_DIST)
-    LIST(APPEND SINGA_LINKER_LIBS ev)
+	LIST(APPEND SINGA_LINKER_LIBS ev)
 ENDIF()
 
 IF (USE_MODULES)
-    include(ExternalProject)
-    #IF(USE_SHARED_LIBS)
-    #    ExternalProject_Add(protobuf
-    #        GIT_REPOSITORY "https://github.com/google/protobuf.git"
-    #        GIT_TAG "2.7.0"
-    #        SOURCE_DIR "protobuf/"
-    #        CONFIGURE_COMMAND "${CMAKE_COMMAND}"
-    #        "-H${CMAKE_BINARY_DIR}/protobuf/cmake" "-B."
-    #        "-Dprotobuf_BUILD_TESTS=OFF" "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}"
-    #        "-Dprotobuf_BUILD_SHARED_LIBS=ON" "-DCMAKE_C_FLAGS=-fPIC"
-    #        "-DCMAKE_CXX_FLAGS=-fPIC"
-    #        BUILD_COMMAND "${CMAKE_COMMAND}" --build "."
-    #        )
-    #ELSE()
-    #ENDIF()
-    ExternalProject_Add(protobuf
-        DOWNLOAD_COMMAND "wget"
-        "https://github.com/google/protobuf/archive/v3.3.0.tar.gz"
-        "-O" "protobuf-3.3.0.tar.gz"
-        UPDATE_COMMAND "tar" "zxvf"
-        "${CMAKE_BINARY_DIR}/protobuf-prefix/src/protobuf-3.3.0.tar.gz" "-C" ".."
-        SOURCE_DIR "protobuf-3.3.0/"
-        BUILD_IN_SOURCE 1
-        CONFIGURE_COMMAND "./autogen.sh" COMMAND "./configure" "--disable-shared"
-        "--prefix=${CMAKE_BINARY_DIR}/" "CXXFLAGS=-fPIC"
-        INSTALL_COMMAND "make" "install"
-        )
-    SET(Protobuf_PROTOC_EXECUTABLE "${CMAKE_BINARY_DIR}/bin/protoc")
-    # message(STATUS "${PROTOBUF_PROTOC_EXECUTABLE}")
+	include(ExternalProject)
+	#IF(USE_SHARED_LIBS)
+	#    ExternalProject_Add(protobuf
+	#        GIT_REPOSITORY "https://github.com/google/protobuf.git"
+	#        GIT_TAG "2.7.0"
+	#        SOURCE_DIR "protobuf/"
+	#        CONFIGURE_COMMAND "${CMAKE_COMMAND}"
+	#        "-H${CMAKE_BINARY_DIR}/protobuf/cmake" "-B."
+	#        "-Dprotobuf_BUILD_TESTS=OFF" "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}"
+	#        "-Dprotobuf_BUILD_SHARED_LIBS=ON" "-DCMAKE_C_FLAGS=-fPIC"
+	#        "-DCMAKE_CXX_FLAGS=-fPIC"
+	#        BUILD_COMMAND "${CMAKE_COMMAND}" --build "."
+	#        )
+	#ELSE()
+	#ENDIF()
+	ExternalProject_Add(protobuf
+			DOWNLOAD_COMMAND "wget"
+			"https://github.com/google/protobuf/archive/v3.3.0.tar.gz"
+			"-O" "protobuf-3.3.0.tar.gz"
+			UPDATE_COMMAND "tar" "zxvf"
+			"${CMAKE_BINARY_DIR}/protobuf-prefix/src/protobuf-3.3.0.tar.gz" "-C" ".."
+			SOURCE_DIR "protobuf-3.3.0/"
+			BUILD_IN_SOURCE 1
+			CONFIGURE_COMMAND "./autogen.sh" COMMAND "./configure" "--disable-shared"
+			"--prefix=${CMAKE_BINARY_DIR}/" "CXXFLAGS=-fPIC"
+			INSTALL_COMMAND "make" "install"
+			)
+	SET(Protobuf_PROTOC_EXECUTABLE "${CMAKE_BINARY_DIR}/bin/protoc")
+	# message(STATUS "${PROTOBUF_PROTOC_EXECUTABLE}")
 
-    ExternalProject_Add(openblas
-        GIT_REPOSITORY "https://github.com/xianyi/OpenBLAS.git"
-        #GIT_TAG "develop"
-        #GIT_TAG "f3419e6"
-        GIT_TAG "v0.2.20"
-        SOURCE_DIR "openblas/"
-        BUILD_IN_SOURCE 1
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND "make" "ONLY_CBLAS=1"
-        INSTALL_COMMAND "make" "PREFIX=${CMAKE_BINARY_DIR}/" "install"
-        )
+	ExternalProject_Add(openblas
+			GIT_REPOSITORY "https://github.com/xianyi/OpenBLAS.git"
+			#GIT_TAG "develop"
+			#GIT_TAG "f3419e6"
+			GIT_TAG "v0.2.20"
+			SOURCE_DIR "openblas/"
+			BUILD_IN_SOURCE 1
+			CONFIGURE_COMMAND ""
+			BUILD_COMMAND "make" "ONLY_CBLAS=1"
+			INSTALL_COMMAND "make" "PREFIX=${CMAKE_BINARY_DIR}/" "install"
+			)
 ENDIF()
 
 INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/include")
 ADD_SUBDIRECTORY(src)
 
 IF (ENABLE_TEST)
-  ADD_SUBDIRECTORY(test)
-  ADD_SUBDIRECTORY(examples)
+	ADD_SUBDIRECTORY(test)
+	ADD_SUBDIRECTORY(examples)
 ENDIF()
 
 IF (USE_PYTHON)
-    ADD_SUBDIRECTORY(python)
+	ADD_SUBDIRECTORY(python)
 ENDIF()
 
 IF (USE_JAVA)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing ")
-    ADD_SUBDIRECTORY(java)
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing ")
+	ADD_SUBDIRECTORY(java)
 ENDIF()
 
 INSTALL(DIRECTORY ${CMAKE_BINARY_DIR}/include DESTINATION ${CMAKE_INSTALL_PREFIX}/)
@@ -198,15 +198,15 @@ INSTALL(CODE "execute_process(COMMAND python setup.py install --prefix=${CMAKE_I
 IF(PACKAGE)
 	IF(USE_PYTHON)
 		INSTALL(FILES ${CMAKE_BINARY_DIR}/python/setup.py
-			DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa/python)
+				DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa/python)
 		INSTALL(FILES ${CMAKE_BINARY_DIR}/python/singa/singa_wrap.py
-			DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa/python/singa)
+				DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa/python/singa)
 		INSTALL(FILES ${CMAKE_BINARY_DIR}/python/singa/_singa_wrap.so
-			DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa/python/singa)
+				DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa/python/singa)
 		INSTALL(DIRECTORY ${PROJECT_SOURCE_DIR}/python
-			DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa)
+				DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa)
 		INSTALL(DIRECTORY ${CMAKE_BINARY_DIR}/python/singa/proto
-			DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa/python/singa)
+				DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa/python/singa)
 	ENDIF()
 
 	IF (USE_MODULES)
