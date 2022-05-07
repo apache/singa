@@ -27,7 +27,7 @@ import argparse
 from PIL import Image
 import process_data
 
-# Data Augmentation
+# Data augmentation
 def augmentation(x, batch_size):
     xpad = np.pad(x, [[0, 0], [0, 0], [4, 4], [4, 4]], 'symmetric')
     for data_num in range(0, batch_size):
@@ -41,7 +41,7 @@ def augmentation(x, batch_size):
     return x
 
 
-# Calculate Accuracy
+# Calculate accuracy
 def accuracy(pred, target):
     # y is network output to be compared with ground truth (int)
     y = np.argmax(pred, axis=1)
@@ -68,7 +68,7 @@ def partition(global_rank, world_size, train_x, train_y, val_x, val_y):
     return train_x, train_y, val_x, val_y
 
 
-# Function to all reduce NUMPY Accuracy and Loss from Multiple Devices
+# Function to all reduce NUMPY accuracy and loss from multiple devices
 def reduce_variable(variable, dist_opt, reducer):
     reducer.copy_from_numpy(variable)
     dist_opt.all_reduce(reducer.data)
@@ -130,7 +130,7 @@ def run(global_rank,
         model = alexnet.create_model(num_channels=num_channels,
                                      num_classes=num_classes)
 
-    # For distributed training, sequential gives better performance
+    # For distributed training, sequential method gives better performance
     if hasattr(sgd, "communicator"):
         DIST = True
         sequential = True
@@ -143,7 +143,7 @@ def run(global_rank,
                                                    train_x, train_y, val_x,
                                                    val_y)
     '''
-    # check dataset shape correctness
+    # Check dataset shape correctness
     if global_rank == 0:
         print("Check the shape of dataset:")
         print(train_x.shape)
@@ -164,7 +164,7 @@ def run(global_rank,
     num_val_batch = val_x.shape[0] // batch_size
     idx = np.arange(train_x.shape[0], dtype=np.int32)
 
-    # attached model to graph
+    # Attached model to graph
     model.set_optimizer(sgd)
     model.compile([tx], is_train=True, use_graph=graph, sequential=sequential)
     dev.SetVerbosity(verbosity)
@@ -175,7 +175,7 @@ def run(global_rank,
     if os.path.exists(checkpointpath):
         model.load_states(fpath=checkpointpath)
 
-    # Training and Evaluation Loop
+    # Training and evaluation Loop
     for epoch in range(max_epoch):
         start_time = time.time()
         np.random.shuffle(idx)
@@ -183,7 +183,7 @@ def run(global_rank,
         if global_rank == 0:
             print('Starting Epoch %d:' % (epoch))
 
-        # Training Phase
+        # Training phase
         train_correct = np.zeros(shape=[1], dtype=np.float32)
         test_correct = np.zeros(shape=[1], dtype=np.float32)
         train_loss = np.zeros(shape=[1], dtype=np.float32)
@@ -193,7 +193,7 @@ def run(global_rank,
             # Generate the patch data in this iteration
             x = train_x[idx[b * batch_size:(b + 1) * batch_size]]
             x = process_data.paths_to_images(x,model.input_size)
-            if model.dimension == 4:
+            if model.dimension == 4:  # Move the augmentation outside the for loop for better efficiency
                 x = augmentation(x, batch_size)
             y = train_y[idx[b * batch_size:(b + 1) * batch_size]]
 
@@ -207,7 +207,7 @@ def run(global_rank,
             train_loss += tensor.to_numpy(loss)[0]
 
         if DIST:
-            # Reduce the Evaluation Accuracy and Loss from Multiple Devices
+            # Reduce the evaluation accuracy and loss from multiple devices
             reducer = tensor.Tensor((1,), dev, tensor.float32)
             train_correct = reduce_variable(train_correct, sgd, reducer)
             train_loss = reduce_variable(train_loss, sgd, reducer)
@@ -218,7 +218,7 @@ def run(global_rank,
                    (num_train_batch * batch_size * world_size)),
                   flush=True)
 
-        # Evaluation Phase
+        # Evaluation phase
         model.eval()
         for b in range(num_val_batch):
             x = val_x[b * batch_size:(b + 1) * batch_size]
@@ -230,10 +230,10 @@ def run(global_rank,
             test_correct += accuracy(tensor.to_numpy(out_test), y)
 
         if DIST:
-            # Reduce the Evaulation Accuracy from Multiple Devices
+            # Reduce the evaulation accuracy from multiple devices
             test_correct = reduce_variable(test_correct, sgd, reducer)
 
-        # Output the Evaluation Accuracy
+        # Output the evaluation accuracy
         if global_rank == 0:
             print('Evaluation accuracy = %f, Elapsed Time = %fs' %
                   (test_correct / (num_val_batch * batch_size * world_size),
@@ -249,7 +249,7 @@ def run(global_rank,
 
 
 if __name__ == '__main__':
-    # use argparse to get command config: max_epoch, model, data, etc. for single gpu training
+    # Use argparse to get command config: max_epoch, model, data, etc. for single gpu training
     parser = argparse.ArgumentParser(
         description='Training using the autograd and graph.')
     parser.add_argument('model',
@@ -273,7 +273,7 @@ if __name__ == '__main__':
                         type=float,
                         help='initial learning rate',
                         dest='lr')
-    # determine which gpu to use
+    # Determine which gpu to use
     parser.add_argument('--id',
                         '--device-id',
                         default=0,

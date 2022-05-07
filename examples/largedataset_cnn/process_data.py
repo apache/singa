@@ -37,12 +37,12 @@ def paths_to_images(paths, image_size):
 
 
 def process_data(dataset_root, classes):
-    # load class names
+    # Load class names
     with open(classes, 'r', encoding='utf-8') as f:
         classes = f.readlines()
         classes = list(map(lambda x: x.strip(), classes))
 
-    # make input_paths and labels
+    # Make input_paths and labels
     input_paths, labels = [], []
     for class_name in os.listdir(dataset_root):
         class_root = os.path.join(dataset_root, class_name)
@@ -55,17 +55,17 @@ def process_data(dataset_root, classes):
             input_paths.append(path)
             labels.append(class_id)
 
-    # convert to numpy array
+    # Convert to numpy array
     input_paths = np.array(input_paths)
     labels = np.array(labels, dtype=np.int32)
 
-    # shuffle dataset
+    # Shuffle dataset
     np.random.seed(0)
     perm = np.random.permutation(len(input_paths))
     input_paths = input_paths[perm]
     labels = labels[perm]
 
-    # split dataset for training and validation
+    # Split dataset for training and validation
     border = int(len(input_paths) * 0.8)
     train_labels = labels[:border]
     val_labels = labels[border:]

@@ -1,0 +1,26 @@
+{"Task1":
+  {'area': 'What is known about transmission, incubation, and environmental stability?',
+    'questions': ['What is the range of the incubation period in humans?',
+      'How long individuals are contagious?',
+      'How long does the virus persist on surfaces?',
+      'What is the natural history of the virus?',
+      'Are there diagnostics to improve clinical processes?',
+      'What is known about immunity?',
+      'Are movement control strategies effective?',
+      'Is personal protective equipment effective?',
+      'Does the environment affect transmission?']
+  },
+  "Task2":
+  {'area': 'What do we know about COVID-19 risk factors?',
+    'questions': ['Is smoking a risk factor?',
+      'Are pulmunary diseases risk factors?',
+      'Are co-infections risk factors?',
+      'What is the basic reproductive number?',
+      'What is the serial interval?',
+      'Which are the environmental risk factors?',
+      'What is the severity of the disease?',
+      'Which are high-risk patient groups?',
+      'Are there public health mitigation measures?'
+    ]
+  }
+}
