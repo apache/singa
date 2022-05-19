@@ -550,7 +550,7 @@ class TestTensorMethods(unittest.TestCase):
         scalar = random.random() * 100
         y = x + scalar
         self.assertEqual(y.dtype, tensor.float32)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), x_val + scalar)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), x_val + scalar, 5)
 
     @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
     def test_kint_float_gpu(self):

@@ -422,6 +422,7 @@ setup(
         'numpy >=1.16,<2.0',  #1.16
         'onnx==1.6',
         'deprecated',
+        'pytest',
         'unittest-xml-reporting',
         'future',
         'pillow',

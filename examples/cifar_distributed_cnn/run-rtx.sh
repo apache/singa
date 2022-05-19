@@ -17,23 +17,10 @@
 # under the License.
 #
 
-package:
-  name: singa-gpu
-  version: {{ environ.get('GIT_DESCRIBE_TAG') | replace("-", ".") }}
+#!/usr/bin/env python -W ignore::DeprecationWarning
 
-source:
-  path: ../../../
+# resnet
+mpiexec -np 8 python train_mpi.py resnet cifar10 -l 0.015 -b 32
 
-requirements:
-  run:
-    - singa {{ environ.get('GIT_DESCRIBE_TAG') | replace("-", ".") }} cudnn7.6.5_cuda10.2_nccl2.6.4.1_mpich3.3.2_py{{ py }}
-
-build:
-  number: 0
-  string: py{{ py }}
- 
-
-about:
-  home: http://singa.apache.org/
-  license: Apache V2
-  summary: SINGA is an Apache Incubating project for providing distributed deep learning. Apache disclaimers http://singa.apache.org/en/index.html#disclaimers
+# cnn
+mpiexec -np 8 python train_mpi.py cnn cifar10 -l 0.015 -b 32

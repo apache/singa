@@ -17,23 +17,8 @@
 # under the License.
 #
 
-package:
-  name: singa-gpu
-  version: {{ environ.get('GIT_DESCRIBE_TAG') | replace("-", ".") }}
+docker build -t seweb .
+echo "Docker image for Singa-Easy application is built"
 
-source:
-  path: ../../../
-
-requirements:
-  run:
-    - singa {{ environ.get('GIT_DESCRIBE_TAG') | replace("-", ".") }} cudnn7.6.5_cuda10.2_nccl2.6.4.1_mpich3.3.2_py{{ py }}
-
-build:
-  number: 0
-  string: py{{ py }}
- 
-
-about:
-  home: http://singa.apache.org/
-  license: Apache V2
-  summary: SINGA is an Apache Incubating project for providing distributed deep learning. Apache disclaimers http://singa.apache.org/en/index.html#disclaimers
+docker run -it --publish 3002:3000 --name seweb seweb:latest
+echo "Docker container is built and the application is deployed on port 3002"
