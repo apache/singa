@@ -28,6 +28,7 @@ RUN yum install -y \
     openssh-server \
     pcre-devel \
     cmake \
+    rpm-build rpmdevtools \
     && yum clean all \
     && rm -rf /var/cache/yum/*
 
