@@ -26,12 +26,12 @@ CONDA_BUILD_SYSROOT:
     - "/Applications/Xcode_11.7.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk" # [osx]
 cudnn:                      # [linux]
     - "7.6.5 cuda10.2_0"    # [environ.get("CUDA")=="10.2"]
-    - "7.6.5 cuda10.0_0"    # [environ.get("CUDA")=="10.0"]
-    - "7.6.5 cuda9.0_0"     # [environ.get("CUDA")=="9.0"]
+#    - "7.6.5 cuda10.0_0"    # [environ.get("CUDA")=="10.0"]
+#    - "7.6.5 cuda9.0_0"     # [environ.get("CUDA")=="9.0"]
 dnnl:
     - 1.1
 python:
-    - 3.6
+    - 3.8
 #    - 3.7
 nccl:
     - 2.6.4.1               # [environ.get("CUDA")=="10.2"]
