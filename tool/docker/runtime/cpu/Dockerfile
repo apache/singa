@@ -17,27 +17,14 @@
 # limitations under the License.
 #
 # Base unbuntu 16.04 image
-FROM ubuntu:18.04
+FROM centos:centos7
 
 MAINTAINER singa dev@singa.apache.org
 
 # install dependencies
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends subversion git wget openssh-server bzip2 \
-    && apt-get clean && apt-get autoremove && apt-get autoclean \
-    && rm -rf /var/lib/apt/lists/*
+RUN yum install -y epel-release python-pip 
 
-# install conda
-RUN wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-py37_4.8.2-Linux-x86_64.sh -O miniconda.sh
-RUN bash miniconda.sh -b -p /root/miniconda
-ENV PATH /root/miniconda/bin:${PATH}
-RUN conda config --set always_yes yes --set changeps1 no
-RUN conda config --add channels conda-forge
-RUN conda config --add channels nusdbsystem
-RUN conda install -c nusdbsystem singa-cpu
-RUN conda install -c conda-forge sphinx
-RUN conda install -c conda-forge sphinx_rtd_theme
-RUN conda install -c conda-forge recommonmark
+RUN pip install singa -f http://singa.apache.org/docs/next/wheel-cpu.html --trusted-host singa.apache.org
 
 
 # config ssh service
@@ -47,8 +34,6 @@ RUN mkdir /var/run/sshd \
     && sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config \
     && mkdir /root/.ssh
 
-# add conda bin path to login or non-login shell
-RUN echo PATH=$PATH:/root/miniconda/bin >> /etc/profile
 
 EXPOSE 22
 
