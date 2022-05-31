@@ -16,25 +16,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Base unbuntu 16.04 image
-FROM centos:centos7
+FROM python:3.7-slim-bullseye
 
 MAINTAINER singa dev@singa.apache.org
 
-# install dependencies
-RUN yum install -y epel-release python-pip 
-
 RUN pip install singa -f http://singa.apache.org/docs/next/wheel-cpu.html --trusted-host singa.apache.org
-
-
-# config ssh service
-RUN mkdir /var/run/sshd \
-    && echo 'root:singa' | chpasswd \
-    && sed -ri 's/^#?PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
-    && sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config \
-    && mkdir /root/.ssh
-
-
-EXPOSE 22
-
-CMD ["/usr/sbin/sshd", "-D"]

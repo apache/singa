@@ -16,24 +16,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Base unbuntu 16.04 image
-FROM nvidia/cuda:10.2-runtime-centos7
+FROM nvidia/cuda:10.2-base-ubuntu18.04
 
 MAINTAINER singa dev@singa.apache.org
 
-# install dependencies
-RUN yum install -y epel-release python-pip 
-
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip 
+RUN pip3 install --upgrade pip
 RUN pip install singa -f http://singa.apache.org/docs/next/wheel-gpu.html --trusted-host singa.apache.org
-
-# config ssh service
-RUN mkdir /var/run/sshd \
-    && echo 'root:singa' | chpasswd \
-    && sed -ri 's/^#?PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
-    && sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config \
-    && mkdir /root/.ssh
-
-
-EXPOSE 22
-
-CMD ["/usr/sbin/sshd", "-D"]
