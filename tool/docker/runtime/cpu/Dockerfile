@@ -16,40 +16,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Base unbuntu 16.04 image
-FROM ubuntu:18.04
+FROM python:3.7-slim-bullseye
 
 MAINTAINER singa dev@singa.apache.org
 
-# install dependencies
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends subversion git wget openssh-server bzip2 \
-    && apt-get clean && apt-get autoremove && apt-get autoclean \
-    && rm -rf /var/lib/apt/lists/*
-
-# install conda
-RUN wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-py37_4.8.2-Linux-x86_64.sh -O miniconda.sh
-RUN bash miniconda.sh -b -p /root/miniconda
-ENV PATH /root/miniconda/bin:${PATH}
-RUN conda config --set always_yes yes --set changeps1 no
-RUN conda config --add channels conda-forge
-RUN conda config --add channels nusdbsystem
-RUN conda install -c nusdbsystem singa-cpu
-RUN conda install -c conda-forge sphinx
-RUN conda install -c conda-forge sphinx_rtd_theme
-RUN conda install -c conda-forge recommonmark
-
-
-# config ssh service
-RUN mkdir /var/run/sshd \
-    && echo 'root:singa' | chpasswd \
-    && sed -ri 's/^#?PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
-    && sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config \
-    && mkdir /root/.ssh
-
-# add conda bin path to login or non-login shell
-RUN echo PATH=$PATH:/root/miniconda/bin >> /etc/profile
-
-EXPOSE 22
-
-CMD ["/usr/sbin/sshd", "-D"]
+RUN pip install singa -f http://singa.apache.org/docs/next/wheel-cpu.html --trusted-host singa.apache.org
