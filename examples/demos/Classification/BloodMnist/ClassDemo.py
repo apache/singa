@@ -181,13 +181,13 @@ def accuracy(pred, target):
     return correct
 
 
-# define pre-processing methods (transforms)
+# Define pre-processing methods (transforms)
 transforms = Compose([
     ToTensor(),
     Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
-# dataset loading
+# Dataset loading
 dataset_path = "./bloodmnist"
 train_path = os.path.join(dataset_path, "train")
 val_path = os.path.join(dataset_path, "val") 
