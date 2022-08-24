@@ -201,7 +201,7 @@ val_dataset = ClassDataset(val_path, transforms)
 
 batch_size = 256
 
-# model configuration
+# Model configuration for CNN
 model = CNNModel(num_classes=num_class)
 criterion = layer.SoftMaxCrossEntropy()
 optimizer_ft = opt.Adam(lr=1e-3)
