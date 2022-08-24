@@ -84,14 +84,14 @@ class ToTensor(object):
         if not isinstance(pic, Image.Image):
            raise TypeError('pic should be PIL Image. Got {}'.format(type(pic)))
 
-        # handle PIL Image
+        # Handle PIL Image
         mode_to_nptype = {'I': np.int32, 'I;16': np.int16, 'F': np.float32}
         img = np.array(pic, mode_to_nptype.get(pic.mode, np.uint8), copy=True)
 
         if pic.mode == '1':
             img = 255 * img
 
-        # put it from HWC to CHW format
+        # Put it from HWC to CHW format
         img = np.transpose(img, (2, 0, 1))
 
         if img.dtype == np.uint8:
