@@ -128,7 +128,7 @@ class Normalize(object):
         self.std = std
         self.inplace = inplace
 
-    def forward(self, img: np.ndarray) -> np.ndarray:
+    def forward(self, img: np.ndarray):
         """
         Args:
             img (Numpy ndarray): Array image to be normalized.
