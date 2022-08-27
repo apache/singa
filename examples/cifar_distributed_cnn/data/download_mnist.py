@@ -23,7 +23,7 @@ import urllib.request
 
 def check_exist_or_download(url):
 
-    download_dir = '/tmp/'
+    download_dir = '/tmp/'  # downloaded to the /tmp/ folder
     name = url.rsplit('/', 1)[-1]
     filename = os.path.join(download_dir, name)
 
@@ -36,13 +36,13 @@ def check_exist_or_download(url):
 
 if __name__ == '__main__':
 
-    #url of the mnist dataset
+    # List urls of the mnist dataset
     train_x_url = 'http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz'
     train_y_url = 'http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz'
     valid_x_url = 'http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz'
     valid_y_url = 'http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz'
 
-    #download the mnist dataset
+    # Download the mnist dataset
     check_exist_or_download(train_x_url)
     check_exist_or_download(train_y_url)
     check_exist_or_download(valid_x_url)
