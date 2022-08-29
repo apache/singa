@@ -225,7 +225,7 @@ class Xception(layer.Layer):
         self.bn3 = layer.BatchNorm2d(1536)
         self.relu3 = layer.ReLU()
 
-        # do relu here
+        # Relu layer
         self.conv4 = layer.SeparableConv2d(1536, 2048, 3, 1, 1)
         self.bn4 = layer.BatchNorm2d(2048)
 
