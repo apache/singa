@@ -138,7 +138,7 @@ def reduce_variable(variable, dist_opt, reducer):
     return output
 
 
-# Function to sychronize SINGA TENSOR initial model parameters
+# Function to synchronize SINGA TENSOR initial model parameters
 def synchronize(tensor, dist_opt):
     dist_opt.all_reduce(tensor.data)
     dist_opt.wait()
@@ -159,7 +159,7 @@ def train_cifar10(DIST=False,
                   nccl_id=None,
                   partial_update=False):
 
-    # Define the hypermeters for the train_cifar10
+    # Define the hyperparameters for the train_cifar10
     sgd = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)
     max_epoch = 5
     batch_size = 32
@@ -199,7 +199,7 @@ def train_cifar10(DIST=False,
     idx = np.arange(train_x.shape[0], dtype=np.int32)
 
     if DIST:
-        #Sychronize the initial parameters
+        # Synchronize the initial parameters
         autograd.training = True
         x = np.random.randn(batch_size, 3, IMG_SIZE,
                             IMG_SIZE).astype(np.float32)
@@ -220,7 +220,7 @@ def train_cifar10(DIST=False,
         if ((DIST == False) or (sgd.global_rank == 0)):
             print('Starting Epoch %d:' % (epoch))
 
-        #Training phase
+        # Training phase
         autograd.training = True
         train_correct = np.zeros(shape=[1], dtype=np.float32)
         test_correct = np.zeros(shape=[1], dtype=np.float32)
@@ -258,11 +258,11 @@ def train_cifar10(DIST=False,
                   flush=True)
 
         if partial_update:
-            # Sychronize parameters before evaluation phase
+            # Synchronize parameters before evaluation phase
             for p in param:
                 synchronize(p, sgd)
 
-        #Evaulation phase
+        # Evaluation phase
         autograd.training = False
         for b in range(num_test_batch):
             x = test_x[b * batch_size:(b + 1) * batch_size]
@@ -275,7 +275,7 @@ def train_cifar10(DIST=False,
                                      to_categorical(y, num_classes))
 
         if DIST:
-            # Reduce the evaulation accuracy from multiple devices
+            # Reduce the evaluation accuracy from multiple devices
             test_correct = reduce_variable(test_correct, sgd, reducer)
 
         # Output the evaluation accuracy
