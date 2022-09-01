@@ -140,7 +140,7 @@ class Xception(layer.Layer):
         self.conv2 = layer.Conv2d(32, 64, 3, 1, 1, bias=False)
         self.bn2 = layer.BatchNorm2d(64)
         self.relu2 = layer.ReLU()
-        # do relu here
+        # Relu Layer
 
         self.block1 = Block(64,
                             128,
@@ -225,7 +225,7 @@ class Xception(layer.Layer):
         self.bn3 = layer.BatchNorm2d(1536)
         self.relu3 = layer.ReLU()
 
-        # do relu here
+        # Relu Layer
         self.conv4 = layer.SeparableConv2d(1536, 2048, 3, 1, 1)
         self.bn4 = layer.BatchNorm2d(2048)
 
@@ -279,9 +279,8 @@ class Xception(layer.Layer):
 
 if __name__ == '__main__':
     model = Xception(num_classes=1000)
-    print('Start intialization............')
+    print('Start initialization............')
     dev = device.create_cuda_gpu_on(0)
-    #dev = device.create_cuda_gpu()
 
     niters = 20
     batch_size = 16
