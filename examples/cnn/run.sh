@@ -1,0 +1,1 @@
+python train_cnn.py cnn mnist
