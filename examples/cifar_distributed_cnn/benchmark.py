@@ -42,7 +42,7 @@ def train_resnet(DIST=True, graph=True, sequential=False, verbosity=0):
 
     # For distributed training, sequential has better throughput in the current version
     if DIST == True:
-        sgd = opt.DistOpt(sgd)
+        sgd = opt.DistOpt(sgd)  # Need to make sure DistOpt is working for multiple GPUs/nodes
         world_size = sgd.world_size
         local_rank = sgd.local_rank
         global_rank = sgd.global_rank
