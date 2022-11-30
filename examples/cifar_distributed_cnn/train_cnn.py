@@ -265,7 +265,7 @@ if __name__ == '__main__':
                         dest='precision')
     parser.add_argument('-m',
                         '--max-epoch',
-                        default=10,
+                        default=20,
                         type=int,
                         help='maximum epochs',
                         dest='max_epoch')
