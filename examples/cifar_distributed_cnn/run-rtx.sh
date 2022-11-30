@@ -24,3 +24,6 @@ mpiexec -np 8 python train_mpi.py resnet cifar10 -l 0.015 -b 32
 
 # cnn
 mpiexec -np 8 python train_mpi.py cnn cifar10 -l 0.015 -b 32
+
+# mlp 
+mpiexec -np 8 python train_mpi.py mlp cifar10 -l 0.015 -b 32
