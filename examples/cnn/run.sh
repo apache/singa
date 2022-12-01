@@ -20,3 +20,5 @@
 python train_cnn.py cnn mnist
 python train_cnn.py mlp cifar10
 python train_cnn.py mlp cifar100
+python train_cnn.py cnn cifar10
+python train_cnn.py cnn cifar100
