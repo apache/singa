@@ -34,10 +34,10 @@ def check_dataset_exist(dirpath):
 
 
 def load_dataset():
-    train_x_path = '/tmp/train-images-idx3-ubyte.gz'
-    train_y_path = '/tmp/train-labels-idx1-ubyte.gz'
-    valid_x_path = '/tmp/t10k-images-idx3-ubyte.gz'
-    valid_y_path = '/tmp/t10k-labels-idx1-ubyte.gz'
+    train_x_path = '/tmp/train-images-idx3-ubyte.gz'  # need to change to local disk
+    train_y_path = '/tmp/train-labels-idx1-ubyte.gz'  # need to change to local disk
+    valid_x_path = '/tmp/t10k-images-idx3-ubyte.gz'  # need to change to local disk
+    valid_y_path = '/tmp/t10k-labels-idx1-ubyte.gz'  # need to change to local disk
 
     train_x = read_image_file(check_dataset_exist(train_x_path)).astype(
         np.float32)
