@@ -207,6 +207,8 @@ def run(global_rank,
 
         model.train()
         for b in range(num_train_batch):
+            # if b % 100 == 0:
+            #     print ("b: \n", b)
             # Generate the patch data in this iteration
             x = train_x[idx[b * batch_size:(b + 1) * batch_size]]
             if model.dimension == 4:
