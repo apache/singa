@@ -107,7 +107,7 @@ def run(global_rank,
         dist_option='plain',
         spars=None,
         precision='float32'):
-    dev = device.create_cuda_gpu_on(local_rank)
+    dev = device.create_cuda_gpu_on(local_rank)  # need to change to CPU device for CPU-only machines
     dev.SetRandSeed(0)
     np.random.seed(0)
 
