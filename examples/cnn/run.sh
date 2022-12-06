@@ -17,8 +17,14 @@
 # under the License.
 #
 
+### mnist
+python train_cnn.py mlp mnist
 python train_cnn.py cnn mnist
+
+### cifar10
 python train_cnn.py mlp cifar10
-python train_cnn.py mlp cifar100
 python train_cnn.py cnn cifar10
+
+### cifar100
+python train_cnn.py mlp cifar100
 python train_cnn.py cnn cifar100
