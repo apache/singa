@@ -20,7 +20,7 @@
 from download_cifar10 import do_download
 
 if __name__ == '__main__':
-    dirpath = '/tmp/'
+    dirpath = '/tmp/'  # need to specify a local directory
     gzfile = dirpath + 'cifar-100-python.tar.gz'
     url = 'http://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz'
     do_download(dirpath, gzfile, url)
