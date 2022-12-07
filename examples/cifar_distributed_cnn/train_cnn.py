@@ -224,6 +224,8 @@ def run(global_rank,
     start = time.time()
 
     for b in range(niters):
+        # if b % 100 == 0:
+        #     print ("b: \n", b)
         # Generate the patch data in this iteration
         # Train the model
         model(tx, ty, dist_option, spars)
