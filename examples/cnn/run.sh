@@ -20,11 +20,14 @@
 ### mnist
 python train_cnn.py mlp mnist
 python train_cnn.py cnn mnist
+python train_cnn.py resnet mnist
 
 ### cifar10
 python train_cnn.py mlp cifar10
 python train_cnn.py cnn cifar10
+python train_cnn.py resnet cifar10
 
 ### cifar100
 python train_cnn.py mlp cifar100
 python train_cnn.py cnn cifar100
+python train_cnn.py resnet cifar100
