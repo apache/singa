@@ -420,7 +420,7 @@ setup(
     python_requires='>=3',
     install_requires=[
         'numpy >=1.16,<2.0',  #1.16
-        'onnx==1.6',
+        'onnx==1.13.0',
         'deprecated',
         'pytest',
         'unittest-xml-reporting',
