@@ -82,7 +82,7 @@ def normalize(train_x, val_x):
         val_x[:, ch, :, :] /= std[ch]
     return train_x, val_x
 
-def load():
+def load():  # Need to pass in the path for loading training data
     train_x, train_y = load_train_data()
     val_x, val_y = load_test_data()
     train_x, val_x = normalize(train_x, val_x)

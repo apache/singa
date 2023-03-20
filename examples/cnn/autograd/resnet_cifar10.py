@@ -199,7 +199,7 @@ def train_cifar10(DIST=False,
     idx = np.arange(train_x.shape[0], dtype=np.int32)
 
     if DIST:
-        #Sychronize the initial parameters
+        # Sychronize the initial parameters
         autograd.training = True
         x = np.random.randn(batch_size, 3, IMG_SIZE,
                             IMG_SIZE).astype(np.float32)
@@ -220,7 +220,7 @@ def train_cifar10(DIST=False,
         if ((DIST == False) or (sgd.global_rank == 0)):
             print('Starting Epoch %d:' % (epoch))
 
-        #Training phase
+        # Training phase
         autograd.training = True
         train_correct = np.zeros(shape=[1], dtype=np.float32)
         test_correct = np.zeros(shape=[1], dtype=np.float32)
@@ -262,7 +262,7 @@ def train_cifar10(DIST=False,
             for p in param:
                 synchronize(p, sgd)
 
-        #Evaulation phase
+        # Evaulation phase
         autograd.training = False
         for b in range(num_test_batch):
             x = test_x[b * batch_size:(b + 1) * batch_size]

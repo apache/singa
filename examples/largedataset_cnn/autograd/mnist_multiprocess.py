@@ -17,22 +17,23 @@
 # under the License.
 #
 
-#!/usr/bin/env python -W ignore::DeprecationWarning
+from mnist_cnn import *
+import multiprocessing
+import sys
 
-# resnet
-mpiexec -np 8 python train_mpi.py resnet mnist -l 0.015 -b 32
-mpiexec -np 8 python train_mpi.py resnet cifar10 -l 0.015 -b 32
-mpiexec -np 8 python train_mpi.py resnet cifar100 -l 0.015 -b 32
+if __name__ == '__main__':
 
-# cnn
-mpiexec -np 8 python train_mpi.py cnn mnist -l 0.015 -b 32
-mpiexec -np 8 python train_mpi.py cnn cifar10 -l 0.015 -b 32
-mpiexec -np 8 python train_mpi.py cnn cifar100 -l 0.015 -b 32
+    # Generate a NCCL ID to be used for collective communication
+    nccl_id = singa.NcclIdHolder()
 
-# mlp 
-mpiexec -np 8 python train_mpi.py mlp cifar10 -l 0.015 -b 32
-mpiexec -np 8 python train_mpi.py mlp cifar100 -l 0.015 -b 32
+    # Number of GPUs to be used
+    world_size = int(sys.argv[1])
 
-# alexnet 
-mpiexec -np 8 python train_mpi.py alexnet cifar10 -l 0.015 -b 32
-mpiexec -np 8 python train_mpi.py alexnet cifar100 -l 0.015 -b 32
+    process = []
+    for local_rank in range(0, world_size):
+        process.append(
+            multiprocessing.Process(target=train_mnist_cnn,
+                                    args=(True, local_rank, world_size, nccl_id)))
+
+    for p in process:
+        p.start()

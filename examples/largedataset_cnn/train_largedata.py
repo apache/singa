@@ -142,13 +142,6 @@ def run(global_rank,
         train_x, train_y, val_x, val_y = partition(global_rank, world_size,
                                                    train_x, train_y, val_x,
                                                    val_y)
-    '''
-    # Check dataset shape correctness
-    if global_rank == 0:
-        print("Check the shape of dataset:")
-        print(train_x.shape)
-        print(train_y.shape)
-    '''
 
     if model.dimension == 4:
         tx = tensor.Tensor(

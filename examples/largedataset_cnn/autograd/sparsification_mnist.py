@@ -17,7 +17,7 @@
 # under the License.
 #
 
-from resnet_cifar10 import *
+from mnist_cnn import *
 import multiprocessing
 import sys
 
@@ -26,18 +26,20 @@ if __name__ == '__main__':
     # Generate a NCCL ID to be used for collective communication
     nccl_id = singa.NcclIdHolder()
 
-    # Configure the number of GPUs to be used
+    # Number of GPUs to be used
     world_size = int(sys.argv[1])
 
-    # Testing the experimental partial-parameter update asynchronous training
-    partial_update = True
+    # Use sparsification with parameters
+    topK = False  # When topK = False, Sparsification based on a constant absolute threshold
+    corr = True  # If True, uses local accumulate gradient for the correction
+    sparsThreshold = 0.05  # The constant absolute threshold for sparsification
 
     process = []
     for local_rank in range(0, world_size):
         process.append(
-            multiprocessing.Process(target=train_cifar10,
+            multiprocessing.Process(target=train_mnist_cnn,
                                     args=(True, local_rank, world_size, nccl_id,
-                                          partial_update)))
+                                          sparsThreshold, topK, corr)))
 
     for p in process:
         p.start()

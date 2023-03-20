@@ -17,22 +17,20 @@
 # under the License.
 #
 
-#!/usr/bin/env python -W ignore::DeprecationWarning
+### mnist
+python train_cnn.py mlp mnist
+python train_cnn.py cnn mnist
+python train_cnn.py resnet mnist
+python train_cnn.py alexnet mnist
 
-# resnet
-mpiexec -np 8 python train_mpi.py resnet mnist -l 0.015 -b 32
-mpiexec -np 8 python train_mpi.py resnet cifar10 -l 0.015 -b 32
-mpiexec -np 8 python train_mpi.py resnet cifar100 -l 0.015 -b 32
+### cifar10
+python train_cnn.py mlp cifar10
+python train_cnn.py cnn cifar10
+python train_cnn.py resnet cifar10
+python train_cnn.py alexnet cifar10
 
-# cnn
-mpiexec -np 8 python train_mpi.py cnn mnist -l 0.015 -b 32
-mpiexec -np 8 python train_mpi.py cnn cifar10 -l 0.015 -b 32
-mpiexec -np 8 python train_mpi.py cnn cifar100 -l 0.015 -b 32
-
-# mlp 
-mpiexec -np 8 python train_mpi.py mlp cifar10 -l 0.015 -b 32
-mpiexec -np 8 python train_mpi.py mlp cifar100 -l 0.015 -b 32
-
-# alexnet 
-mpiexec -np 8 python train_mpi.py alexnet cifar10 -l 0.015 -b 32
-mpiexec -np 8 python train_mpi.py alexnet cifar100 -l 0.015 -b 32
+### cifar100
+python train_cnn.py mlp cifar100
+python train_cnn.py cnn cifar100
+python train_cnn.py resnet cifar100
+python train_cnn.py alexnet cifar100

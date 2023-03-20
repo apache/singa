@@ -181,13 +181,13 @@ def accuracy(pred, target):
     return correct
 
 
-# define pre-processing methods (transforms)
+# Define pre-processing methods (transforms)
 transforms = Compose([
     ToTensor(),
     Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
-# dataset loading
+# Dataset loading
 dataset_path = "./bloodmnist"
 train_path = os.path.join(dataset_path, "train")
 val_path = os.path.join(dataset_path, "val") 
@@ -201,12 +201,12 @@ val_dataset = ClassDataset(val_path, transforms)
 
 batch_size = 256
 
-# model configuration
+# Model configuration for CNN
 model = CNNModel(num_classes=num_class)
 criterion = layer.SoftMaxCrossEntropy()
 optimizer_ft = opt.Adam(lr=1e-3)
 
-# start training
+# Start training
 dev = device.create_cpu_device()
 dev.SetRandSeed(0)
 np.random.seed(0)
@@ -234,10 +234,10 @@ for epoch in range(max_epoch):
     test_correct = np.zeros(shape=[1], dtype=np.float32)
     train_loss = np.zeros(shape=[1], dtype=np.float32)
 
-    # training part
+    # Training part
     model.train()
     for b in tqdm(range(num_train_batch)):
-        # extract batch from image list
+        # Extract batch from image list
         x, y = train_dataset.batchgenerator(idx[b * batch_size:(b + 1) * batch_size], 
             batch_size=batch_size, data_size=(3, model.input_size, model.input_size))
         x = x.astype(np_dtype['float32'])
@@ -252,7 +252,7 @@ for epoch in range(max_epoch):
                   (train_loss, train_correct /
                    (num_train_batch * batch_size)))
 
-    # validation part
+    # Validation part
     model.eval()
     for b in tqdm(range(num_val_batch)):
         x, y = train_dataset.batchgenerator(idx[b * batch_size:(b + 1) * batch_size], 

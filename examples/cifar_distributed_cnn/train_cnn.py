@@ -111,7 +111,7 @@ def run(global_rank,
         dist_option='plain',
         spars=None,
         precision='float32'):
-    dev = device.create_cuda_gpu_on(local_rank)
+    dev = device.create_cuda_gpu_on(local_rank)  # need to change to CPU device for CPU-only machines
     dev.SetRandSeed(0)
     np.random.seed(0)
 
@@ -224,6 +224,8 @@ def run(global_rank,
     start = time.time()
 
     for b in range(niters):
+        # if b % 100 == 0:
+        #     print ("b: \n", b)
         # Generate the patch data in this iteration
         # Train the model
         model(tx, ty, dist_option, spars)
@@ -265,7 +267,7 @@ if __name__ == '__main__':
                         dest='precision')
     parser.add_argument('-m',
                         '--max-epoch',
-                        default=10,
+                        default=20,
                         type=int,
                         help='maximum epochs',
                         dest='max_epoch')

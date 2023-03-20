@@ -107,7 +107,7 @@ def run(global_rank,
         dist_option='plain',
         spars=None,
         precision='float32'):
-    dev = device.create_cuda_gpu_on(local_rank)
+    dev = device.create_cuda_gpu_on(local_rank)  # need to change to CPU device for CPU-only machines
     dev.SetRandSeed(0)
     np.random.seed(0)
 
@@ -165,13 +165,6 @@ def run(global_rank,
         train_x, train_y, val_x, val_y = partition(global_rank, world_size,
                                                    train_x, train_y, val_x,
                                                    val_y)
-    '''
-    # check dataset shape correctness
-    if global_rank == 0:
-        print("Check the shape of dataset:")
-        print(train_x.shape)
-        print(train_y.shape)
-    '''
 
     if model.dimension == 4:
         tx = tensor.Tensor(
@@ -207,6 +200,8 @@ def run(global_rank,
 
         model.train()
         for b in range(num_train_batch):
+            # if b % 100 == 0:
+            #     print ("b: \n", b)
             # Generate the patch data in this iteration
             x = train_x[idx[b * batch_size:(b + 1) * batch_size]]
             if model.dimension == 4:
@@ -282,7 +277,7 @@ if __name__ == '__main__':
                         dest='precision')
     parser.add_argument('-m',
                         '--max-epoch',
-                        default=10,
+                        default=100,
                         type=int,
                         help='maximum epochs',
                         dest='max_epoch')
