@@ -29,10 +29,12 @@ mpiexec -np 8 python train_mpi.py cnn mnist -l 0.015 -b 32
 mpiexec -np 8 python train_mpi.py cnn cifar10 -l 0.015 -b 32
 mpiexec -np 8 python train_mpi.py cnn cifar100 -l 0.015 -b 32
 
-# mlp 
+# mlp
+mpiexec -np 8 python train_mpi.py mlp mnist -l 0.015 -b 32
 mpiexec -np 8 python train_mpi.py mlp cifar10 -l 0.015 -b 32
 mpiexec -np 8 python train_mpi.py mlp cifar100 -l 0.015 -b 32
 
 # alexnet 
+mpiexec -np 8 python train_mpi.py alexnet mnist -l 0.015 -b 32
 mpiexec -np 8 python train_mpi.py alexnet cifar10 -l 0.015 -b 32
 mpiexec -np 8 python train_mpi.py alexnet cifar100 -l 0.015 -b 32
