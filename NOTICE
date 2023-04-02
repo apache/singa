@@ -5,3 +5,28 @@ This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
 
 Codebase originally donated by National University of Singapore.
+
+The following images or media files were contributed by 
+developers of Apache SINGA under Apache License, Version 2.0.
+
+./CITATION.cff
+./doc/_static/apache.png
+./doc/_static/awsmp.gif
+./doc/_static/docker.png
+./doc/_static/github.png
+./doc/_static/jupyter.png
+./doc/_static/singa-logo-updated.ai
+./doc/_static/singa-logo-v3.ai
+./doc/_static/singa-logo-v3.png
+./doc/_static/singa.png
+./doc/_static/images/benchmark.png
+./doc/_static/images/imda2019_1.png
+./doc/_static/images/imda2019_2.png
+./doc/_static/images/mlp-net.png
+./doc/_static/images/model-category.png
+./doc/_static/images/overview.png
+./doc/_static/images/partition_fc.png
+./doc/_static/images/rbm-rnn.png
+./doc/_static/images/sgd.png
+./doc/_static/images/singa.png
+./doc/_static/images/singav1-sw.png
