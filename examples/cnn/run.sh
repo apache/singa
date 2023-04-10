@@ -17,6 +17,8 @@
 # under the License.
 #
 
+#!/usr/bin/env python -W ignore::DeprecationWarning
+
 ### mnist
 python train_cnn.py mlp mnist
 python train_cnn.py cnn mnist
