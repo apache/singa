@@ -172,6 +172,16 @@ class MSSGD(MSOptimizer):
         minus_lr = 0.0 - self.lr_value
         singa.Axpy(minus_lr.data, param_grad.data, param_value.data)
 
+    def step(self):
+        # increment step counter, lr and moment
+        super().step()
+        mom_value = self.momentum(self.step_counter).as_type(self.dtype)
+        dam_value = self.dampening(self.step_counter).as_type(self.dtype)
+        decay_value = self.weight_decay(self.step_counter).as_type(self.dtype)
+        self.mom_value.copy_from(mom_value)
+        self.dam_value.copy_from(dam_value)
+        self.decay_value.copy_from(decay_value)
+
 
 # Data augmentation
 def augmentation(x, batch_size):
@@ -179,8 +189,8 @@ def augmentation(x, batch_size):
     for data_num in range(0, batch_size):
         offset = np.random.randint(8, size=2)
         x[data_num, :, :, :] = xpad[data_num, :,
-                               offset[0]:offset[0] + x.shape[2],
-                               offset[1]:offset[1] + x.shape[2]]
+                                    offset[0]:offset[0] + x.shape[2],
+                                    offset[1]:offset[1] + x.shape[2]]
         if_flip = np.random.randint(2)
         if (if_flip):
             x[data_num, :, :, :] = x[data_num, :, :, ::-1]
@@ -232,7 +242,7 @@ def resize_dataset(x, image_size):
         for d in range(0, dim):
             X[n, d, :, :] = np.array(Image.fromarray(x[n, d, :, :]).resize(
                 (image_size, image_size), Image.BILINEAR),
-                dtype=np.float32)
+                                     dtype=np.float32)
     return X
 
 
@@ -294,8 +304,8 @@ def run(global_rank,
         sys.path.insert(0, parent)
         from mlp import model
         model = model.create_model(data_size=data_size,
-                                   num_classes=num_classes)
-
+                                    num_classes=num_classes)
+    
     elif model == 'msmlp':
         import os, sys, inspect
         current = os.path.dirname(
@@ -304,7 +314,7 @@ def run(global_rank,
         sys.path.insert(0, parent)
         from msmlp import model
         model = model.create_model(data_size=data_size,
-                                   num_classes=num_classes)
+                                    num_classes=num_classes)
 
     # For distributed training, sequential has better performance
     if hasattr(mssgd, "communicator"):
