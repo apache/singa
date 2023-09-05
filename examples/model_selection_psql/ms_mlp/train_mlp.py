@@ -182,6 +182,18 @@ class MSSGD(MSOptimizer):
         self.dam_value.copy_from(dam_value)
         self.decay_value.copy_from(decay_value)
 
+    def get_states(self):
+        states = super().get_states()
+        if self.mom_value > 0:
+            states[
+                'moments'] = self.moments  # a dict for 1st order moments tensors
+        return states
+
+    def set_states(self, states):
+        super().set_states(states)
+        if 'moments' in states:
+            self.moments = states['moments']
+            self.mom_value = self.momentum(self.step_counter)
 
 # Data augmentation
 def augmentation(x, batch_size):
