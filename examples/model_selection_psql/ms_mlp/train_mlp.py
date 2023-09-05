@@ -34,6 +34,22 @@ np_dtype = {"float16": np.float16, "float32": np.float32}
 
 singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 
+### MSOptimizer
+class MSOptimizer(Optimizer):
+    def __call__(self, loss):
+        pn_p_g_list = self.call_with_returns(loss)
+        self.step()
+        return pn_p_g_list
+
+    def call_with_returns(self, loss):
+        pn_p_g_list = []
+        for p, g in autograd.backward(loss):
+            if p.name is None:
+                p.name = id(p)
+            self.apply(p.name, p, g)
+            pn_p_g_list.append(p.name, p, g)
+        return pn_p_g_list
+
 class MSSGD(MSOptimizer):
     """Implements stochastic gradient descent (optionally with momentum).
 
@@ -194,6 +210,7 @@ class MSSGD(MSOptimizer):
         if 'moments' in states:
             self.moments = states['moments']
             self.mom_value = self.momentum(self.step_counter)
+
 
 # Data augmentation
 def augmentation(x, batch_size):
