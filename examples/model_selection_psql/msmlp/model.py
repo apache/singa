@@ -52,7 +52,21 @@ class SumError(Operator):
         #     self.n *= s
         # loss /= self.n
         return loss
-    
+
+    def backward(self, dy=1.0):
+        # dx = self.err
+        dev = device.get_default_device()
+        dx = tensor.Tensor(self.data_x.shape, dev, singa_dtype['float32'])
+        dx.copy_from_numpy(np.ones(self.data_x.shape))
+        # dx *= float(2 / self.n)
+        dx *= dy
+        return dx
+
+### called in the MSMLP class for sum error loss gradients
+def se_loss(x):
+    # assert x.shape == t.shape, "input and target shape different: %s, %s" % (
+    #     x.shape, t.shape)
+    return SumError()(x)[0]
 
 class MSMLP(model.Model):
 
@@ -66,7 +80,7 @@ class MSMLP(model.Model):
         self.linear2 = layer.Linear(num_classes)
         self.softmax_cross_entropy = layer.SoftMaxCrossEntropy()
         self.sum_error = SumErrorLayer()
-    
+
     def forward(self, inputs):
         y = self.linear1(inputs)
         y = self.relu(y)
