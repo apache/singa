@@ -32,9 +32,7 @@ np_dtype = {"float16": np.float16, "float32": np.float32}
 
 singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 
-#### self-defined loss begin
-
-### reference from autograd.py
+### refer to autograd.py
 class SumError(Operator):
 
     def __init__(self):
@@ -52,7 +50,7 @@ class SumError(Operator):
         #     self.n *= s
         # loss /= self.n
         return loss
-
+    
     def backward(self, dy=1.0):
         # dx = self.err
         dev = device.get_default_device()
@@ -62,11 +60,20 @@ class SumError(Operator):
         dx *= dy
         return dx
 
-### called in the MSMLP class for sum error loss gradients
 def se_loss(x):
-    # assert x.shape == t.shape, "input and target shape different: %s, %s" % (
-    #     x.shape, t.shape)
     return SumError()(x)[0]
+
+### refer to layer.py
+class SumErrorLayer(Layer):
+    """
+    Generate a SumError Layer
+    """
+
+    def __init__(self):
+        super(SumErrorLayer, self).__init__()
+
+    def forward(self, x):
+        return se_loss(x)
 
 class MSMLP(model.Model):
 
@@ -79,8 +86,8 @@ class MSMLP(model.Model):
         self.linear1 = layer.Linear(perceptron_size)
         self.linear2 = layer.Linear(num_classes)
         self.softmax_cross_entropy = layer.SoftMaxCrossEntropy()
-        self.sum_error = SumErrorLayer()
-
+        self.sum_error = SumErrorLayer()  # for synflow backward
+    
     def forward(self, inputs):
         y = self.linear1(inputs)
         y = self.relu(y)
