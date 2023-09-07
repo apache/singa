@@ -79,8 +79,6 @@ class SumErrorLayer(Layer):
     def forward(self, x):
         return se_loss(x)
 
-#### self-defined loss end
-
 class MSMLP(model.Model):
 
     def __init__(self, data_size=10, perceptron_size=100, num_classes=10, layer_hidden_list=[10,10,10,10]):
@@ -96,3 +94,56 @@ class MSMLP(model.Model):
         self.linear5 = layer.Linear(num_classes)
         self.softmax_cross_entropy = layer.SoftMaxCrossEntropy()
         self.sum_error = SumErrorLayer()
+    
+    def forward(self, inputs):
+        y = self.linear1(inputs)
+        y = self.relu(y)
+        y = self.linear2(y)
+        y = self.relu(y)
+        y = self.linear3(y)
+        y = self.relu(y)
+        y = self.linear4(y)
+        y = self.relu(y)
+        y = self.linear5(y)
+        return y
+
+    def train_one_batch(self, x, y, dist_option, spars, synflow_flag):
+        # print ("in train_one_batch")
+        out = self.forward(x)
+        # print ("train_one_batch x.data: \n", x.data)
+        # print ("train_one_batch y.data: \n", y.data)
+        # print ("train_one_batch out.data: \n", out.data)
+        if synflow_flag:
+            # print ("sum_error")
+            loss = self.sum_error(out)
+        else:  # normal training
+            # print ("softmax_cross_entropy")
+            loss = self.softmax_cross_entropy(out, y)
+        # print ("train_one_batch loss.data: \n", loss.data)
+
+        if dist_option == 'plain':
+            # print ("before pn_p_g_list = self.optimizer(loss)")
+            pn_p_g_list = self.optimizer(loss)
+            # print ("after pn_p_g_list = self.optimizer(loss)")
+        elif dist_option == 'half':
+            self.optimizer.backward_and_update_half(loss)
+        elif dist_option == 'partialUpdate':
+            self.optimizer.backward_and_partial_update(loss)
+        elif dist_option == 'sparseTopK':
+            self.optimizer.backward_and_sparse_update(loss,
+                                                      topK=True,
+                                                      spars=spars)
+        elif dist_option == 'sparseThreshold':
+            self.optimizer.backward_and_sparse_update(loss,
+                                                      topK=False,
+                                                      spars=spars)
+        # print ("len(pn_p_g_list): \n", len(pn_p_g_list))
+        # print ("len(pn_p_g_list[0]): \n", len(pn_p_g_list[0]))
+        # print ("pn_p_g_list[0][0]: \n", pn_p_g_list[0][0])
+        # print ("pn_p_g_list[0][1].data: \n", pn_p_g_list[0][1].data)
+        # print ("pn_p_g_list[0][2].data: \n", pn_p_g_list[0][2].data)
+        return pn_p_g_list, out, loss
+        # return pn_p_g_list[0], pn_p_g_list[1], pn_p_g_list[2], out, loss
+
+    def set_optimizer(self, optimizer):
+        self.optimizer = optimizer
