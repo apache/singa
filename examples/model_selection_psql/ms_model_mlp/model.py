@@ -147,3 +147,49 @@ class MSMLP(model.Model):
 
     def set_optimizer(self, optimizer):
         self.optimizer = optimizer
+
+
+def create_model(pretrained=False, **kwargs):
+    """Constructs a CNN model.
+
+    Args:
+        pretrained (bool): If True, returns a pre-trained model.
+    
+    Returns:
+        The created CNN model.
+    """
+    model = MSMLP(**kwargs)
+
+    return model
+
+
+__all__ = ['MLP', 'create_model']
+
+if __name__ == "__main__":
+    np.random.seed(0)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p',
+                        choices=['float32', 'float16'],
+                        default='float32',
+                        dest='precision')
+    parser.add_argument('-g',
+                        '--disable-graph',
+                        default='True',
+                        action='store_false',
+                        help='disable graph',
+                        dest='graph')
+    parser.add_argument('-m',
+                        '--max-epoch',
+                        default=1001,
+                        type=int,
+                        help='maximum epochs',
+                        dest='max_epoch')
+    args = parser.parse_args()
+
+    model = MLP(data_size=2, perceptron_size=3, num_classes=2)
+
+    # attach model to graph
+    model.set_optimizer(sgd)
+    model.compile([tx], is_train=True, use_graph=args.graph, sequential=True)
+    model.train()
