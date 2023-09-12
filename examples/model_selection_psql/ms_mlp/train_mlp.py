@@ -42,12 +42,17 @@ class MSOptimizer(Optimizer):
         return pn_p_g_list
 
     def call_with_returns(self, loss):
+        print ("call_with_returns loss.data: \n", loss.data)
         pn_p_g_list = []
         for p, g in autograd.backward(loss):
             if p.name is None:
                 p.name = id(p)
             self.apply(p.name, p, g)
             pn_p_g_list.append(p.name, p, g)
+            print ("call with returns")
+            print ("p.name: \n", p.name)
+            print ("p.data: \n", p.data)
+            print ("g.data: \n", g.data)
         return pn_p_g_list
 
 class MSSGD(MSOptimizer):
@@ -218,8 +223,8 @@ def augmentation(x, batch_size):
     for data_num in range(0, batch_size):
         offset = np.random.randint(8, size=2)
         x[data_num, :, :, :] = xpad[data_num, :,
-                                    offset[0]:offset[0] + x.shape[2],
-                                    offset[1]:offset[1] + x.shape[2]]
+                               offset[0]:offset[0] + x.shape[2],
+                               offset[1]:offset[1] + x.shape[2]]
         if_flip = np.random.randint(2)
         if (if_flip):
             x[data_num, :, :, :] = x[data_num, :, :, ::-1]
@@ -271,7 +276,7 @@ def resize_dataset(x, image_size):
         for d in range(0, dim):
             X[n, d, :, :] = np.array(Image.fromarray(x[n, d, :, :]).resize(
                 (image_size, image_size), Image.BILINEAR),
-                                     dtype=np.float32)
+                dtype=np.float32)
     return X
 
 
@@ -333,8 +338,8 @@ def run(global_rank,
         sys.path.insert(0, parent)
         from mlp import model
         model = model.create_model(data_size=data_size,
-                                    num_classes=num_classes)
-    
+                                   num_classes=num_classes)
+
     elif model == 'msmlp':
         import os, sys, inspect
         current = os.path.dirname(
@@ -343,7 +348,7 @@ def run(global_rank,
         sys.path.insert(0, parent)
         from msmlp import model
         model = model.create_model(data_size=data_size,
-                                    num_classes=num_classes)
+                                   num_classes=num_classes)
 
     # For distributed training, sequential has better performance
     if hasattr(mssgd, "communicator"):
@@ -413,34 +418,39 @@ def run(global_rank,
                 synflow_flag = True
                 ### step 1: all one input
                 # Copy the patch data into input tensors
-                tx.copy_from_numpy(np.ones(x.shape))
+                tx.copy_from_numpy(np.ones(x.shape, dtype=np.float32))
                 ty.copy_from_numpy(y)
                 ### step 2: all weights turned to positive (done)
                 ### step 3: new loss (done)
-                pn_p_g_list, out, loss = model(tx, ty, synflow_flag, dist_option, spars)
+                pn_p_g_list, out, loss = model(tx, ty, dist_option, spars, synflow_flag)
                 ### step 4: calculate the multiplication of weights
                 synflow_score = 0.0
                 for pn_p_g_item in pn_p_g_list:
                     print ("calculate weight param * grad parameter name: \n", pn_p_g_item[0])
-                    if len(pn_p_g_item[1].data.shape) == 2: # param_value.data is "weight"
-                        synflow_score += np.sum(np.absolute(tensor.to_numpy(pn_p_g_item[1].data) * tensor.to_numpy(pn_p_g_item[2].data)))
+                    if len(pn_p_g_item[1].shape) == 2: # param_value.data is "weight"
+                        print ("pn_p_g_item[1].shape: \n", pn_p_g_item[1].shape)
+                        synflow_score += np.sum(np.absolute(tensor.to_numpy(pn_p_g_item[1]) * tensor.to_numpy(pn_p_g_item[2])))
                 print ("synflow_score: \n", synflow_score)
             elif epoch == (max_epoch - 1) and b == (num_train_batch - 2): # all weights turned to positive
                 # Copy the patch data into input tensors
                 tx.copy_from_numpy(x)
                 ty.copy_from_numpy(y)
-                pn_p_g_list, out, loss = model(tx, ty, synflow_flag, dist_option, spars)
+                pn_p_g_list, out, loss = model(tx, ty, dist_option, spars, synflow_flag)
                 train_correct += accuracy(tensor.to_numpy(out), y)
                 train_loss += tensor.to_numpy(loss)[0]
                 # all params turned to positive
                 for pn_p_g_item in pn_p_g_list:
                     print ("absolute value parameter name: \n", pn_p_g_item[0])
-                    pn_p_g_item[1].data = tensor.abs(pn_p_g_item[1].data)
+                    pn_p_g_item[1] = tensor.abs(pn_p_g_item[1])  # return tensor already
             else:  # normal train steps
                 # Copy the patch data into input tensors
                 tx.copy_from_numpy(x)
                 ty.copy_from_numpy(y)
-                pn_p_g_list, out, loss = model(tx, ty, synflow_flag, dist_option, spars)
+                # print ("normal before model(tx, ty, synflow_flag, dist_option, spars)")
+                # print ("train_cnn tx: \n", tx)
+                # print ("train_cnn ty: \n", ty)
+                pn_p_g_list, out, loss = model(tx, ty, dist_option, spars, synflow_flag)
+                # print ("normal after model(tx, ty, synflow_flag, dist_option, spars)")
                 train_correct += accuracy(tensor.to_numpy(out), y)
                 train_loss += tensor.to_numpy(loss)[0]
 
@@ -490,7 +500,7 @@ if __name__ == '__main__':
         description='Training using the autograd and graph.')
     parser.add_argument(
         'model',
-        choices=['cnn', 'resnet', 'xceptionnet', 'mlp', 'alexnet'],
+        choices=['cnn', 'resnet', 'xceptionnet', 'mlp', 'msmlp', 'alexnet'],
         default='cnn')
     parser.add_argument('data',
                         choices=['mnist', 'cifar10', 'cifar100'],
@@ -501,7 +511,7 @@ if __name__ == '__main__':
                         dest='precision')
     parser.add_argument('-m',
                         '--max-epoch',
-                        default=100,
+                        default=10,
                         type=int,
                         help='maximum epochs',
                         dest='max_epoch')
