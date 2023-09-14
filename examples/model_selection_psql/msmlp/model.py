@@ -95,14 +95,21 @@ class MSMLP(model.Model):
         return y
 
     def train_one_batch(self, x, y, synflow_flag, dist_option, spars):
+        # print ("in train_one_batch")
         out = self.forward(x)
+        # print ("train_one_batch x.data: \n", x.data)
+        # print ("train_one_batch y.data: \n", y.data)
+        # print ("train_one_batch out.data: \n", out.data)
         if synflow_flag:
             loss = self.sum_error(out)
+            # print ("sum_error")
         else:  # normal training
             loss = self.softmax_cross_entropy(out, y)
 
         if dist_option == 'plain':
+            # print ("before pn_p_g_list = self.optimizer(loss)")
             pn_p_g_list = self.optimizer(loss)
+            # print ("after pn_p_g_list = self.optimizer(loss)")
         elif dist_option == 'half':
             self.optimizer.backward_and_update_half(loss)
         elif dist_option == 'partialUpdate':
@@ -115,7 +122,13 @@ class MSMLP(model.Model):
             self.optimizer.backward_and_sparse_update(loss,
                                                       topK=False,
                                                       spars=spars)
+        # print ("len(pn_p_g_list): \n", len(pn_p_g_list))
+        # print ("len(pn_p_g_list[0]): \n", len(pn_p_g_list[0]))
+        # print ("pn_p_g_list[0][0]: \n", pn_p_g_list[0][0])
+        # print ("pn_p_g_list[0][1].data: \n", pn_p_g_list[0][1].data)
+        # print ("pn_p_g_list[0][2].data: \n", pn_p_g_list[0][2].data)
         return pn_p_g_list, out, loss
+        # return pn_p_g_list[0], pn_p_g_list[1], pn_p_g_list[2], out, loss
 
     def set_optimizer(self, optimizer):
         self.optimizer = optimizer
