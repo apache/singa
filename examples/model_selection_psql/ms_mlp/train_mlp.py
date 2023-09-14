@@ -42,17 +42,17 @@ class MSOptimizer(Optimizer):
         return pn_p_g_list
 
     def call_with_returns(self, loss):
-        print ("call_with_returns loss.data: \n", loss.data)
+        # print ("call_with_returns loss.data: \n", loss.data)
         pn_p_g_list = []
         for p, g in autograd.backward(loss):
             if p.name is None:
                 p.name = id(p)
             self.apply(p.name, p, g)
             pn_p_g_list.append(p.name, p, g)
-            print ("call with returns")
-            print ("p.name: \n", p.name)
-            print ("p.data: \n", p.data)
-            print ("g.data: \n", g.data)
+            # print ("call with returns")
+            # print ("p.name: \n", p.name)
+            # print ("p.data: \n", p.data)
+            # print ("g.data: \n", g.data)
         return pn_p_g_list
 
 class MSSGD(MSOptimizer):
@@ -549,15 +549,23 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    mssgd = MSSGD(lr=args.lr, momentum=0.9, weight_decay=1e-5, dtype=singa_dtype[args.precision])
-    run(0,
-        1,
-        args.device_id,
-        args.max_epoch,
-        args.batch_size,
-        args.model,
-        args.data,
-        mssgd,
-        args.graph,
-        args.verbosity,
-        precision=args.precision)
+    DEFAULT_LAYER_CHOICES_4 = [8, 16, 24, 32]
+    for layer1 in DEFAULT_LAYER_CHOICES_4:
+        for layer2 in DEFAULT_LAYER_CHOICES_4:
+            for layer3 in DEFAULT_LAYER_CHOICES_4:
+                for layer4 in DEFAULT_LAYER_CHOICES_4:
+                    layer_hidden_list = [layer1, layer2+1, layer3+2, layer4+3]
+                    # print ("layer_hidden_list: \n", layer_hidden_list)
+                    mssgd = MSSGD(lr=args.lr, momentum=0.9, weight_decay=1e-5, dtype=singa_dtype[args.precision])
+                    run(0,
+                        1,
+                        args.device_id,
+                        layer_hidden_list,
+                        args.max_epoch,
+                        args.batch_size,
+                        args.model,
+                        args.data,
+                        mssgd,
+                        args.graph,
+                        args.verbosity,
+                        precision=args.precision)
