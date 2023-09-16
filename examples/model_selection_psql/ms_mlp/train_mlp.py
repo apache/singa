@@ -349,6 +349,19 @@ def run(global_rank,
         from msmlp import model
         model = model.create_model(data_size=data_size,
                                    num_classes=num_classes)
+    
+    elif model == 'ms_model_mlp':
+        import os, sys, inspect
+        current = os.path.dirname(
+            os.path.abspath(inspect.getfile(inspect.currentframe())))
+        parent = os.path.dirname(current)
+        sys.path.insert(0, parent)
+        from ms_model_mlp import model
+        model = model.create_model(data_size=data_size,
+                                    num_classes=num_classes, 
+                                    layer_hidden_list=layer_hidden_list)
+    # print ("model: \n", model)
+
 
     # For distributed training, sequential has better performance
     if hasattr(mssgd, "communicator"):
@@ -399,8 +412,8 @@ def run(global_rank,
         print ("num_train_batch: \n", num_train_batch)
         print ()
         for b in range(num_train_batch):
-            if b % 200 == 0:
-                print ("b: \n", b)
+            # if b % 200 == 0:
+            #     print ("b: \n", b)
             # Generate the patch data in this iteration
             x = train_x[idx[b * batch_size:(b + 1) * batch_size]]
             if model.dimension == 4:
@@ -422,6 +435,7 @@ def run(global_rank,
                 ty.copy_from_numpy(y)
                 ### step 2: all weights turned to positive (done)
                 ### step 3: new loss (done)
+                ### print ("before model forward ...")
                 pn_p_g_list, out, loss = model(tx, ty, dist_option, spars, synflow_flag)
                 ### step 4: calculate the multiplication of weights
                 synflow_score = 0.0
@@ -430,11 +444,13 @@ def run(global_rank,
                     if len(pn_p_g_item[1].shape) == 2: # param_value.data is "weight"
                         print ("pn_p_g_item[1].shape: \n", pn_p_g_item[1].shape)
                         synflow_score += np.sum(np.absolute(tensor.to_numpy(pn_p_g_item[1]) * tensor.to_numpy(pn_p_g_item[2])))
+                print ("layer_hidden_list: \n", layer_hidden_list)
                 print ("synflow_score: \n", synflow_score)
             elif epoch == (max_epoch - 1) and b == (num_train_batch - 2): # all weights turned to positive
                 # Copy the patch data into input tensors
                 tx.copy_from_numpy(x)
                 ty.copy_from_numpy(y)
+                # print ("before model forward ...")
                 pn_p_g_list, out, loss = model(tx, ty, dist_option, spars, synflow_flag)
                 train_correct += accuracy(tensor.to_numpy(out), y)
                 train_loss += tensor.to_numpy(loss)[0]
@@ -449,6 +465,7 @@ def run(global_rank,
                 # print ("normal before model(tx, ty, synflow_flag, dist_option, spars)")
                 # print ("train_cnn tx: \n", tx)
                 # print ("train_cnn ty: \n", ty)
+                # print ("before model forward ...")
                 pn_p_g_list, out, loss = model(tx, ty, dist_option, spars, synflow_flag)
                 # print ("normal after model(tx, ty, synflow_flag, dist_option, spars)")
                 train_correct += accuracy(tensor.to_numpy(out), y)
@@ -500,7 +517,7 @@ if __name__ == '__main__':
         description='Training using the autograd and graph.')
     parser.add_argument(
         'model',
-        choices=['cnn', 'resnet', 'xceptionnet', 'mlp', 'msmlp', 'alexnet'],
+        choices=['cnn', 'resnet', 'xceptionnet', 'mlp', 'msmlp', 'alexnet', 'ms_model_mlp'],
         default='cnn')
     parser.add_argument('data',
                         choices=['mnist', 'cifar10', 'cifar100'],
@@ -511,7 +528,7 @@ if __name__ == '__main__':
                         dest='precision')
     parser.add_argument('-m',
                         '--max-epoch',
-                        default=10,
+                        default=3,
                         type=int,
                         help='maximum epochs',
                         dest='max_epoch')
