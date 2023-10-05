@@ -27,7 +27,11 @@ import json
 import zipfile
 import numpy as np
 from functools import wraps
-from collections import Iterable
+# from collections import Iterable
+try:
+    from collections.abc import Iterable
+except ImportError:
+    from collections import Iterable
 
 from singa import tensor
 from singa import autograd
@@ -43,15 +47,21 @@ class ModelMeta(layer.LayerMeta):
             if not tensors:
                 return
 
+            # if isinstance(tensors, Iterable):
+            #     if isinstance(tensors, str):
+            #         return
+            #     else:
+            #         for item in tensors:
+            #             if isinstance(item, Iterable):
+            #                 remove_creator(item)
+            #             elif isinstance(item, tensor.Tensor):
+            #                 item.creator = None
             if isinstance(tensors, Iterable):
-                if isinstance(tensors, str):
-                    return
-                else:
-                    for item in tensors:
-                        if isinstance(item, Iterable):
-                            remove_creator(item)
-                        elif isinstance(item, tensor.Tensor):
-                            item.creator = None
+                for item in tensors:
+                    if isinstance(item, Iterable):
+                        remove_creator(item)
+                    elif isinstance(item, tensor.Tensor):
+                        item.creator = None
             elif isinstance(tensors, tensor.Tensor):
                 tensors.creator = None
 
