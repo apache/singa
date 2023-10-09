@@ -35,6 +35,69 @@ np_dtype = {"float16": np.float16, "float32": np.float32}
 # singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 singa_dtype = {"float32": tensor.float32}
 
+
+# Data augmentation
+def augmentation(x, batch_size):
+    xpad = np.pad(x, [[0, 0], [0, 0], [4, 4], [4, 4]], 'symmetric')
+    for data_num in range(0, batch_size):
+        offset = np.random.randint(8, size=2)
+        x[data_num, :, :, :] = xpad[data_num, :,
+                                    offset[0]:offset[0] + x.shape[2],
+                                    offset[1]:offset[1] + x.shape[2]]
+        if_flip = np.random.randint(2)
+        if (if_flip):
+            x[data_num, :, :, :] = x[data_num, :, :, ::-1]
+    return x
+
+
+# Calculate accuracy
+def accuracy(pred, target):
+    # y is network output to be compared with ground truth (int)
+    y = np.argmax(pred, axis=1)
+    a = y == target
+    correct = np.array(a, "int").sum()
+    return correct
+
+
+# Data partition according to the rank
+def partition(global_rank, world_size, train_x, train_y, val_x, val_y):
+    # Partition training data
+    data_per_rank = train_x.shape[0] // world_size
+    idx_start = global_rank * data_per_rank
+    idx_end = (global_rank + 1) * data_per_rank
+    train_x = train_x[idx_start:idx_end]
+    train_y = train_y[idx_start:idx_end]
+
+    # Partition evaluation data
+    data_per_rank = val_x.shape[0] // world_size
+    idx_start = global_rank * data_per_rank
+    idx_end = (global_rank + 1) * data_per_rank
+    val_x = val_x[idx_start:idx_end]
+    val_y = val_y[idx_start:idx_end]
+    return train_x, train_y, val_x, val_y
+
+
+# Function to all reduce NUMPY accuracy and loss from multiple devices
+def reduce_variable(variable, dist_opt, reducer):
+    reducer.copy_from_numpy(variable)
+    dist_opt.all_reduce(reducer.data)
+    dist_opt.wait()
+    output = tensor.to_numpy(reducer)
+    return output
+
+
+def resize_dataset(x, image_size):
+    num_data = x.shape[0]
+    dim = x.shape[1]
+    X = np.zeros(shape=(num_data, dim, image_size, image_size),
+                 dtype=np.float32)
+    for n in range(0, num_data):
+        for d in range(0, dim):
+            X[n, d, :, :] = np.array(Image.fromarray(x[n, d, :, :]).resize(
+                (image_size, image_size), Image.BILINEAR),
+                                     dtype=np.float32)
+    return X
+
 def run(global_rank,
         world_size,
         local_rank,
