@@ -32,8 +32,34 @@ from PIL import Image
 
 np_dtype = {"float16": np.float16, "float32": np.float32}
 
-# singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 singa_dtype = {"float32": tensor.float32}
+# singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
+
+### MSOptimizer
+class MSOptimizer(Optimizer):
+    def __call__(self, loss):
+        pn_p_g_list = self.call_with_returns(loss)
+        # print ("optimizer1 before self.step()")
+        # print ("optimizer1 before print len(pn_p_g_list): \n", len(pn_p_g_list))
+        self.step()
+        # print ("optimizer1 after print len(pn_p_g_list): \n", len(pn_p_g_list))
+        # print ("optimizer1 after self.step()")
+        return pn_p_g_list
+
+    def call_with_returns(self, loss):
+        # print ("call_with_returns before apply loss.data: \n", loss.data)
+        pn_p_g_list = []
+        for p, g in autograd.backward(loss):
+            if p.name is None:
+                p.name = id(p)
+            self.apply(p.name, p, g)
+            # print ("call with returns")
+            # print ("p.name: \n", p.name)
+            # print ("p.data: \n", p.data)
+            # print ("g.data: \n", g.data)
+            pn_p_g_list.append([p.name, p, g])  # need iterables
+        # print ("call_with_returns after apply loss.data: \n", loss.data)
+        return pn_p_g_list
 
 
 # Data augmentation
