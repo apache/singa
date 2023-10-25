@@ -38,3 +38,7 @@ mpiexec -np 8 python train_mpi.py mlp cifar100 -l 0.015 -b 32
 mpiexec -np 8 python train_mpi.py alexnet mnist -l 0.015 -b 32
 mpiexec -np 8 python train_mpi.py alexnet cifar10 -l 0.015 -b 32
 mpiexec -np 8 python train_mpi.py alexnet cifar100 -l 0.015 -b 32
+
+# xceptionnet 
+mpiexec -np 8 python train_mpi.py xceptionnet mnist -l 0.015 -b 32
+mpiexec -np 8 python train_mpi.py xceptionnet cifar10 -l 0.015 -b 32
