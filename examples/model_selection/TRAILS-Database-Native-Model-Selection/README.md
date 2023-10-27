@@ -19,7 +19,7 @@
 
 # Database-Native Model Selection 
 
-​																																																		-- based on Singa
+​																																																		-- based on SINGA
 
 
 
@@ -32,6 +32,9 @@ git clone https://github.com/apache/singa.git
 cd singa/examples/model_selection/TRAILS-Database-Native-Model-Selection/
 docker build -t trails-singa .
 ```
+
+Inside the docker image, the PostgreSQL and its extensions are installed according to https://github.com/pgcentralfoundation/pgrx
+
 
 ## Run Docker Image
 Download exp_data.zip from https://www.dropbox.com/scl/fi/xz4teosklwmfc5j4x2ug6/exp_data.zip?rlkey=5fk2ttib0zt49suyppcjhsrn2&dl=0
