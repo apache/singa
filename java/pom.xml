@@ -87,6 +87,18 @@
                             <exclude>java/target/*</exclude>
                             <exclude>miniconda.sh</exclude>
                             <exclude>**/*.json</exclude>
+                            <exclude>doc/_static/*.png</exclude>
+                            <exclude>doc/_static/*.gif</exclude>
+                            <exclude>doc/_static/*.ai</exclude>
+                            <exclude>doc/_static/images/*.png</exclude>
+                            <exclude>examples/model_selection/TRAILS-Database-Native-Model-Selection/requirement.txt</exclude>
+                            <exclude>examples/model_selection/TRAILS-Database-Native-Model-Selection/documents/*.png</exclude>
+                            <exclude>examples/model_selection/TRAILS-Database-Native-Model-Selection/internal/ml/model_selection/init_env</exclude>
+                            <exclude>examples/model_selection/TRAILS-Database-Native-Model-Selection/internal/ml/model_selection/requirement.txt</exclude>
+                            <exclude>examples/model_selection/TRAILS-Database-Native-Model-Selection/internal/pg_extension/Cargo.toml</exclude>
+                            <exclude>examples/model_selection/TRAILS-Database-Native-Model-Selection/internal/pg_extension/pg_extension.control</exclude>
+                            <exclude>examples/singa_easy/examples/data/SampleQuestion.json</exclude>
+                            <exclude>examples/model_selection/TRAILS-Database-Native-Model-Selection/internal/ml/model_selection/documents/imgs/*.png</exclude>
                         </excludes>
                         <consoleOutput>True</consoleOutput>
                     </configuration>
