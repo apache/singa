@@ -1,10 +1,3 @@
-<?xml version="1.0"?>
-<?xml-stylesheet type="text/xsl"?>
-<rdf:RDF xml:lang="en"
-         xmlns="http://usefulinc.com/ns/doap#" 
-         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
-         xmlns:asfext="http://projects.apache.org/ns/asfext#"
-         xmlns:foaf="http://xmlns.com/foaf/0.1/">
 <!--
     Licensed to the Apache Software Foundation (ASF) under one or more
     contributor license agreements.  See the NOTICE file distributed with
@@ -21,6 +14,14 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 -->
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl"?>
+<rdf:RDF xml:lang="en"
+         xmlns="http://usefulinc.com/ns/doap#" 
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
+         xmlns:asfext="http://projects.apache.org/ns/asfext#"
+         xmlns:foaf="http://xmlns.com/foaf/0.1/">
+
   <Project rdf:about="https://singa.apache.org/">
     <created>2023-09-06</created>
     <license rdf:resource="https://spdx.org/licenses/Apache-2.0" />
