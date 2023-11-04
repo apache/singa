@@ -1,0 +1,11 @@
+
+
+
+
+python src/storage/save_load_torch.py --nfield=39 --dataset=criteo_full
+
+python src/storage/save_load_torch.py --nfield=10 --dataset=frappe
+
+python src/storage/save_load_torch.py --nfield=43 --dataset=uci_diabetes
+
+
