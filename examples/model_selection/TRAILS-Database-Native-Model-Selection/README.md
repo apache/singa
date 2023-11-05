@@ -54,7 +54,10 @@ docker exec -it trails-singa bash
 # 2. Clone the code
 cd ~
 git clone https://github.com/apache/singa.git
-cd singa/examples/model_selection/TRAILS-Database-Native-Model-Selection/
+cd singa/
+git fetch origin singa-ms:singa-ms
+git checkout singa-ms
+cd examples/model_selection/TRAILS-Database-Native-Model-Selection/
 # 3. Export PYTHONPATH
 export PYTHONPATH=$PYTHONPATH:./internal/ml/model_selection
 # 4. Start the RDBMS and then exit
@@ -118,6 +121,7 @@ CREATE EXTENSION pg_extension;
 ```
 
 If the above fails, open another terminal and go into the docker via docker exec -it trails-singa bash
+
 Then run the following 
 ```bash
 rm /home/postgres/.pgrx/14.9/pgrx-install/share/extension/pg_extension--0.1.0.sql
