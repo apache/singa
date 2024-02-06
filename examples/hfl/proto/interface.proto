@@ -1,0 +1,13 @@
+syntax = "proto3";
+package interface;
+
+enum Op {
+  DEFAULT = 0;
+  SCATTER = 1;
+  GATHER = 2;
+}
+
+message WeightsExchange {
+  Op op_type = 1;
+  map<string, bytes> weights = 2;
+}
