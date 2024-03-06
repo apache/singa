@@ -16,7 +16,11 @@
 # limitations under the License.
 #
 
-FROM ubuntu:20.04
+
+
+FROM polardb/polardb_pg_local_instance:latest
+
+#LABEL maintainer="Naili Xing <xingnaili14@gmai.com>"
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -68,7 +72,7 @@ ARG CACHEBUST=1
 # Clone code to there, install dependences,
 WORKDIR /project
 RUN git clone https://github.com/apache/singa/tree/dev-postgresql && \
-    cd ./singa/examples/model_selection/TRAILS-Database-Native-Model-Selection && \
+    cd ./singa/examples/model_selection && \
     pip install -r requirement.txt
 
 
@@ -76,4 +80,4 @@ WORKDIR /project
 RUN chmod +x ./singa/examples/model_selection/init.sh
 
 # Set the entry point to your script
-ENTRYPOINT ["/project/singa/examples/model_selection/TRAILS-Database-Native-Model-Selection/init.sh"]
+ENTRYPOINT ["/project/singa/examples/model_selection/init.sh"]
