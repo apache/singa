@@ -66,12 +66,18 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
 
 # Clone code to there, install dependences,
 WORKDIR /home/postgres
-RUN git clone https://github.com/NLGithubWP/Trails.git && \
+RUN mkdir Trails && \
     cd Trails && \
-    git checkout trails_singa && \
-    cp ./internal/pg_extension/template/Cargo.pg11.toml ./internal/pg_extension/Cargo.toml && \
+    git init && \
+    git remote add origin https://github.com/apache/singa.git && \
+    git config core.sparseCheckout true && \
+    echo "examples/model_selection/Trails/*" > .git/info/sparse-checkout && \
+    git pull --depth=1 origin dev-postgresql && \
+    mv examples/model_selection/Trails/* . && \
+    rm -rf examples && \
+    cp ./internal/pg_extension/template/Cargo.pg14.toml ./internal/pg_extension/Cargo.toml && \
     cd ./internal/ml/model_selection && \
-    pip install -r requirement.txt  && \
+    pip install -r requirement.txt && \
     pip install ../../../singa_pkg_code/singa-3.1.0-cp38-cp38-manylinux2014_x86_64.whl
 
 
