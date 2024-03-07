@@ -20,6 +20,9 @@
 
 # TRAILS: A Database Native Model Selection System
 
+![image-20230702035806963](documents/ai_db.001.jpeg)
+
+
 # Build & Run examples
 
 ## Singa + PostgreSQL
@@ -30,14 +33,16 @@ docker rm -f singa_trails
 # Create project folder.
 mkdir project && cd project
 # Download the Dockerile.
-wget -O Dockerfile  ??
+wget -O Dockerfile https://raw.githubusercontent.com/apache/singa/dev-postgresql/examples/model_selection/Trails/singa.psql.Dockerfile
 
 # Build Dockerile and run the docker.
 docker build -t singa_trails .
 docker run -d --name singa_trails singa_trails
 # Wait for 5 mins, monitor the logs until it shows "Done!", then exit the monitor
 docker logs -f singa_trails
-
+```
+Execute model selection query
+```bash
 # Connect to the pg server and use pg_extension database.
 docker exec -it singa_trails bash
 psql -h localhost -p 28814 -U postgres
@@ -63,16 +68,18 @@ docker rm -f trails_singa_polardb
 # Create project folder.
 mkdir project_polardb_singa && cd project_polardb_singa
 # Download the Dockerile.
-wget -O Dockerfile ???
+wget -O Dockerfile https://github.com/apache/singa/blob/dev-postgresql/examples/model_selection/Trails/singa.polarDB.Dockerfile
 
 # Build Dockerile and run the docker.
 docker build -t trails_singa_polardb .
-docker run -d --name trails_singa_polardb  trails_singa_polardb
+docker run -d --name trails_singa_polardb trails_singa_polardb
 # Monitor the logs until the setup step is done.
 docker logs -f trails_singa_polardb
 # Run a setup script
 docker exec trails_singa_polardb /bin/bash -c "/home/postgres/Trails/init_polardb.sh"
-
+```
+Execute model selection query
+```bash
 # Connect to the primary pg server and use pg_extension database.
 docker exec -it trails_singa_polardb bash
 psql -h localhost -p 5432 -U postgres 
