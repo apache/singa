@@ -20,8 +20,6 @@
 
 # TRAILS: A Database Native Model Selection System
 
-![image-20230702035806963](internal/ml/model_selection/documents/imgs/image-20230702035806963.png)
-
 # Build & Run examples
 
 ## Singa + PostgreSQL
