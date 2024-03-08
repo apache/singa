@@ -27,6 +27,8 @@
 
 ## Singa + PostgreSQL
 
+Inside the docker image, the PostgreSQL and its extensions are installed according to https://github.com/pgcentralfoundation/pgrx
+
 ```bash
 # Remove existing one if there is 
 docker rm -f singa_trails
@@ -62,6 +64,7 @@ tail -f /home/postgres/.pgrx/data-14/trails_log_folder/<log_file_name>
 
 ## Singa + PolarDB
 
+Inside the docker image, the PolarDB and its extensions are installed according to https://github.com/ApsaraDB/PolarDB-for-PostgreSQL
 ```bash
 # Remove existing one if there is 
 docker rm -f trails_singa_polardb
