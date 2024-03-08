@@ -22,14 +22,15 @@
 
 ![image-20230702035806963](documents/ai_db.001.jpeg)
 
-# Dependencies
-PostgreSQL 14.11: https://www.postgresql.org/about/news/postgresql-14-released-2318/
+Inside the docker image:
 
-PolarDB 11.9: https://github.com/ApsaraDB/PolarDB-for-PostgreSQL
+PostgreSQL 14.11 is installed according to https://www.postgresql.org/about/news/postgresql-14-released-2318/
 
-Base PolarDB Dockerfile: https://apsaradb.github.io/PolarDB-for-PostgreSQL/zh/development/customize-dev-env.html
+PolarDB 11.9 is installed according to https://github.com/ApsaraDB/PolarDB-for-PostgreSQL
 
-Postgre Extension PGRX 0.9.7: https://github.com/pgcentralfoundation/pgrx
+Base PolarDB Dockerfile is installed according to https://apsaradb.github.io/PolarDB-for-PostgreSQL/zh/development/customize-dev-env.html
+
+Postgre Extension PGRX 0.9.7 is installed according to https://github.com/pgcentralfoundation/pgrx
 
 
 # Build & Run examples
