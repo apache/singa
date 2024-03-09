@@ -78,7 +78,7 @@ RUN mkdir Trails && \
     cp ./internal/pg_extension/template/Cargo.pg14.toml ./internal/pg_extension/Cargo.toml && \
     cd ./internal/ml/model_selection && \
     pip install -r requirement.txt && \
-    pip install ../../../singa_pkg_code/singa-3.1.0-cp38-cp38-manylinux2014_x86_64.whl
+    pip install https://singa-wheel.s3.ap-southeast-1.amazonaws.com/tmp/singa-3.1.0-cp38-cp38-manylinux2014_x86_64.whl
 
 
 WORKDIR /home/postgres/Trails/internal/pg_extension
