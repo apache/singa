@@ -1,3 +1,33 @@
+Release Notes - SINGA - Version singa-4.2.0
+
+SINGA is a distributed deep learning library.
+
+This release includes following changes:
+
+  * Add support for deep learning models running on top of PolarDB
+    * Implement efficient model selection for a given dataset stored in the database.
+    * Add support for dynamic model creation.
+    * Add support for flexible setting of model training configurations.
+    * Optimize the in-database analytics modules for scalability, efficiency and memory consumption.
+  
+  * New example
+    * Add a horizontal federated learning example using the Bank dataset.
+
+  * Enhance examples
+    * Add sample training data for testing the model selection application.
+  
+  * Update the website
+    * Update the star button in the main page.
+    * Refine the display of star statistics.
+
+  * Update the python versions for wheel files
+
+  * Fix bugs
+    * Fix the rat check files.
+    * Update the license files.
+
+----------------------------------------------------------------------------------------------
+
 Release Notes - SINGA - Version singa-4.1.0
 
 SINGA is a distributed deep learning library.
