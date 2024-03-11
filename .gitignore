@@ -29,3 +29,4 @@ test/samples/
 # Sphinx and Doxygen Doc-Site
 doc/_build/*
 doc/en/docs/model_zoo/
+cmake-build-debug/*

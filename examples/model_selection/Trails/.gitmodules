@@ -1,0 +1,3 @@
+[submodule "internal/ml/model_slicing/algorithm"]
+	path = internal/ml/model_slicing/algorithm
+	url = https://github.com/Zrealshadow/SAMS.git

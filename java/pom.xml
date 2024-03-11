@@ -90,17 +90,24 @@
                             <exclude>doc/_static/*.png</exclude>
                             <exclude>doc/_static/*.gif</exclude>
                             <exclude>doc/_static/*.ai</exclude>
-			    <exclude>doc/_static/images/*.png</exclude>
-			    <exclude>CITATION.cff</exclude>
-                            <exclude>examples/model_selection/TRAILS-Database-Native-Model-Selection/requirement.txt</exclude>
-                            <exclude>examples/model_selection/TRAILS-Database-Native-Model-Selection/documents/*.png</exclude>
-                            <exclude>examples/model_selection/TRAILS-Database-Native-Model-Selection/internal/ml/model_selection/init_env</exclude>
-                            <exclude>examples/model_selection/TRAILS-Database-Native-Model-Selection/internal/ml/model_selection/requirement.txt</exclude>
-                            <exclude>examples/model_selection/TRAILS-Database-Native-Model-Selection/internal/pg_extension/Cargo.toml</exclude>
-                            <exclude>examples/model_selection/TRAILS-Database-Native-Model-Selection/internal/pg_extension/pg_extension.control</exclude>
+                            <exclude>doc/_static/images/*.png</exclude>
+                            <exclude>CITATION.cff</exclude>
+                            <exclude>examples/hfl/requirements.txt</exclude>
+                            <exclude>examples/hfl/config/.gitignore</exclude>
+                            <exclude>examples/hfl/data/.gitkeep</exclude>
+                            <exclude>examples/hfl/src/proto/interface.proto</exclude>
+                            <exclude>examples/model_selection/Trails/.gitignore</exclude>
+                            <exclude>examples/model_selection/Trails/.gitmodules</exclude>
+                            <exclude>examples/model_selection/Trails/requirement.txt</exclude>
+                            <exclude>examples/model_selection/Trails/dataset/frappe/*.libsvm</exclude>
+                            <exclude>examples/model_selection/Trails/internal/ml/model_selection/config.ini</exclude>
+                            <exclude>examples/model_selection/Trails/internal/ml/model_selection/requirement.txt</exclude>
+                            <exclude>examples/model_selection/Trails/internal/ml/model_slicing/data/*</exclude>
+                            <exclude>examples/model_selection/Trails/internal/pg_extension/.gitignore</exclude>
+                            <exclude>examples/model_selection/Trails/internal/pg_extension/pg_extension.control</exclude>
+                            <exclude>examples/model_selection/Trails/internal/pg_extension/template/Cargo.pg11.toml</exclude>
+                            <exclude>examples/model_selection/Trails/documents/ai_db.001.jpeg</exclude>
                             <exclude>examples/singa_easy/examples/data/SampleQuestion.json</exclude>
-			    <exclude>examples/model_selection/TRAILS-Database-Native-Model-Selection/internal/ml/model_selection/documents/imgs/*.png</exclude>
-			    <exclude>examples/model_selection/TRAILS-Database-Native-Model-Selection/internal/pg_extension/.cargo/config.toml</exclude>
                         </excludes>
                         <consoleOutput>True</consoleOutput>
                     </configuration>
