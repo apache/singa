@@ -23,7 +23,7 @@
 ![image-20230702035806963](documents/ai_db.001.jpeg)
 
 
-# Build & Run examples
+# Build & Run examples:
 
 ## Singa + PostgreSQL
 
