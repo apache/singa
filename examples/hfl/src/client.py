@@ -40,6 +40,7 @@ from . import mlp
 np_dtype = {"float16": np.float16, "float32": np.float32}
 singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 
+
 class Client:
     """Client sends and receives protobuf messages.
 
@@ -63,6 +64,7 @@ class Client:
 
         Args:
             global_rank (int, optional): The rank in training process. Defaults to 0.
+                Provided by the '-i' parameter (device_id) in the running script.
             host (str, optional): Host ip address. Defaults to '127.0.0.1'.
             port (str, optional): Port. Defaults to 1234.
         """

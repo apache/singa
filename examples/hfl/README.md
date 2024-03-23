@@ -27,7 +27,7 @@ This example uses the Bank dataset and an MLP model in FL.
 
 ## Preparation
 
-Go to the Conda environment that contains the Singa library, and run
+Go to the Conda environment that contains the Singa library, and install the required libraries.
 
 ```bash
 pip install -r requirements.txt
@@ -41,18 +41,18 @@ Download the bank dataset and split it into 3 partitions.
 # 3. run the following command which:
 #    (1) splits the dataset into N subsets
 #    (2) splits each subsets into train set and test set (8:2)
-python -m bank N
+python -m bank 3
 ```
 
 ## Run the example
 
-Run the server first (set the number of epochs to 3)
+Run the server first (set the maximum number of epochs to 3 by the "-m" parameter)
 
 ```bash
 python -m src.server -m 3 --num_clients 3
 ```
 
-Then, start 3 clients in different terminal
+Then, start 3 clients in different terminals (similarly set the maximum number of epochs to 3)
 
 ```bash
 python -m src.client --model mlp --data bank -m 3 -i 0 -d non-iid
