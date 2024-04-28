@@ -900,7 +900,7 @@ class SingaFrontend(object):
         else:
             translator = cls._common_singa_tensor_to_onnx_node
         nodes = translator(op, op_t)
-        if not isinstance(nodes, collections.Iterable):
+        if not isinstance(nodes, collections.abc.Iterable):
             nodes = [nodes]
         nodes = [node for node in nodes if node is not None]
         return nodes
@@ -1826,7 +1826,7 @@ class SingaBackend(Backend):
             list, the output
         """
         outputs = operator(*inputs)
-        if not isinstance(outputs, collections.Iterable):
+        if not isinstance(outputs, collections.abc.Iterable):
             outputs = [outputs]
         return outputs
 
