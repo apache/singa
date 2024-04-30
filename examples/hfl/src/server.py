@@ -80,6 +80,7 @@ class Server:
         """Start pair each client to a global rank"""
         for _ in range(self.num_clients):
             conn, addr = self.sock.accept()
+            # rank is the global device_id when initializing the client
             rank = utils.receive_int(conn)
             self.conns[rank] = conn
             self.addrs[rank] = addr
