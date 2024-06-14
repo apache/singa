@@ -29,4 +29,4 @@ void Updater::Register(const string& name, const ParamSpec& specs) {
 void Updater::Apply(int step, const string& name, Tensor& grad, Tensor& value) {
   opt_->Apply(step, name, grad, value);
 }
-}  // namesapce singa
+}  // namespace singa

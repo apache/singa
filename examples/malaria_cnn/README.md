@@ -32,7 +32,7 @@ To mitigate the problem, we use Singa to implement a machine learning model to h
 * `data` includes the scripts for preprocessing Malaria image datasets.
 
 * `model` includes the CNN model construction codes by creating
-  a subclass of `Module` to wrap the neural network operations 
+  a subclass of `Module` to wrap the neural network operations
   of each model.
 
 * `train_cnn.py` is the training script, which controls the training flow by

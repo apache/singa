@@ -139,7 +139,8 @@ Tensor CpuPoolingBackward(const PoolingHandle &ph, const Tensor &grad,
                                         {DNNL_ARG_WORKSPACE, ph.ws_mem}});
         ctx->dnnl_stream.wait();
       },
-      {x.block(), y.block(), grad.block()}, {in_grad.block()}, "CpuPoolingBackward");
+      {x.block(), y.block(), grad.block()}, {in_grad.block()},
+      "CpuPoolingBackward");
 
   return in_grad;
 }

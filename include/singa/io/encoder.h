@@ -19,8 +19,9 @@
 #ifndef SINGA_IO_ENCODER_H_
 #define SINGA_IO_ENCODER_H_
 
-#include <vector>
 #include <string>
+#include <vector>
+
 #include "singa/core/tensor.h"
 #include "singa/proto/io.pb.h"
 
@@ -69,5 +70,5 @@ class CSVEncoder : public Encoder {
   /// The label tensor's data type is kInt.
   std::string Encode(vector<Tensor>& data) override;
 };
-} // namespace singa
+}  // namespace singa
 #endif  // SINGA_IO_ENCODER_H_

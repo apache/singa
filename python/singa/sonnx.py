@@ -38,6 +38,7 @@ from . import utils
 from . import singa_wrap as singa
 
 import collections
+
 OrderedDict = collections.OrderedDict
 namedtuple = collections.namedtuple
 
@@ -74,7 +75,7 @@ cpu_dev = device.get_default_device()
 
 class SingaFrontend(object):
     """
-    This class provides mthods to convert model from singa to onnx. 
+    This class provides mthods to convert model from singa to onnx.
     """
 
     # This number indicates the target onnx operator set version
@@ -222,7 +223,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
@@ -242,7 +243,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
@@ -264,7 +265,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
@@ -280,7 +281,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
@@ -299,7 +300,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
@@ -318,7 +319,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
@@ -334,7 +335,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
@@ -352,7 +353,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
@@ -371,7 +372,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
@@ -389,7 +390,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
@@ -409,7 +410,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
@@ -427,7 +428,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
@@ -449,7 +450,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
@@ -468,7 +469,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
@@ -486,7 +487,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
@@ -505,7 +506,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         # make the shape node
@@ -523,7 +524,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
@@ -541,7 +542,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
@@ -559,7 +560,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
@@ -577,7 +578,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
@@ -599,7 +600,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         # first, we init batchnorm node
@@ -627,7 +628,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
@@ -666,7 +667,7 @@ class SingaFrontend(object):
         get inputs and outputs from a given operator
         Args:
             op: a given operator
-        Returns: 
+        Returns:
             inputs and outputs of the op
         """
         outputs = [op.output_name(idx) for _, idx in op.y_id2idx.items()]
@@ -682,7 +683,7 @@ class SingaFrontend(object):
         get the operator type from a given operator
         Args:
             op: a given operator
-        Returns: 
+        Returns:
             operator type
         """
         return type(op).__name__
@@ -695,7 +696,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             onnx tensor list
         """
         # for singa, x, scale, bias is input
@@ -717,7 +718,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             onnx tensor list
         """
         node_name = op.name + ":shape"
@@ -734,7 +735,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             onnx tensor list
         """
         tensor_list = []
@@ -755,7 +756,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             onnx tensor list
         """
         tensor_list = []
@@ -780,7 +781,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             onnx tensor list
         """
         tensor_list = []
@@ -801,7 +802,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             onnx tensor list
         """
         tensor_list = []
@@ -822,7 +823,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             onnx tensor list
         """
         tensor_list = []
@@ -839,7 +840,7 @@ class SingaFrontend(object):
     @classmethod
     def handle_special_ops(cls, op, X, W):
         """
-        hanlde the special operators, 
+        hanlde the special operators,
         because the inputs of batchnorm and reshape are differnet with onnx
         we need to add these inputs into onnx model mannully
         Args:
@@ -890,7 +891,7 @@ class SingaFrontend(object):
             op: a given operator
         Args:
             op_t: the tensor of the operator
-        Returns: 
+        Returns:
             the onnx node
         """
         optype = cls._get_singa_op_type(op)
@@ -913,7 +914,7 @@ class SingaFrontend(object):
             inputs: a list of input tensors (each is initialized with a name)
         Args:
             y: a list of tensors, usually the outputs of the graph
-        Returns: 
+        Returns:
             the onnx model
         """
         assert len(
@@ -972,7 +973,7 @@ class SingaFrontend(object):
             inputs: a list of input tensors (each is initialized with a name)
         Args:
             y: a list of tensors, usually the outputs of the graph
-        Returns: 
+        Returns:
             the onnx model
         """
         opset_id = OperatorSetIdProto()
@@ -1170,14 +1171,17 @@ class SingaBackend(Backend):
     }
 
     @classmethod
-    def _create_depth_space(cls, onnx_node, operator, opset_version=_opset_version):
+    def _create_depth_space(cls,
+                            onnx_node,
+                            operator,
+                            opset_version=_opset_version):
         """
         get the DepthToSpace and SpaceToDepth operator from onnx node
         Args:
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         blocksize = onnx_node.getattr("blocksize")
@@ -1192,7 +1196,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         onnx_node.set_attr_inputs(onnx_node.inputs[0], 'condition')
@@ -1206,7 +1210,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         mode = utils.force_unicode(onnx_node.getattr("mode", "constant"))
@@ -1226,7 +1230,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         mode = utils.force_unicode(onnx_node.getattr("mode", None))
@@ -1241,7 +1245,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         onnx_node.set_attr_inputs(onnx_node.inputs[1], 'shape')
@@ -1255,7 +1259,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         to_type = onnx_type_to_singa_type(onnx_node.getattr("to"))
@@ -1273,7 +1277,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         axis = onnx_node.getattr("axis", 0)
@@ -1292,7 +1296,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         axes = onnx_node.getattr("axes")
@@ -1309,7 +1313,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         data_format = onnx_node.getattr("data_format", 'channels_first')
@@ -1326,7 +1330,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         alpha = onnx_node.getattr("alpha", 0.01)
@@ -1343,7 +1347,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         axes = onnx_node.getattr("axes", None)
@@ -1358,7 +1362,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         seed = onnx_node.getattr("seed", 0)
@@ -1376,7 +1380,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         value = onnx_node.getattr("value", 0)
@@ -1395,7 +1399,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         perm = onnx_node.getattr("perm")
@@ -1411,9 +1415,9 @@ class SingaBackend(Backend):
         Args:
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
-            
+
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         alpha = onnx_node.getattr("alpha", 0.2)
@@ -1428,7 +1432,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         alpha = onnx_node.getattr("alpha", 1.)
@@ -1442,7 +1446,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         alpha = onnx_node.getattr("alpha", 1.67326)
@@ -1457,7 +1461,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         factor = onnx_node.getattr('axis')
@@ -1471,7 +1475,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         factor = onnx_node.getattr('axis', 1)
@@ -1485,7 +1489,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         alpha = onnx_node.getattr('alpha', 1.)
@@ -1512,7 +1516,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         factor = onnx_node.getattr('axis', 1)
@@ -1526,7 +1530,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         axis = onnx_node.getattr("axis", -1)
@@ -1542,7 +1546,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         onnx_node.set_attr_inputs(onnx_node.inputs[1], 'repeats')
@@ -1556,7 +1560,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         axis = onnx_node.getattr("axis", 0)
@@ -1571,7 +1575,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         onnx_node.set_attr_inputs(onnx_node.inputs[1], 'shape')
@@ -1585,7 +1589,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         onnx_node.set_attr_inputs(onnx_node.inputs[1], 'starts')
@@ -1604,7 +1608,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         if len(onnx_node.inputs) >= 2 and onnx_node.inputs[1] != '':
@@ -1624,7 +1628,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         factor = onnx_node.getattr('momentum', 0.9)
@@ -1642,7 +1646,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         kernel_size = tuple(onnx_node.getattr('kernel_shape'))
@@ -1685,7 +1689,7 @@ class SingaBackend(Backend):
             onnx_node (OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         kernel_size = tuple(onnx_node.getattr('kernel_shape'))
@@ -1718,8 +1722,8 @@ class SingaBackend(Backend):
             onnx_node(OnnxNode): a given onnx node
             operator (Operator Class): a singa operator class
             opset_version(int): the opset version
-        Returns: 
-            singa operator instance      
+        Returns:
+            singa operator instance
         """
         axis = onnx_node.getattr("axis", 0)
         onnx_node.set_attr_inputs(onnx_node.inputs[1], 'indices')
@@ -1733,7 +1737,7 @@ class SingaBackend(Backend):
         Args:
             onnx_node (OnnxNode): a given onnx node
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             a numpy ndarray
         """
         onnx_tensor = onnx_node.getattr('value')
@@ -1747,7 +1751,7 @@ class SingaBackend(Backend):
         Args:
             onnx_node (OnnxNode): a given onnx node
             opset_version (int): the opset version
-        Returns: 
+        Returns:
             singa operator instance
         """
         onnx_op_type = onnx_node.op_type
@@ -2013,7 +2017,7 @@ class SingaRep(BackendRep):
         convert the input to tensors
         Args:
             x (np.ndarray[]): a list of numpy ndarray as inputs
-        Returns: 
+        Returns:
             a dict of SINGA Tensors
         """
         tensor_dict = {}
@@ -2033,7 +2037,7 @@ class SingaRep(BackendRep):
         convert the tensors to input
         Args:
             x (np.ndarray[]): a list of numpy ndarray as inputs
-        Returns: 
+        Returns:
             a dict of SINGA Tensors
         """
         if not self.is_graph:
@@ -2051,7 +2055,7 @@ class SingaRep(BackendRep):
             name (str): name of the state
             node (ONNXNode): ONNX node
             tensor_dict ({}): tensor dict
-        Returns: 
+        Returns:
             the states
         """
         if name in node.attr_inputs:
@@ -2066,7 +2070,7 @@ class SingaRep(BackendRep):
             name (str): name of the state
             node (ONNXNode): ONNX node
             tensor_dict ({}): tensor dict
-        Returns: 
+        Returns:
             the states
         """
         # todo, hard code
@@ -2088,7 +2092,7 @@ class SingaRep(BackendRep):
         run the forward of singa model
         Args:
             x (np.ndarray[]): a list of numpy ndarray as inputs
-        Returns: 
+        Returns:
             a list of outputs
         """
         if not self.has_initialized:

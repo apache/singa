@@ -16,11 +16,11 @@
 # limitations under the License.
 #
 
-
 from src.search_space.core.rl_policy import RLPolicyBase
 
 
 class RLMlpSPaceTopology(RLPolicyBase):
+
     def __init__(self, search_space, rl_learning_rate, max_nodes=4):
         super().__init__()
 

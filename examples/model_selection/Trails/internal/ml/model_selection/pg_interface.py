@@ -31,6 +31,7 @@ from shared_config import parse_config_arguments
 
 
 def exception_catcher(func):
+
     def wrapper(encoded_str: str):
         global_res = "NA, "
         try:
@@ -45,14 +46,17 @@ def exception_catcher(func):
             ts = calendar.timegm(time.gmtime())
             os.environ.setdefault("base_dir", args.base_dir)
             os.environ.setdefault("log_logger_folder_name", args.log_folder)
-            os.environ.setdefault("log_file_name", args.log_name + "_" + str(ts) + ".log")
+            os.environ.setdefault("log_file_name",
+                                  args.log_name + "_" + str(ts) + ".log")
 
             # Call the original function with the parsed parameters
             global_res = func(params, args)
             return global_res
         except Exception as e:
-            return orjson.dumps(
-                {"res": global_res, "Errored": traceback.format_exc()}).decode('utf-8')
+            return orjson.dumps({
+                "res": global_res,
+                "Errored": traceback.format_exc()
+            }).decode('utf-8')
 
     return wrapper
 
@@ -63,10 +67,13 @@ class LibsvmDataset(Dataset):
     @staticmethod
     def decode_libsvm(columns):
         map_func = lambda pair: (int(pair[0]), float(pair[1]))
-        id, value = zip(*map(lambda col: map_func(col.split(':')), columns[:-1]))
-        sample = {'id': torch.LongTensor(id),
-                  'value': torch.FloatTensor(value),
-                  'y': float(columns[-1])}
+        id, value = zip(
+            *map(lambda col: map_func(col.split(':')), columns[:-1]))
+        sample = {
+            'id': torch.LongTensor(id),
+            'value': torch.FloatTensor(value),
+            'y': float(columns[-1])
+        }
         return sample
 
     @staticmethod
@@ -93,9 +100,11 @@ class LibsvmDataset(Dataset):
         return self.nsamples
 
     def __getitem__(self, idx):
-        return {'id': self.feat_id[idx],
-                'value': self.feat_value[idx],
-                'y': self.y[idx]}
+        return {
+            'id': self.feat_id[idx],
+            'value': self.feat_value[idx],
+            'y': self.y[idx]
+        }
 
 
 def generate_dataloader(mini_batch_data, args):
@@ -105,7 +114,8 @@ def generate_dataloader(mini_batch_data, args):
     dataloader = DataLoader(LibsvmDataset(mini_batch_data),
                             batch_size=args.batch_size,
                             shuffle=True)
-    logger.info(f"Preprocessing dataset Done ! time_usage = {time.time() - begin_time}")
+    logger.info(
+        f"Preprocessing dataset Done ! time_usage = {time.time() - begin_time}")
     return dataloader
 
 
@@ -126,11 +136,15 @@ def model_selection(params: dict, args: Namespace):
 
     data_loader = [dataloader, dataloader, dataloader]
 
-    logger.info(f"[end2end model_selection] Done with dataloader generation, time usage = " + str(time.time() - begin))
+    logger.info(
+        f"[end2end model_selection] Done with dataloader generation, time usage = "
+        + str(time.time() - begin))
 
     begin = time.time()
 
-    rms = RunModelSelection(args.search_space, args, is_simulate=args.is_simulate)
+    rms = RunModelSelection(args.search_space,
+                            args,
+                            is_simulate=args.is_simulate)
     best_arch, best_arch_performance, time_usage, _, p1_trace_highest_score, p1_trace_highest_scored_models_id = \
         rms.select_model_online_clean(
             budget=budget,
@@ -138,7 +152,9 @@ def model_selection(params: dict, args: Namespace):
             only_phase1=False,
             run_workers=1)
 
-    logger.info(f"[end2end model_selection] Done with model selection, time usage = " + str(time.time() - begin))
+    logger.info(
+        f"[end2end model_selection] Done with model selection, time usage = " +
+        str(time.time() - begin))
 
     # here is some response notation
     if best_arch_performance == 0:
@@ -146,10 +162,11 @@ def model_selection(params: dict, args: Namespace):
     else:
         best_arch_performance_str = str(best_arch_performance)
 
-    return orjson.dumps(
-        {"best_arch": best_arch,
-         "best_arch_performance": best_arch_performance_str,
-         "time_usage": time_usage}).decode('utf-8')
+    return orjson.dumps({
+        "best_arch": best_arch,
+        "best_arch_performance": best_arch_performance_str,
+        "time_usage": time_usage
+    }).decode('utf-8')
 
 
 @exception_catcher
@@ -161,13 +178,16 @@ def profiling_filtering_phase(params: dict, args: Namespace):
 
     from src.eva_engine.run_ms import RunModelSelection
 
-    logger.info(f"begin run filtering phase at {os.getcwd()}, with {mini_batch_m}")
+    logger.info(
+        f"begin run filtering phase at {os.getcwd()}, with {mini_batch_m}")
 
     mini_batch_data = json.loads(mini_batch_m)
     dataloader = generate_dataloader(mini_batch_data=mini_batch_data, args=args)
     data_loader = [dataloader, dataloader, dataloader]
 
-    rms = RunModelSelection(args.search_space, args, is_simulate=args.is_simulate)
+    rms = RunModelSelection(args.search_space,
+                            args,
+                            is_simulate=args.is_simulate)
     score_time_per_model = rms.profile_filtering(data_loader=data_loader)
 
     return orjson.dumps({"time": score_time_per_model}).decode('utf-8')
@@ -187,7 +207,9 @@ def profiling_refinement_phase(params: dict, args: Namespace):
     dataloader = generate_dataloader(mini_batch_data=mini_batch_data, args=args)
     data_loader = [dataloader, dataloader, dataloader]
 
-    rms = RunModelSelection(args.search_space, args, is_simulate=args.is_simulate)
+    rms = RunModelSelection(args.search_space,
+                            args,
+                            is_simulate=args.is_simulate)
     train_time_per_epoch = rms.profile_refinement(data_loader=data_loader)
 
     return orjson.dumps({"time": train_time_per_epoch}).decode('utf-8')
@@ -211,17 +233,17 @@ def coordinator(params: dict, args: Namespace):
                 f"train_time_per_epoch={train_time_per_epoch}, "
                 f"only_phase1={only_phase1}")
 
-    rms = RunModelSelection(args.search_space, args, is_simulate=args.is_simulate)
-    K, U, N = rms.coordination(
-        budget=budget,
-        score_time_per_model=score_time_per_model,
-        train_time_per_epoch=train_time_per_epoch,
-        only_phase1=only_phase1)
+    rms = RunModelSelection(args.search_space,
+                            args,
+                            is_simulate=args.is_simulate)
+    K, U, N = rms.coordination(budget=budget,
+                               score_time_per_model=score_time_per_model,
+                               train_time_per_epoch=train_time_per_epoch,
+                               only_phase1=only_phase1)
 
     logger.info(f"coordinator done with K, U, N with {K, U, N}")
 
-    return orjson.dumps(
-        {"k": K, "u": U, "n": N}).decode('utf-8')
+    return orjson.dumps({"k": K, "u": U, "n": N}).decode('utf-8')
 
 
 @exception_catcher
@@ -238,7 +260,9 @@ def filtering_phase(params: dict, args: Namespace):
     # mini_batch_data = json.loads(mini_batch_m)
     # dataloader = generate_dataloader(mini_batch_data=mini_batch_data, args=args)
 
-    rms = RunModelSelection(args.search_space, args, is_simulate=args.is_simulate)
+    rms = RunModelSelection(args.search_space,
+                            args,
+                            is_simulate=args.is_simulate)
     k_models, _, _, _ = rms.filtering_phase(N=n, K=k)
 
     return orjson.dumps({"k_models": k_models}).decode('utf-8')
@@ -258,7 +282,9 @@ def filtering_phase_dataLoader(params: dict, args: Namespace):
     mini_batch_data = json.loads(mini_batch_m)
     dataloader = generate_dataloader(mini_batch_data=mini_batch_data, args=args)
 
-    rms = RunModelSelection(args.search_space, args, is_simulate=args.is_simulate)
+    rms = RunModelSelection(args.search_space,
+                            args,
+                            is_simulate=args.is_simulate)
     k_models, _, _, _ = rms.filtering_phase(N=n, K=k, train_loader=dataloader)
 
     return orjson.dumps({"k_models": k_models}).decode('utf-8')
@@ -267,8 +293,7 @@ def filtering_phase_dataLoader(params: dict, args: Namespace):
 @exception_catcher
 def refinement_phase(params: dict, args: Namespace):
     mini_batch_m = params["mini_batch"]
-    return orjson.dumps(
-        {"k_models": "k_models"}).decode('utf-8')
+    return orjson.dumps({"k_models": "k_models"}).decode('utf-8')
 
 
 @exception_catcher
@@ -282,13 +307,17 @@ def model_selection_workloads(params: dict, args: Namespace):
     k = int(params["k"])
 
     from src.logger import logger
-    logger.info(f"begin run model_selection_workloads on CPU only, explore N={n} and K={k}")
+    logger.info(
+        f"begin run model_selection_workloads on CPU only, explore N={n} and K={k}"
+    )
 
     from src.eva_engine.run_ms import RunModelSelection
 
     mini_batch_data = json.loads(mini_batch_m)
     dataloader = generate_dataloader(mini_batch_data=mini_batch_data, args=args)
-    rms = RunModelSelection(args.search_space, args, is_simulate=args.is_simulate)
+    rms = RunModelSelection(args.search_space,
+                            args,
+                            is_simulate=args.is_simulate)
     k_models, _, _, _ = rms.filtering_phase(N=n, K=k, train_loader=dataloader)
     best_arch, best_arch_performance, _, _ = rms.refinement_phase(
         U=1,
@@ -296,10 +325,10 @@ def model_selection_workloads(params: dict, args: Namespace):
         train_loader=dataloader,
         valid_loader=dataloader)
 
-    return orjson.dumps(
-        {"best_arch": best_arch,
-         "best_arch_performance": best_arch_performance,
-         }).decode('utf-8')
+    return orjson.dumps({
+        "best_arch": best_arch,
+        "best_arch_performance": best_arch_performance,
+    }).decode('utf-8')
 
 
 @exception_catcher
@@ -318,41 +347,59 @@ def model_selection_trails(params: dict, args: Namespace):
     # 1. launch cache service
     columns = list(mini_batch_data[0].keys())
     requests.post(args.cache_svc_url,
-                  json={'columns': columns, 'name_space': "train", 'table_name': "dummy",
-                        "batch_size": len(mini_batch_data)})
+                  json={
+                      'columns': columns,
+                      'name_space': "train",
+                      'table_name': "dummy",
+                      "batch_size": len(mini_batch_data)
+                  })
     requests.post(args.cache_svc_url,
-                  json={'columns': columns, 'name_space': "valid", 'table_name': "dummy",
-                        "batch_size": len(mini_batch_data)})
+                  json={
+                      'columns': columns,
+                      'name_space': "valid",
+                      'table_name': "dummy",
+                      "batch_size": len(mini_batch_data)
+                  })
 
     from src.eva_engine.run_ms import RunModelSelection
 
     # 2. profiling & coordination
     dataloader = generate_dataloader(mini_batch_data=mini_batch_data, args=args)
     data_loader = [dataloader, dataloader, dataloader]
-    rms = RunModelSelection(args.search_space, args, is_simulate=args.is_simulate)
+    rms = RunModelSelection(args.search_space,
+                            args,
+                            is_simulate=args.is_simulate)
 
     begin_time = time.time()
     score_time_per_model = rms.profile_filtering(data_loader)
     train_time_per_epoch = rms.profile_refinement(data_loader)
-    K, U, N = rms.coordination(budget, score_time_per_model, train_time_per_epoch, False)
+    K, U, N = rms.coordination(budget, score_time_per_model,
+                               train_time_per_epoch, False)
 
     # 3. filtering
     k_models, all_models, p1_trace_highest_score, p1_trace_highest_scored_models_id = rms.filtering_phase(
         N, K, train_loader=data_loader[0])
 
     # 4. Run refinement pahse
-    data = {'u': 1, 'k_models': k_models, "table_name": "dummy", "config_file": args.config_file}
+    data = {
+        'u': 1,
+        'k_models': k_models,
+        "table_name": "dummy",
+        "config_file": args.config_file
+    }
     response = requests.post(args.refinement_url, json=data).json()
 
-    best_arch, best_arch_performance = response["best_arch"], response["best_arch_performance"]
+    best_arch, best_arch_performance = response["best_arch"], response[
+        "best_arch_performance"]
 
     end_time = time.time()
     real_time_usage = end_time - begin_time
 
-    return orjson.dumps(
-        {"best_arch": best_arch,
-         "best_arch_performance": best_arch_performance,
-         "time_usage": real_time_usage}).decode('utf-8')
+    return orjson.dumps({
+        "best_arch": best_arch,
+        "best_arch_performance": best_arch_performance,
+        "time_usage": real_time_usage
+    }).decode('utf-8')
 
 
 @exception_catcher
@@ -370,33 +417,51 @@ def model_selection_trails_workloads(params: dict, args: Namespace):
     # todo: use real data table or others
     columns = list(mini_batch_data[0].keys())
     requests.post(args.cache_svc_url,
-                  json={'columns': columns, 'name_space': "train", 'table_name': "dummy",
-                        "batch_size": len(mini_batch_data)})
+                  json={
+                      'columns': columns,
+                      'name_space': "train",
+                      'table_name': "dummy",
+                      "batch_size": len(mini_batch_data)
+                  })
     requests.post(args.cache_svc_url,
-                  json={'columns': columns, 'name_space': "valid", 'table_name': "dummy",
-                        "batch_size": len(mini_batch_data)})
+                  json={
+                      'columns': columns,
+                      'name_space': "valid",
+                      'table_name': "dummy",
+                      "batch_size": len(mini_batch_data)
+                  })
 
     from src.logger import logger
-    logger.info(f"begin run model_selection_trails_workloads CPU + GPU, explore N={n} and K={k}")
+    logger.info(
+        f"begin run model_selection_trails_workloads CPU + GPU, explore N={n} and K={k}"
+    )
 
     from src.eva_engine.run_ms import RunModelSelection
 
     # 2. filtering
     dataloader = generate_dataloader(mini_batch_data=mini_batch_data, args=args)
-    rms = RunModelSelection(args.search_space, args, is_simulate=args.is_simulate)
+    rms = RunModelSelection(args.search_space,
+                            args,
+                            is_simulate=args.is_simulate)
     k_models, _, _, _ = rms.filtering_phase(N=n, K=k, train_loader=dataloader)
 
     # 3. Run refinement pahse
-    data = {'u': 1, 'k_models': k_models, "table_name": "dummy", "config_file": args.config_file}
+    data = {
+        'u': 1,
+        'k_models': k_models,
+        "table_name": "dummy",
+        "config_file": args.config_file
+    }
     response = requests.post(args.refinement_url, json=data).json()
-    best_arch, best_arch_performance = response["best_arch"], response["best_arch_performance"]
+    best_arch, best_arch_performance = response["best_arch"], response[
+        "best_arch_performance"]
     real_time_usage = time.time() - begin_time
 
-    return orjson.dumps(
-        {"best_arch": best_arch,
-         "best_arch_performance": best_arch_performance,
-         "time_usage": real_time_usage
-         }).decode('utf-8')
+    return orjson.dumps({
+        "best_arch": best_arch,
+        "best_arch_performance": best_arch_performance,
+        "time_usage": real_time_usage
+    }).decode('utf-8')
 
 
 # benchmarking code here
@@ -418,7 +483,8 @@ def benchmark_filtering_phase_latency(params: dict, args: Namespace):
     res_output_file = f"{args.result_dir}/resource_score_{args.search_space}_{args.dataset}_batch_size_{args.batch_size}_{args.device}_{args.tfmem}.json"
 
     # start the resource monitor
-    stop_event, thread = print_cpu_gpu_usage(interval=0.5, output_file=res_output_file)
+    stop_event, thread = print_cpu_gpu_usage(interval=0.5,
+                                             output_file=res_output_file)
 
     db_config = {
         "db_name": args.db_name,
@@ -441,8 +507,12 @@ def benchmark_filtering_phase_latency(params: dict, args: Namespace):
     sampler = SequenceSampler(search_space_ins)
     explored_n = 0
     result = read_json(output_file)
-    print(f"begin to score all, currently we already explored {len(result.keys())}")
-    logger.info(f"begin to score all, currently we already explored {len(result.keys())}")
+    print(
+        f"begin to score all, currently we already explored {len(result.keys())}"
+    )
+    logger.info(
+        f"begin to score all, currently we already explored {len(result.keys())}"
+    )
 
     while True:
         arch_id, arch_micro = sampler.sample_next_arch()
@@ -476,8 +546,10 @@ def benchmark_filtering_phase_latency(params: dict, args: Namespace):
         sum(_evaluator.time_usage["track_io_data_retrievel"][2:]) + \
         sum(_evaluator.time_usage["track_io_data_preprocess"][2:])
 
-    _evaluator.time_usage["compute_latency"] = sum(_evaluator.time_usage["track_compute"][2:])
-    _evaluator.time_usage["latency"] = _evaluator.time_usage["io_latency"] + _evaluator.time_usage["compute_latency"]
+    _evaluator.time_usage["compute_latency"] = sum(
+        _evaluator.time_usage["track_compute"][2:])
+    _evaluator.time_usage["latency"] = _evaluator.time_usage[
+        "io_latency"] + _evaluator.time_usage["compute_latency"]
 
     _evaluator.time_usage["avg_compute_latency"] = \
         _evaluator.time_usage["compute_latency"] \
@@ -520,8 +592,12 @@ def in_db_filtering_state_init(params: dict, args: Namespace):
 
     # init once
     # params["eva_results"] == "null" means it a new job
-    if params["eva_results"] == "null" or (search_space_ins is None and _evaluator is None and sampler is None):
-        logger.info(f'New job = {params["eva_results"]}, search_space_ins = {search_space_ins}')
+    if params["eva_results"] == "null" or (search_space_ins is None and
+                                           _evaluator is None and
+                                           sampler is None):
+        logger.info(
+            f'New job = {params["eva_results"]}, search_space_ins = {search_space_ins}'
+        )
         search_space_ins = init_search_space(args)
         _evaluator = P1Evaluator(device=args.device,
                                  num_label=args.num_labels,
@@ -538,7 +614,10 @@ def in_db_filtering_state_init(params: dict, args: Namespace):
     arch_id, arch_micro = sampler.sample_next_arch()
     model_encoding = search_space_ins.serialize_model_encoding(arch_micro)
 
-    return orjson.dumps({"model_encoding": model_encoding, "arch_id": arch_id}).decode('utf-8')
+    return orjson.dumps({
+        "model_encoding": model_encoding,
+        "arch_id": arch_id
+    }).decode('utf-8')
 
 
 @exception_catcher
@@ -549,7 +628,9 @@ def in_db_filtering_evaluate(params: dict, args: Namespace):
     try:
         if search_space_ins is None and _evaluator is None and sampler is None:
             logger.info("search_space_ins, _evaluator, sampler is None")
-            return orjson.dumps({"error": "erroed, plz call init first"}).decode('utf-8')
+            return orjson.dumps({
+                "error": "erroed, plz call init first"
+            }).decode('utf-8')
 
         begin_read = time.time()
         mini_batch = get_data_from_shared_memory_int(int(params["rows"]))
@@ -562,30 +643,37 @@ def in_db_filtering_evaluate(params: dict, args: Namespace):
                     f"read shared memory time = {read_done - begin_read}")
 
         sampled_result = json.loads(params["sample_result"])
-        arch_id, model_encoding = str(sampled_result["arch_id"]), str(sampled_result["model_encoding"])
+        arch_id, model_encoding = str(sampled_result["arch_id"]), str(
+            sampled_result["model_encoding"])
 
         logger.info(f"Begin evaluate {params['model_index']}, "
                     f"with size of batch = {len(mini_batch)}, "
                     f"size of columns = {len(mini_batch[0])}")
-        model_acquire_data = ModelAcquireData(model_id=arch_id,
-                                              model_encoding=model_encoding,
-                                              is_last=False,
-                                              spi_seconds=float(params["spi_seconds"]) + read_done - begin_read,
-                                              spi_mini_batch=mini_batch,
-                                              batch_size=int(params["rows"])
-                                              )
+        model_acquire_data = ModelAcquireData(
+            model_id=arch_id,
+            model_encoding=model_encoding,
+            is_last=False,
+            spi_seconds=float(params["spi_seconds"]) + read_done - begin_read,
+            spi_mini_batch=mini_batch,
+            batch_size=int(params["rows"]))
 
         model_score = _evaluator._p1_evaluate_online(model_acquire_data)
-        logger.info(f'Done evaluate {params["model_index"]}, '
-                    f'with {orjson.dumps({"index": params["model_index"], "score": model_score}).decode("utf-8")}')
+        logger.info(
+            f'Done evaluate {params["model_index"]}, '
+            f'with {orjson.dumps({"index": params["model_index"], "score": model_score}).decode("utf-8")}'
+        )
     except:
-        logger.info(orjson.dumps(
-            {"Errored": traceback.format_exc()}).decode('utf-8'))
+        logger.info(
+            orjson.dumps({
+                "Errored": traceback.format_exc()
+            }).decode('utf-8'))
 
-        return orjson.dumps(
-            {"Errored": traceback.format_exc()}).decode('utf-8')
+        return orjson.dumps({"Errored": traceback.format_exc()}).decode('utf-8')
 
-    return orjson.dumps({"index": params["model_index"], "score": model_score}).decode('utf-8')
+    return orjson.dumps({
+        "index": params["model_index"],
+        "score": model_score
+    }).decode('utf-8')
 
 
 @exception_catcher
@@ -603,9 +691,10 @@ def records_results(params: dict, args: Namespace):
             sum(_evaluator.time_usage["track_io_data_retrievel"][2:]) + \
             sum(_evaluator.time_usage["track_io_data_preprocess"][2:])
 
-        _evaluator.time_usage["compute_latency"] = sum(_evaluator.time_usage["track_compute"][2:])
-        _evaluator.time_usage["latency"] = _evaluator.time_usage["io_latency"] + _evaluator.time_usage[
-            "compute_latency"]
+        _evaluator.time_usage["compute_latency"] = sum(
+            _evaluator.time_usage["track_compute"][2:])
+        _evaluator.time_usage["latency"] = _evaluator.time_usage[
+            "io_latency"] + _evaluator.time_usage["compute_latency"]
 
         _evaluator.time_usage["avg_compute_latency"] = \
             _evaluator.time_usage["compute_latency"] \
@@ -615,11 +704,12 @@ def records_results(params: dict, args: Namespace):
         # compute time
         write_json(time_output_file, _evaluator.time_usage)
     except:
-        logger.info(orjson.dumps(
-            {"Errored": traceback.format_exc()}).decode('utf-8'))
+        logger.info(
+            orjson.dumps({
+                "Errored": traceback.format_exc()
+            }).decode('utf-8'))
 
-        return orjson.dumps(
-            {"Errored": traceback.format_exc()}).decode('utf-8')
+        return orjson.dumps({"Errored": traceback.format_exc()}).decode('utf-8')
 
     return orjson.dumps({"Done": 1}).decode('utf-8')
 

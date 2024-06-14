@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
-#include "singa/model/layer.h"
 #include "./merge.h"
+
+#include "singa/model/layer.h"
 namespace singa {
 
 RegisterLayerClass(singa_merge, Merge);
@@ -55,8 +56,7 @@ const std::pair<vector<Tensor>, vector<Tensor>> Merge::Backward(
     int flag, const vector<Tensor>& grads) {
   vector<Tensor> input_grad, param_grad;
   CHECK_EQ(grads.size(), 1u) << "Merge layer only have one output tensor.";
-  for (size_t i = 0; i < input_size_; i++)
-    input_grad.push_back(grads.at(0));
+  for (size_t i = 0; i < input_size_; i++) input_grad.push_back(grads.at(0));
   return std::make_pair(input_grad, param_grad);
 }
 

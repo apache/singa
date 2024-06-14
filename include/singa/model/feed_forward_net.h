@@ -17,12 +17,13 @@
  */
 #ifndef SINGA_MODEL_FEED_FORWARD_NET_H_
 #define SINGA_MODEL_FEED_FORWARD_NET_H_
+#include <memory>
+#include <thread>
+
 #include "singa/model/layer.h"
 #include "singa/model/loss.h"
 #include "singa/model/metric.h"
 #include "singa/model/updater.h"
-#include <thread>
-#include <memory>
 namespace singa {
 
 /// The feed-forward neural net.
@@ -50,7 +51,7 @@ class FeedForwardNet {
   /// For the first layer, 'sample_shape' (the input sample shape) is necessary
   /// for calling Setup().
   std::shared_ptr<Layer> Add(const LayerConf& conf,
-      const Shape* sample_shape = nullptr);
+                             const Shape* sample_shape = nullptr);
 
   /// Set some fields used for training and evaluating the neural net.
   /// This method will instantiate an Updater ,then wrap the Optimier into
@@ -161,6 +162,6 @@ class FeedForwardNet {
   DataType dtype_ = kFloat32;
 };
 
-} /* singa */
+}  // namespace singa
 
 #endif  // SINGA_MODEL_FEED_FORWARD_NET_H_

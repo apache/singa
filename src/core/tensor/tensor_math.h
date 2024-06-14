@@ -55,8 +55,9 @@ namespace singa {
 /// 7. Use size_t for the number of elements, rows or columns.
 /// 8. Use the same name for the Tensor and Tensor level math functions.
 
-#define LOG_FATAL(Op, DType, Lang)  \
-  LOG(FATAL) << Op << " not Implemented for DType=" << typeid(DType).name() << " Lang=" << typeid(Lang).name()
+#define LOG_FATAL(Op, DType, Lang)                                          \
+  LOG(FATAL) << Op << " not Implemented for DType=" << typeid(DType).name() \
+             << " Lang=" << typeid(Lang).name()
 
 const std::string vec2str(const std::vector<int> &vec) {
   std::ostringstream vts;
@@ -96,8 +97,10 @@ void Erf(const Tensor &in, Tensor *out, Context *ctx) {
 
 template <typename DTypeSrc, typename DTypeDst, typename Lang>
 void CastCopy(const Tensor *src, Tensor *dst, Context *ctx) {
-  LOG(FATAL) << "CastCopy not Implemented for DTypeSrc=" << typeid(DTypeSrc).name() 
-             << " DTypeDst=" << typeid(DTypeDst).name() << " Lang=" << typeid(Lang).name();
+  LOG(FATAL) << "CastCopy not Implemented for DTypeSrc="
+             << typeid(DTypeSrc).name()
+             << " DTypeDst=" << typeid(DTypeDst).name()
+             << " Lang=" << typeid(Lang).name();
 }
 
 template <typename DType, typename Lang>

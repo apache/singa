@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# 
+#
 # Change tags to build with different cuda/cudnn versions:
 FROM nvidia/cuda:9.0-devel-ubuntu16.04
 

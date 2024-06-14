@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 import os
 import torch
 import argparse
@@ -39,7 +38,6 @@ time_dict = {
     "py_conver_to_tensor": 0,
     "tensor_to_gpu": 0,
     "py_compute": 0
-
 }
 
 
@@ -76,10 +74,13 @@ def fetch_data(database, batch_size):
     global time_dict
     print("Data fetching ....")
     begin_time = time.time()
-    with psycopg2.connect(database=DB_NAME, user=USER, host=HOST, port=PORT) as conn:
+    with psycopg2.connect(database=DB_NAME, user=USER, host=HOST,
+                          port=PORT) as conn:
         rows = fetch_and_preprocess(conn, batch_size, database)
     time_dict["data_query_time"] += time.time() - begin_time
-    print(f"Data fetching done {rows[0]}, size = {len(rows)}, type = {type(rows)}, {type(rows[0])}")
+    print(
+        f"Data fetching done {rows[0]}, size = {len(rows)}, type = {type(rows)}, {type(rows[0])}"
+    )
 
     print("Data preprocessing ....")
     begin_time = time.time()
@@ -131,18 +132,23 @@ def reload_argparse(file_path: str):
 
 
 parser = argparse.ArgumentParser(description='predict FLOPS')
-parser.add_argument('path', type=str,
-                    help="directory to model file")
-parser.add_argument('--flag', '-p', action='store_true',
+parser.add_argument('path', type=str, help="directory to model file")
+parser.add_argument('--flag',
+                    '-p',
+                    action='store_true',
                     help="wehther to print profile")
-parser.add_argument('--print_net', '--b', action='store_true',
+parser.add_argument('--print_net',
+                    '--b',
+                    action='store_true',
                     help="print the structure of network")
 
 parser.add_argument('--device', type=str, default="cuda")
 parser.add_argument('--dataset', type=str, default="frappe")
 parser.add_argument('--target_batch', type=int, default=10000)
 parser.add_argument('--batch_size', type=int, default=10000)
-parser.add_argument('--col_cardinalities_file', type=str, default="path to the stored file")
+parser.add_argument('--col_cardinalities_file',
+                    type=str,
+                    default="path to the stored file")
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -166,7 +172,8 @@ if __name__ == '__main__':
     print()
 
     col_cardinalities = read_json(args.col_cardinalities_file)
-    target_sql = torch.tensor([col[-1] for col in col_cardinalities]).reshape(1, -1)
+    target_sql = torch.tensor([col[-1] for col in col_cardinalities
+                              ]).reshape(1, -1)
 
     net.eval()
     net = net.to(device)
@@ -195,7 +202,9 @@ if __name__ == '__main__':
                 torch.cuda.synchronize()
             time_dict["tensor_to_gpu"] += time.time() - begin
 
-            print(f"begin to compute on {args.device}, is_cuda = {if_cuda_avaiable(args.device)}")
+            print(
+                f"begin to compute on {args.device}, is_cuda = {if_cuda_avaiable(args.device)}"
+            )
             # compute
             begin = time.time()
             y = subnet(x_id, None)

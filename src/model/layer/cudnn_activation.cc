@@ -17,9 +17,9 @@
  */
 #include "singa/singa_config.h"
 #ifdef USE_CUDNN
-#include "./cudnn_activation.h"
 #include <cudnn.h>
 
+#include "./cudnn_activation.h"
 #include "./cudnn_utils.h"
 #include "singa/core/common.h"
 #include "singa/utils/logging.h"
@@ -48,8 +48,8 @@ void CudnnActivation::InitCudnn(size_t size, DataType dtype) {
     else
       LOG(FATAL) << "Unkown activation: " << mode_;
 
-    CUDNN_CHECK(cudnnSetActivationDescriptor(
-          acti_desc_, cudnn_mode_, CUDNN_PROPAGATE_NAN, 0.0f));
+    CUDNN_CHECK(cudnnSetActivationDescriptor(acti_desc_, cudnn_mode_,
+                                             CUDNN_PROPAGATE_NAN, 0.0f));
   }
 
   CUDNN_CHECK(cudnnSetTensor4dDescriptor(
@@ -67,21 +67,22 @@ const Tensor CudnnActivation::Forward(int flag, const Tensor& input) {
   } else {
     int n, c, h, w, s;
     cudnnDataType_t type;
-    CUDNN_CHECK(cudnnGetTensor4dDescriptor(desc_,
-          &type, &n, &c, &h, &w, &s, &s, &s, &s));
-    if (size != static_cast<size_t>(w))
-      InitCudnn(size, dtype);
+    CUDNN_CHECK(cudnnGetTensor4dDescriptor(desc_, &type, &n, &c, &h, &w, &s, &s,
+                                           &s, &s));
+    if (size != static_cast<size_t>(w)) InitCudnn(size, dtype);
   }
 
   Tensor output;
   output.ResetLike(input);
-  output.device()->Exec([input, output, this](Context* ctx) {
-    Block* inblock = input.block(), * outblock = output.block();
-    float alpha = 1.0f, beta = 0.0f;
-    CUDNN_CHECK(cudnnActivationForward(
-        ctx->cudnn_handle, this->acti_desc_, &alpha, this->desc_,
-        inblock->data(), &beta, this->desc_, outblock->mutable_data()));
-  }, {input.block()}, {output.block()}, "cudnnActivationForward");
+  output.device()->Exec(
+      [input, output, this](Context* ctx) {
+        Block *inblock = input.block(), *outblock = output.block();
+        float alpha = 1.0f, beta = 0.0f;
+        CUDNN_CHECK(cudnnActivationForward(
+            ctx->cudnn_handle, this->acti_desc_, &alpha, this->desc_,
+            inblock->data(), &beta, this->desc_, outblock->mutable_data()));
+      },
+      {input.block()}, {output.block()}, "cudnnActivationForward");
   if (flag & kTrain) {
     if (cudnn_mode_ == CUDNN_ACTIVATION_SIGMOID ||
         cudnn_mode_ == CUDNN_ACTIVATION_TANH) {
@@ -103,15 +104,17 @@ const std::pair<Tensor, vector<Tensor>> CudnnActivation::Backward(
   Tensor inout = buf_.top();
   buf_.pop();
   dx.ResetLike(grad);
-  dx.device()->Exec([dx, grad, inout, this](Context* ctx) {
-    Block* dyblock = grad.block(), * dxblock = dx.block(),
-           * yblock = inout.block(), * xblock = inout.block();
-    float alpha = 1.0f, beta = 0.0f;
-    CUDNN_CHECK(cudnnActivationBackward(
-        ctx->cudnn_handle, this->acti_desc_, &alpha, this->desc_,
-        yblock->data(), this->desc_, dyblock->data(), this->desc_,
-        xblock->data(), &beta, this->desc_, dxblock->mutable_data()));
-  }, {grad.block(), inout.block()}, {dx.block()}, "cudnnActivationBackward");
+  dx.device()->Exec(
+      [dx, grad, inout, this](Context* ctx) {
+        Block *dyblock = grad.block(), *dxblock = dx.block(),
+              *yblock = inout.block(), *xblock = inout.block();
+        float alpha = 1.0f, beta = 0.0f;
+        CUDNN_CHECK(cudnnActivationBackward(
+            ctx->cudnn_handle, this->acti_desc_, &alpha, this->desc_,
+            yblock->data(), this->desc_, dyblock->data(), this->desc_,
+            xblock->data(), &beta, this->desc_, dxblock->mutable_data()));
+      },
+      {grad.block(), inout.block()}, {dx.block()}, "cudnnActivationBackward");
   return std::make_pair(dx, param_grad);
 }
 }  // namespace singa

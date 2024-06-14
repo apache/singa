@@ -17,7 +17,6 @@
 # under the License.
 #
 
-
 from singa import singa_wrap as singa
 from singa import opt
 import argparse
@@ -48,18 +47,22 @@ if __name__ == '__main__':
                         type=float,
                         help='initial learning rate',
                         dest='lr')
-    parser.add_argument('--op',
-                        '--option',
-                        default='fp32',
-                        choices=['fp32','fp16','partialUpdate','sparseTopK','sparseThreshold'],
-                        help='distibuted training options',
-                        dest='dist_option')  # currently partialUpdate support graph=False only
-    parser.add_argument('--spars',
-                        '--sparsification',
-                        default='0.05',
-                        type=float,
-                        help='the sparsity parameter used for sparsification, between 0 to 1',
-                        dest='spars')
+    parser.add_argument(
+        '--op',
+        '--option',
+        default='fp32',
+        choices=[
+            'fp32', 'fp16', 'partialUpdate', 'sparseTopK', 'sparseThreshold'
+        ],
+        help='distibuted training options',
+        dest='dist_option')  # currently partialUpdate support graph=False only
+    parser.add_argument(
+        '--spars',
+        '--sparsification',
+        default='0.05',
+        type=float,
+        help='the sparsity parameter used for sparsification, between 0 to 1',
+        dest='spars')
     parser.add_argument('--no-graph',
                         '--disable-graph',
                         default='True',
@@ -78,6 +81,7 @@ if __name__ == '__main__':
     sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5)
     sgd = opt.DistOpt(sgd)
 
-    train_largedata.run(sgd.global_rank, sgd.world_size, sgd.local_rank, args.max_epoch,
-              args.batch_size, args.model, "no", sgd, args.graph,
-              args.verbosity, args.dist_option, args.spars)
+    train_largedata.run(sgd.global_rank, sgd.world_size, sgd.local_rank,
+                        args.max_epoch, args.batch_size, args.model, "no", sgd,
+                        args.graph, args.verbosity, args.dist_option,
+                        args.spars)

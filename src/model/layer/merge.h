@@ -20,6 +20,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+
 #include "singa/model/layer.h"
 
 namespace singa {
@@ -28,22 +29,21 @@ class Merge : public Layer {
  public:
   // const std::string layer_type() const override { return "Merge"; }
 
-   /// the sample shape of all input tesnors should be the same
-   void Setup(const Shape &in_sample, const LayerConf &conf) override;
-   const Shape GetOutputSampleShape() const override {
-     CHECK(out_sample_shape_.size()) << "You may haven't call Setup()";
-     return out_sample_shape_;
-   }
-   /// Sum all tensors in 'inputs'
-   /// Return a vector including the result of the summation
-   const vector<Tensor> Forward(int flag,
-                                const vector<Tensor> &inputs) override;
+  /// the sample shape of all input tesnors should be the same
+  void Setup(const Shape &in_sample, const LayerConf &conf) override;
+  const Shape GetOutputSampleShape() const override {
+    CHECK(out_sample_shape_.size()) << "You may haven't call Setup()";
+    return out_sample_shape_;
+  }
+  /// Sum all tensors in 'inputs'
+  /// Return a vector including the result of the summation
+  const vector<Tensor> Forward(int flag, const vector<Tensor> &inputs) override;
 
-   /// 'grads' should include only one tensor
-   /// the first result vector includes the gradients for each input layer
-   /// the second result vector is empty
-   const std::pair<vector<Tensor>, vector<Tensor> >
-   Backward(int flag, const vector<Tensor> &grads) override;
+  /// 'grads' should include only one tensor
+  /// the first result vector includes the gradients for each input layer
+  /// the second result vector is empty
+  const std::pair<vector<Tensor>, vector<Tensor> > Backward(
+      int flag, const vector<Tensor> &grads) override;
 
  protected:
   Shape out_sample_shape_;

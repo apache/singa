@@ -27,10 +27,12 @@ from singa import autograd
 import onnx
 
 import sys
+
 sys.path.append(os.path.dirname(__file__) + '/..')
 from utils import download_model
 
 import logging
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(message)s')
 
 from transformers import GPT2Tokenizer

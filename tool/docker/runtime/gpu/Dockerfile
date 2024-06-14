@@ -20,6 +20,6 @@ FROM nvidia/cuda:10.2-base-ubuntu18.04
 
 MAINTAINER singa dev@singa.apache.org
 
-RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip 
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip
 RUN pip3 install --upgrade pip
 RUN pip install singa -f http://singa.apache.org/docs/next/wheel-gpu.html --trusted-host singa.apache.org

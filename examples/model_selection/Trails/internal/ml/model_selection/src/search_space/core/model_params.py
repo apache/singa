@@ -18,7 +18,7 @@
 class ModelMacroCfg:
     """
     Macro search space config
-    Search Space basic init,  use bn or not, input features, output labels, etc. 
+    Search Space basic init,  use bn or not, input features, output labels, etc.
     """
 
     def __init__(self, num_labels):

@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 from typing import List, Tuple
 import time
 
@@ -25,10 +24,9 @@ def decode_libsvm(columns):
     map_func = lambda pair: (int(pair[0]), float(pair[1]))
     # 0 is id, 1 is label
     id, value = zip(*map(lambda col: map_func(col.split(':')), columns[2:]))
-    sample = {'id': list(id),
-              'value': list(value),
-              'y': int(columns[1])}
+    sample = {'id': list(id), 'value': list(value), 'y': int(columns[1])}
     return sample
+
 
 def decode_libsvm(columns):
     # Decode without additional mapping or zipping, directly processing the splits.
@@ -58,7 +56,8 @@ def pre_processing(mini_batch_data: List[Tuple]):
 
 
 mini_batch = [
-    ('4801', '0', '2:1', '4656:1', '5042:1', '5051:1', '5054:1', '5055:1', '5058:1', '5061:1', '5070:1', '5150:1'),
+    ('4801', '0', '2:1', '4656:1', '5042:1', '5051:1', '5054:1', '5055:1',
+     '5058:1', '5061:1', '5070:1', '5150:1'),
 ]
 
 mini_batch = mini_batch * 100000
@@ -67,8 +66,4 @@ print(len(mini_batch))
 begin = time.time()
 pre_processing(mini_batch)
 end = time.time()
-print(end-begin)
-
-
-
-
+print(end - begin)

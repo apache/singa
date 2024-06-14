@@ -891,7 +891,6 @@ class TestPythonOnnx(unittest.TestCase):
     def test_Less_gpu(self):
         self._Less_helper(gpu_dev)
 
-
     def _Sign_helper(self, dev):
         x = np.array([0.8, -1.2, 3.3, -3.6, -0.5,
                       0.5]).reshape(3, 2).astype(np.float32)
@@ -2090,6 +2089,7 @@ class TestPythonOnnx(unittest.TestCase):
         # backend
         sg_ir = sonnx.prepare(model, device=dev)
         sg_ir.is_graph = True
+
         # forward
         class MyLayer2(layer.Layer):
 
@@ -2122,6 +2122,7 @@ class TestPythonOnnx(unittest.TestCase):
     @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
     def test_transfer_learning_gpu(self):
         self._transfer_learning_helper(gpu_dev)
+
 
 if __name__ == '__main__':
     unittest.main()

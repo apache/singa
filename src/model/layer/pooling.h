@@ -22,6 +22,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+
 #include "singa/model/layer.h"
 
 namespace singa {
@@ -44,10 +45,9 @@ class Pooling : public Layer {
                                                    const Tensor& grad) override;
 
   void ForwardMaxPooling(const float* bottom, const int num, const int channels,
-                         const int height, const int width, 
-                         const int pooled_h, const int pooled_w,
-                         const int kernel_h, const int kernel_w,
-                         const int pad_h, const int pad_w,
+                         const int height, const int width, const int pooled_h,
+                         const int pooled_w, const int kernel_h,
+                         const int kernel_w, const int pad_h, const int pad_w,
                          const int stride_h, const int stride_w, float* top,
                          float* mask);
 
@@ -55,23 +55,19 @@ class Pooling : public Layer {
                           const int channels, const int height, const int width,
                           const int pooled_h, const int pooled_w,
                           const int kernel_h, const int kernel_w,
-                          const int pad_h, const int pad_w,
-                          const int stride_h, const int stride_w,
-                          float* bottom);
+                          const int pad_h, const int pad_w, const int stride_h,
+                          const int stride_w, float* bottom);
 
   void ForwardAvgPooling(const float* bottom, const int num, const int channels,
-                         const int height, const int width,
-                         const int pooled_h, const int pooled_w,
-                         const int kernel_h, const int kernel_w,
-                         const int pad_h, const int pad_w,
-                         const int stride_h, const int stride_w,
-                         float* top);
+                         const int height, const int width, const int pooled_h,
+                         const int pooled_w, const int kernel_h,
+                         const int kernel_w, const int pad_h, const int pad_w,
+                         const int stride_h, const int stride_w, float* top);
 
   void BackwardAvgPooling(const float* top, const int num, const int channels,
-                          const int height, const int width,
-                          const int pooled_h, const int pooled_w,
-                          const int kernel_h, const int kernel_w,
-                          const int pad_h, const int pad_w,
+                          const int height, const int width, const int pooled_h,
+                          const int pooled_w, const int kernel_h,
+                          const int kernel_w, const int pad_h, const int pad_w,
                           const int stride_h, const int stride_w,
                           float* bottom);
 

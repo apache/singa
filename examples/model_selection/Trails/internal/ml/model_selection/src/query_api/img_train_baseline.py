@@ -16,14 +16,14 @@
 # limitations under the License.
 #
 
-
 import os
 import numpy as np
 from src.common.constant import Config
 from src.tools.io_tools import read_json
 
 base_dir_folder = os.environ.get("base_dir")
-if base_dir_folder is None:base_dir_folder = os.getcwd()
+if base_dir_folder is None:
+    base_dir_folder = os.getcwd()
 base_dir = os.path.join(base_dir_folder, "img_data")
 
 print("gt_api running at {}".format(base_dir))
@@ -31,10 +31,13 @@ train_base201_c10 = os.path.join(base_dir, "train_based_201_c10.json")
 train_base201_c100 = os.path.join(base_dir, "train_based_201_c100.json")
 train_base201_img = os.path.join(base_dir, "train_based_201_img.json")
 
-train_base101_c10 = os.path.join(base_dir, "train_based_101_c10_100run_24k_models.json")
+train_base101_c10 = os.path.join(base_dir,
+                                 "train_based_101_c10_100run_24k_models.json")
 
 
-def post_processing_train_base_result(search_space, dataset, x_max_value: int = None):
+def post_processing_train_base_result(search_space,
+                                      dataset,
+                                      x_max_value: int = None):
 
     if search_space == Config.NB201 and dataset == Config.c10:
         data = read_json(train_base201_c10)
@@ -54,8 +57,8 @@ def post_processing_train_base_result(search_space, dataset, x_max_value: int = 
     """
     data[run_id] = {}
     data[run_id]["arch_id_list"]
-    data[run_id]["current_best_acc"] 
-    data[run_id]["x_axis_time"] 
+    data[run_id]["current_best_acc"]
+    data[run_id]["x_axis_time"]
     """
 
     acc_got_row = []
@@ -86,7 +89,7 @@ def post_processing_train_base_result(search_space, dataset, x_max_value: int = 
     time_m = np.quantile(time_used, 0.5, axis=0).tolist()
     time_h = np.quantile(time_used, 0.75, axis=0)
 
-    x_list = [ele/60 for ele in time_m]
+    x_list = [ele / 60 for ele in time_m]
     y_list_low = acc_l[:len(x_list)]
     y_list_m = acc_m[:len(x_list)]
     y_list_high = acc_h[:len(x_list)]
@@ -107,13 +110,15 @@ def post_processing_train_base_result(search_space, dataset, x_max_value: int = 
                 break
         return final_x_list, final_x_list_low, final_x_list_m, final_x_list_high
     else:
-        return x_list, y_list_low.tolist(), y_list_m.tolist(), y_list_high.tolist()
+        return x_list, y_list_low.tolist(), y_list_m.tolist(
+        ), y_list_high.tolist()
 
 
 if __name__ == "__main__":
     search_space = Config.NB201
     dataset = Config.c100
-    x_list, y_list_low, y_list_m, y_list_high = post_processing_train_base_result(search_space, dataset)
+    x_list, y_list_low, y_list_m, y_list_high = post_processing_train_base_result(
+        search_space, dataset)
 
     from matplotlib import pyplot as plt
 
@@ -126,5 +131,3 @@ if __name__ == "__main__":
     plt.ylabel("Test Accuracy")
     plt.legend()
     plt.show()
-
-

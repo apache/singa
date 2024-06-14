@@ -20,9 +20,9 @@
 
 # Horizontal Federated Learning Example
 
-This is an example of federated learning (FL) using the Singa framework. In FL, there is a server and a set of clients. Each client has a local dataset. 
+This is an example of federated learning (FL) using the Singa framework. In FL, there is a server and a set of clients. Each client has a local dataset.
 In each iteration, each client trains the model using its local dataset and uploads the model gradient to the server, which aggregates to get the global
-gradient using the Federated Average algorithm. The server sends the global gradient to all clients for iterative model training. 
+gradient using the Federated Average algorithm. The server sends the global gradient to all clients for iterative model training.
 This example uses the Bank dataset and an MLP model in FL.
 
 ## Preparation
@@ -60,4 +60,4 @@ python -m src.client --model mlp --data bank -m 3 -i 1 -d non-iid
 python -m src.client --model mlp --data bank -m 3 -i 2 -d non-iid
 ```
 
-Finally, the server and clients finish the FL training. 
+Finally, the server and clients finish the FL training.

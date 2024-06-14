@@ -21,8 +21,7 @@
 #define SRC_MODEL_OPTIMIZER_LOCAL_ALL_REDUCE_H_
 #include "singa/model/optimizer.h"
 
-namespace singa {
-}
+namespace singa {}
 
 #endif  // SRC_MODEL_OPTIMIZER_LOCAL_ALL_REDUCE_H_
 

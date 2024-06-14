@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
-#include "singa/model/updater.h"
 #include <vector>
+
+#include "singa/model/updater.h"
 
 namespace singa {
 
@@ -38,8 +39,8 @@ void LocalUpdater::Register(const string& name, const ParamSpec& specs) {
 
 void LocalUpdater::Apply(int step, const string& name, Tensor& grad,
                          Tensor& value) {
-  CHECK(param_buffer_.count(name) == 1) << "Parameter " << name
-                                        << " has not been registered before.";
+  CHECK(param_buffer_.count(name) == 1)
+      << "Parameter " << name << " has not been registered before.";
   int nth = dev_index_[name]++;
   auto key = std::make_pair(nth, name);
   if (grad_buffer_[key].Size() != grad.Size()) {

@@ -27,21 +27,25 @@ from singa import autograd
 import onnx
 
 import sys
+
 sys.path.append(os.path.dirname(__file__) + '/..')
 from utils import download_model, check_exist_or_download
 
 import logging
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(message)s')
 
 from transformers import RobertaTokenizer
 
 tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
 
+
 def preprocess():
     text = "This film is so good"
     tokens = tokenizer.encode(text, add_special_tokens=True)
     tokens = np.array(tokens)
     return tokens.reshape([1, -1]).astype(np.float32)
+
 
 class MyModel(sonnx.SONNXModel):
 
@@ -59,7 +63,8 @@ class MyModel(sonnx.SONNXModel):
 if __name__ == "__main__":
     url = 'https://media.githubusercontent.com/media/onnx/models/master/text/machine_comprehension/roberta/model/roberta-sequence-classification-9.tar.gz'
     download_dir = '/tmp/'
-    model_path = os.path.join(download_dir, 'roberta-sequence-classification-9', 'roberta-sequence-classification-9.onnx')
+    model_path = os.path.join(download_dir, 'roberta-sequence-classification-9',
+                              'roberta-sequence-classification-9.onnx')
 
     logging.info("onnx load model...")
     download_model(url)
@@ -89,7 +94,7 @@ if __name__ == "__main__":
     y = tensor.softmax(y)
     y = tensor.to_numpy(y)[0]
     y = np.argsort(y)[::-1]
-    if(y[0] == 0):
+    if (y[0] == 0):
         print("Prediction: negative")
     else:
         print("Prediction: positive")

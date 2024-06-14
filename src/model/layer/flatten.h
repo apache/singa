@@ -17,9 +17,10 @@
  */
 #ifndef SRC_MODEL_LAYER_FLATTEN_H_
 #define SRC_MODEL_LAYER_FLATTEN_H_
-#include <utility>
 #include <string>
+#include <utility>
 #include <vector>
+
 #include "singa/model/layer.h"
 
 namespace singa {
@@ -36,11 +37,11 @@ class Flatten : public Layer {
   }
 
   /// \copydoc Layer::Forward(int flag, const Tensor&);
-  const Tensor Forward(int flag, const Tensor &input) override;
+  const Tensor Forward(int flag, const Tensor& input) override;
 
   /// \copydoc Layer::Backward(int, const Tensor&, const Tensor&);
   const std::pair<Tensor, vector<Tensor> > Backward(
-      int flag, const Tensor &grad) override;
+      int flag, const Tensor& grad) override;
 
   int Axis() const { return axis_; }
   const Shape input_shape() const { return input_shape_; }
@@ -52,5 +53,5 @@ class Flatten : public Layer {
   int axis_;
   Shape input_shape_, out_sample_shape_;
 };
-}      // namespace singa
-#endif // SRC_MODEL_LAYER_FLATTEN_H_
+}  // namespace singa
+#endif  // SRC_MODEL_LAYER_FLATTEN_H_

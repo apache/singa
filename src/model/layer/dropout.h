@@ -17,9 +17,10 @@
  */
 #ifndef SRC_MODEL_LAYER_DROPOUT_H_
 #define SRC_MODEL_LAYER_DROPOUT_H_
-#include <utility>
 #include <string>
+#include <utility>
 #include <vector>
+
 #include "singa/model/layer.h"
 
 namespace singa {
@@ -49,13 +50,9 @@ class Dropout : public Layer {
 
   void ToDevice(std::shared_ptr<Device> device) override;
 
-  float dropout_ratio() const {
-    return dropout_ratio_;
-  }
+  float dropout_ratio() const { return dropout_ratio_; }
 
-  const Tensor& mask() const {
-    return mask_;
-  }
+  const Tensor& mask() const { return mask_; }
 
  protected:
   /// the proability to set each element to 0.

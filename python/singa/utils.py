@@ -59,7 +59,7 @@ def handle_odd_pad_fwd(x, odd_padding, is_pool=False):
     Args:
         x, the input tensor
         odd_padding, the odd_padding
-    Returns: 
+    Returns:
         tensor, the output
     """
     # (axis, left padding if True else right padding)
@@ -91,7 +91,7 @@ def handle_odd_pad_bwd(dx, odd_padding):
     Args:
         dx, the backward tensor
         odd_padding, the odd_padding
-    Returns: 
+    Returns:
         tensor, the output
     """
     # (axis, left padding if True else right padding)
@@ -114,7 +114,7 @@ def same_pad_shape_check(handle, pad_mode, x):
         handle, the handle
         pad_mode, pad_mode
         x: input tensor
-    Returns: 
+    Returns:
         tuple, the correct padding(before divide 2)
     """
     _kernel = [handle.kernel_h, handle.kernel_w]
@@ -135,7 +135,7 @@ def re_new_handle(handle, x, is_pool=False):
     Args:
         handle, the handle
         x, input tensor
-    Returns: 
+    Returns:
         handle, a new handle
     """
     kernel_size = [handle.kernel_h, handle.kernel_w]
@@ -164,7 +164,7 @@ def get_padding_shape(pad_mode, input_spatial_shape, kernel_spatial_shape,
         pad_mode: string
         kernel_spatial_shape: list[int]
         strides_spatial: list[int]
-    Returns: 
+    Returns:
         list[int]
     """
     output_spatial_shape = get_output_shape(pad_mode, input_spatial_shape,
@@ -197,7 +197,7 @@ def get_output_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
         kernel_spatial_shape: list[int]
         strides_spatial: list[int]
         output_spatial_shape: list[int]
-    Returns: 
+    Returns:
         list[int
     """
     out_shape = [0] * len(input_spatial_shape)
@@ -222,7 +222,7 @@ def force_unicode(s):
     ! borrow from onnx
     Args:
         s: string or bytes
-    Returns: 
+    Returns:
         string
     """
     try:
@@ -237,7 +237,7 @@ def post_order_recursive(root, root_t):
     Args:
         root: singa operator
         root_t: tensor
-    Returns: 
+    Returns:
         deque[int]
     """
 

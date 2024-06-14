@@ -31,7 +31,7 @@ The website of Apache SINGA is at http://singa.apache.org.
    module
    opt
    utils
-   
+
 
 License
 ----------

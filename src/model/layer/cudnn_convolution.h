@@ -23,6 +23,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+
 #include "./convolution.h"
 #include "singa/core/common.h"
 #include "singa/model/layer.h"
@@ -41,7 +42,7 @@ class CudnnConvolution : public Convolution {
                                                    const Tensor &grad) override;
 
   /// \copydoc Layer::Setup(const LayerConf&);
-  void Setup(const Shape& in_sample, const LayerConf &conf) override;
+  void Setup(const Shape &in_sample, const LayerConf &conf) override;
 
   void ToDevice(std::shared_ptr<Device> device) override;
 
@@ -50,7 +51,7 @@ class CudnnConvolution : public Convolution {
 
  protected:
   /// Init cudnn related data structures.
-  void InitCudnn(const Tensor& input);
+  void InitCudnn(const Tensor &input);
 
  protected:
   bool has_init_cudnn_ = false;

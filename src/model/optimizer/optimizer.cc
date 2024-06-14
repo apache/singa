@@ -17,6 +17,7 @@
  */
 
 #include "singa/model/optimizer.h"
+
 #include "singa/utils/logging.h"
 
 namespace singa {
@@ -61,7 +62,8 @@ void Optimizer::Register(const string& name, const ParamSpec& specs) {
   */
 }
 void Optimizer::ApplyRegularizerConstraint(int epoch, const string& name,
-      const Tensor& value, Tensor& grad, int step) {
+                                           const Tensor& value, Tensor& grad,
+                                           int step) {
   // TODO(wangwei) need to consider the order of constraint and regularizer
   if (regularizers_.find(name) != regularizers_.end()) {
     regularizers_.at(name)->Apply(epoch, value, grad, step);
@@ -73,7 +75,6 @@ void Optimizer::ApplyRegularizerConstraint(int epoch, const string& name,
   else if (constraint_ != nullptr)
     constraint_->Apply(epoch, value, grad, step);
 }
-
 
 void Optimizer::Apply(int epoch, const string& name, Tensor& grad,
                       Tensor& value, int step) {
@@ -89,8 +90,8 @@ void Regularizer::Setup(const RegularizerConf& conf) {
   }
 }
 
-void Regularizer::Apply(int epoch, const Tensor& value, Tensor& grad, int step)
-{
+void Regularizer::Apply(int epoch, const Tensor& value, Tensor& grad,
+                        int step) {
   if (type_ == "L2" || type_ == "l2") {
     Axpy(coefficient_, value, &grad);
   } else {

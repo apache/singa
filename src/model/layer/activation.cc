@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
-#include "singa/model/layer.h"
 #include "./activation.h"
+
+#include "singa/model/layer.h"
 #include "singa/utils/string.h"
 namespace singa {
 
@@ -38,12 +39,12 @@ RegisterLayerClass(singacl_tanh, Activation);
 void Activation::Setup(const Shape& in_sample, const LayerConf& conf) {
   Layer::Setup(in_sample, conf);
   auto pos = conf.type().find_first_of('_');
-  CHECK_NE(pos, string::npos) << "There should be a '_' in the laye type "
-    << conf.type();
+  CHECK_NE(pos, string::npos)
+      << "There should be a '_' in the laye type " << conf.type();
   mode_ = ToLowerCase(conf.type().substr(pos + 1));
   if (mode_ != "relu" && mode_ != "sigmoid" && mode_ != "tanh")
     LOG(FATAL) << "Unkown activation type: " << conf.type() << " " << mode_
-      << ". Please use singa_relu, singa_sigmoid, or singa_tanh";
+               << ". Please use singa_relu, singa_sigmoid, or singa_tanh";
   if (mode_ == "relu") {
     neg_slope_ = conf.relu_conf().negative_slope();
   }
@@ -80,7 +81,8 @@ const std::pair<Tensor, vector<Tensor>> Activation::Backward(
     input_grad = grad * (inout * inout * (-1.f) + 1.f);
   else if (mode_ == "relu")
     input_grad = grad * (inout > 0.f) + (inout <= 0.f) * neg_slope_;
-  else LOG(FATAL) << "Unkown activation: " << mode_;
+  else
+    LOG(FATAL) << "Unkown activation: " << mode_;
   return std::make_pair(input_grad, param_grad);
 }
 

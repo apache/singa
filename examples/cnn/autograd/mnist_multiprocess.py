@@ -33,7 +33,8 @@ if __name__ == '__main__':
     for local_rank in range(0, world_size):
         process.append(
             multiprocessing.Process(target=train_mnist_cnn,
-                                    args=(True, local_rank, world_size, nccl_id)))
+                                    args=(True, local_rank, world_size,
+                                          nccl_id)))
 
     for p in process:
         p.start()

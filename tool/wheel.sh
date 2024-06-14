@@ -23,20 +23,20 @@
 rm -rf dist
 
 # build cpu only wheel packages
-rm -rf build 
+rm -rf build
 /opt/python/cp39-cp39/bin/python setup.py bdist_wheel
-rm -rf build 
+rm -rf build
 /opt/python/cp310-cp310/bin/python setup.py bdist_wheel
-rm -rf build 
+rm -rf build
 /opt/python/cp311-cp311/bin/python setup.py bdist_wheel
 
 # build cuda enabled wheel packages
 export SINGA_CUDA=ON
-rm -rf build 
+rm -rf build
 /opt/python/cp39-cp39/bin/python setup.py bdist_wheel
-rm -rf build 
+rm -rf build
 /opt/python/cp310-cp310/bin/python setup.py bdist_wheel
-rm -rf build 
+rm -rf build
 /opt/python/cp311-cp311/bin/python setup.py bdist_wheel
 
 # repair the wheel files in dist/*.whl and store the results into wheelhouse/

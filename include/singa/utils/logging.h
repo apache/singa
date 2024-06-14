@@ -24,11 +24,12 @@
 #ifndef SINGA_UTILS_LOGGING_H_
 #define SINGA_UTILS_LOGGING_H_
 
-#include "singa/singa_config.h"
 #include <stdlib.h>
 
 #include <sstream>
 #include <string>
+
+#include "singa/singa_config.h"
 #ifdef USE_GLOG
 #include <glog/logging.h>
 #endif

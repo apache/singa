@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 import argparse
 
 from tqdm import tqdm
@@ -29,9 +28,11 @@ def decode_libsvm(line):
     columns = line.split(' ')
     map_func = lambda pair: (int(pair[0]), float(pair[1]))
     id, value = zip(*map(lambda col: map_func(col.split(':')), columns[1:]))
-    sample = {'id': torch.LongTensor(id),
-              'value': torch.FloatTensor(value),
-              'y': float(columns[0])}
+    sample = {
+        'id': torch.LongTensor(id),
+        'value': torch.FloatTensor(value),
+        'y': float(columns[0])
+    }
     return sample
 
 
@@ -69,11 +70,17 @@ def _save_data(data_dir, fname, nfields, namespace):
 def parse_arguments():
     parser = argparse.ArgumentParser(description='FastAutoNAS')
 
-    parser.add_argument('--nfield', type=int, default=10,
-                        help='the number of fields, frappe: 10, uci_diabetes: 43, criteo: 39')
+    parser.add_argument(
+        '--nfield',
+        type=int,
+        default=10,
+        help='the number of fields, frappe: 10, uci_diabetes: 43, criteo: 39')
 
-    parser.add_argument('--dataset', type=str, default='frappe',
-                        help='cifar10, cifar100, ImageNet16-120, frappe, criteo, uci_diabetes')
+    parser.add_argument(
+        '--dataset',
+        type=str,
+        default='frappe',
+        help='cifar10, cifar100, ImageNet16-120, frappe, criteo, uci_diabetes')
 
     return parser.parse_args()
 

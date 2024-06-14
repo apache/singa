@@ -17,6 +17,6 @@
     under the License.
 -->
 
-# Dynamic Model Slicing on PostgreSQL 
+# Dynamic Model Slicing on PostgreSQL
 
 Examples inside this folder show how to dynamically slice a model for a subset of database records dynamically specified by a corresponding SQL query inside RDBMS, such as PostgreSQL.

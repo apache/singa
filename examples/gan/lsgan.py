@@ -82,7 +82,8 @@ class LSGAN():
                                     tensor.float32)
         real_labels = tensor.Tensor((self.batch_size, 1), dev, tensor.float32)
         fake_labels = tensor.Tensor((self.batch_size, 1), dev, tensor.float32)
-        substrahend_labels = tensor.Tensor((self.batch_size, 1), dev, tensor.float32)
+        substrahend_labels = tensor.Tensor((self.batch_size, 1), dev,
+                                           tensor.float32)
 
         # attached model to graph
         self.model.set_optimizer(sgd)

@@ -9,13 +9,13 @@ This release includes following changes:
     * Add support for dynamic model creation.
     * Add support for flexible setting of model training configurations.
     * Optimize the in-database analytics modules for scalability, efficiency and memory consumption.
-  
+
   * New example
     * Add a horizontal federated learning example using the Bank dataset.
 
   * Enhance examples
     * Add sample training data for testing the model selection application.
-  
+
   * Update the website
     * Update the star button in the main page.
     * Refine the display of star statistics.
@@ -41,16 +41,16 @@ This release includes following changes:
   * Add support for models running on top of RDBMS
     * Add support for in-database model definition and selection in RDBMS.
     * Implement training-free model evaluation metrics for in-database model selection.
-    * Implement a coordinator to balance between training-free and training-based model evaluations 
+    * Implement a coordinator to balance between training-free and training-based model evaluations
       for in-database model selection.
-    
+
   * Enhance distributed training
     * Add implementations for the sum error loss.
     * Improve the optimizer to return model gradients.
     * Improve the iterative checking for tensors and strings in the ModelMeta class.
-    
+
   * Enhance example code
-    * Add support for flexible setting of training configurations for models, e.g., learning rates, 
+    * Add support for flexible setting of training configurations for models, e.g., learning rates,
       weight decay, momentum, etc.
     * Add implementations for dynamic models with varying layer sizes.
 
@@ -152,10 +152,10 @@ This release includes following changes:
     * Improve the data augmentation module for faster distributed training.
     * Add device synchronization for more accurate time measurements during the distributed training.
 
-  * Add Support for half-precision floating-point format (fp16) in deep learning models and 
+  * Add Support for half-precision floating-point format (fp16) in deep learning models and
     computational kernels.
 
-  * Update new onnx APIs and fix onnx examples accordingly, namely, DenseNet121, ShuffleNetv1, 
+  * Update new onnx APIs and fix onnx examples accordingly, namely, DenseNet121, ShuffleNetv1,
     ShuffleNetv2, SqueezeNet, VGG19.
 
   * Add a new method to resize images by given width and height.
@@ -168,7 +168,7 @@ This release includes following changes:
 
   * Fix bugs
     * Fix the CI build error by downloading the tbb binaries.
-    * Add disabling graph option for accessing parameter or gradient tensors during distributed  
+    * Add disabling graph option for accessing parameter or gradient tensors during distributed
       training.
     * Solve the warnings of deprecated functions in the distributed optimizer module.
 
@@ -185,17 +185,17 @@ This release includes following changes:
     * Implement traverse_unary_transform in Cuda backend, which is similar to CPP backend one.
 
   * Add new tensor operators into the autograd module, including
-    CosSim, DepthToSpace, Embedding, Erf, Expand, Floor, Pad, Round, Rounde, SpaceToDepth, UpSample, Where. 
+    CosSim, DepthToSpace, Embedding, Erf, Expand, Floor, Pad, Round, Rounde, SpaceToDepth, UpSample, Where.
     The corresponding ONNX operators are thus supported by SINGA.
 
   * Add Embedding and Gemm into the layer module.
 
   * Add SGD operators to opt module, including RMSProp, Adam, and AdaGrad.
 
-  * Extend the sonnx module to support 
+  * Extend the sonnx module to support
     DenseNet121, ShuffleNetv1, ShuffleNetv2, SqueezeNet, VGG19, GPT2, and RoBERTa,
 
-  * Reconstruct sonnx to 
+  * Reconstruct sonnx to
     * Support creating operators from both layer and autograd.
     * Re-write SingaRep to provide a more powerful intermediate representation of SINGA.
     * Add a SONNXModel which implements from Model to provide uniform API and features.
@@ -221,15 +221,15 @@ SINGA is a distributed deep learning library.
 
 This release includes following changes:
 
-  * Code quality has been promoted by introducing linting check in CI and auto code formatter. 
-    For linting, the tools, `cpplint` and `pylint`, are used and configured to comply 
-    [google coding styles](http://google.github.io/styleguide/)  details in `tool/linting/`. 
-    Similarly, formatting tools, `clang-format` and `yapf` configured with google coding styles, 
-    are the recommended one for developers to clean code before submitting changes, 
-    details in `tool/code-format/`. [LGTM](https://lgtm.com) is enabled on Github for 
+  * Code quality has been promoted by introducing linting check in CI and auto code formatter.
+    For linting, the tools, `cpplint` and `pylint`, are used and configured to comply
+    [google coding styles](http://google.github.io/styleguide/)  details in `tool/linting/`.
+    Similarly, formatting tools, `clang-format` and `yapf` configured with google coding styles,
+    are the recommended one for developers to clean code before submitting changes,
+    details in `tool/code-format/`. [LGTM](https://lgtm.com) is enabled on Github for
     code quality check; License check is also enabled.
 
- * New Tensor APIs are added for naming consistency, and feature enhancement: 
+ * New Tensor APIs are added for naming consistency, and feature enhancement:
    - size(), mem_size(), get_value(), to_proto(), l1(), l2(): added for the sake of naming consistency
    - AsType(): convert data type between `float` and `int`
    - ceil(): perform element-wise ceiling of the input
@@ -237,41 +237,41 @@ This release includes following changes:
    - index selector: e.g. tensor1[:,:,1:,1:]
    - softmax(in, axis): allow to perform softmax on a axis on a multi-dimensional tensor
 
-  * 14 new operators are added into the autograd module: Gemm, GlobalAveragePool, ConstantOfShape, 
-    Dropout, ReduceSum, ReduceMean, Slice, Ceil, Split, Gather, Tile, NonZero, Cast, OneHot. 
+  * 14 new operators are added into the autograd module: Gemm, GlobalAveragePool, ConstantOfShape,
+    Dropout, ReduceSum, ReduceMean, Slice, Ceil, Split, Gather, Tile, NonZero, Cast, OneHot.
     Their unit tests are added as well.
 
-  * 14 new operators are added to sonnx module for both backend and frontend: 
-    [Gemm](https://github.com/onnx/onnx/blob/master/docs/Operators.md#Gemm), 
-    [GlobalAveragePool](https://github.com/onnx/onnx/blob/master/docs/Operators.md#GlobalAveragePool), 
-    [ConstantOfShape](https://github.com/onnx/onnx/blob/master/docs/Operators.md#ConstantOfShape), 
-    [Dropout](https://github.com/onnx/onnx/blob/master/docs/Operators.md#Dropout), 
-    [ReduceSum](https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceSum), 
-    [ReduceMean](https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceMean), 
-    [Slice](https://github.com/onnx/onnx/blob/master/docs/Operators.md#Slice), 
-    [Ceil](https://github.com/onnx/onnx/blob/master/docs/Operators.md#Ceil), 
-    [Split](https://github.com/onnx/onnx/blob/master/docs/Operators.md#Split), 
-    [Gather](https://github.com/onnx/onnx/blob/master/docs/Operators.md#Gather), 
-    [Tile](https://github.com/onnx/onnx/blob/master/docs/Operators.md#Tile), 
-    [NonZero](https://github.com/onnx/onnx/blob/master/docs/Operators.md#NonZero), 
-    [Cast](https://github.com/onnx/onnx/blob/master/docs/Operators.md#Cast), 
-    [OneHot](https://github.com/onnx/onnx/blob/master/docs/Operators.md#OneHot). 
+  * 14 new operators are added to sonnx module for both backend and frontend:
+    [Gemm](https://github.com/onnx/onnx/blob/master/docs/Operators.md#Gemm),
+    [GlobalAveragePool](https://github.com/onnx/onnx/blob/master/docs/Operators.md#GlobalAveragePool),
+    [ConstantOfShape](https://github.com/onnx/onnx/blob/master/docs/Operators.md#ConstantOfShape),
+    [Dropout](https://github.com/onnx/onnx/blob/master/docs/Operators.md#Dropout),
+    [ReduceSum](https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceSum),
+    [ReduceMean](https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceMean),
+    [Slice](https://github.com/onnx/onnx/blob/master/docs/Operators.md#Slice),
+    [Ceil](https://github.com/onnx/onnx/blob/master/docs/Operators.md#Ceil),
+    [Split](https://github.com/onnx/onnx/blob/master/docs/Operators.md#Split),
+    [Gather](https://github.com/onnx/onnx/blob/master/docs/Operators.md#Gather),
+    [Tile](https://github.com/onnx/onnx/blob/master/docs/Operators.md#Tile),
+    [NonZero](https://github.com/onnx/onnx/blob/master/docs/Operators.md#NonZero),
+    [Cast](https://github.com/onnx/onnx/blob/master/docs/Operators.md#Cast),
+    [OneHot](https://github.com/onnx/onnx/blob/master/docs/Operators.md#OneHot).
     Their tests are added as well.
 
-  * Some ONNX models are imported into SINGA, including 
-    [Bert-squad](https://github.com/onnx/models/tree/master/text/machine_comprehension/bert-squad), 
-    [Arcface](https://github.com/onnx/models/tree/master/vision/body_analysis/arcface), 
-    [FER+ Emotion](https://github.com/onnx/models/tree/master/vision/body_analysis/emotion_ferplus), 
-    [MobileNet](https://github.com/onnx/models/tree/master/vision/classification/mobilenet), 
-    [ResNet18](https://github.com/onnx/models/tree/master/vision/classification/resnet), 
-    [Tiny Yolov2](https://github.com/onnx/models/tree/master/vision/object_detection_segmentation/tiny_yolov2), 
+  * Some ONNX models are imported into SINGA, including
+    [Bert-squad](https://github.com/onnx/models/tree/master/text/machine_comprehension/bert-squad),
+    [Arcface](https://github.com/onnx/models/tree/master/vision/body_analysis/arcface),
+    [FER+ Emotion](https://github.com/onnx/models/tree/master/vision/body_analysis/emotion_ferplus),
+    [MobileNet](https://github.com/onnx/models/tree/master/vision/classification/mobilenet),
+    [ResNet18](https://github.com/onnx/models/tree/master/vision/classification/resnet),
+    [Tiny Yolov2](https://github.com/onnx/models/tree/master/vision/object_detection_segmentation/tiny_yolov2),
     [Vgg16](https://github.com/onnx/models/tree/master/vision/classification/vgg), and Mnist.
 
-  * Some operators now support [multidirectional broadcasting](https://github.com/onnx/onnx/blob/master/docs/Broadcasting.md#multidirectional-broadcasting), 
-    including Add, Sub, Mul, Div, Pow, PRelu, Gemm 
+  * Some operators now support [multidirectional broadcasting](https://github.com/onnx/onnx/blob/master/docs/Broadcasting.md#multidirectional-broadcasting),
+    including Add, Sub, Mul, Div, Pow, PRelu, Gemm
 
-  * [Distributed training with communication optimization]. [DistOpt](./python/singa/opt.py) 
-    has implemented multiple optimization techniques, including gradient sparsification, 
+  * [Distributed training with communication optimization]. [DistOpt](./python/singa/opt.py)
+    has implemented multiple optimization techniques, including gradient sparsification,
     chunk transmission, and gradient compression.
 
   * Computational graph construction at the CPP level. The operations submitted to the Device are buffered.
@@ -281,26 +281,26 @@ This release includes following changes:
   * New website based on Docusaurus. The documentation files are moved to a separate repo [singa-doc](https://github.com/apache/singa-doc).
     The static website files are stored at [singa-site](https://github.com/apache/singa-site).
 
-  * DNNL([Deep Neural Network Library](https://github.com/intel/mkl-dnn)), powered by Intel, 
-    is integrated into `model/operations/[batchnorm|pooling|convolution]`, 
-    the changes is opaque to the end users. The current version is dnnl v1.1 
-    which replaced previous integration of mkl-dnn v0.18. The framework could 
-    boost the performance of dl operations when executing on CPU. The dnnl dependency 
+  * DNNL([Deep Neural Network Library](https://github.com/intel/mkl-dnn)), powered by Intel,
+    is integrated into `model/operations/[batchnorm|pooling|convolution]`,
+    the changes is opaque to the end users. The current version is dnnl v1.1
+    which replaced previous integration of mkl-dnn v0.18. The framework could
+    boost the performance of dl operations when executing on CPU. The dnnl dependency
     is installed through conda.
 
-  * Some Tensor APIs are marked as deprecated which could be replaced by broadcast, 
+  * Some Tensor APIs are marked as deprecated which could be replaced by broadcast,
     and it can support better on multi-dimensional operations. These APIs are
     add_column(), add_row(), div_column(), div_row(), mult_column(), mult_row()
 
-  * Conv and Pooling are enhanced to support fine-grained padding like (2,3,2,3), 
-    and [SAME_UPPER, SAME_LOWER](https://github.com/onnx/onnx/blob/master/docs/Operators.md#Conv) 
+  * Conv and Pooling are enhanced to support fine-grained padding like (2,3,2,3),
+    and [SAME_UPPER, SAME_LOWER](https://github.com/onnx/onnx/blob/master/docs/Operators.md#Conv)
     pad mode and shape checking.
 
-  * Reconstruct soonx, 
-    - Support two types of weight value (Initializer and Constant Node); 
-    - For some operators (BatchNorm, Reshape, Clip, Slice, Gather, Tile, OneHot), 
-      move some inputs to its attributes; 
-    - Define and implement the type conversion map. 
+  * Reconstruct soonx,
+    - Support two types of weight value (Initializer and Constant Node);
+    - For some operators (BatchNorm, Reshape, Clip, Slice, Gather, Tile, OneHot),
+      move some inputs to its attributes;
+    - Define and implement the type conversion map.
 
 ------------------------------------------------------------------------
 Release Notes - SINGA - Version singa-incubating-2.0.0
@@ -318,11 +318,11 @@ This release includes following features:
     * [SINGA-333] Add support for Open Neural Network Exchange (ONNX) format
     * [SINGA-385] Add new python module for optimizers
     * [SINGA-394] Improve the CPP operations via Intel MKL DNN lib
-    * [SINGA-425] Add 3 operators , Abs(), Exp() and leakyrelu(), for Autograd 
+    * [SINGA-425] Add 3 operators , Abs(), Exp() and leakyrelu(), for Autograd
     * [SINGA-410] Add two function, set_params() and get_params(), for Autograd Layer class
     * [SINGA-383] Add Separable Convolution for autograd
     * [SINGA-388] Develop some RNN layers by calling tiny operations like matmul, addbias.
-    * [SINGA-382] Implement concat operation for autograd    
+    * [SINGA-382] Implement concat operation for autograd
     * [SINGA-378] Implement maxpooling operation and its related functions for autograd
     * [SINGA-379] Implement batchnorm operation and its related functions for autograd
 
@@ -337,14 +337,14 @@ This release includes following features:
     * [SINGA-390] Update installation.md
     * [SINGA-384] Implement ResNet using autograd API
     * [SINGA-352] Complete SINGA documentation in Chinese version
-      
+
   * Bugs fixed
     * [SINGA-431] Unit Test failed - Tensor Transpose
     * [SINGA-422] ModuleNotFoundError: No module named "_singa_wrap"
-    * [SINGA-418] Unsupportive type 'long' in python3.  
+    * [SINGA-418] Unsupportive type 'long' in python3.
     * [SINGA-409] Basic `singa-cpu` import throws error
     * [SINGA-408] Unsupportive function definition in python3
-    * [SINGA-380] Fix bugs from Reshape  
+    * [SINGA-380] Fix bugs from Reshape
 
 ---------------------------------------------------------------
 Release Notes - SINGA - Version singa-incubating-1.2.0

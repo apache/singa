@@ -19,20 +19,20 @@
 
 # Image Classification using Convolutional Neural Networks
 
-Examples inside this folder show how to train CNN models using 
-SINGA for image classification. The data augmentation is done 
+Examples inside this folder show how to train CNN models using
+SINGA for image classification. The data augmentation is done
 only once before the training.
 
 * `data` includes the scripts for preprocessing image datasets.
   Currently, MNIST, CIFAR10 and CIFAR100 are included.
 
 * `model` includes the CNN model construction codes by creating
-  a subclass of `Module` to wrap the neural network operations 
-  of each model. Then computational graph is enabled to optimized 
+  a subclass of `Module` to wrap the neural network operations
+  of each model. Then computational graph is enabled to optimized
   the memory and efficiency.
 
 * `autograd` includes the codes to train CNN models by calling the
-  [neural network operations](../../python/singa/autograd.py) imperatively. 
+  [neural network operations](../../python/singa/autograd.py) imperatively.
   The computational graph is not created.
 
 * `train_cnn.py` is the training script, which controls the training flow by
@@ -41,7 +41,7 @@ only once before the training.
 * `train_multiprocess.py` is the script for distributed training on a single
   node with multiple GPUs; it uses Python's multiprocessing module and NCCL.
 
-* `train_mpi.py` is the script for distributed training (among multiple nodes) 
+* `train_mpi.py` is the script for distributed training (among multiple nodes)
   using MPI and NCCL for communication.
 
 * `benchmark.py` tests the training throughput using `ResNet50` as the workload.

@@ -24,28 +24,39 @@ from src.query_api.singleton import Singleton
 from src.tools.io_tools import read_pickle
 from src.tools.compute import generate_global_rank
 
-
 base_dir_folder = os.environ.get("base_dir")
-if base_dir_folder is None: base_dir_folder = os.getcwd()
+if base_dir_folder is None:
+    base_dir_folder = os.getcwd()
 base_dir = os.path.join(base_dir_folder, "img_data")
 print("local api running at {}".format(base_dir))
 
 # todo: move all those to a config file
 # score result
 pre_score_path_101C10 = os.path.join(base_dir, "score_101_15k_c10_128.json")
-pre_score_path_201C10 = os.path.join(base_dir, "score_201_15k_c10_bs32_ic16.json")
-pre_score_path_201C100 = os.path.join(base_dir, "score_201_15k_c100_bs32_ic16.json")
-pre_score_path_201IMG = os.path.join(base_dir, "score_201_15k_imgNet_bs32_ic16.json")
+pre_score_path_201C10 = os.path.join(base_dir,
+                                     "score_201_15k_c10_bs32_ic16.json")
+pre_score_path_201C100 = os.path.join(base_dir,
+                                      "score_201_15k_c100_bs32_ic16.json")
+pre_score_path_201IMG = os.path.join(base_dir,
+                                     "score_201_15k_imgNet_bs32_ic16.json")
 
 # expreflow
-expreflow_score_path_101C10 = os.path.join(base_dir, "score_nasbench101_cifar10_batch_size_32_cpu.json")
+expreflow_score_path_101C10 = os.path.join(
+    base_dir, "score_nasbench101_cifar10_batch_size_32_cpu.json")
 # expreflow_score_path_201C10 = os.path.join(base_dir, "score_nasbench201_cifar10_batch_size_32_cpu.json")
 # expreflow_score_path_201C100 = os.path.join(base_dir, "score_nasbench201_cifar100_batch_size_32_cpu.json")
 # expreflow_score_path_201IMG = os.path.join(base_dir, "score_nasbench201_ImageNet16-120_batch_size_32_cpu.json")
 
-expreflow_score_path_201C10 = os.path.join(base_dir_folder, "score_scale_traj_width/score_nasbench201_cifar10_batch_size_32_cpu.json")
-expreflow_score_path_201C100 = os.path.join(base_dir_folder, "score_scale_traj_width/score_nasbench201_cifar100_batch_size_32_cpu.json")
-expreflow_score_path_201IMG = os.path.join(base_dir_folder, "score_scale_traj_width/score_nasbench201_ImageNet16-120_batch_size_32_cpu.json")
+expreflow_score_path_201C10 = os.path.join(
+    base_dir_folder,
+    "score_scale_traj_width/score_nasbench201_cifar10_batch_size_32_cpu.json")
+expreflow_score_path_201C100 = os.path.join(
+    base_dir_folder,
+    "score_scale_traj_width/score_nasbench201_cifar100_batch_size_32_cpu.json")
+expreflow_score_path_201IMG = os.path.join(
+    base_dir_folder,
+    "score_scale_traj_width/score_nasbench201_ImageNet16-120_batch_size_32_cpu.json"
+)
 
 # training accuracy result.
 gt201 = os.path.join(base_dir, "ground_truth/201_allEpoch_info")
@@ -197,16 +208,20 @@ class Gt201(metaclass=Singleton):
         if epoch_num is None or epoch_num > 199:
             epoch_num = 199
         arch_id = str(arch_id)
-        t_acc = self.data201[arch_id]["200"][dataset][str(epoch_num)]["test_accuracy"]
-        time_usage = self.data201[arch_id]["200"][dataset][str(epoch_num)]["time_usage"]
+        t_acc = self.data201[arch_id]["200"][dataset][str(
+            epoch_num)]["test_accuracy"]
+        time_usage = self.data201[arch_id]["200"][dataset][str(
+            epoch_num)]["time_usage"]
         return t_acc, time_usage
 
     def query_12_epoch(self, arch_id: str, dataset, epoch_num: int = 11):
         if epoch_num is None or epoch_num > 11:
             epoch_num = 11
         arch_id = str(arch_id)
-        t_acc = self.data201[arch_id]["12"][dataset][str(epoch_num)]["test_accuracy"]
-        time_usage = self.data201[arch_id]["12"][dataset][str(epoch_num)]["time_usage"]
+        t_acc = self.data201[arch_id]["12"][dataset][str(
+            epoch_num)]["test_accuracy"]
+        time_usage = self.data201[arch_id]["12"][dataset][str(
+            epoch_num)]["time_usage"]
         return t_acc, time_usage
 
     def count_models(self):
@@ -223,7 +238,8 @@ class Gt201(metaclass=Singleton):
         #         res = time_usage
         # return res
         arch_id = random.randint(1, 15625)
-        time_usage = self.data201[str(arch_id)]["200"][dataset]["0"]["time_usage"]
+        time_usage = self.data201[str(
+            arch_id)]["200"][dataset]["0"]["time_usage"]
         return time_usage
 
     def get_all_trained_model_ids(self):
@@ -242,7 +258,10 @@ class Gt101(metaclass=Singleton):
         self.id_to_hash_map = read_json(id_to_hash_path)
         self.data101_full = read_json(gt101)
 
-    def get_c10_test_info(self, arch_id: str, dataset: str = Config.c10, epoch_num: int = 108):
+    def get_c10_test_info(self,
+                          arch_id: str,
+                          dataset: str = Config.c10,
+                          epoch_num: int = 108):
         """
         Default use 108 epoch for c10, this is the largest epoch number.
         :param dataset:
@@ -267,8 +286,10 @@ class Gt101(metaclass=Singleton):
         # this is acc from zero-cost paper, which only record 108 epoch' result [test, valid, train]
         # t_acc = self.data101_from_zerocost[self.id_to_hash_map[arch_id]][0]
         # this is acc from parse_testacc_101.py,
-        t_acc = self.data101_full[arch_id][Config.c10][str(epoch_num)]["test-accuracy"]
-        time_usage = self.data101_full[arch_id][Config.c10][str(epoch_num)]["time_usage"]
+        t_acc = self.data101_full[arch_id][Config.c10][str(
+            epoch_num)]["test-accuracy"]
+        time_usage = self.data101_full[arch_id][Config.c10][str(
+            epoch_num)]["time_usage"]
         # print(f"[Debug]: Acc different = {t_acc_usage - t_acc}")
         return t_acc, time_usage
 
@@ -284,7 +305,9 @@ class Gt101(metaclass=Singleton):
         res = 0
         for rep_time in range(15000):
             arch_id = keys[rep_time]
-            _, time_usage = self.get_c10_test_info(arch_id=arch_id, dataset=Config.c10, epoch_num=4)
+            _, time_usage = self.get_c10_test_info(arch_id=arch_id,
+                                                   dataset=Config.c10,
+                                                   epoch_num=4)
             if time_usage > res:
                 res = time_usage
         return res

@@ -39,6 +39,7 @@ sys.path.append(os.path.dirname(__file__) + '/../../cnn')
 sys.path.append(os.path.dirname(__file__) + '/..')
 from utils import download_model
 
+
 # Data Augmentation
 def augmentation(x, batch_size):
     xpad = np.pad(x, [[0, 0], [0, 0], [4, 4], [4, 4]], 'symmetric')
@@ -104,7 +105,12 @@ def resize_dataset(x, image_size):
 
 class MyModel(sonnx.SONNXModel):
 
-    def __init__(self, onnx_model, num_classes=10, num_channels=3, last_layers=-1, in_dim=1000):
+    def __init__(self,
+                 onnx_model,
+                 num_classes=10,
+                 num_channels=3,
+                 last_layers=-1,
+                 in_dim=1000):
         super(MyModel, self).__init__(onnx_model)
         self.num_classes = num_classes
         self.input_size = 224
@@ -350,5 +356,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5)
-    run(0, 1, args.device_id, args.max_epoch, args.batch_size, model_config[args.model],
-        args.data, sgd, args.graph, args.verbosity)
+    run(0, 1, args.device_id, args.max_epoch, args.batch_size,
+        model_config[args.model], args.data, sgd, args.graph, args.verbosity)

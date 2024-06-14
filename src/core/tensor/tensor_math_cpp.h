@@ -19,7 +19,7 @@
 #define SINGA_CORE_TENSOR_TENSOR_MATH_CPP_H_
 
 #include "./tensor_math.h"
-//#include "./stacktrace.h"
+// #include "./stacktrace.h"
 #include <math.h>
 
 #include <algorithm>
@@ -809,7 +809,7 @@ void Axpy<float, lang::Cpp>(const Tensor &alpha, const Tensor &in, Tensor *out,
   // check input tensor for strides first
   const float *inPtr = static_cast<const float *>(in.block()->data());
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
-  const float a = *static_cast<const float*>(alpha.block()->data());
+  const float a = *static_cast<const float *>(alpha.block()->data());
 
   if (in.stride() == out->stride()) {
     cblas_saxpy(in.Size(), a, inPtr, 1, outPtr, 1);
@@ -821,7 +821,6 @@ void Axpy<float, lang::Cpp>(const Tensor &alpha, const Tensor &in, Tensor *out,
     cblas_saxpy(in.Size(), 1, tPtr, 1, outPtr, 1);
   }
 }
-
 
 template <>
 void Dot<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, float *out,
@@ -1138,7 +1137,6 @@ void RowMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
     outPtr[r] = maxval;
   }
 }
-
 
 }  // namespace singa
 

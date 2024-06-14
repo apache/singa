@@ -17,10 +17,11 @@
  */
 #ifndef SRC_MODEL_LAYER_DENSE_H_
 #define SRC_MODEL_LAYER_DENSE_H_
+#include <stack>
 #include <string>
 #include <utility>
 #include <vector>
-#include <stack>
+
 #include "singa/model/layer.h"
 
 namespace singa {

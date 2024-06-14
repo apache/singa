@@ -30,7 +30,7 @@
 Inside the docker image, the PostgreSQL and its extensions are installed according to https://github.com/pgcentralfoundation/pgrx
 
 ```bash
-# Remove existing one if there is 
+# Remove existing one if there is
 docker rm -f singa_trails
 # Create project folder.
 mkdir project && cd project
@@ -66,7 +66,7 @@ tail -f /home/postgres/.pgrx/data-14/trails_log_folder/<log_file_name>
 
 Inside the docker image, the PolarDB and its extensions are installed according to https://github.com/ApsaraDB/PolarDB-for-PostgreSQL
 ```bash
-# Remove existing one if there is 
+# Remove existing one if there is
 docker rm -f singa_trails_polardb
 # Create project folder.
 mkdir project_polardb_singa && cd project_polardb_singa
@@ -85,7 +85,7 @@ Execute model selection query
 ```bash
 # Connect to the primary pg server and use pg_extension database.
 docker exec -it singa_trails_polardb bash
-psql -h localhost -p 5432 -U postgres 
+psql -h localhost -p 5432 -U postgres
 \c pg_extension
 
 # Test coordinator

@@ -33,7 +33,7 @@ jobs:
   #  steps:
   #    - uses: actions/checkout@v1
   #    - name: install-build-dependencies
-  #      run: sudo apt-get install -y libgoogle-glog-dev libprotobuf-dev protobuf-compiler libncurses-dev libopenblas-dev gfortran libblas-dev liblapack-dev libatlas-base-dev swig libcurl3-dev cmake dh-autoreconf  
+  #      run: sudo apt-get install -y libgoogle-glog-dev libprotobuf-dev protobuf-compiler libncurses-dev libopenblas-dev gfortran libblas-dev liblapack-dev libatlas-base-dev swig libcurl3-dev cmake dh-autoreconf
   #    - name: configure
   #      run: mkdir build && cd build && cmake -DUSE_PYTHON=NO -DENABLE_TEST=YES ..
   #    - name: build

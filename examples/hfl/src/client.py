@@ -125,9 +125,9 @@ def augmentation(x, batch_size):
     xpad = np.pad(x, [[0, 0], [0, 0], [4, 4], [4, 4]], "symmetric")
     for data_num in range(0, batch_size):
         offset = np.random.randint(8, size=2)
-        x[data_num, :, :, :] = xpad[
-                               data_num, :, offset[0]: offset[0] + x.shape[2], offset[1]: offset[1] + x.shape[2]
-                               ]
+        x[data_num, :, :, :] = xpad[data_num, :,
+                                    offset[0]:offset[0] + x.shape[2],
+                                    offset[1]:offset[1] + x.shape[2]]
         if_flip = np.random.randint(2)
         if if_flip:
             x[data_num, :, :, :] = x[data_num, :, :, ::-1]
@@ -173,11 +173,13 @@ def reduce_variable(variable, dist_opt, reducer):
 def resize_dataset(x, image_size):
     num_data = x.shape[0]
     dim = x.shape[1]
-    X = np.zeros(shape=(num_data, dim, image_size, image_size), dtype=np.float32)
+    X = np.zeros(shape=(num_data, dim, image_size, image_size),
+                 dtype=np.float32)
     for n in range(0, num_data):
         for d in range(0, dim):
             X[n, d, :, :] = np.array(
-                Image.fromarray(x[n, d, :, :]).resize((image_size, image_size), Image.BILINEAR),
+                Image.fromarray(x[n, d, :, :]).resize((image_size, image_size),
+                                                      Image.BILINEAR),
                 dtype=np.float32,
             )
     return X
@@ -200,20 +202,20 @@ def get_model(model, num_channels=None, num_classes=None, data_size=None):
 
 
 def run(
-        global_rank,
-        world_size,
-        device_id,
-        max_epoch,
-        batch_size,
-        model,
-        data,
-        data_dist,
-        sgd,
-        graph,
-        verbosity,
-        dist_option="plain",
-        spars=None,
-        precision="float32",
+    global_rank,
+    world_size,
+    device_id,
+    max_epoch,
+    batch_size,
+    model,
+    data,
+    data_dist,
+    sgd,
+    graph,
+    verbosity,
+    dist_option="plain",
+    spars=None,
+    precision="float32",
 ):
     # Connect to server
     client = Client(global_rank=device_id)
@@ -224,15 +226,17 @@ def run(
     np.random.seed(0)
 
     # Prepare dataset
-    train_x, train_y, val_x, val_y, num_classes = get_data(data, data_dist, device_id)
+    train_x, train_y, val_x, val_y, num_classes = get_data(
+        data, data_dist, device_id)
 
     num_channels = train_x.shape[1]
-    data_size = np.prod(train_x.shape[1: train_x.ndim]).item()
+    data_size = np.prod(train_x.shape[1:train_x.ndim]).item()
 
     # Prepare model
-    model = get_model(
-        model, num_channels=num_channels, num_classes=num_classes, data_size=data_size
-    )
+    model = get_model(model,
+                      num_channels=num_channels,
+                      num_classes=num_classes,
+                      data_size=data_size)
 
     if model.dimension == 4:
         image_size = train_x.shape[2]
@@ -246,9 +250,9 @@ def run(
         sequential = False
 
     if DIST:
-        train_x, train_y, val_x, val_y = partition(
-            global_rank, world_size, train_x, train_y, val_x, val_y
-        )
+        train_x, train_y, val_x, val_y = partition(global_rank, world_size,
+                                                   train_x, train_y, val_x,
+                                                   val_y)
 
     if model.dimension == 4:
         tx = tensor.Tensor(
@@ -293,13 +297,13 @@ def run(
             model.train()
             for b in tqdm(range(num_train_batch)):
                 # Generate the patch data in this iteration
-                x = train_x[idx[b * batch_size: (b + 1) * batch_size]]
+                x = train_x[idx[b * batch_size:(b + 1) * batch_size]]
                 if model.dimension == 4:
                     x = augmentation(x, batch_size)
                     if image_size != model.input_size:
                         x = resize_dataset(x, model.input_size)
                 x = x.astype(np_dtype[precision])
-                y = train_y[idx[b * batch_size: (b + 1) * batch_size]]
+                y = train_y[idx[b * batch_size:(b + 1) * batch_size]]
 
                 # Copy the patch data into input tensors
                 tx.copy_from_numpy(x)
@@ -317,12 +321,12 @@ def run(
                 train_loss = reduce_variable(train_loss, sgd, reducer)
 
             if global_rank == 0:
-                train_acc = train_correct / (num_train_batch * batch_size * world_size)
+                train_acc = train_correct / (num_train_batch * batch_size *
+                                             world_size)
                 print(
                     "[inner epoch %d] Training loss = %f, training accuracy = %f"
                     % (inner_epoch, train_loss, train_acc),
-                    flush=True
-                )
+                    flush=True)
 
             # Evaluation phase
             model.eval()
@@ -344,10 +348,12 @@ def run(
 
             # Output the evaluation accuracy
             if global_rank == 0:
-                print('[inner epoch %d] Evaluation accuracy = %f, Elapsed Time = %fs' %
-                      (inner_epoch, test_correct / (num_val_batch * batch_size * world_size),
+                print(
+                    '[inner epoch %d] Evaluation accuracy = %f, Elapsed Time = %fs'
+                    % (inner_epoch, test_correct /
+                       (num_val_batch * batch_size * world_size),
                        time.time() - start_time),
-                      flush=True)
+                    flush=True)
 
         client.weights = model.get_states()
         client.push()
@@ -359,7 +365,10 @@ def run(
 
 if __name__ == "__main__":
     args = parseargs()
-    sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5, dtype=singa_dtype[args.precision])
+    sgd = opt.SGD(lr=args.lr,
+                  momentum=0.9,
+                  weight_decay=1e-5,
+                  dtype=singa_dtype[args.precision])
     run(
         0,
         1,

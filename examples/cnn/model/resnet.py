@@ -230,7 +230,7 @@ def resnet18(pretrained=False, **kwargs):
 
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet.
-    
+
     Returns:
         The created ResNet-18 model.
     """

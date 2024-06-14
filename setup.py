@@ -17,7 +17,7 @@
 #
 '''Script for building wheel package for installing singa via pip.
 
-This script must be launched at the root dir of the singa project 
+This script must be launched at the root dir of the singa project
 inside the docker container created via tool/docker/devel/centos/cudaxx/Dockerfile.manylinux2014.
 
     # launch docker container
@@ -27,7 +27,7 @@ inside the docker container created via tool/docker/devel/centos/cudaxx/Dockerfi
     $ /opt/python/cp37-cp37m/bin/python setup.py bdist_wheel
     $ /opt/python/cp38-cp38/bin/python setup.py bdist_wheel
 
-The generted wheel file should be repaired by the auditwheel tool to make it 
+The generted wheel file should be repaired by the auditwheel tool to make it
 compatible with PEP513. Otherwise, the dependent libs will not be included in
 the wheel package and the wheel file will be rejected by PYPI website during
 uploading due to file name error.
@@ -35,16 +35,16 @@ uploading due to file name error.
     # repair the wheel pakage and upload to pypi
     $ /opt/python/cp36-cp36m/bin/python setup.py audit
 
-For the Dockerfile with CUDA and CUDNN installed, the CUDA version and 
+For the Dockerfile with CUDA and CUDNN installed, the CUDA version and
 CUDNN version are exported as environment variable: CUDA_VERSION, CUDNN_VERSION.
 You can control the script to build CUDA enabled singa package by exporting
 SINGA_CUDA=ON; otherwise the CPU only package will be built.
 
 
-Ref: 
+Ref:
 [1] https://github.com/bytedance/byteps/blob/master/setup.py
 [2] https://setuptools.readthedocs.io/en/latest/setuptools.html
-[3] https://packaging.python.org/tutorials/packaging-projects/ 
+[3] https://packaging.python.org/tutorials/packaging-projects/
 '''
 
 from setuptools import find_packages, setup, Command, Extension
@@ -65,15 +65,15 @@ NAME = 'singa'
 '''
 Pypi does not allow you to overwrite the uploaded package;
 therefore, you have to bump the version.
-Pypi does not allow [local version label](https://www.python.org/dev/peps/pep-0440/#local-version-segments) 
-to appear in the version, therefore, you have to include the public 
-version label only. Currently, due to the pypi size limit, the package 
+Pypi does not allow [local version label](https://www.python.org/dev/peps/pep-0440/#local-version-segments)
+to appear in the version, therefore, you have to include the public
+version label only. Currently, due to the pypi size limit, the package
 uploaded to pypi is cpu only (without cuda and cudnn), which can be installed via
-    
+
     $ pip install singa
     $ pip install singa=3.0.0.dev1
 
-The cuda and cudnn enabled package's version consists of the public 
+The cuda and cudnn enabled package's version consists of the public
 version label + local version label, e.g., 3.0.0.dev1+cuda10.2, which
 can be installed via
 
@@ -342,7 +342,7 @@ def customize_compiler_for_nvcc(self):
 
 
 class custom_build_ext(build_ext):
-    '''Customize the process for building the extension by chaning 
+    '''Customize the process for building the extension by chaning
     the options for compiling swig files and cu files.
 
     Ref: https://github.com/python/cpython/blob/master/Lib/distutils/command/build_ext.py

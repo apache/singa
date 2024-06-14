@@ -1,28 +1,29 @@
 /************************************************************
-*
-* Licensed to the Apache Software Foundation (ASF) under one
-* or more contributor license agreements.  See the NOTICE file
-* distributed with this work for additional information
-* regarding copyright ownership.  The ASF licenses this file
-* to you under the Apache License, Version 2.0 (the
-* "License"); you may not use this file except in compliance
-* with the License.  You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing,
-* software distributed under the License is distributed on an
-* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-* KIND, either express or implied.  See the License for the
-* specific language governing permissions and limitations
-* under the License.
-*
-*************************************************************/
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ *************************************************************/
 #include "singa/singa_config.h"
 #ifdef USE_OPENCV
 #ifndef SINGA_EXAMPLES_IMAGENET_ILSVRC12_H_
 #define SINGA_EXAMPLES_IMAGENET_ILSVRC12_H_
 #include <omp.h>
+
 #include <cstdint>
 #include <fstream>
 #include <iostream>
@@ -31,6 +32,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+
 #include "singa/core/tensor.h"
 #include "singa/io/decoder.h"
 #include "singa/io/encoder.h"
@@ -44,7 +46,7 @@ using std::string;
 using namespace singa::io;
 namespace singa {
 
- /// size for resizing
+/// size for resizing
 const size_t kImageSize = 256;
 const size_t kImageNBytes = 3 * kImageSize * kImageSize;
 /// size for cropping
@@ -111,7 +113,6 @@ class ILSVRC {
   void WriteMean(Tensor &mean, string path);
 
  private:
- 
   Tensor mean;
   string last_read_file = "";
 
@@ -301,7 +302,6 @@ std::thread ILSVRC::AsyncLoadData(int flag, string file, size_t read_size,
 
 size_t ILSVRC::LoadData(int flag, string file, size_t read_size, Tensor *x,
                         Tensor *y, size_t *n_read, int nthreads) {
-  
   if (file != last_read_file) {
     if (reader != nullptr) {
       reader->Close();

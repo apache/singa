@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 from copy import copy
 from src.common.constant import Config
 from src.eva_engine.phase2.evaluator import P2Evaluator
@@ -26,7 +25,10 @@ from src.search_space.core.space import SpaceWrapper
 class BudgetAwareControllerSR:
 
     @staticmethod
-    def pre_calculate_epoch_required(K, U, eta: int = 3, max_unit_per_model: int = 200):
+    def pre_calculate_epoch_required(K,
+                                     U,
+                                     eta: int = 3,
+                                     max_unit_per_model: int = 200):
         """
         :param K: candidates lists
         :param U: min resource each candidate needs
@@ -67,9 +69,8 @@ class BudgetAwareControllerSR:
                 K = cur_cand_num - 1
         return min_budget_required
 
-    def __init__(self,
-                 search_space_ins: SpaceWrapper, dataset_name: str,
-                 eta, args, time_per_epoch):
+    def __init__(self, search_space_ins: SpaceWrapper, dataset_name: str, eta,
+                 args, time_per_epoch):
 
         self.is_simulate = True
         self._evaluator = P2Evaluator(search_space_ins,
@@ -84,7 +85,8 @@ class BudgetAwareControllerSR:
         self.time_per_epoch = time_per_epoch
         self.name = "SUCCREJCT"
 
-    def schedule_budget_per_model_based_on_T(self, space_name, fixed_time_budget, K_):
+    def schedule_budget_per_model_based_on_T(self, space_name,
+                                             fixed_time_budget, K_):
         # for benchmarking only phase 2
 
         # try different K and U combinations
@@ -98,7 +100,8 @@ class BudgetAwareControllerSR:
         history = []
 
         for U in U_options:
-            expected_time_used = self.pre_calculate_epoch_required(K_, U) * self.time_per_epoch
+            expected_time_used = self.pre_calculate_epoch_required(
+                K_, U) * self.time_per_epoch
             if expected_time_used > fixed_time_budget:
                 break
             else:
@@ -145,7 +148,8 @@ class BudgetAwareControllerSR:
             #       f"and evaluate each model with {epoch_per_model} epoch, total epoch = {self.max_unit_per_model}")
             # evaluate each arch
             for cand in candidates:
-                score, time_usage = self._evaluator.p2_evaluate(cand, epoch_per_model)
+                score, time_usage = self._evaluator.p2_evaluate(
+                    cand, epoch_per_model)
                 total_time += time_usage
                 total_score.append((cand, score))
                 min_budget_required += epoch_per_model
@@ -160,5 +164,6 @@ class BudgetAwareControllerSR:
                 num_keep = cur_cand_num - 1
                 candidates = [ele[0] for ele in scored_cand[-num_keep:]]
 
-        best_perform, _ = self._evaluator.p2_evaluate(candidates[0], self.max_unit_per_model)
+        best_perform, _ = self._evaluator.p2_evaluate(candidates[0],
+                                                      self.max_unit_per_model)
         return candidates[0], best_perform, min_budget_required, total_time

@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 from enum import Enum, auto
 
 
@@ -41,7 +40,3 @@ class Metric(Enum):
     PARAMETERS = auto()
     EPOCH = auto()
     HP = auto()
-
-
-
-

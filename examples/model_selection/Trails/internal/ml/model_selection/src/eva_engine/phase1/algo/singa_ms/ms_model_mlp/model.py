@@ -34,6 +34,7 @@ singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 
 #### self-defined loss begin
 
+
 ### from autograd.py
 class SumError(Operator):
 
@@ -62,10 +63,12 @@ class SumError(Operator):
         dx *= dy
         return dx
 
+
 def se_loss(x):
     # assert x.shape == t.shape, "input and target shape different: %s, %s" % (
     #     x.shape, t.shape)
     return SumError()(x)[0]
+
 
 ### from layer.py
 class SumErrorLayer(Layer):
@@ -79,11 +82,17 @@ class SumErrorLayer(Layer):
     def forward(self, x):
         return se_loss(x)
 
+
 #### self-defined loss end
+
 
 class MSMLP(model.Model):
 
-    def __init__(self, data_size=10, perceptron_size=100, num_classes=10, layer_hidden_list=[10,10,10,10]):
+    def __init__(self,
+                 data_size=10,
+                 perceptron_size=100,
+                 num_classes=10,
+                 layer_hidden_list=[10, 10, 10, 10]):
         super(MSMLP, self).__init__()
         self.num_classes = num_classes
         self.dimension = 2
@@ -96,7 +105,7 @@ class MSMLP(model.Model):
         self.linear5 = layer.Linear(num_classes)
         self.softmax_cross_entropy = layer.SoftMaxCrossEntropy()
         self.sum_error = SumErrorLayer()
-    
+
     def forward(self, inputs):
         y = self.linear1(inputs)
         y = self.relu(y)
@@ -156,7 +165,7 @@ def create_model(pretrained=False, **kwargs):
 
     Args:
         pretrained (bool): If True, returns a pre-trained model.
-    
+
     Returns:
         The created CNN model.
     """

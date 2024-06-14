@@ -32,7 +32,7 @@ echo COMMIT HASH: $COMMIT
 # set parameters
 CUDA="OFF"
 if [ $1 = "CUDA" ]; then
-  CUDA="ON"  
+  CUDA="ON"
 fi
 
 # TODO(wangwei) test python 3 according to env variable PY3K
@@ -45,7 +45,7 @@ rm -rf build
 mkdir build
 # compile c++ code
 cd build
-if [ $2 = "PYTHON3" ]; then 
+if [ $2 = "PYTHON3" ]; then
     cmake -DUSE_CUDA=$CUDA -DENABLE_TEST=ON -DUSE_PYTHON3=ON $EXTRA_ARGS ../
 else
     cmake -DUSE_CUDA=$CUDA -DENABLE_TEST=ON $EXTRA_ARGS ../
@@ -55,7 +55,7 @@ make
 ./bin/test_singa --gtest_output=xml:./gtest.xml
 # unit test python code
 cd ../test/python
-if [ $2 = "PYTHON3" ]; then 
+if [ $2 = "PYTHON3" ]; then
     PYTHONPATH=../../build/python/ python3 run.py
 else
     PYTHONPATH=../../build/python/ python run.py

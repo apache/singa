@@ -22,7 +22,7 @@ from setuptools import setup
 
 setup(
     name='singa',
-    
+
     # PACKAGE_VERSION will be substituted by cmake with the real version
     version='${PACKAGE_VERSION}',
 

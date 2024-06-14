@@ -29,10 +29,12 @@ import tokenization
 from run_onnx_squad import read_squad_examples, convert_examples_to_features, RawResult, write_predictions
 
 import sys
+
 sys.path.append(os.path.dirname(__file__) + '/..')
 from utils import download_model, check_exist_or_download
 
 import logging
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(message)s')
 
 max_answer_length = 30

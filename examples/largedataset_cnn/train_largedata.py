@@ -27,6 +27,7 @@ import argparse
 from PIL import Image
 import process_data
 
+
 # Data augmentation
 def augmentation(x, batch_size):
     xpad = np.pad(x, [[0, 0], [0, 0], [4, 4], [4, 4]], 'symmetric')
@@ -106,7 +107,6 @@ def run(global_rank,
     dev.SetRandSeed(0)
     np.random.seed(0)
 
-
     train_x, train_y, val_x, val_y = process_data.loaddata()
 
     num_channels = 3
@@ -162,7 +162,7 @@ def run(global_rank,
     model.compile([tx], is_train=True, use_graph=graph, sequential=sequential)
     dev.SetVerbosity(verbosity)
 
-    checkpointpath="checkpoint.zip"
+    checkpointpath = "checkpoint.zip"
 
     import os
     if os.path.exists(checkpointpath):
@@ -185,7 +185,7 @@ def run(global_rank,
         for b in range(num_train_batch):
             # Generate the patch data in this iteration
             x = train_x[idx[b * batch_size:(b + 1) * batch_size]]
-            x = process_data.paths_to_images(x,model.input_size)
+            x = process_data.paths_to_images(x, model.input_size)
             if model.dimension == 4:  # Move the augmentation outside the for loop for better efficiency
                 x = augmentation(x, batch_size)
             y = train_y[idx[b * batch_size:(b + 1) * batch_size]]
@@ -215,7 +215,7 @@ def run(global_rank,
         model.eval()
         for b in range(num_val_batch):
             x = val_x[b * batch_size:(b + 1) * batch_size]
-            x = process_data.paths_to_images(x,model.input_size)
+            x = process_data.paths_to_images(x, model.input_size)
             y = val_y[b * batch_size:(b + 1) * batch_size]
             tx.copy_from_numpy(x)
             ty.copy_from_numpy(y)
@@ -289,5 +289,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5)
-    run(0, 1, args.device_id, args.max_epoch, args.batch_size, args.model,
-        "no", sgd, args.graph, args.verbosity)
+    run(0, 1, args.device_id, args.max_epoch, args.batch_size, args.model, "no",
+        sgd, args.graph, args.verbosity)

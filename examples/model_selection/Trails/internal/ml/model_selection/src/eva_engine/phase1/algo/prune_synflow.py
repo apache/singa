@@ -41,6 +41,7 @@ singa_dtype = {"float32": tensor.float32}
 
 ### MSOptimizer
 class MSOptimizer(Optimizer):
+
     def __call__(self, loss):
         pn_p_g_list = self.call_with_returns(loss)
         # print ("optimizer1 before self.step()")
@@ -245,8 +246,8 @@ def augmentation(x, batch_size):
     for data_num in range(0, batch_size):
         offset = np.random.randint(8, size=2)
         x[data_num, :, :, :] = xpad[data_num, :,
-                               offset[0]:offset[0] + x.shape[2],
-                               offset[1]:offset[1] + x.shape[2]]
+                                    offset[0]:offset[0] + x.shape[2],
+                                    offset[1]:offset[1] + x.shape[2]]
         if_flip = np.random.randint(2)
         if (if_flip):
             x[data_num, :, :, :] = x[data_num, :, :, ::-1]
@@ -298,7 +299,7 @@ def resize_dataset(x, image_size):
         for d in range(0, dim):
             X[n, d, :, :] = np.array(Image.fromarray(x[n, d, :, :]).resize(
                 (image_size, image_size), Image.BILINEAR),
-                dtype=np.float32)
+                                     dtype=np.float32)
     return X
 
 
@@ -310,7 +311,8 @@ class SynFlowEvaluator(Evaluator):
     def __init__(self):
         super().__init__()
 
-    def evaluate(self, arch, device, batch_data: object, batch_labels: torch.Tensor, space_name: str) -> float:
+    def evaluate(self, arch, device, batch_data: object,
+                 batch_labels: torch.Tensor, space_name: str) -> float:
         """
         This is implementation of paper
         "Pruning neural networks without any data by iteratively conserving synaptic flow"
@@ -327,7 +329,10 @@ class SynFlowEvaluator(Evaluator):
         """
 
         ### singa configs
-        mssgd = MSSGD(lr=0.005, momentum=0.9, weight_decay=1e-5, dtype=singa_dtype['float32'])
+        mssgd = MSSGD(lr=0.005,
+                      momentum=0.9,
+                      weight_decay=1e-5,
+                      dtype=singa_dtype['float32'])
         device_id = 0
         max_epoch = 1
         model = arch
@@ -344,7 +349,9 @@ class SynFlowEvaluator(Evaluator):
         if device == 'cpu':
             dev = singa_device.get_default_device()
         else:  # GPU
-            dev = singa_device.create_cuda_gpu_on(local_rank)  # need to change to CPU device for CPU-only machines
+            dev = singa_device.create_cuda_gpu_on(
+                local_rank
+            )  # need to change to CPU device for CPU-only machines
         dev.SetRandSeed(0)
         np.random.seed(0)
 
@@ -367,7 +374,10 @@ class SynFlowEvaluator(Evaluator):
         ty = tensor.Tensor((x.shape[0],), dev, tensor.int32)
 
         model.set_optimizer(mssgd)
-        model.compile([tx], is_train=True, use_graph=graph, sequential=sequential)
+        model.compile([tx],
+                      is_train=True,
+                      use_graph=graph,
+                      sequential=sequential)
         dev.SetVerbosity(verbosity)
 
         # 1. Convert params to their abs.
@@ -403,7 +413,9 @@ class SynFlowEvaluator(Evaluator):
         ### step 1: all one input
         # Copy the patch data into input tensors
         # tx.copy_from_numpy(np.ones(x.shape, dtype=np.float32))
-        tx.copy_from_numpy(x)  # dtype=np.float32 # actually it is all ones ... --> np.ones(x.shape, dtype=np.float32)
+        tx.copy_from_numpy(
+            x
+        )  # dtype=np.float32 # actually it is all ones ... --> np.ones(x.shape, dtype=np.float32)
         ty.copy_from_numpy(y)
         ### step 2: all weights turned to positive (done)
         ### step 3: new loss (done)
@@ -422,7 +434,10 @@ class SynFlowEvaluator(Evaluator):
                 # print ("weight should be positive tensor.to_numpy(pn_p_g_item[1][0])[0, :10]: ", tensor.to_numpy(pn_p_g_item[1][0])[0, :10])
                 # print ("gradients tensor.to_numpy(pn_p_g_item[2][0])[0, :10]: ", tensor.to_numpy(pn_p_g_item[2][0])[0, :10])
                 # print ()
-                score += np.sum(np.absolute(tensor.to_numpy(pn_p_g_item[1]) * tensor.to_numpy(pn_p_g_item[2])))
+                score += np.sum(
+                    np.absolute(
+                        tensor.to_numpy(pn_p_g_item[1]) *
+                        tensor.to_numpy(pn_p_g_item[2])))
         # print ("layer_hidden_list: \n", layer_hidden_list)
         # print ("prune_synflow !!!one-hot input vector!!! absolute step tensor.to_numpy(loss)[0]: ", tensor.to_numpy(loss)[0])
         print("score: \n", score)

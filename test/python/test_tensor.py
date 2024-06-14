@@ -235,23 +235,23 @@ class TestTensorMethods(unittest.TestCase):
         np.testing.assert_array_almost_equal(TA2, A2)
 
     @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
-    def test_gpu_6d_transpose(self,dev=gpu_dev):
-        s0 = (2,3,4,5,6,7)
-        axes1=[5,4,3,2,1,0]
-        s1 = (2,7,6,5,4,3)
-        s2 = (2,4,3,5,7,6)
+    def test_gpu_6d_transpose(self, dev=gpu_dev):
+        s0 = (2, 3, 4, 5, 6, 7)
+        axes1 = [5, 4, 3, 2, 1, 0]
+        s1 = (2, 7, 6, 5, 4, 3)
+        s2 = (2, 4, 3, 5, 7, 6)
         a = np.random.random(s1)
 
         ta = tensor.from_numpy(a)
         ta.to_device(dev)
 
-        ta = tensor.reshape(ta,s1)
-        ta = tensor.transpose(ta,axes1)
-        ta = tensor.reshape(ta,s2)
+        ta = tensor.reshape(ta, s1)
+        ta = tensor.transpose(ta, axes1)
+        ta = tensor.reshape(ta, s2)
 
-        a = np.reshape(a,s1)
-        a = np.transpose(a,axes1)
-        a = np.reshape(a,s2)
+        a = np.reshape(a, s1)
+        a = np.transpose(a, axes1)
+        a = np.reshape(a, s2)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(ta), a)
 
@@ -550,7 +550,8 @@ class TestTensorMethods(unittest.TestCase):
         scalar = random.random() * 100
         y = x + scalar
         self.assertEqual(y.dtype, tensor.float32)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), x_val + scalar, 5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), x_val + scalar,
+                                             5)
 
     @unittest.skipIf(not singa_api.USE_CUDA, 'CUDA is not enabled')
     def test_kint_float_gpu(self):

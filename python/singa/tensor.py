@@ -675,28 +675,28 @@ class Tensor(object):
             return from_raw_tensor(singa.__add__(self.data, rhs.data))
         else:
             return _call_singa_func(singa.AddFloat, self.data, float(rhs))
-            
+
     def __sub__(self, rhs):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(singa.__sub__(self.data, rhs.data))
         else:
             return _call_singa_func(singa.SubFloat, self.data, float(rhs))
-            
+
     def __mul__(self, rhs):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(singa.__mul__(self.data, rhs.data))
         else:
             return _call_singa_func(singa.MultFloat, self.data, float(rhs))
-            
+
     def __div__(self, rhs):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(singa.__div__(self.data, rhs.data))
         else:
             return _call_singa_func(singa.DivFloat, self.data, float(rhs))
-            
+
     def __truediv__(self, rhs):
         return self.__div__(rhs)
-    
+
     def __floordiv__(self, rhs):
         tmp = self.__div__(rhs)
         return _call_singa_func(singa.Floor, tmp.data)
@@ -706,25 +706,25 @@ class Tensor(object):
             return from_raw_tensor(singa.__lt__(self.data, rhs.data))
         else:
             return _call_singa_func(singa.LTFloat, self.data, float(rhs))
-            
+
     def __le__(self, rhs):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(singa.__le__(self.data, rhs.data))
         else:
             return _call_singa_func(singa.LEFloat, self.data, float(rhs))
-            
+
     def __gt__(self, rhs):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(singa.__gt__(self.data, rhs.data))
         else:
             return _call_singa_func(singa.GTFloat, self.data, float(rhs))
-            
+
     def __ge__(self, rhs):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(singa.__ge__(self.data, rhs.data))
         else:
             return _call_singa_func(singa.GEFloat, self.data, float(rhs))
-            
+
     def __eq__(self, rhs):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(singa.__eq__(self.data, rhs.data))
@@ -732,7 +732,7 @@ class Tensor(object):
             return False
         else:
             return _call_singa_func(singa.EQFloat, self.data, float(rhs))
-            
+
     def __radd__(self, lhs):
         lhs = float(lhs)
         one = Tensor(self.shape, self.device, self.dtype)

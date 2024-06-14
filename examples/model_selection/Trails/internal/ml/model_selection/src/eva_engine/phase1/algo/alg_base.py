@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 import math
 import time
 from abc import abstractmethod
@@ -25,15 +24,13 @@ from torch import nn
 
 
 class Evaluator:
+
     def __init__(self):
         pass
 
     @abstractmethod
-    def evaluate(self, arch: nn.Module,
-                 device: str,
-                 batch_data: object, batch_labels: torch.Tensor,
-                 space_name: str
-                 ) -> float:
+    def evaluate(self, arch: nn.Module, device: str, batch_data: object,
+                 batch_labels: torch.Tensor, space_name: str) -> float:
         """
         Score each architecture with predefined architecture and data
         :param arch: architecture to be scored
@@ -71,7 +68,8 @@ class Evaluator:
             starter, ender = time.time(), time.time()
 
         # score
-        score = self.evaluate(arch, device, batch_data, batch_labels, space_name)
+        score = self.evaluate(arch, device, batch_data, batch_labels,
+                              space_name)
 
         if "cuda" in device:
             # ender.record()
@@ -123,7 +121,8 @@ class Evaluator:
             starter, ender = time.time(), time.time()
 
         # score
-        score = self.evaluate(arch, device, batch_data, batch_labels, space_name)
+        score = self.evaluate(arch, device, batch_data, batch_labels,
+                              space_name)
 
         if "cuda" in device:
             # ender.record()

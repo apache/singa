@@ -26,7 +26,9 @@ from sklearn import metrics
 class CorCoefficient:
 
     @staticmethod
-    def measure(x1: list, x2: list, measure_metrics: str = CommonVars.AllCorrelation) -> dict:
+    def measure(x1: list,
+                x2: list,
+                measure_metrics: str = CommonVars.AllCorrelation) -> dict:
         """
         Measure the correlation coefficient between x1 and x2
         It requires that each dataset be normally distributed.
@@ -90,33 +92,29 @@ class CorCoefficient:
 
         try:
             metrics_dict["mae"] = np.mean(abs(test_pred - ytest))
-            metrics_dict["rmse"] = metrics.mean_squared_error(
-                ytest, test_pred, squared=False
-            )
-            metrics_dict["pearson"] = np.abs(np.corrcoef(ytest, test_pred)[1, 0])
+            metrics_dict["rmse"] = metrics.mean_squared_error(ytest,
+                                                              test_pred,
+                                                              squared=False)
+            metrics_dict["pearson"] = np.abs(
+                np.corrcoef(ytest, test_pred)[1, 0])
             metrics_dict["spearman"] = stats.spearmanr(ytest, test_pred)[0]
             metrics_dict["kendalltau"] = stats.kendalltau(ytest, test_pred)[0]
             metrics_dict["kt_2dec"] = stats.kendalltau(
-                ytest, np.round(test_pred, decimals=2)
-            )[0]
+                ytest, np.round(test_pred, decimals=2))[0]
             metrics_dict["kt_1dec"] = stats.kendalltau(
-                ytest, np.round(test_pred, decimals=1)
-            )[0]
+                ytest, np.round(test_pred, decimals=1))[0]
             print("ytest = ", ytest)
             print("test_pred = ", test_pred)
             for k in [10, 20]:
-                top_ytest = np.array(
-                    [y > sorted(ytest)[max(-len(ytest), -k - 1)] for y in ytest]
-                )
-                top_test_pred = np.array(
-                    [
-                        y > sorted(test_pred)[max(-len(test_pred), -k - 1)]
-                        for y in test_pred
-                    ]
-                )
+                top_ytest = np.array([
+                    y > sorted(ytest)[max(-len(ytest), -k - 1)] for y in ytest
+                ])
+                top_test_pred = np.array([
+                    y > sorted(test_pred)[max(-len(test_pred), -k - 1)]
+                    for y in test_pred
+                ])
                 metrics_dict["precision_{}".format(k)] = (
-                        sum(top_ytest & top_test_pred) / k
-                )
+                    sum(top_ytest & top_test_pred) / k)
             metrics_dict["full_ytest"] = ytest.tolist()
             metrics_dict["full_testpred"] = test_pred.tolist()
 
@@ -124,9 +122,9 @@ class CorCoefficient:
             for metric in METRICS:
                 metrics_dict[metric] = float("nan")
         if np.isnan(metrics_dict["pearson"]) or not np.isfinite(
-                metrics_dict["pearson"]
-        ):
-            logger.info("Error when computing metrics. ytest and test_pred are:")
+                metrics_dict["pearson"]):
+            logger.info(
+                "Error when computing metrics. ytest and test_pred are:")
             logger.info(ytest)
             logger.info(test_pred)
 

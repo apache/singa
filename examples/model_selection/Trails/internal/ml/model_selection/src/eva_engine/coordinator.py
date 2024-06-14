@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 from src.common.constant import Config
 from src.eva_engine.phase2.run_sh import BudgetAwareControllerSH
 from src.logger import logger
@@ -26,7 +25,8 @@ eta = 3
 
 
 def min_budget_calculation(search_space_ins: SpaceWrapper, dataset: str,
-                           N_K_ratio: int, sh: BudgetAwareControllerSH, t1_: float):
+                           N_K_ratio: int, sh: BudgetAwareControllerSH,
+                           t1_: float):
     # Calculate the minimum budget requirements for both phases
     K_max = int(len(search_space_ins) / N_K_ratio)
 
@@ -49,13 +49,20 @@ def min_budget_calculation(search_space_ins: SpaceWrapper, dataset: str,
         raise NotImplementedError
 
     U_min = U_options[0]
-    min_budget_required_both_phase = sh.pre_calculate_time_required(K=1, U=U_min)[1] + N_K_ratio * t1_
+    min_budget_required_both_phase = sh.pre_calculate_time_required(
+        K=1, U=U_min)[1] + N_K_ratio * t1_
 
     return K_max, U_options, U_min, min_budget_required_both_phase
 
 
-def schedule(dataset: str, sh: BudgetAwareControllerSH, T_: float, t1_: float, t2_: float, w_: int,
-             search_space_ins: SpaceWrapper, N_K_ratio: int,
+def schedule(dataset: str,
+             sh: BudgetAwareControllerSH,
+             T_: float,
+             t1_: float,
+             t2_: float,
+             w_: int,
+             search_space_ins: SpaceWrapper,
+             N_K_ratio: int,
              only_phase1: bool = False):
     """
     :param dataset
@@ -79,12 +86,15 @@ def schedule(dataset: str, sh: BudgetAwareControllerSH, T_: float, t1_: float, t
 
     # Calculate phase 1
     time_used = t1_
-    enable_phase2_at_least = sh.pre_calculate_time_required(K=2, U=U_min)[1] + 2 * N_K_ratio * t1_
+    enable_phase2_at_least = sh.pre_calculate_time_required(
+        K=2, U=U_min)[1] + 2 * N_K_ratio * t1_
 
     if only_phase1 or enable_phase2_at_least > T_:
         # all time give to phase1, explore n models
         N_only = min(int(T_ / t1_), len(search_space_ins))
-        history.extend([(1, U_min, i) for i in range(1, N_only + 1) if i * t1_ <= T_])
+        history.extend([
+            (1, U_min, i) for i in range(1, N_only + 1) if i * t1_ <= T_
+        ])
         if not history:
             raise ValueError(
                 f' [trails] Only p1, Budget {T_} is too small, it\'s at least >= {time_used} with current worker, '
@@ -96,7 +106,8 @@ def schedule(dataset: str, sh: BudgetAwareControllerSH, T_: float, t1_: float, t
         for K_ in range(2, min(int(T_ / t1_), K_max) + 1):
             N_ = K_ * N_K_ratio
             for U in U_options:
-                time_used = sh.pre_calculate_time_required(K=K_, U=U)[1] + N_ * t1_
+                time_used = sh.pre_calculate_time_required(K=K_,
+                                                           U=U)[1] + N_ * t1_
                 if time_used > T_:
                     break
                 else:
@@ -109,7 +120,8 @@ def schedule(dataset: str, sh: BudgetAwareControllerSH, T_: float, t1_: float, t
     best_K, best_U, best_N = history[-1]
     N_scored = best_N
     B1_time_used = N_scored * t1_
-    B2_all_epoch, B2_time_used = sh.pre_calculate_time_required(K=best_K, U=best_U)
+    B2_all_epoch, B2_time_used = sh.pre_calculate_time_required(K=best_K,
+                                                                U=best_U)
 
     logger.info(
         f' [trails] The schedule result: when T = {T_} second, N = {N_scored}, K = {best_K}, best_U = {best_U}, '

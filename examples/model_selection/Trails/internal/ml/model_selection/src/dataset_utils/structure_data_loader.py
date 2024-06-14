@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 from tqdm import tqdm
 import torch
 from torch.utils.data import Dataset, DataLoader, TensorDataset
@@ -53,7 +52,8 @@ class LibsvmDatasetReadOnce(Dataset):
             namespace = "decoded_valid"
         else:
             raise
-        self.feat_id, self.feat_value, self.y, self.nsamples = load_data(parent_directory, namespace)
+        self.feat_id, self.feat_value, self.y, self.nsamples = load_data(
+            parent_directory, namespace)
 
         print(f'# {self.nsamples} data samples loaded...')
 
@@ -61,9 +61,11 @@ class LibsvmDatasetReadOnce(Dataset):
         return self.nsamples
 
     def __getitem__(self, idx):
-        return {'id': self.feat_id[idx],
-                'value': self.feat_value[idx],
-                'y': self.y[idx]}
+        return {
+            'id': self.feat_id[idx],
+            'value': self.feat_value[idx],
+            'y': self.y[idx]
+        }
 
 
 class LibsvmDataset(Dataset):
@@ -74,10 +76,13 @@ class LibsvmDataset(Dataset):
         def decode_libsvm(line):
             columns = line.split(' ')
             map_func = lambda pair: (int(pair[0]), float(pair[1]))
-            id, value = zip(*map(lambda col: map_func(col.split(':')), columns[1:]))
-            sample = {'id': torch.LongTensor(id),
-                      'value': torch.FloatTensor(value),
-                      'y': float(columns[0])}
+            id, value = zip(
+                *map(lambda col: map_func(col.split(':')), columns[1:]))
+            sample = {
+                'id': torch.LongTensor(id),
+                'value': torch.FloatTensor(value),
+                'y': float(columns[0])
+            }
             return sample
 
         with open(fname) as f:
@@ -110,9 +115,11 @@ class LibsvmDataset(Dataset):
         return self.nsamples
 
     def __getitem__(self, idx):
-        return {'id': self.feat_id[idx],
-                'value': self.feat_value[idx],
-                'y': self.y[idx]}
+        return {
+            'id': self.feat_id[idx],
+            'value': self.feat_value[idx],
+            'y': self.y[idx]
+        }
 
 
 def libsvm_dataloader(args, data_dir, nfield, batch_size):
@@ -154,12 +161,17 @@ def libsvm_dataloader_ori(args):
     val_file = glob.glob("%s/va*libsvm" % data_dir)[0]
     test_file = glob.glob("%s/te*libsvm" % data_dir)[0]
 
-    train_loader = DataLoader(LibsvmDataset(train_file, args.nfield, args.max_load),
-                              batch_size=args.batch_size, shuffle=True,
-                              num_workers=args.workers, pin_memory=True)
+    train_loader = DataLoader(LibsvmDataset(train_file, args.nfield,
+                                            args.max_load),
+                              batch_size=args.batch_size,
+                              shuffle=True,
+                              num_workers=args.workers,
+                              pin_memory=True)
     val_loader = DataLoader(LibsvmDataset(val_file, args.nfield, args.max_load),
-                            batch_size=args.batch_size, shuffle=False,
-                            num_workers=args.workers, pin_memory=True)
+                            batch_size=args.batch_size,
+                            shuffle=False,
+                            num_workers=args.workers,
+                            pin_memory=True)
     # test_loader = DataLoader(LibsvmDataset(test_file, args.nfield),
     #                         batch_size=args.batch_size, shuffle=False,
     #                         num_workers=args.workers, pin_memory=True)
@@ -192,9 +204,11 @@ class UCILibsvmDataset(Dataset):
         return self.nsamples
 
     def __getitem__(self, idx):
-        return {'id': self.feat_id[idx],
-                'value': self.feat_value[idx],
-                'y': self.y[idx]}
+        return {
+            'id': self.feat_id[idx],
+            'value': self.feat_value[idx],
+            'y': self.y[idx]
+        }
 
 
 def uci_loader(data_dir, batch_size, valid_perc=0., libsvm=False, workers=4):
@@ -208,8 +222,10 @@ def uci_loader(data_dir, batch_size, valid_perc=0., libsvm=False, workers=4):
     '''
 
     def uci_validation_set(X, y, split_perc=0.2):
-        return sklearn.model_selection.train_test_split(
-            X, y, test_size=split_perc, random_state=0)
+        return sklearn.model_selection.train_test_split(X,
+                                                        y,
+                                                        test_size=split_perc,
+                                                        random_state=0)
 
     def make_loader(X, y, transformer=None, batch_size=64):
         if transformer is None:
@@ -220,15 +236,15 @@ def uci_loader(data_dir, batch_size, valid_perc=0., libsvm=False, workers=4):
             return DataLoader(UCILibsvmDataset(X, y),
                               batch_size=batch_size,
                               shuffle=transformer is None,
-                              num_workers=workers, pin_memory=True
-                              ), transformer
+                              num_workers=workers,
+                              pin_memory=True), transformer
         else:
             return DataLoader(
                 dataset=TensorDataset(*[torch.from_numpy(e) for e in [X, y]]),
                 batch_size=batch_size,
                 shuffle=transformer is None,
-                num_workers=workers, pin_memory=True
-            ), transformer
+                num_workers=workers,
+                pin_memory=True), transformer
 
     def uci_folder_to_name(f):
         return f.split('/')[-1]
@@ -240,7 +256,10 @@ def uci_loader(data_dir, batch_size, valid_perc=0., libsvm=False, workers=4):
         full_file = f'{folder}/{uci_folder_to_name(folder)}.arff'
         if os.path.exists(full_file):
             data = loadarff(full_file)
-            train_idx, test_idx = [line_to_idx(l) for l in open(f'{folder}/conxuntos.dat').readlines()]
+            train_idx, test_idx = [
+                line_to_idx(l)
+                for l in open(f'{folder}/conxuntos.dat').readlines()
+            ]
             assert len(set(train_idx) & set(test_idx)) == 0
             all_idx = list(train_idx) + list(test_idx)
             assert len(all_idx) == np.max(all_idx) + 1
@@ -253,7 +272,8 @@ def uci_loader(data_dir, batch_size, valid_perc=0., libsvm=False, workers=4):
             typename = 'train' if train else 'test'
             filename = f'{folder}/{uci_folder_to_name(folder)}_{typename}.arff'
             data = loadarff(filename)
-        assert data[1].types() == ['numeric'] * (len(data[1].types()) - 1) + ['nominal']
+        assert data[1].types(
+        ) == ['numeric'] * (len(data[1].types()) - 1) + ['nominal']
         X = np.array(data[0][data[1].names()[:-1]].tolist())
         y = np.array([int(e) for e in data[0][data[1].names()[-1]]])
         nclass = len(data[1]['clase'][1])
@@ -261,16 +281,20 @@ def uci_loader(data_dir, batch_size, valid_perc=0., libsvm=False, workers=4):
 
     Xtrain, ytrain, nclass = load_uci_dataset(data_dir)
     if valid_perc > 0:
-        Xtrain, Xvalid, ytrain, yvalid = uci_validation_set(Xtrain, ytrain, split_perc=valid_perc)
+        Xtrain, Xvalid, ytrain, yvalid = uci_validation_set(
+            Xtrain, ytrain, split_perc=valid_perc)
         train_loader, _ = make_loader(Xtrain, ytrain, batch_size=batch_size)
         valid_loader, _ = make_loader(Xvalid, yvalid, batch_size=batch_size)
     else:
         train_loader, _ = make_loader(Xtrain, ytrain, batch_size=batch_size)
         valid_loader = train_loader
 
-    print(f'{uci_folder_to_name(data_dir)}: {len(ytrain)} training samples loaded.')
+    print(
+        f'{uci_folder_to_name(data_dir)}: {len(ytrain)} training samples loaded.'
+    )
     Xtest, ytest, _ = load_uci_dataset(data_dir, False)
     test_loader, _ = make_loader(Xtest, ytest, batch_size=batch_size)
-    print(f'{uci_folder_to_name(data_dir)}: {len(ytest)} testing samples loaded.')
+    print(
+        f'{uci_folder_to_name(data_dir)}: {len(ytest)} testing samples loaded.')
     train_loader.nclass = nclass
     return train_loader, valid_loader, test_loader

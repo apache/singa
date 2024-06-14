@@ -31,16 +31,13 @@ class ModelEvaData:
         self.model_score = model_score
 
     def serialize_model(self) -> str:
-        data = {"model_id": self.model_id,
-                "model_score": self.model_score}
+        data = {"model_id": self.model_id, "model_score": self.model_score}
         return json.dumps(data)
 
     @classmethod
     def deserialize(cls, data_str: str):
         data = json.loads(data_str)
-        res = cls(
-            data["model_id"],
-            data["model_score"])
+        res = cls(data["model_id"], data["model_score"])
         return res
 
 
@@ -50,8 +47,13 @@ class ModelAcquireData:
     The serialize/deserialize is for good scalability. The project can be decouple into multiple service
     """
 
-    def __init__(self, model_id: str, model_encoding: str, is_last: bool = False,
-                 spi_seconds=None, spi_mini_batch=None, batch_size=32):
+    def __init__(self,
+                 model_id: str,
+                 model_encoding: str,
+                 is_last: bool = False,
+                 spi_seconds=None,
+                 spi_mini_batch=None,
+                 batch_size=32):
         self.is_last = is_last
         self.model_id = model_id
         self.model_encoding = model_encoding
@@ -62,25 +64,26 @@ class ModelAcquireData:
         self.batch_size = batch_size
 
     def serialize_model(self) -> dict:
-        data = {"is_last": self.is_last,
-                "model_id": self.model_id,
-                "model_encoding": self.model_encoding,
-                "spi_seconds": self.spi_seconds,
-                "preprocess_seconds": self.spi_seconds,
-                "batch_size": self.batch_size,
-                "spi_mini_batch": self.spi_mini_batch}
+        data = {
+            "is_last": self.is_last,
+            "model_id": self.model_id,
+            "model_encoding": self.model_encoding,
+            "spi_seconds": self.spi_seconds,
+            "preprocess_seconds": self.spi_seconds,
+            "batch_size": self.batch_size,
+            "spi_mini_batch": self.spi_mini_batch
+        }
 
         return data
 
     @classmethod
     def deserialize(cls, data: dict):
-        res = cls(
-            model_id=data["model_id"],
-            model_encoding=data["model_encoding"],
-            is_last=data["is_last"],
-            spi_mini_batch=data["spi_mini_batch"],
-            batch_size=data["batch_size"],
-            spi_seconds=data["spi_seconds"])
+        res = cls(model_id=data["model_id"],
+                  model_encoding=data["model_encoding"],
+                  is_last=data["is_last"],
+                  spi_mini_batch=data["spi_mini_batch"],
+                  batch_size=data["batch_size"],
+                  spi_seconds=data["spi_seconds"])
         return res
 
 
@@ -96,10 +99,7 @@ class ClientStruct:
     @classmethod
     def deserialize(cls, data_str: str):
         data = json.loads(data_str)
-        res = cls(
-            data["budget"],
-            data["dataset"]
-        )
+        res = cls(data["budget"], data["dataset"])
         return res
 
 

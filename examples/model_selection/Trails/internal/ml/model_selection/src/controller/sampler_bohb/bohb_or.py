@@ -1,4 +1,3 @@
-
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -31,10 +30,10 @@ from hpbandster.core.worker import Worker
 from nats_bench import create
 
 
-
 def time_string():
     ISOTIMEFORMAT = "%Y-%m-%d %X"
-    string = "[{:}]".format(time.strftime(ISOTIMEFORMAT, time.gmtime(time.time())))
+    string = "[{:}]".format(
+        time.strftime(ISOTIMEFORMAT, time.gmtime(time.time())))
     return string
 
 
@@ -45,8 +44,7 @@ def get_topology_config_space(search_space, max_nodes=4):
         for j in range(i):
             node_str = "{:}<-{:}".format(i, j)
             cs.add_hyperparameter(
-                ConfigSpace.CategoricalHyperparameter(node_str, search_space)
-            )
+                ConfigSpace.CategoricalHyperparameter(node_str, search_space))
     return cs
 
 
@@ -55,12 +53,13 @@ def get_size_config_space(search_space):
     for ilayer in range(search_space["numbers"]):
         node_str = "layer-{:}".format(ilayer)
         cs.add_hyperparameter(
-            ConfigSpace.CategoricalHyperparameter(node_str, search_space["candidates"])
-        )
+            ConfigSpace.CategoricalHyperparameter(node_str,
+                                                  search_space["candidates"]))
     return cs
 
 
 def config2topology_func(max_nodes=4):
+
     def config2structure(config):
         genotypes = []
         for i in range(1, max_nodes):
@@ -76,6 +75,7 @@ def config2topology_func(max_nodes=4):
 
 
 def config2size_func(search_space):
+
     def config2structure(config):
         channels = []
         for ilayer in range(search_space["numbers"]):
@@ -87,7 +87,13 @@ def config2size_func(search_space):
 
 
 class MyWorker(Worker):
-    def __init__(self, *args, convert_func=None, dataset=None, api=None, **kwargs):
+
+    def __init__(self,
+                 *args,
+                 convert_func=None,
+                 dataset=None,
+                 api=None,
+                 **kwargs):
         super().__init__(*args, **kwargs)
         self.convert_func = convert_func
         self._dataset = dataset
@@ -98,11 +104,13 @@ class MyWorker(Worker):
     def compute(self, config, budget, **kwargs):
         arch = self.convert_func(config)
         accuracy, latency, time_cost, total_time = self._api.simulate_train_eval(
-            arch, self._dataset, iepoch=int(budget) - 1, hp="12"
-        )
+            arch, self._dataset, iepoch=int(budget) - 1, hp="12")
         self.trajectory.append((accuracy, arch))
         self.total_times.append(total_time)
-        return {"loss": 100 - accuracy, "info": self._api.query_index_by_arch(arch)}
+        return {
+            "loss": 100 - accuracy,
+            "info": self._api.query_index_by_arch(arch)
+        }
 
 
 def main(xargs, api):
@@ -164,19 +172,15 @@ def main(xargs, api):
     # workers[0].trajectory
     current_best_index = []
     for idx in range(len(workers[0].trajectory)):
-        trajectory = workers[0].trajectory[: idx + 1]
+        trajectory = workers[0].trajectory[:idx + 1]
         arch = max(trajectory, key=lambda x: x[0])[1]
         current_best_index.append(api.query_index_by_arch(arch))
 
     best_arch = max(workers[0].trajectory, key=lambda x: x[0])[1]
-    logger.log(
-        "Best found configuration: {:} within {:.3f} s".format(
-            best_arch, workers[0].total_times[-1]
-        )
-    )
+    logger.log("Best found configuration: {:} within {:.3f} s".format(
+        best_arch, workers[0].total_times[-1]))
     info = api.query_info_str_by_arch(
-        best_arch, "200" if xargs.search_space == "tss" else "90"
-    )
+        best_arch, "200" if xargs.search_space == "tss" else "90")
     logger.log("{:}".format(info))
     logger.log("-" * 100)
     logger.close()
@@ -186,8 +190,7 @@ def main(xargs, api):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        "BOHB: Robust and Efficient Hyperparameter Optimization at Scale"
-    )
+        "BOHB: Robust and Efficient Hyperparameter Optimization at Scale")
     parser.add_argument(
         "--dataset",
         default="cifar10",
@@ -209,9 +212,10 @@ if __name__ == "__main__":
         default=20000,
         help="The total time cost budge for searching (in seconds).",
     )
-    parser.add_argument(
-        "--loops_if_rand", type=int, default=500, help="The total runs for evaluation."
-    )
+    parser.add_argument("--loops_if_rand",
+                        type=int,
+                        default=500,
+                        help="The total runs for evaluation.")
     # BOHB
     parser.add_argument(
         "--strategy",
@@ -277,10 +281,14 @@ if __name__ == "__main__":
     if args.rand_seed < 0:
         save_dir, all_info = None, collections.OrderedDict()
         for i in range(args.loops_if_rand):
-            print("{:} : {:03d}/{:03d}".format(time_string(), i, args.loops_if_rand))
+            print("{:} : {:03d}/{:03d}".format(time_string(), i,
+                                               args.loops_if_rand))
             args.rand_seed = random.randint(1, 100000)
             save_dir, all_archs, all_total_times = main(args, api)
-            all_info[i] = {"all_archs": all_archs, "all_total_times": all_total_times}
+            all_info[i] = {
+                "all_archs": all_archs,
+                "all_total_times": all_total_times
+            }
         save_path = save_dir / "results.pth"
         print("save into {:}".format(save_path))
 
@@ -290,5 +298,3 @@ if __name__ == "__main__":
 
     else:
         main(args, api)
-
-
