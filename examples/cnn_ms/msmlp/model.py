@@ -22,6 +22,9 @@ from singa import model
 from singa import tensor
 from singa import opt
 from singa import device
+from singa.autograd import Operator
+from singa.layer import Layer
+from singa import singa_wrap as singa
 import argparse
 import numpy as np
 
@@ -30,10 +33,12 @@ np_dtype = {"float16": np.float16, "float32": np.float32}
 singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 
 
-class MLP(model.Model):
+#### self-defined loss end
+
+class MSMLP(model.Model):
 
     def __init__(self, data_size=10, perceptron_size=100, num_classes=10):
-        super(MLP, self).__init__()
+        super(MSMLP, self).__init__()
         self.num_classes = num_classes
         self.dimension = 2
 
@@ -42,18 +47,20 @@ class MLP(model.Model):
         self.linear2 = layer.Linear(num_classes)
         self.softmax_cross_entropy = layer.SoftMaxCrossEntropy()
 
+        self.sum_error = SumErrorLayer()
+
     def forward(self, inputs):
         y = self.linear1(inputs)
         y = self.relu(y)
         y = self.linear2(y)
         return y
 
-    def train_one_batch(self, x, y, dist_option, spars):
+    def train_one_batch(self, x, y, synflow_flag, dist_option, spars):
         out = self.forward(x)
         loss = self.softmax_cross_entropy(out, y)
 
         if dist_option == 'plain':
-            self.optimizer(loss)
+            pn_p_g_list = self.optimizer(loss)
         elif dist_option == 'half':
             self.optimizer.backward_and_update_half(loss)
         elif dist_option == 'partialUpdate':
@@ -66,7 +73,7 @@ class MLP(model.Model):
             self.optimizer.backward_and_sparse_update(loss,
                                                       topK=False,
                                                       spars=spars)
-        return out, loss
+        return pn_p_g_list, out, loss
 
     def set_optimizer(self, optimizer):
         self.optimizer = optimizer
@@ -80,7 +87,7 @@ def create_model(pretrained=False, **kwargs):
     Returns:
         The created CNN model.
     """
-    model = MLP(**kwargs)
+    model = MSMLP(**kwargs)
 
     return model
 
