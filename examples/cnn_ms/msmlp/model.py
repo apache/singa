@@ -32,6 +32,35 @@ np_dtype = {"float16": np.float16, "float32": np.float32}
 
 singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 
+#### self-defined loss begin
+
+### from autograd.py
+class SumError(Operator):
+
+    def __init__(self):
+        super(SumError, self).__init__()
+        # self.t = t.data
+
+    def forward(self, x):
+        # self.err = singa.__sub__(x, self.t)
+        self.data_x = x
+        # sqr = singa.Square(self.err)
+        # loss = singa.SumAll(sqr)
+        loss = singa.SumAll(x)
+        # self.n = 1
+        # for s in x.shape():
+        #     self.n *= s
+        # loss /= self.n
+        return loss
+
+    def backward(self, dy=1.0):
+        # dx = self.err
+        dev = device.get_default_device()
+        dx = tensor.Tensor(self.data_x.shape, dev, singa_dtype['float32'])
+        dx.copy_from_numpy(np.ones(self.data_x.shape))
+        # dx *= float(2 / self.n)
+        dx *= dy
+        return dx
 
 #### self-defined loss end
 
