@@ -83,7 +83,7 @@ can be installed via
 from datetime import date
 
 # stable version
-VERSION = '4.2.0'
+VERSION = '4.3.0'
 # get the git hash
 # git_hash = subprocess.check_output(["git", "describe"]).strip().split('-')[-1][1:]
 # comment the next line to build wheel for stable version
