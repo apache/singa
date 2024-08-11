@@ -62,6 +62,23 @@ class SumError(Operator):
         dx *= dy
         return dx
 
+def se_loss(x):
+    # assert x.shape == t.shape, "input and target shape different: %s, %s" % (
+    #     x.shape, t.shape)
+    return SumError()(x)[0]
+
+### from layer.py
+class SumErrorLayer(Layer):
+    """
+    Generate a MeanSquareError operator
+    """
+
+    def __init__(self):
+        super(SumErrorLayer, self).__init__()
+
+    def forward(self, x):
+        return se_loss(x)
+
 #### self-defined loss end
 
 class MSMLP(model.Model):
