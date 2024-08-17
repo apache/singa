@@ -108,6 +108,7 @@
                             <exclude>examples/model_selection/Trails/internal/pg_extension/template/Cargo.pg11.toml</exclude>
                             <exclude>examples/model_selection/Trails/documents/ai_db.001.jpeg</exclude>
                             <exclude>examples/singa_easy/examples/data/SampleQuestion.json</exclude>
+			    <exclude>examples/trans/cmn-eng/cmn-2000.txt</exclude>
                         </excludes>
                         <consoleOutput>True</consoleOutput>
                     </configuration>
