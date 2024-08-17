@@ -1,3 +1,31 @@
+Release Notes - SINGA - Version singa-4.3.0
+
+SINGA is a distributed deep learning library.
+
+This release includes following changes:
+
+  * Add the implementation for the Transformer example.
+
+  * Enhance examples
+    * Update the readme file for the dynamic model slicing example.
+    * Update the HFL example by setting the maximum number of epochs.
+    * Add the multiprocess training implementation for the cnn ms example.
+    * Add the sparsification version of the model for the cnn ms example.
+  
+  * Extend the matrix multiplication operator to more dimensions.
+
+  * Update the data types and tensor operations for model training.
+
+  * Add the implementation for the new sum error loss.
+
+  * Update the website
+    * Add the news for the SIGMOD Systems Award.
+
+  * Fix bugs
+    * Fix the Github Actions for online code testing.
+
+----------------------------------------------------------------------------------------------
+
 Release Notes - SINGA - Version singa-4.2.0
 
 SINGA is a distributed deep learning library.
