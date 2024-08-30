@@ -28,6 +28,7 @@ singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 
 
 class MLP(model.Model):
+
     def __init__(self, data_size=10, perceptron_size=100, num_classes=10):
         super(MLP, self).__init__()
         self.num_classes = num_classes
@@ -55,9 +56,13 @@ class MLP(model.Model):
         elif dist_option == "partialUpdate":
             self.optimizer.backward_and_partial_update(loss)
         elif dist_option == "sparseTopK":
-            self.optimizer.backward_and_sparse_update(loss, topK=True, spars=spars)
+            self.optimizer.backward_and_sparse_update(loss,
+                                                      topK=True,
+                                                      spars=spars)
         elif dist_option == "sparseThreshold":
-            self.optimizer.backward_and_sparse_update(loss, topK=False, spars=spars)
+            self.optimizer.backward_and_sparse_update(loss,
+                                                      topK=False,
+                                                      spars=spars)
         return out, loss
 
     def set_optimizer(self, optimizer):
@@ -83,7 +88,10 @@ if __name__ == "__main__":
     np.random.seed(0)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-p", choices=["float32", "float16"], default="float32", dest="precision")
+    parser.add_argument("-p",
+                        choices=["float32", "float16"],
+                        default="float32",
+                        dest="precision")
     parser.add_argument(
         "-g",
         "--disable-graph",
@@ -92,9 +100,12 @@ if __name__ == "__main__":
         help="disable graph",
         dest="graph",
     )
-    parser.add_argument(
-        "-m", "--max-epoch", default=1001, type=int, help="maximum epochs", dest="max_epoch"
-    )
+    parser.add_argument("-m",
+                        "--max-epoch",
+                        default=1001,
+                        type=int,
+                        help="maximum epochs",
+                        dest="max_epoch")
     args = parser.parse_args()
 
     # generate the boundary

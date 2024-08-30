@@ -18,4 +18,3 @@
 
 pip3 install /usr/local/lib/singa/python
 rm -r /usr/local/lib/singa
-

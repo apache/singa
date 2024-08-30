@@ -22,6 +22,7 @@
 #ifdef USE_CUDNN
 
 #include <cudnn.h>
+
 #include "singa/proto/core.pb.h"
 #include "singa/utils/logging.h"
 namespace singa {
@@ -44,11 +45,11 @@ inline cudnnDataType_t GetCudnnDataType(DataType dtype) {
   return ret;
 }
 
-#define CUDNN_CHECK(condition)                                             \
-  do {                                                                     \
-    cudnnStatus_t status = condition;                                      \
-    CHECK_EQ(status, CUDNN_STATUS_SUCCESS) << " "                          \
-                                           << cudnnGetErrorString(status); \
+#define CUDNN_CHECK(condition)                 \
+  do {                                         \
+    cudnnStatus_t status = condition;          \
+    CHECK_EQ(status, CUDNN_STATUS_SUCCESS)     \
+        << " " << cudnnGetErrorString(status); \
   } while (0)
 
 /*

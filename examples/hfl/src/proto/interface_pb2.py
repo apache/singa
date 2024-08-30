@@ -30,7 +30,6 @@ from google.protobuf.internal import enum_type_wrapper
 
 _sym_db = _symbol_database.Default()
 
-
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="src/proto/interface.proto",
     package="interface",
@@ -47,15 +46,21 @@ _OP = _descriptor.EnumDescriptor(
     filename=None,
     file=DESCRIPTOR,
     values=[
-        _descriptor.EnumValueDescriptor(
-            name="DEFAULT", index=0, number=0, serialized_options=None, type=None
-        ),
-        _descriptor.EnumValueDescriptor(
-            name="SCATTER", index=1, number=1, serialized_options=None, type=None
-        ),
-        _descriptor.EnumValueDescriptor(
-            name="GATHER", index=2, number=2, serialized_options=None, type=None
-        ),
+        _descriptor.EnumValueDescriptor(name="DEFAULT",
+                                        index=0,
+                                        number=0,
+                                        serialized_options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name="SCATTER",
+                                        index=1,
+                                        number=1,
+                                        serialized_options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name="GATHER",
+                                        index=2,
+                                        number=2,
+                                        serialized_options=None,
+                                        type=None),
     ],
     containing_type=None,
     serialized_options=None,
@@ -68,7 +73,6 @@ Op = enum_type_wrapper.EnumTypeWrapper(_OP)
 DEFAULT = 0
 SCATTER = 1
 GATHER = 2
-
 
 _WEIGHTSEXCHANGE_WEIGHTSENTRY = _descriptor.Descriptor(
     name="WeightsEntry",
@@ -186,7 +190,8 @@ _WEIGHTSEXCHANGE = _descriptor.Descriptor(
 
 _WEIGHTSEXCHANGE_WEIGHTSENTRY.containing_type = _WEIGHTSEXCHANGE
 _WEIGHTSEXCHANGE.fields_by_name["op_type"].enum_type = _OP
-_WEIGHTSEXCHANGE.fields_by_name["weights"].message_type = _WEIGHTSEXCHANGE_WEIGHTSENTRY
+_WEIGHTSEXCHANGE.fields_by_name[
+    "weights"].message_type = _WEIGHTSEXCHANGE_WEIGHTSENTRY
 DESCRIPTOR.message_types_by_name["WeightsExchange"] = _WEIGHTSEXCHANGE
 DESCRIPTOR.enum_types_by_name["Op"] = _OP
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -195,23 +200,25 @@ WeightsExchange = _reflection.GeneratedProtocolMessageType(
     "WeightsExchange",
     (_message.Message,),
     {
-        "WeightsEntry": _reflection.GeneratedProtocolMessageType(
-            "WeightsEntry",
-            (_message.Message,),
-            {
-                "DESCRIPTOR": _WEIGHTSEXCHANGE_WEIGHTSENTRY,
-                "__module__": "src.proto.interface_pb2"
-                # @@protoc_insertion_point(class_scope:interface.WeightsExchange.WeightsEntry)
-            },
-        ),
-        "DESCRIPTOR": _WEIGHTSEXCHANGE,
-        "__module__": "src.proto.interface_pb2"
+        "WeightsEntry":
+            _reflection.GeneratedProtocolMessageType(
+                "WeightsEntry",
+                (_message.Message,),
+                {
+                    "DESCRIPTOR": _WEIGHTSEXCHANGE_WEIGHTSENTRY,
+                    "__module__": "src.proto.interface_pb2"
+                    # @@protoc_insertion_point(class_scope:interface.WeightsExchange.WeightsEntry)
+                },
+            ),
+        "DESCRIPTOR":
+            _WEIGHTSEXCHANGE,
+        "__module__":
+            "src.proto.interface_pb2"
         # @@protoc_insertion_point(class_scope:interface.WeightsExchange)
     },
 )
 _sym_db.RegisterMessage(WeightsExchange)
 _sym_db.RegisterMessage(WeightsExchange.WeightsEntry)
-
 
 _WEIGHTSEXCHANGE_WEIGHTSENTRY._options = None
 # @@protoc_insertion_point(module_scope)

@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 import queue
 import threading
 import requests
@@ -44,11 +43,11 @@ class SquenceDataLoader:
 
     def fetch_data(self):
         while not self.stop_event.is_set():
-            response = requests.get(
-                f'{self.cache_svc_url}/',
-                params={
-                    'table_name': self.table_name,
-                    'name_space': self.name_space})
+            response = requests.get(f'{self.cache_svc_url}/',
+                                    params={
+                                        'table_name': self.table_name,
+                                        'name_space': self.name_space
+                                    })
 
             if response.status_code == 200:
                 batch = response.json()
@@ -57,7 +56,9 @@ class SquenceDataLoader:
                 if batch == self.end_signal:
                     if self.name_space == "valid":
                         # end_signal in inference, stop !
-                        logger.info("[StreamingDataLoader]: last iteration in valid is meet!")
+                        logger.info(
+                            "[StreamingDataLoader]: last iteration in valid is meet!"
+                        )
                         self.data_queue.put({self.end_signal: True})
                     else:
                         # end_signal in trianing, then keep training
@@ -67,7 +68,11 @@ class SquenceDataLoader:
                     id_tensor = torch.LongTensor(batch['id'])
                     value_tensor = torch.FloatTensor(batch['value'])
                     y_tensor = torch.FloatTensor(batch['y'])
-                    data_tensor = {'id': id_tensor, 'value': value_tensor, 'y': y_tensor}
+                    data_tensor = {
+                        'id': id_tensor,
+                        'value': value_tensor,
+                        'y': y_tensor
+                    }
                     self.data_queue.put(data_tensor)
             else:
                 print(response.json())
@@ -94,6 +99,3 @@ class SquenceDataLoader:
     def stop(self):
         self.stop_event.set()
         self.thread.join()
-
-
-

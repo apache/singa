@@ -57,25 +57,31 @@ class P2Evaluator:
         :return:
         """
         # if it's simulate or it's image dataset
-        if self.is_simulate or self.search_space_ins.name in [Config.NB101, Config.NB201]:
+        if self.is_simulate or self.search_space_ins.name in [
+                Config.NB101, Config.NB201
+        ]:
             return self._evaluate_query(cand, epoch_per_model)
         else:
             return self._evaluate_train(cand, epoch_per_model)
 
-    def _evaluate_query(self, cand: str, epoch_per_model: int) -> (float, float):
+    def _evaluate_query(self, cand: str,
+                        epoch_per_model: int) -> (float, float):
         """
         :param cand: the candidate to evaluate
         :param epoch_per_model: how many resource it can use, epoch number
         :return:
         """
         if self.acc_getter is None:
-            self.acc_getter = SimulateTrain(space_name=self.search_space_ins.name)
+            self.acc_getter = SimulateTrain(
+                space_name=self.search_space_ins.name)
 
-        acc, time_usage = self.acc_getter.get_ground_truth(arch_id=cand, epoch_num=epoch_per_model, dataset=self.dataset)
+        acc, time_usage = self.acc_getter.get_ground_truth(
+            arch_id=cand, epoch_num=epoch_per_model, dataset=self.dataset)
 
         return acc, time_usage
 
-    def _evaluate_train(self, cand: str, epoch_per_model: int) -> (float, float):
+    def _evaluate_train(self, cand: str,
+                        epoch_per_model: int) -> (float, float):
         """
         :param cand: the candidate to evaluate
         :param epoch_per_model: how many resource it can use, epoch number
@@ -83,15 +89,16 @@ class P2Evaluator:
         """
         model = self.search_space_ins.new_architecture(cand)
         valid_auc, total_run_time, train_log = ModelTrainer.fully_train_arch(
-           model=model,
-           use_test_acc=False,
-           epoch_num=epoch_per_model,
-           train_loader=self.train_loader,
-           val_loader=self.val_loader,
-           test_loader=self.val_loader,
-           args=self.args)
+            model=model,
+            use_test_acc=False,
+            epoch_num=epoch_per_model,
+            train_loader=self.train_loader,
+            val_loader=self.val_loader,
+            test_loader=self.val_loader,
+            args=self.args)
 
-        logger.info(f' ----- model id: {cand}, Val_AUC : {valid_auc} Total running time: '
-                    f'{total_run_time}-----')
+        logger.info(
+            f' ----- model id: {cand}, Val_AUC : {valid_auc} Total running time: '
+            f'{total_run_time}-----')
 
         return valid_auc, total_run_time

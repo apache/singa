@@ -34,8 +34,10 @@ np_dtype = {"float16": np.float16, "float32": np.float32}
 
 singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 
+
 ### MSOptimizer
 class MSOptimizer(Optimizer):
+
     def __call__(self, loss):
         pn_p_g_list = self.call_with_returns(loss)
         self.step()
@@ -54,6 +56,7 @@ class MSOptimizer(Optimizer):
             # print ("g.data: \n", g.data)
             pn_p_g_list.append([p.name, p, g])  # need iterables
         return pn_p_g_list
+
 
 # MSSGD -- actually no change of code
 class MSSGD(MSOptimizer):
@@ -310,7 +313,6 @@ def run(global_rank,
         from data import mnist
         train_x, train_y, val_x, val_y = mnist.load()
 
-
     num_channels = train_x.shape[1]
     image_size = train_x.shape[2]
     data_size = np.prod(train_x.shape[1:train_x.ndim]).item()
@@ -339,9 +341,8 @@ def run(global_rank,
         parent = os.path.dirname(current)
         sys.path.insert(0, parent)
         from mlp import model
-        model = model.create_model(data_size=data_size,
-                                    num_classes=num_classes)
-    
+        model = model.create_model(data_size=data_size, num_classes=num_classes)
+
     elif model == 'msmlp':
         import os, sys, inspect
         current = os.path.dirname(
@@ -349,8 +350,7 @@ def run(global_rank,
         parent = os.path.dirname(current)
         sys.path.insert(0, parent)
         from msmlp import model
-        model = model.create_model(data_size=data_size,
-                                    num_classes=num_classes)
+        model = model.create_model(data_size=data_size, num_classes=num_classes)
 
     elif model == 'ms_model_mlp':
         import os, sys, inspect
@@ -360,8 +360,8 @@ def run(global_rank,
         sys.path.insert(0, parent)
         from ms_model_mlp import model
         model = model.create_model(data_size=data_size,
-                                    num_classes=num_classes, 
-                                    layer_hidden_list=layer_hidden_list)
+                                   num_classes=num_classes,
+                                   layer_hidden_list=layer_hidden_list)
     # print ("model: \n", model)
 
     # For distributed training, sequential has better performance
@@ -410,8 +410,8 @@ def run(global_rank,
         train_loss = np.zeros(shape=[1], dtype=np.float32)
 
         model.train()
-        print ("num_train_batch: \n", num_train_batch)
-        print ()
+        print("num_train_batch: \n", num_train_batch)
+        print()
         for b in range(num_train_batch):
             # if b % 200 == 0:
             #     print ("b: \n", b)
@@ -424,11 +424,12 @@ def run(global_rank,
             x = x.astype(np_dtype[precision])
             y = train_y[idx[b * batch_size:(b + 1) * batch_size]]
 
-
             synflow_flag = False
             # Train the model
-            if epoch == (max_epoch - 1) and b == (num_train_batch - 1):  ### synflow calcuation for the last batch
-                print ("last epoch calculate synflow")
+            if epoch == (max_epoch - 1) and b == (
+                    num_train_batch -
+                    1):  ### synflow calcuation for the last batch
+                print("last epoch calculate synflow")
                 synflow_flag = True
                 ### step 1: all one input
                 # Copy the patch data into input tensors
@@ -437,28 +438,37 @@ def run(global_rank,
                 ### step 2: all weights turned to positive (done)
                 ### step 3: new loss (done)
                 # print ("before model forward ...")
-                pn_p_g_list, out, loss = model(tx, ty, dist_option, spars, synflow_flag)
+                pn_p_g_list, out, loss = model(tx, ty, dist_option, spars,
+                                               synflow_flag)
                 ### step 4: calculate the multiplication of weights
                 synflow_score = 0.0
                 for pn_p_g_item in pn_p_g_list:
-                    print ("calculate weight param * grad parameter name: \n", pn_p_g_item[0])
-                    if len(pn_p_g_item[1].shape) == 2: # param_value.data is "weight"
-                        print ("pn_p_g_item[1].shape: \n", pn_p_g_item[1].shape)
-                        synflow_score += np.sum(np.absolute(tensor.to_numpy(pn_p_g_item[1]) * tensor.to_numpy(pn_p_g_item[2])))
-                print ("layer_hidden_list: \n", layer_hidden_list)
-                print ("synflow_score: \n", synflow_score)
-            elif epoch == (max_epoch - 1) and b == (num_train_batch - 2): # all weights turned to positive
+                    print("calculate weight param * grad parameter name: \n",
+                          pn_p_g_item[0])
+                    if len(pn_p_g_item[1].shape
+                          ) == 2:  # param_value.data is "weight"
+                        print("pn_p_g_item[1].shape: \n", pn_p_g_item[1].shape)
+                        synflow_score += np.sum(
+                            np.absolute(
+                                tensor.to_numpy(pn_p_g_item[1]) *
+                                tensor.to_numpy(pn_p_g_item[2])))
+                print("layer_hidden_list: \n", layer_hidden_list)
+                print("synflow_score: \n", synflow_score)
+            elif epoch == (max_epoch - 1) and b == (
+                    num_train_batch - 2):  # all weights turned to positive
                 # Copy the patch data into input tensors
                 tx.copy_from_numpy(x)
                 ty.copy_from_numpy(y)
                 # print ("before model forward ...")
-                pn_p_g_list, out, loss = model(tx, ty, dist_option, spars, synflow_flag)
+                pn_p_g_list, out, loss = model(tx, ty, dist_option, spars,
+                                               synflow_flag)
                 train_correct += accuracy(tensor.to_numpy(out), y)
                 train_loss += tensor.to_numpy(loss)[0]
                 # all params turned to positive
                 for pn_p_g_item in pn_p_g_list:
-                    print ("absolute value parameter name: \n", pn_p_g_item[0])
-                    pn_p_g_item[1] = tensor.abs(pn_p_g_item[1])  # tensor actually ...
+                    print("absolute value parameter name: \n", pn_p_g_item[0])
+                    pn_p_g_item[1] = tensor.abs(
+                        pn_p_g_item[1])  # tensor actually ...
             else:  # normal train steps
                 # Copy the patch data into input tensors
                 tx.copy_from_numpy(x)
@@ -467,7 +477,8 @@ def run(global_rank,
                 # print ("train_cnn tx: \n", tx)
                 # print ("train_cnn ty: \n", ty)
                 # print ("before model forward ...")
-                pn_p_g_list, out, loss = model(tx, ty, dist_option, spars, synflow_flag)
+                pn_p_g_list, out, loss = model(tx, ty, dist_option, spars,
+                                               synflow_flag)
                 # print ("normal after model(tx, ty, synflow_flag, dist_option, spars)")
                 train_correct += accuracy(tensor.to_numpy(out), y)
                 train_loss += tensor.to_numpy(loss)[0]
@@ -516,10 +527,12 @@ if __name__ == '__main__':
     # Use argparse to get command config: max_epoch, model, data, etc., for single gpu training
     parser = argparse.ArgumentParser(
         description='Training using the autograd and graph.')
-    parser.add_argument(
-        'model',
-        choices=['cnn', 'resnet', 'xceptionnet', 'mlp', 'msmlp', 'alexnet', 'ms_model_mlp'],
-        default='cnn')
+    parser.add_argument('model',
+                        choices=[
+                            'cnn', 'resnet', 'xceptionnet', 'mlp', 'msmlp',
+                            'alexnet', 'ms_model_mlp'
+                        ],
+                        default='cnn')
     parser.add_argument('data',
                         choices=['mnist', 'cifar10', 'cifar100'],
                         default='mnist')
@@ -574,9 +587,14 @@ if __name__ == '__main__':
         for layer2 in DEFAULT_LAYER_CHOICES_4:
             for layer3 in DEFAULT_LAYER_CHOICES_4:
                 for layer4 in DEFAULT_LAYER_CHOICES_4:
-                    layer_hidden_list = [layer1, layer2+1, layer3+2, layer4+3]
+                    layer_hidden_list = [
+                        layer1, layer2 + 1, layer3 + 2, layer4 + 3
+                    ]
                     # print ("layer_hidden_list: \n", layer_hidden_list)
-                    mssgd = MSSGD(lr=args.lr, momentum=0.9, weight_decay=1e-5, dtype=singa_dtype[args.precision])
+                    mssgd = MSSGD(lr=args.lr,
+                                  momentum=0.9,
+                                  weight_decay=1e-5,
+                                  dtype=singa_dtype[args.precision])
                     run(0,
                         1,
                         args.device_id,
@@ -589,4 +607,3 @@ if __name__ == '__main__':
                         args.graph,
                         args.verbosity,
                         precision=args.precision)
-

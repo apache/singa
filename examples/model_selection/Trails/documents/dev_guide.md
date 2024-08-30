@@ -36,13 +36,13 @@ python3 internal/ml/model_selection/pg_interface.py
 2. run the docker image as in [README.md](https://github.com/apache/singa/blob/dev-postgresql/examples/model_selection/Trails/README.md)
 
    ```bash
-   # Remove existing one if there is 
+   # Remove existing one if there is
    docker rm -f singa_trails
    # Create project folder.
    mkdir project && cd project
    # Download the Dockerile.
    wget -O Dockerfile https://raw.githubusercontent.com/apache/singa/dev-postgresql/examples/model_selection/Trails/singa.psql.Dockerfile
-   
+
    # Build Dockerile and run the docker.
    docker build -t singa_trails .
    docker run -d --name singa_trails singa_trails
@@ -62,7 +62,7 @@ python3 internal/ml/model_selection/pg_interface.py
 
 4. then commit the change to your own git repo, and pull inside the docker image.
 
-5. then, compile and test as following 
+5. then, compile and test as following
 
 ## For the psql
 
@@ -93,7 +93,7 @@ cargo pgrx install --pg-config /home/postgres/tmp_basedir_polardb_pg_1100_bld/bi
 
 # Connect to the primary pg server and use pg_extension database.
 docker exec -it singa_trails_polardb bash
-psql -h localhost -p 5432 -U postgres 
+psql -h localhost -p 5432 -U postgres
 \c pg_extension
 
 # Test coordinator
@@ -105,4 +105,3 @@ CALL model_selection_end2end('frappe_train', ARRAY['col1', 'col2', 'col3', 'col4
 docker exec -it singa_trails_polardb bash
 tail -f /var/polardb/primary_datadir/trails_log_folder/<log_file_name>
 ```
-

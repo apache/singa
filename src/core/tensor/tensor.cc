@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 #include "singa/core/tensor.h"
+
 #include <algorithm>
 #include <utility>
 
@@ -282,7 +283,7 @@ void Tensor::CopyData(const Tensor &src) {
   CHECK_EQ(Size(), src.Size());
   CHECK(block_ != nullptr);
   CHECK_EQ(src.data_type(), data_type_)
-    << "Could not copy data between different data type";
+      << "Could not copy data between different data type";
   // Do copy only if the src's block is already initialized.
   if (src.block_ != nullptr) {
     singa::CopyDataToFrom(this, src, Size(), 0, 0);
@@ -834,9 +835,7 @@ float Tensor::l2() const {
   float nrm = 0.0f;
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     device_->Exec(
-        [&nrm, this](Context *ctx) {
-          Nrm2<DType, Lang>(*this, &nrm, ctx);
-        },
+        [&nrm, this](Context *ctx) { Nrm2<DType, Lang>(*this, &nrm, ctx); },
         {this->block()}, {}, "L1");
   });
   return nrm / Size();
@@ -1037,58 +1036,58 @@ Tensor SoftMaxBackward(const Tensor &in, int axis, const Tensor &fdout) {
     });                                                                    \
   } while (0)
 
-#define GenBinaryTensorFn(op, fn)                                           \
-  Tensor op(const Tensor &lhs, const Tensor &rhs) {                         \
-    if (lhs.shape() != rhs.shape()) {                                       \
-      if (lhs.data_type() == kFloat32 && rhs.data_type() == kFloat32) {     \
-        auto lhs_ = Broadcast(lhs, rhs.shape());                            \
-        auto rhs_ = Broadcast(rhs, lhs.shape());                            \
-        Tensor ret(lhs_.shape(), lhs.device(), lhs.data_type());            \
-        fn(lhs_, rhs_, &ret);                                               \
-        return ret;                                                         \
-      } else {                                                              \
-        /* lhs tensor and rhs tensor are not both in float, cast to float */\
-        Tensor tmp_lhs = lhs.Clone().AsType(kFloat32);                      \
-        Tensor tmp_rhs = rhs.Clone().AsType(kFloat32);                      \
-        tmp_lhs = Broadcast(tmp_lhs, tmp_rhs.shape());                      \
-        tmp_rhs = Broadcast(tmp_rhs, tmp_lhs.shape());                      \
-        Tensor ret(tmp_lhs.shape(), tmp_lhs.device(), tmp_lhs.data_type()); \
-        fn(tmp_lhs, tmp_rhs, &ret);                                         \
-        /* if lhs and rhs are both int, cast back to int */                 \
-        if (lhs.data_type() == kInt && rhs.data_type() == kInt)             \
-          return ret.Clone().AsType(kInt);                                  \
-        return ret;                                                         \
-      }                                                                     \
-    } else {                                                                \
-      if (lhs.data_type() == kFloat32 && rhs.data_type() == kFloat32) {     \
-        Tensor ret(lhs.shape(), lhs.device(), lhs.data_type());             \
-        fn(lhs, rhs, &ret);                                                 \
-        return ret;                                                         \
-      } else {                                                              \
-        /* lhs tensor and rhs tensor are not both in float, cast to float */\
-        Tensor tmp_lhs = lhs.Clone().AsType(kFloat32);                      \
-        Tensor tmp_rhs = rhs.Clone().AsType(kFloat32);                      \
-        Tensor ret(tmp_lhs.shape(), tmp_lhs.device(), tmp_lhs.data_type()); \
-        fn(tmp_lhs, tmp_rhs, &ret);                                         \
-        /* if lhs and rhs are both int, cast back to int */                 \
-        if (lhs.data_type() == kInt && rhs.data_type() == kInt)             \
-          return ret.Clone().AsType(kInt);                                  \
-        return ret;                                                         \
-      }                                                                     \
-    }                                                                       \
-  }                                                                         \
-  void fn(const Tensor &lhs, const Tensor &rhs, Tensor *ret) {              \
-    CHECK_EQ(lhs.device(), ret->device());                                  \
-    CHECK_EQ(rhs.device(), ret->device());                                  \
-    if (lhs.shape() != rhs.shape()) {                                       \
-      auto lhs_ = Broadcast(lhs, rhs.shape());                              \
-      auto rhs_ = Broadcast(rhs, lhs.shape());                              \
-      CHECK(lhs_.shape() == ret->shape());                                  \
-      EltwiseBinaryTensorFn(fn, lhs_, rhs_, ret);                           \
-    } else {                                                                \
-      CHECK(lhs.shape() == ret->shape());                                   \
-      EltwiseBinaryTensorFn(fn, lhs, rhs, ret);                             \
-    }                                                                       \
+#define GenBinaryTensorFn(op, fn)                                            \
+  Tensor op(const Tensor &lhs, const Tensor &rhs) {                          \
+    if (lhs.shape() != rhs.shape()) {                                        \
+      if (lhs.data_type() == kFloat32 && rhs.data_type() == kFloat32) {      \
+        auto lhs_ = Broadcast(lhs, rhs.shape());                             \
+        auto rhs_ = Broadcast(rhs, lhs.shape());                             \
+        Tensor ret(lhs_.shape(), lhs.device(), lhs.data_type());             \
+        fn(lhs_, rhs_, &ret);                                                \
+        return ret;                                                          \
+      } else {                                                               \
+        /* lhs tensor and rhs tensor are not both in float, cast to float */ \
+        Tensor tmp_lhs = lhs.Clone().AsType(kFloat32);                       \
+        Tensor tmp_rhs = rhs.Clone().AsType(kFloat32);                       \
+        tmp_lhs = Broadcast(tmp_lhs, tmp_rhs.shape());                       \
+        tmp_rhs = Broadcast(tmp_rhs, tmp_lhs.shape());                       \
+        Tensor ret(tmp_lhs.shape(), tmp_lhs.device(), tmp_lhs.data_type());  \
+        fn(tmp_lhs, tmp_rhs, &ret);                                          \
+        /* if lhs and rhs are both int, cast back to int */                  \
+        if (lhs.data_type() == kInt && rhs.data_type() == kInt)              \
+          return ret.Clone().AsType(kInt);                                   \
+        return ret;                                                          \
+      }                                                                      \
+    } else {                                                                 \
+      if (lhs.data_type() == kFloat32 && rhs.data_type() == kFloat32) {      \
+        Tensor ret(lhs.shape(), lhs.device(), lhs.data_type());              \
+        fn(lhs, rhs, &ret);                                                  \
+        return ret;                                                          \
+      } else {                                                               \
+        /* lhs tensor and rhs tensor are not both in float, cast to float */ \
+        Tensor tmp_lhs = lhs.Clone().AsType(kFloat32);                       \
+        Tensor tmp_rhs = rhs.Clone().AsType(kFloat32);                       \
+        Tensor ret(tmp_lhs.shape(), tmp_lhs.device(), tmp_lhs.data_type());  \
+        fn(tmp_lhs, tmp_rhs, &ret);                                          \
+        /* if lhs and rhs are both int, cast back to int */                  \
+        if (lhs.data_type() == kInt && rhs.data_type() == kInt)              \
+          return ret.Clone().AsType(kInt);                                   \
+        return ret;                                                          \
+      }                                                                      \
+    }                                                                        \
+  }                                                                          \
+  void fn(const Tensor &lhs, const Tensor &rhs, Tensor *ret) {               \
+    CHECK_EQ(lhs.device(), ret->device());                                   \
+    CHECK_EQ(rhs.device(), ret->device());                                   \
+    if (lhs.shape() != rhs.shape()) {                                        \
+      auto lhs_ = Broadcast(lhs, rhs.shape());                               \
+      auto rhs_ = Broadcast(rhs, lhs.shape());                               \
+      CHECK(lhs_.shape() == ret->shape());                                   \
+      EltwiseBinaryTensorFn(fn, lhs_, rhs_, ret);                            \
+    } else {                                                                 \
+      CHECK(lhs.shape() == ret->shape());                                    \
+      EltwiseBinaryTensorFn(fn, lhs, rhs, ret);                              \
+    }                                                                        \
   }
 
 // boradcasting operations:
@@ -1105,23 +1104,23 @@ GenBinaryTensorFn(operator>=, GE);
 GenBinaryTensorFn(operator==, EQ);
 GenBinaryTensorFn(ReLUBackward, ReLUBackward);
 
-#define EltwiseTensorScalarFn(fn, t, x, ret)                            \
-  do {                                                                  \
-    TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, {  \
+#define EltwiseTensorScalarFn(fn, t, x, ret)                           \
+  do {                                                                 \
+    TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, { \
       DType tmp_x = TypeCast<SType, DType>(x);                         \
-      Tensor &retRef = *ret;                                            \
-      ret->device()->Exec(                                              \
+      Tensor &retRef = *ret;                                           \
+      ret->device()->Exec(                                             \
           [t, tmp_x, retRef](Context *ctx) mutable {                   \
             fn<DType, Lang>(t, tmp_x, &retRef, ctx);                   \
-          },                                                            \
-          {t.block()}, {ret->block()}, #fn);                            \
-    });                                                                 \
+          },                                                           \
+          {t.block()}, {ret->block()}, #fn);                           \
+    });                                                                \
   } while (0)
 
 #define GenTensorScalarFn(op, fn)                                          \
   template <typename SType>                                                \
   Tensor op(const Tensor &in, const SType x) {                             \
-    if (in.data_type() == kFloat32 && std::is_same<SType, float>::value){  \
+    if (in.data_type() == kFloat32 && std::is_same<SType, float>::value) { \
       Tensor ret(in.shape(), in.device(), in.data_type());                 \
       fn(in, x, &ret);                                                     \
       return ret;                                                          \
@@ -1602,15 +1601,15 @@ void Axpy(const SType alpha, const Tensor &in, Tensor *out) {
 template void Axpy<float>(const float alpha, const Tensor &in, Tensor *out);
 
 void Axpy(const Tensor &alpha, const Tensor &in, Tensor *out) {
-    TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
-      Tensor fake(*out);
-      Tensor &outRef = *out;
-      out->device()->Exec(
-          [alpha, in, outRef, fake](Context *ctx) mutable {
-            Axpy<DType, Lang>(alpha, in, &outRef, ctx);
-          },
-          {alpha.block(), in.block(), out->block()}, {out->block()}, "Axpy");
-    });
+  TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
+    Tensor fake(*out);
+    Tensor &outRef = *out;
+    out->device()->Exec(
+        [alpha, in, outRef, fake](Context *ctx) mutable {
+          Axpy<DType, Lang>(alpha, in, &outRef, ctx);
+        },
+        {alpha.block(), in.block(), out->block()}, {out->block()}, "Axpy");
+  });
 }
 
 Tensor Mult(const Tensor &A, const Tensor &B) {

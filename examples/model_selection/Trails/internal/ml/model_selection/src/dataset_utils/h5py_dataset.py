@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 import h5py
 import numpy as np
 from PIL import Image
@@ -26,6 +25,7 @@ from torch.utils.data import Dataset, DataLoader
 
 
 class H5Dataset(Dataset):
+
     def __init__(self, h5_path, transform=None):
         self.h5_path = h5_path
         self.h5_file = None

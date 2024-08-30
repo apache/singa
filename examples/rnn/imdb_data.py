@@ -163,8 +163,8 @@ def tokenize(x):
 
 
 def encode_token(words, wv, w2i):
-    ''' lambda fn for encoding string seq to int seq 
-        args: 
+    ''' lambda fn for encoding string seq to int seq
+        args:
             wv: word vector lookup dictionary
             w2i: word2index lookup dictionary
     '''

@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
-#include "singa/model/layer.h"
 #include "./slice.h"
+
+#include "singa/model/layer.h"
 namespace singa {
 
 RegisterLayerClass(singa_slice, Slice);
@@ -59,11 +60,11 @@ const vector<Tensor> Slice::Forward(int flag, const vector<Tensor>& inputs) {
   CHECK_EQ(inputs.size(), 1u) << "Split layer only have one input tensor.";
   size_t offset = 0;
   for (auto& s : slice_point_) {
-      outputs.push_back(SliceOn(inputs.at(0), offset, s, axis_));
+    outputs.push_back(SliceOn(inputs.at(0), offset, s, axis_));
     offset = s;
   }
-  outputs.push_back(SliceOn(inputs.at(0), offset, inputs.at(0).shape(axis_),
-        axis_));
+  outputs.push_back(
+      SliceOn(inputs.at(0), offset, inputs.at(0).shape(axis_), axis_));
   return outputs;
 }
 

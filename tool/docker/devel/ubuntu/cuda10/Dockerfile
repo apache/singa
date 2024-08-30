@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# 
+#
 # Change tags to build with different cuda/cudnn versions:
 FROM nvidia/cuda:10.0-devel-ubuntu18.04
 

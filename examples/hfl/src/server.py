@@ -102,7 +102,10 @@ class Server:
         """Close the server."""
         self.sock.close()
 
-    def aggregate(self, weights: Dict[str, List[tensor.Tensor]]) -> Dict[str, tensor.Tensor]:
+    def aggregate(
+            self,
+            weights: Dict[str,
+                          List[tensor.Tensor]]) -> Dict[str, tensor.Tensor]:
         """Aggregate collected weights to update server weight.
 
         Args:
@@ -148,7 +151,9 @@ class Server:
 if __name__ == "__main__":
     args = parseargs()
 
-    server = Server(num_clients=args.num_clients, host=args.host, port=args.port)
+    server = Server(num_clients=args.num_clients,
+                    host=args.host,
+                    port=args.port)
     server.start()
 
     for i in range(args.max_epoch):

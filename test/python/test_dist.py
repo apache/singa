@@ -30,9 +30,9 @@ if (singa_wrap.USE_DIST):
     grad = tensor.Tensor((10, 10), dev, tensor.float32)
     expected = np.ones((10, 10), dtype=np.float32) * (10 - 0.1)
 
-@unittest.skipIf(not singa_wrap.USE_DIST,'DIST is not enabled')
-class TestDistOptimizer(unittest.TestCase):
 
+@unittest.skipIf(not singa_wrap.USE_DIST, 'DIST is not enabled')
+class TestDistOptimizer(unittest.TestCase):
 
     def test_dist_opt_fp32(self):
         # Test the C++ all reduce operation in fp32

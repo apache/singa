@@ -27,6 +27,7 @@ import onnx
 from utils import download_model, check_exist_or_download
 
 import logging
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 
 
@@ -53,6 +54,7 @@ def get_image_labe():
     image_url = 'https://s3.amazonaws.com/model-server/inputs/kitten.jpg'
     img = Image.open(check_exist_or_download(image_url))
     return img, labels
+
 
 class MyModel(sonnx.SONNXModel):
 

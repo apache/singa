@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
-#include "singa/model/metric.h"
 #include <algorithm>
+
+#include "singa/model/metric.h"
 namespace singa {
 
 Tensor Accuracy::Match(const Tensor& predict, const vector<int>& target) {
@@ -44,7 +45,7 @@ Tensor Accuracy::Match(const Tensor& predict, const vector<int>& target) {
   }
   Tensor ret(Shape{batchsize});
   ret.CopyDataFromHostPtr(score, batchsize);
-  delete [] score;
+  delete[] score;
   return ret;
 }
 

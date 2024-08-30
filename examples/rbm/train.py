@@ -47,7 +47,7 @@ def load_train_data(file_path):
 
 def train(data_file, use_gpu, num_epoch=10, batch_size=100):
     print('Start intialization............')
-    lr = 0.0005   # Learning rate
+    lr = 0.0005  # Learning rate
     weight_decay = 0.0002
     hdim = 1000
     vdim = 784
@@ -75,8 +75,8 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
         print('Epoch %d' % epoch)
         for b in range(num_train_batch):
             # positive phase
-            tdata = tensor.from_numpy(
-                train_x[(b * batch_size):((b + 1) * batch_size), :])
+            tdata = tensor.from_numpy(train_x[(b * batch_size):((b + 1) *
+                                                                batch_size), :])
             tdata.to_device(dev)
             tposhidprob = tensor.mult(tdata, tweight)
             tposhidprob = tposhidprob + thbias

@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
-#include "singa/io/encoder.h"
 #include <sstream>
+
+#include "singa/io/encoder.h"
 
 namespace singa {
 
@@ -35,8 +36,10 @@ std::string CSVEncoder::Encode(vector<Tensor>& data) {
   for (size_t i = 0; i < size; i++) {
     std::ostringstream buff;
     buff << value[i];
-    if (i == size - 1) des += buff.str();
-    else des += buff.str() + ',';
+    if (i == size - 1)
+      des += buff.str();
+    else
+      des += buff.str() + ',';
   }
   return des;
 }

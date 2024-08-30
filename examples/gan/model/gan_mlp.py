@@ -40,7 +40,7 @@ class GAN_MLP(model.Model):
         self.dis_net_fc_0 = layer.Linear(self.hidden_size)
         self.dis_net_relu_0 = layer.ReLU()
         self.dis_net_fc_1 = layer.Linear(1)
-        self.dis_net_sigmoid_1= layer.Sigmoid()
+        self.dis_net_sigmoid_1 = layer.Sigmoid()
         self.binary_cross_entropy = layer.BinaryCrossEntropy()
 
     def forward(self, x):

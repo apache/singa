@@ -21,6 +21,7 @@
 #include "singa/singa_config.h"
 #ifdef USE_CUDNN
 #include <cudnn.h>
+
 #include <string>
 #include <utility>
 #include <vector>
@@ -37,13 +38,14 @@ class CudnnPooling : public Pooling {
   /// \copydoc Layer::layer_type()
   // const std::string layer_type() const override { return "CudnnPooling"; }
 
-  void Setup(const Shape& in_sample, const LayerConf &conf) override;
+  void Setup(const Shape &in_sample, const LayerConf &conf) override;
   const Tensor Forward(int flag, const Tensor &input) override;
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
                                                    const Tensor &grad) override;
+
  private:
   /// Init cudnn related data structures.
-  void InitCudnn(const Tensor& input);
+  void InitCudnn(const Tensor &input);
 
  private:
   bool has_init_cudnn_ = false;

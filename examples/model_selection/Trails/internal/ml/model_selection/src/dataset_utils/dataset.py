@@ -26,8 +26,12 @@ from torchvision import transforms
 from .imagenet16 import *
 
 
-def get_dataloader(train_batch_size: int, test_batch_size: int, dataset: str,
-                   num_workers: int, datadir: str, resize=None) -> (DataLoader, DataLoader, int):
+def get_dataloader(train_batch_size: int,
+                   test_batch_size: int,
+                   dataset: str,
+                   num_workers: int,
+                   datadir: str,
+                   resize=None) -> (DataLoader, DataLoader, int):
     """
     Load CIFAR or imagenet datasets
     :param train_batch_size:
@@ -96,24 +100,37 @@ def get_dataloader(train_batch_size: int, test_batch_size: int, dataset: str,
         test_dataset = CIFAR100(datadir, False, test_transform, download=True)
     elif dataset == 'svhn':
         class_num = 10
-        train_dataset = SVHN(datadir, split='train', transform=train_transform, download=True)
-        test_dataset = SVHN(datadir, split='test', transform=test_transform, download=True)
+        train_dataset = SVHN(datadir,
+                             split='train',
+                             transform=train_transform,
+                             download=True)
+        test_dataset = SVHN(datadir,
+                            split='test',
+                            transform=test_transform,
+                            download=True)
     elif dataset == 'ImageNet16-120':
         class_num = 120
-        train_dataset = ImageNet16(os.path.join(datadir, 'ImageNet16'), True, train_transform, 120)
-        test_dataset = ImageNet16(os.path.join(datadir, 'ImageNet16'), False, test_transform, 120)
+        train_dataset = ImageNet16(os.path.join(datadir, 'ImageNet16'), True,
+                                   train_transform, 120)
+        test_dataset = ImageNet16(os.path.join(datadir, 'ImageNet16'), False,
+                                  test_transform, 120)
     elif dataset == 'ImageNet1k':
         class_num = 1000
         # train_dataset = ImageFolder(root=os.path.join(datadir, 'imagenet/val'), transform=train_transform)
-        test_dataset = ImageFolder(root=os.path.join(datadir, 'imagenet/val'), transform=test_transform)
+        test_dataset = ImageFolder(root=os.path.join(datadir, 'imagenet/val'),
+                                   transform=test_transform)
         train_dataset = test_dataset
     elif dataset == 'ImageNet224-120':
         class_num = 120
-        test_dataset = ImageFolder(root=os.path.join(datadir, 'imagenet/val'), transform=test_transform)
+        test_dataset = ImageFolder(root=os.path.join(datadir, 'imagenet/val'),
+                                   transform=test_transform)
 
         # get 0-120 classes
         class_indices = list(range(120))  # 0-120 inclusive
-        subset_indices = [i for i, (_, label) in enumerate(test_dataset.samples) if label in class_indices]
+        subset_indices = [
+            i for i, (_, label) in enumerate(test_dataset.samples)
+            if label in class_indices
+        ]
         filtered_test_dataset = Subset(test_dataset, subset_indices)
         # get 0-120 classes
         train_dataset = filtered_test_dataset
@@ -126,27 +143,24 @@ def get_dataloader(train_batch_size: int, test_batch_size: int, dataset: str,
     else:
         raise ValueError('There are no more cifars or imagenets.')
 
-    train_loader = DataLoader(
-        train_dataset,
-        train_batch_size,
-        shuffle=True,
-        num_workers=4,
-        pin_memory=False
-    )
-    test_loader = DataLoader(
-        test_dataset,
-        test_batch_size,
-        shuffle=False,
-        num_workers=4,
-        pin_memory=False
-    )
+    train_loader = DataLoader(train_dataset,
+                              train_batch_size,
+                              shuffle=True,
+                              num_workers=4,
+                              pin_memory=False)
+    test_loader = DataLoader(test_dataset,
+                             test_batch_size,
+                             shuffle=False,
+                             num_workers=4,
+                             pin_memory=False)
 
     print("dataset load done")
 
     return train_loader, test_loader, class_num
 
 
-def get_mini_batch(dataloader: DataLoader, sample_alg: str, batch_size: int, num_classes: int) -> (tensor, tensor):
+def get_mini_batch(dataloader: DataLoader, sample_alg: str, batch_size: int,
+                   num_classes: int) -> (tensor, tensor):
     """
     Get a mini-batch of data,
     :param dataloader: DataLoader
@@ -159,14 +173,18 @@ def get_mini_batch(dataloader: DataLoader, sample_alg: str, batch_size: int, num
     if sample_alg == 'random':
         inputs, targets = _get_some_data(dataloader, batch_size=batch_size)
     elif sample_alg == 'grasp':
-        inputs, targets = _get_some_data_grasp(dataloader, num_classes, samples_per_class=batch_size // num_classes)
+        inputs, targets = _get_some_data_grasp(dataloader,
+                                               num_classes,
+                                               samples_per_class=batch_size //
+                                               num_classes)
     else:
         raise NotImplementedError(f'dataload {sample_alg} is not supported')
 
     return inputs, targets
 
 
-def _get_some_data(train_dataloader: DataLoader, batch_size: int) -> (torch.tensor, torch.tensor):
+def _get_some_data(train_dataloader: DataLoader,
+                   batch_size: int) -> (torch.tensor, torch.tensor):
     """
     Randomly sample some data, some class may not be sampled
     :param train_dataloader: torch dataLoader
@@ -185,8 +203,9 @@ def _get_some_data(train_dataloader: DataLoader, batch_size: int) -> (torch.tens
     return inputs, targets
 
 
-def _get_some_data_grasp(train_dataloader: DataLoader, num_classes: int,
-                         samples_per_class: int) -> (torch.tensor, torch.tensor):
+def _get_some_data_grasp(
+        train_dataloader: DataLoader, num_classes: int,
+        samples_per_class: int) -> (torch.tensor, torch.tensor):
     """
     Sample some data while guarantee example class has equal number of samples.
     :param train_dataloader: torch dataLoader

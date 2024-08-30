@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 import calendar
 import os
 import time
@@ -57,7 +56,8 @@ def run_with_time_budget(time_budget: float):
     data_loader = [train_loader, val_loader, test_loader]
 
     rms = RunModelSelection(args.search_space, args, is_simulate=False)
-    best_arch, _, _, _, _, _, _, _ = rms.select_model_online(time_budget, data_loader)
+    best_arch, _, _, _, _, _, _, _ = rms.select_model_online(
+        time_budget, data_loader)
 
     return best_arch
 
@@ -68,7 +68,8 @@ if __name__ == "__main__":
     # set the log name
     gmt = time.gmtime()
     ts = calendar.timegm(gmt)
-    os.environ.setdefault("log_file_name", args.log_name + "_" + str(ts) + ".log")
+    os.environ.setdefault("log_file_name",
+                          args.log_name + "_" + str(ts) + ".log")
     os.environ.setdefault("base_dir", args.base_dir)
 
     from src.eva_engine.run_ms import RunModelSelection

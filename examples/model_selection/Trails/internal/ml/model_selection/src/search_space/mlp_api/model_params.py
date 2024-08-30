@@ -16,16 +16,13 @@
 # limitations under the License.
 #
 
-
 from src.search_space.core.model_params import ModelMacroCfg
 
 
 class MlpMacroCfg(ModelMacroCfg):
 
-    def __init__(self, nfield: int, nfeat: int, nemb: int,
-                 num_layers: int,
-                 num_labels: int,
-                 layer_choices: list):
+    def __init__(self, nfield: int, nfeat: int, nemb: int, num_layers: int,
+                 num_labels: int, layer_choices: list):
         super().__init__(num_labels)
 
         self.nfield = nfield

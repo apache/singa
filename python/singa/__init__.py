@@ -18,6 +18,7 @@
 from . import singa_wrap
 
 import faulthandler
+
 faulthandler.enable()
 
 singa_wrap.InitLogging("")

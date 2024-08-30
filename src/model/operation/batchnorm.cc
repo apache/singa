@@ -115,7 +115,8 @@ Tensor CpuBatchNormForwardInference(const BatchNormHandle& bnh, const Tensor& x,
         ctx->dnnl_stream.wait();
       },
       {x.block(), w.block(), running_mean.block(), running_var.block()},
-      {y.block(), running_mean.block(), running_var.block()}, "CpuBatchNormForwardInference");
+      {y.block(), running_mean.block(), running_var.block()},
+      "CpuBatchNormForwardInference");
 
   return y;
 }
@@ -173,7 +174,8 @@ const std::vector<Tensor> CpuBatchNormForwardTraining(
       },
       {x.block(), w.block(), running_mean.block(), running_var.block()},
       {y.block(), running_mean.block(), running_var.block(), mean.block(),
-       var.block()}, "CpuBatchNormForwardTraining");
+       var.block()},
+      "CpuBatchNormForwardTraining");
 
   return {y, mean, var};
 }
@@ -323,7 +325,8 @@ const std::vector<Tensor> GpuBatchNormForwardTraining(
       {input.block(), bnScale.block(), bnBias.block(), running_mean.block(),
        running_var.block()},
       {output.block(), running_mean.block(), running_var.block(), mean.block(),
-       var.block()}, "GpuBatchNormForwardTraining");
+       var.block()},
+      "GpuBatchNormForwardTraining");
   if (cbnh.is_2d) output.Reshape(Shape{shape.at(0), shape.at(1)});
   return {output, mean, var};
 }

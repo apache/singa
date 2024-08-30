@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 from src.controller.core.sample import Sampler
 from src.search_space.core.space import SpaceWrapper
 from src.search_space.core.model_params import ModelMicroCfg
@@ -28,7 +27,8 @@ class RandomSampler(Sampler):
         super().__init__(space)
         self.visited = []
 
-    def sample_next_arch(self, sorted_model: list = None) -> (str, ModelMicroCfg):
+    def sample_next_arch(self,
+                         sorted_model: list = None) -> (str, ModelMicroCfg):
         while True:
             arch_id, model_micro = self.space.random_architecture_id()
 

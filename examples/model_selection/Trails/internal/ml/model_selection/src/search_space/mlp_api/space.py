@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 import copy
 import itertools
 import random
@@ -50,12 +49,29 @@ import numpy as np
 
 # Useful constants
 
-DEFAULT_LAYER_CHOICES_20 = [8, 16, 24, 32,  # 8
-                            48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 256,  # 16
-                            384, 512]
-DEFAULT_LAYER_CHOICES_10 = [8, 16, 32,
-                            48, 96, 112, 144, 176, 240,
-                            384]
+DEFAULT_LAYER_CHOICES_20 = [
+    8,
+    16,
+    24,
+    32,  # 8
+    48,
+    64,
+    80,
+    96,
+    112,
+    128,
+    144,
+    160,
+    176,
+    192,
+    208,
+    224,
+    240,
+    256,  # 16
+    384,
+    512
+]
+DEFAULT_LAYER_CHOICES_10 = [8, 16, 32, 48, 96, 112, 144, 176, 240, 384]
 
 np_dtype = {"float16": np.float16, "float32": np.float32}
 
@@ -95,14 +111,15 @@ class Embedding(nn.Module):
 
 class MLP(nn.Module):
 
-    def __init__(self, ninput: int, hidden_layer_list: list, dropout_rate: float, noutput: int, use_bn: bool):
+    def __init__(self, ninput: int, hidden_layer_list: list,
+                 dropout_rate: float, noutput: int, use_bn: bool):
         super().__init__()
         """
         Args:
             ninput: number of input feature dim
             hidden_layer_list: [a,b,c..] each value is number of Neurons in corresponding hidden layer
             dropout_rate: if use drop out
-            noutput: number of labels. 
+            noutput: number of labels.
         """
 
         layers = list()
@@ -141,7 +158,9 @@ class MLP(nn.Module):
                 m.bias.data.zero_()
             elif isinstance(m, nn.Linear):
                 if method == 'lecun':
-                    nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='linear')
+                    nn.init.kaiming_normal_(m.weight,
+                                            mode='fan_in',
+                                            nonlinearity='linear')
                 elif method == 'xavier':
                     nn.init.xavier_uniform_(m.weight)
                 elif method == 'he':
@@ -154,6 +173,7 @@ class MLP(nn.Module):
 
 
 #### self-defined loss begin
+
 
 ### from autograd.py
 class SumError(Operator):
@@ -210,11 +230,17 @@ class SumErrorLayer(Layer):
 
 #### self-defined loss end
 
+
 class SINGADNNModel(model.Model):
 
-    def __init__(self, nfield: int, nfeat: int, nemb: int,
-                 hidden_layer_list: list, dropout_rate: float,
-                 noutput: int, use_bn: bool = True):
+    def __init__(self,
+                 nfield: int,
+                 nfeat: int,
+                 nemb: int,
+                 hidden_layer_list: list,
+                 dropout_rate: float,
+                 noutput: int,
+                 use_bn: bool = True):
         # def __init__(self, data_size=10, perceptron_size=100, num_classes=10, layer_hidden_list=[10,10,10,10]):
         super(SINGADNNModel, self).__init__()
         # self.num_classes = num_classes
@@ -282,9 +308,9 @@ class SINGADNNModel(model.Model):
 
         for idx, size in enumerate(sizes):
             # Create a mask of ones and zeros with the required length
-            mask = np.concatenate([
-                np.ones(size),
-                np.zeros(self.hidden_layer_list[idx] - size)],
+            mask = np.concatenate(
+                [np.ones(size),
+                 np.zeros(self.hidden_layer_list[idx] - size)],
                 dim=0)
             # Shuffle the mask to randomize which neurons are active
             mask = mask[np.random.permutation(mask.size(0))]
@@ -358,9 +384,14 @@ class DNNModel(torch.nn.Module):
     Model:  Deep Neural Networks
     """
 
-    def __init__(self, nfield: int, nfeat: int, nemb: int,
-                 hidden_layer_list: list, dropout_rate: float,
-                 noutput: int, use_bn: bool = True):
+    def __init__(self,
+                 nfield: int,
+                 nfeat: int,
+                 nemb: int,
+                 hidden_layer_list: list,
+                 dropout_rate: float,
+                 noutput: int,
+                 use_bn: bool = True):
         """
         Args:
             nfield: the number of fields
@@ -372,7 +403,8 @@ class DNNModel(torch.nn.Module):
         self.nemb = nemb
         self.embedding = None
         self.mlp_ninput = nfield * nemb
-        self.mlp = MLP(self.mlp_ninput, hidden_layer_list, dropout_rate, noutput, use_bn)
+        self.mlp = MLP(self.mlp_ninput, hidden_layer_list, dropout_rate,
+                       noutput, use_bn)
         # self.sigmoid = nn.Sigmoid()
 
         # for weight-sharing
@@ -435,8 +467,9 @@ class DNNModel(torch.nn.Module):
             # Create a mask of ones and zeros with the required length
             mask = torch.cat([
                 torch.ones(size),
-                torch.zeros(self.hidden_layer_list[idx] - size)],
-                dim=0).to(device)
+                torch.zeros(self.hidden_layer_list[idx] - size)
+            ],
+                             dim=0).to(device)
             # Shuffle the mask to randomize which neurons are active
             mask = mask[torch.randperm(mask.size(0))]
             self.subnet_mask[idx] = mask
@@ -446,7 +479,8 @@ class DNNModel(torch.nn.Module):
         x_emb = x_emb.view(-1, self.mlp_ninput)
 
         # Loop till the second last layer of the MLP
-        for idx, layer in enumerate(self.mlp.mlp[:-1]):  # Exclude the last Linear layer
+        for idx, layer in enumerate(
+                self.mlp.mlp[:-1]):  # Exclude the last Linear layer
             # 1. subnet_mask: idx // 4 is to map computation later => mlp later
             # 2. unsqueeze(1): convert to 2 dimension,
             #    and then the mask is broadcasted across the row, correspond to one neuron,
@@ -455,7 +489,8 @@ class DNNModel(torch.nn.Module):
                 weight = layer.weight * self.subnet_mask[idx // 4].unsqueeze(1)
                 x_emb = torch.nn.functional.linear(x_emb, weight, layer.bias)
             else:
-                x_emb = layer(x_emb)  # apply activation, dropout, batchnorm, etc.
+                x_emb = layer(
+                    x_emb)  # apply activation, dropout, batchnorm, etc.
 
         # Handle the output layer
         output_layer = self.mlp.mlp[-1]
@@ -464,6 +499,7 @@ class DNNModel(torch.nn.Module):
 
 
 class MlpSpace(SpaceWrapper):
+
     def __init__(self, modelCfg: MlpMacroCfg):
         super().__init__(modelCfg, Config.MLPSP)
 
@@ -480,7 +516,10 @@ class MlpSpace(SpaceWrapper):
         return MlpMicroCfg.builder(model_encoding)
 
     @classmethod
-    def new_arch_scratch(cls, arch_macro: ModelMacroCfg, arch_micro: ModelMicroCfg, bn: bool = True):
+    def new_arch_scratch(cls,
+                         arch_macro: ModelMacroCfg,
+                         arch_micro: ModelMicroCfg,
+                         bn: bool = True):
         assert isinstance(arch_micro, MlpMicroCfg)
         assert isinstance(arch_macro, MlpMacroCfg)
         # mlp = DNNModel(
@@ -495,7 +534,8 @@ class MlpSpace(SpaceWrapper):
         )
         return mlp
 
-    def new_arch_scratch_with_default_setting(self, model_encoding: str, bn: bool):
+    def new_arch_scratch_with_default_setting(self, model_encoding: str,
+                                              bn: bool):
         model_micro = MlpSpace.deserialize_model_encoding(model_encoding)
         return MlpSpace.new_arch_scratch(self.model_cfg, model_micro, bn)
 
@@ -511,32 +551,32 @@ class MlpSpace(SpaceWrapper):
         # print ("src/search_space/mlp_api/space.py new_architecture")
         # print ("src/search_space/mlp_api/space.py arch_micro:\n", arch_micro)
         # mlp = DNNModel(
-        mlp = SINGADNNModel(
-            nfield=self.model_cfg.nfield,
-            nfeat=self.model_cfg.nfeat,
-            nemb=self.model_cfg.nemb,
-            hidden_layer_list=arch_micro.hidden_layer_list,
-            dropout_rate=0,
-            noutput=self.model_cfg.num_labels)
+        mlp = SINGADNNModel(nfield=self.model_cfg.nfield,
+                            nfeat=self.model_cfg.nfeat,
+                            nemb=self.model_cfg.nemb,
+                            hidden_layer_list=arch_micro.hidden_layer_list,
+                            dropout_rate=0,
+                            noutput=self.model_cfg.num_labels)
         return mlp
 
     def new_architecture_with_micro_cfg(self, arch_micro: ModelMicroCfg):
         assert isinstance(arch_micro, MlpMicroCfg)
         assert isinstance(self.model_cfg, MlpMacroCfg)
         # mlp = DNNModel(
-        mlp = SINGADNNModel(
-            nfield=self.model_cfg.nfield,
-            nfeat=self.model_cfg.nfeat,
-            nemb=self.model_cfg.nemb,
-            hidden_layer_list=arch_micro.hidden_layer_list,
-            dropout_rate=0,
-            noutput=self.model_cfg.num_labels)
+        mlp = SINGADNNModel(nfield=self.model_cfg.nfield,
+                            nfeat=self.model_cfg.nfeat,
+                            nemb=self.model_cfg.nemb,
+                            hidden_layer_list=arch_micro.hidden_layer_list,
+                            dropout_rate=0,
+                            noutput=self.model_cfg.num_labels)
         return mlp
 
-    def profiling_score_time(
-            self, dataset: str,
-            train_loader: DataLoader = None, val_loader: DataLoader = None,
-            args=None, is_simulate: bool = False):
+    def profiling_score_time(self,
+                             dataset: str,
+                             train_loader: DataLoader = None,
+                             val_loader: DataLoader = None,
+                             args=None,
+                             is_simulate: bool = False):
         assert isinstance(self.model_cfg, MlpMacroCfg)
 
         device = "cpu"
@@ -562,7 +602,8 @@ class MlpSpace(SpaceWrapper):
                 nfield=args.nfield,
                 nfeat=args.nfeat,
                 nemb=args.nemb,
-                hidden_layer_list=[DEFAULT_LAYER_CHOICES_20[-1]] * self.model_cfg.num_layers,
+                hidden_layer_list=[DEFAULT_LAYER_CHOICES_20[-1]] *
+                self.model_cfg.num_layers,
                 dropout_rate=0,
                 noutput=self.model_cfg.num_labels)
             # super_net.init_embedding(requires_grad=False)
@@ -596,14 +637,16 @@ class MlpSpace(SpaceWrapper):
                 mini_batch = torch.ones([1] + feature_dim).float().to(device)
             else:
                 # this is for the tabular data,
-                mini_batch = super_net.generate_all_ones_embedding().float().to(device)
+                mini_batch = super_net.generate_all_ones_embedding().float().to(
+                    device)
 
-            synflow_score, _ = evaluator_register[CommonVars.PRUNE_SYNFLOW].evaluate_wrapper(
-                arch=super_net,
-                device=device,
-                space_name=self.name,
-                batch_data=mini_batch,
-                batch_labels=target)
+            synflow_score, _ = evaluator_register[
+                CommonVars.PRUNE_SYNFLOW].evaluate_wrapper(
+                    arch=super_net,
+                    device=device,
+                    space_name=self.name,
+                    batch_data=mini_batch,
+                    batch_labels=target)
 
             score_time = time.time() - score_time_begin
 
@@ -611,9 +654,12 @@ class MlpSpace(SpaceWrapper):
             del super_net
         return score_time
 
-    def profiling_train_time(self, dataset: str,
-                             train_loader: DataLoader = None, val_loader: DataLoader = None,
-                             args=None, is_simulate: bool = False):
+    def profiling_train_time(self,
+                             dataset: str,
+                             train_loader: DataLoader = None,
+                             val_loader: DataLoader = None,
+                             args=None,
+                             is_simulate: bool = False):
 
         device = args.device
 
@@ -628,7 +674,8 @@ class MlpSpace(SpaceWrapper):
                 nfield=args.nfield,
                 nfeat=args.nfeat,
                 nemb=args.nemb,
-                hidden_layer_list=[DEFAULT_LAYER_CHOICES_20[-1]] * self.model_cfg.num_layers,
+                hidden_layer_list=[DEFAULT_LAYER_CHOICES_20[-1]] *
+                self.model_cfg.num_layers,
                 dropout_rate=0,
                 noutput=self.model_cfg.num_labels)
             # super_net.init_embedding(requires_grad=True)
@@ -648,9 +695,12 @@ class MlpSpace(SpaceWrapper):
 
         return _train_time_per_epoch
 
-    def profiling(self, dataset: str,
-                  train_loader: DataLoader = None, val_loader: DataLoader = None,
-                  args=None, is_simulate: bool = False) -> (float, float, int):
+    def profiling(self,
+                  dataset: str,
+                  train_loader: DataLoader = None,
+                  val_loader: DataLoader = None,
+                  args=None,
+                  is_simulate: bool = False) -> (float, float, int):
 
         assert isinstance(self.model_cfg, MlpMacroCfg)
         device = args.device
@@ -677,7 +727,8 @@ class MlpSpace(SpaceWrapper):
                 nfield=args.nfield,
                 nfeat=args.nfeat,
                 nemb=args.nemb,
-                hidden_layer_list=[DEFAULT_LAYER_CHOICES_20[-1]] * self.model_cfg.num_layers,
+                hidden_layer_list=[DEFAULT_LAYER_CHOICES_20[-1]] *
+                self.model_cfg.num_layers,
                 dropout_rate=0,
                 noutput=self.model_cfg.num_labels)
             # super_net.init_embedding(requires_grad=False)
@@ -685,12 +736,12 @@ class MlpSpace(SpaceWrapper):
 
             # measure score time,
             score_time_begin = time.time()
-            naswot_score, _ = evaluator_register[CommonVars.NAS_WOT].evaluate_wrapper(
-                arch=super_net,
-                device=device,
-                space_name=self.name,
-                batch_data=batch,
-                batch_labels=target)
+            naswot_score, _ = evaluator_register[
+                CommonVars.NAS_WOT].evaluate_wrapper(arch=super_net,
+                                                     device=device,
+                                                     space_name=self.name,
+                                                     batch_data=batch,
+                                                     batch_labels=target)
 
             # re-init hte net
             del super_net
@@ -699,19 +750,20 @@ class MlpSpace(SpaceWrapper):
                 nfield=args.nfield,
                 nfeat=args.nfeat,
                 nemb=args.nemb,
-                hidden_layer_list=[DEFAULT_LAYER_CHOICES_20[-1]] * self.model_cfg.num_layers,
+                hidden_layer_list=[DEFAULT_LAYER_CHOICES_20[-1]] *
+                self.model_cfg.num_layers,
                 dropout_rate=0,
                 noutput=self.model_cfg.num_labels,
                 use_bn=False)
             # super_net.init_embedding(requires_grad=False)
             # super_net.to(device)
 
-            synflow_score, _ = evaluator_register[CommonVars.PRUNE_SYNFLOW].evaluate_wrapper(
-                arch=super_net,
-                device=device,
-                space_name=self.name,
-                batch_data=batch,
-                batch_labels=target)
+            synflow_score, _ = evaluator_register[
+                CommonVars.PRUNE_SYNFLOW].evaluate_wrapper(arch=super_net,
+                                                           device=device,
+                                                           space_name=self.name,
+                                                           batch_data=batch,
+                                                           batch_labels=target)
 
             score_time = time.time() - score_time_begin
 
@@ -729,7 +781,8 @@ class MlpSpace(SpaceWrapper):
                 nfield=args.nfield,
                 nfeat=args.nfeat,
                 nemb=args.nemb,
-                hidden_layer_list=[DEFAULT_LAYER_CHOICES_20[-1]] * self.model_cfg.num_layers,
+                hidden_layer_list=[DEFAULT_LAYER_CHOICES_20[-1]] *
+                self.model_cfg.num_layers,
                 dropout_rate=0,
                 noutput=self.model_cfg.num_labels)
             # super_net.init_embedding(requires_grad=True)
@@ -755,10 +808,12 @@ class MlpSpace(SpaceWrapper):
             n_k_ratio = args.kn_rate
         else:
             n_k_ratio = profile_NK_trade_off(dataset)
-        print(f"Profiling results:  score_time_per_model={score_time_per_model},"
-              f" train_time_per_epoch={train_time_per_epoch}")
-        logger.info(f"Profiling results:  score_time_per_model={score_time_per_model},"
-                    f" train_time_per_epoch={train_time_per_epoch}")
+        print(
+            f"Profiling results:  score_time_per_model={score_time_per_model},"
+            f" train_time_per_epoch={train_time_per_epoch}")
+        logger.info(
+            f"Profiling results:  score_time_per_model={score_time_per_model},"
+            f" train_time_per_epoch={train_time_per_epoch}")
         return score_time_per_model, train_time_per_epoch, n_k_ratio
 
     def micro_to_id(self, arch_struct: ModelMicroCfg) -> str:
@@ -767,7 +822,7 @@ class MlpSpace(SpaceWrapper):
 
     def __len__(self):
         assert isinstance(self.model_cfg, MlpMacroCfg)
-        return len(self.model_cfg.layer_choices) ** self.model_cfg.num_layers
+        return len(self.model_cfg.layer_choices)**self.model_cfg.num_layers
 
     def get_arch_size(self, arch_micro: ModelMicroCfg) -> int:
         assert isinstance(arch_micro, MlpMicroCfg)
@@ -809,13 +864,15 @@ class MlpSpace(SpaceWrapper):
 
     '''Below is for EA'''
 
-    def mutate_architecture(self, parent_arch: ModelMicroCfg) -> (str, ModelMicroCfg):
+    def mutate_architecture(self,
+                            parent_arch: ModelMicroCfg) -> (str, ModelMicroCfg):
         assert isinstance(parent_arch, MlpMicroCfg)
         assert isinstance(self.model_cfg, MlpMacroCfg)
         child_layer_list = deepcopy(parent_arch.hidden_layer_list)
 
         # 1. choose layer index
-        chosen_hidden_layer_index = random.choice(list(range(len(child_layer_list))))
+        chosen_hidden_layer_index = random.choice(
+            list(range(len(child_layer_list))))
 
         # 2. choose size of the layer index, increase the randomness
         while True:
@@ -840,7 +897,8 @@ class MlpSpace(SpaceWrapper):
                 cur_layer_size = child_layer_list[chosen_hidden_layer_index]
                 mutated_layer_size = random.choice(self.model_cfg.layer_choices)
                 if mutated_layer_size != cur_layer_size:
-                    child_layer_list[chosen_hidden_layer_index] = mutated_layer_size
+                    child_layer_list[
+                        chosen_hidden_layer_index] = mutated_layer_size
                     new_model = MlpMicroCfg(child_layer_list)
                     all_combs.add((str(new_model), new_model))
                     break

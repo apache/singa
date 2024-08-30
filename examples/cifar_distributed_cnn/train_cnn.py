@@ -28,6 +28,7 @@ import argparse
 from PIL import Image
 
 import warnings
+
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 np_dtype = {"float32": np.float32}
@@ -111,7 +112,8 @@ def run(global_rank,
         dist_option='plain',
         spars=None,
         precision='float32'):
-    dev = device.create_cuda_gpu_on(local_rank)  # need to change to CPU device for CPU-only machines
+    dev = device.create_cuda_gpu_on(
+        local_rank)  # need to change to CPU device for CPU-only machines
     dev.SetRandSeed(0)
     np.random.seed(0)
 
@@ -124,7 +126,6 @@ def run(global_rank,
     elif data == 'mnist':
         from data import mnist
         train_x, train_y, val_x, val_y = mnist.load()
-
 
     num_channels = train_x.shape[1]
     image_size = train_x.shape[2]
@@ -154,8 +155,7 @@ def run(global_rank,
         parent = os.path.dirname(current)
         sys.path.insert(0, parent)
         from mlp import model
-        model = model.create_model(data_size=data_size,
-                                    num_classes=num_classes)
+        model = model.create_model(data_size=data_size, num_classes=num_classes)
 
     # For distributed training, sequential has better performance
     if hasattr(sgd, "communicator"):
@@ -305,7 +305,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5, dtype=singa_dtype[args.precision])
+    sgd = opt.SGD(lr=args.lr,
+                  momentum=0.9,
+                  weight_decay=1e-5,
+                  dtype=singa_dtype[args.precision])
     run(0,
         1,
         args.device_id,

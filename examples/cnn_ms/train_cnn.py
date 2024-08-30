@@ -34,8 +34,10 @@ np_dtype = {"float16": np.float16, "float32": np.float32}
 
 singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 
+
 ### MSOptimizer
 class MSOptimizer(Optimizer):
+
     def __call__(self, loss):
         pn_p_g_list = self.call_with_returns(loss)
         self.step()
@@ -49,6 +51,7 @@ class MSOptimizer(Optimizer):
             self.apply(p.name, p, g)
             pn_p_g_list.append(p.name, p, g)
         return pn_p_g_list
+
 
 # MSSGD -- actually no change of code
 class MSSGD(MSOptimizer):
@@ -304,7 +307,6 @@ def run(global_rank,
         from data import mnist
         train_x, train_y, val_x, val_y = mnist.load()
 
-
     num_channels = train_x.shape[1]
     image_size = train_x.shape[2]
     data_size = np.prod(train_x.shape[1:train_x.ndim]).item()
@@ -333,9 +335,8 @@ def run(global_rank,
         parent = os.path.dirname(current)
         sys.path.insert(0, parent)
         from mlp import model
-        model = model.create_model(data_size=data_size,
-                                    num_classes=num_classes)
-    
+        model = model.create_model(data_size=data_size, num_classes=num_classes)
+
     elif model == 'msmlp':
         import os, sys, inspect
         current = os.path.dirname(
@@ -343,8 +344,7 @@ def run(global_rank,
         parent = os.path.dirname(current)
         sys.path.insert(0, parent)
         from msmlp import model
-        model = model.create_model(data_size=data_size,
-                                    num_classes=num_classes)
+        model = model.create_model(data_size=data_size, num_classes=num_classes)
 
     # For distributed training, sequential has better performance
     if hasattr(mssgd, "communicator"):
@@ -392,11 +392,11 @@ def run(global_rank,
         train_loss = np.zeros(shape=[1], dtype=np.float32)
 
         model.train()
-        print ("num_train_batch: \n", num_train_batch)
-        print ()
+        print("num_train_batch: \n", num_train_batch)
+        print()
         for b in range(num_train_batch):
             if b % 200 == 0:
-                print ("b: \n", b)
+                print("b: \n", b)
             # Generate the patch data in this iteration
             x = train_x[idx[b * batch_size:(b + 1) * batch_size]]
             if model.dimension == 4:
@@ -406,11 +406,12 @@ def run(global_rank,
             x = x.astype(np_dtype[precision])
             y = train_y[idx[b * batch_size:(b + 1) * batch_size]]
 
-
             synflow_flag = False
             # Train the model
-            if epoch == (max_epoch - 1) and b == (num_train_batch - 1):  ### synflow calcuation for the last batch
-                print ("last epoch calculate synflow")
+            if epoch == (max_epoch - 1) and b == (
+                    num_train_batch -
+                    1):  ### synflow calcuation for the last batch
+                print("last epoch calculate synflow")
                 synflow_flag = True
                 ### step 1: all one input
                 # Copy the patch data into input tensors
@@ -418,30 +419,40 @@ def run(global_rank,
                 ty.copy_from_numpy(y)
                 ### step 2: all weights turned to positive (done)
                 ### step 3: new loss (done)
-                pn_p_g_list, out, loss = model(tx, ty,dist_option, spars, synflow_flag)
+                pn_p_g_list, out, loss = model(tx, ty, dist_option, spars,
+                                               synflow_flag)
                 ### step 4: calculate the multiplication of weights
                 synflow_score = 0.0
                 for pn_p_g_item in pn_p_g_list:
-                    print ("calculate weight param * grad parameter name: \n", pn_p_g_item[0])
-                    if len(pn_p_g_item[1].data.shape) == 2: # param_value.data is "weight"
-                        synflow_score += np.sum(np.absolute(tensor.to_numpy(pn_p_g_item[1].data) * tensor.to_numpy(pn_p_g_item[2].data)))
-                print ("synflow_score: \n", synflow_score)
-            elif epoch == (max_epoch - 1) and b == (num_train_batch - 2): # all weights turned to positive
+                    print("calculate weight param * grad parameter name: \n",
+                          pn_p_g_item[0])
+                    if len(pn_p_g_item[1].data.shape
+                          ) == 2:  # param_value.data is "weight"
+                        synflow_score += np.sum(
+                            np.absolute(
+                                tensor.to_numpy(pn_p_g_item[1].data) *
+                                tensor.to_numpy(pn_p_g_item[2].data)))
+                print("synflow_score: \n", synflow_score)
+            elif epoch == (max_epoch - 1) and b == (
+                    num_train_batch - 2):  # all weights turned to positive
                 # Copy the patch data into input tensors
                 tx.copy_from_numpy(x)
                 ty.copy_from_numpy(y)
-                pn_p_g_list, out, loss = model(tx, ty, dist_option, spars, synflow_flag)
+                pn_p_g_list, out, loss = model(tx, ty, dist_option, spars,
+                                               synflow_flag)
                 train_correct += accuracy(tensor.to_numpy(out), y)
                 train_loss += tensor.to_numpy(loss)[0]
                 # all params turned to positive
                 for pn_p_g_item in pn_p_g_list:
-                    print ("absolute value parameter name: \n", pn_p_g_item[0])
-                    pn_p_g_item[1] = tensor.abs(pn_p_g_item[1])  # tensor variables
+                    print("absolute value parameter name: \n", pn_p_g_item[0])
+                    pn_p_g_item[1] = tensor.abs(
+                        pn_p_g_item[1])  # tensor variables
             else:  # normal train steps
                 # Copy the patch data into input tensors
                 tx.copy_from_numpy(x)
                 ty.copy_from_numpy(y)
-                pn_p_g_list, out, loss = model(tx, ty, synflow_flag, dist_option, spars)
+                pn_p_g_list, out, loss = model(tx, ty, synflow_flag,
+                                               dist_option, spars)
                 train_correct += accuracy(tensor.to_numpy(out), y)
                 train_loss += tensor.to_numpy(loss)[0]
 
@@ -540,7 +551,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    mssgd = MSSGD(lr=args.lr, momentum=0.9, weight_decay=1e-5, dtype=singa_dtype[args.precision])
+    mssgd = MSSGD(lr=args.lr,
+                  momentum=0.9,
+                  weight_decay=1e-5,
+                  dtype=singa_dtype[args.precision])
     run(0,
         1,
         args.device_id,

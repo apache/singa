@@ -41,7 +41,7 @@ For example:
 
 There are three versions of conda package: (i) CPU, (ii) GPU, and (iii) DIST (distributed training)
 
-To build the specific versions, follow the steps: 
+To build the specific versions, follow the steps:
 
 (i) cd to the folder tool/conda/singa, follow the instruction in https://github.com/apache/singa/blob/dev/tool/conda/singa/README.md
 

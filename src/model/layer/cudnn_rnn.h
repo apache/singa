@@ -22,18 +22,20 @@
 #ifdef USE_CUDNN
 #include <cudnn.h>
 #if CUDNN_VERSION >= 5005
+#include <cudnn.h>
+
+#include <chrono>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include "./cudnn_utils.h"
 #include "./rnn.h"
 #include "singa/core/common.h"
 #include "singa/model/layer.h"
 #include "singa/proto/core.pb.h"
-#include "singa/utils/string.h"
-#include <cudnn.h>
-#include <chrono>
-#include "./cudnn_utils.h"
 #include "singa/utils/logging.h"
+#include "singa/utils/string.h"
 
 namespace singa {
 class CudnnRNN : public RNN {

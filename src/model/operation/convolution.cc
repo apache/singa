@@ -501,7 +501,7 @@ CudnnConvHandle::CudnnConvHandle(
     bp_filter_alg = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1;
     bp_data_alg = CUDNN_CONVOLUTION_BWD_DATA_ALGO_1;
   } else if (prefer == "fastest" || prefer == "limited_workspace" ||
-      prefer == "no_workspace") {
+             prefer == "no_workspace") {
     cudnnConvolutionFwdPreference_t fwd_pref;
     cudnnConvolutionBwdFilterPreference_t bwd_filt_pref;
     cudnnConvolutionBwdDataPreference_t bwd_data_pref;
@@ -609,8 +609,8 @@ Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b,
                                 inblock->data(), cch.filter_desc,
                                 wblock->data(), cch.conv_desc, cch.fp_alg,
                                 cch.workspace.block()->mutable_data(),
-                                cch.workspace_count * SizeOf(x.data_type()), &beta,
-                                cch.y_desc, outblock->mutable_data());
+                                cch.workspace_count * SizeOf(x.data_type()),
+                                &beta, cch.y_desc, outblock->mutable_data());
       },
       {x.block(), W.block()}, {output.block(), cch.workspace.block()},
       "cudnnConvForward");

@@ -17,8 +17,9 @@
  */
 #ifndef SRC_MODEL_OPTIMIZER_ADAGRAD_H_
 #define SRC_MODEL_OPTIMIZER_ADAGRAD_H_
-#include "singa/model/optimizer.h"
 #include <functional>
+
+#include "singa/model/optimizer.h"
 namespace singa {
 
 void RMSProp::Setup(const OptimizerConf& conf) {
@@ -30,8 +31,7 @@ void RMSProp::Setup(const OptimizerConf& conf) {
 // value = value - lr * grad / sqrt(history + delta)
 void RMSProp::Apply(int epoch, float lr, const string& name, Tensor& grad,
                     Tensor& value, int step) {
-  if (grad.empty())
-    return;
+  if (grad.empty()) return;
   ApplyRegularizerConstraint(epoch, name, value, grad, step);
   if (learning_rate_multplier_.find(name) != learning_rate_multplier_.end())
     lr *= learning_rate_multplier_.at(name);

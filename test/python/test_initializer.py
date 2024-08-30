@@ -55,26 +55,25 @@ class TestInitializer(unittest.TestCase):
         initializer.he_uniform(self.t1)
         np_t1 = tensor.to_numpy(self.t1)
         limit = init(self.t1.shape)
-        self.assertAlmostEqual(np_t1.max(), limit, delta=limit/10)
-        self.assertAlmostEqual(np_t1.min(), -limit, delta=limit/10)
-        self.assertAlmostEqual(np_t1.mean(), 0, delta=limit/10)
-                                       
+        self.assertAlmostEqual(np_t1.max(), limit, delta=limit / 10)
+        self.assertAlmostEqual(np_t1.min(), -limit, delta=limit / 10)
+        self.assertAlmostEqual(np_t1.mean(), 0, delta=limit / 10)
+
         self.t2.to_device(dev)
         initializer.he_uniform(self.t2)
         np_t2 = tensor.to_numpy(self.t2)
         limit = init(self.t2.shape)
-        self.assertAlmostEqual(np_t2.max(), limit, delta=limit/10)
-        self.assertAlmostEqual(np_t2.min(), -limit, delta=limit/10)
-        self.assertAlmostEqual(np_t2.mean(), 0, delta=limit/10)
- 
+        self.assertAlmostEqual(np_t2.max(), limit, delta=limit / 10)
+        self.assertAlmostEqual(np_t2.min(), -limit, delta=limit / 10)
+        self.assertAlmostEqual(np_t2.mean(), 0, delta=limit / 10)
+
         self.t3.to_device(dev)
         initializer.he_uniform(self.t3)
         np_t3 = tensor.to_numpy(self.t3)
         limit = init(self.t3.shape)
-        self.assertAlmostEqual(np_t3.max(), limit, delta=limit/10)
-        self.assertAlmostEqual(np_t3.min(), -limit, delta=limit/10)
-        self.assertAlmostEqual(np_t3.mean(), 0, delta=limit/10)
- 
+        self.assertAlmostEqual(np_t3.max(), limit, delta=limit / 10)
+        self.assertAlmostEqual(np_t3.min(), -limit, delta=limit / 10)
+        self.assertAlmostEqual(np_t3.mean(), 0, delta=limit / 10)
 
     @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_he_uniform_gpu(self):
@@ -94,22 +93,22 @@ class TestInitializer(unittest.TestCase):
         initializer.he_normal(self.t1)
         np_t1 = tensor.to_numpy(self.t1)
         stddev = init(self.t1.shape)
-        self.assertAlmostEqual(np_t1.mean(), 0, delta=stddev/10)
-        self.assertAlmostEqual(np_t1.std(), stddev, delta=stddev/10)
- 
+        self.assertAlmostEqual(np_t1.mean(), 0, delta=stddev / 10)
+        self.assertAlmostEqual(np_t1.std(), stddev, delta=stddev / 10)
+
         self.t2.to_device(dev)
         initializer.he_normal(self.t2)
         np_t2 = tensor.to_numpy(self.t2)
         stddev = init(self.t2.shape)
-        self.assertAlmostEqual(np_t2.mean(), 0, delta=stddev/10)
-        self.assertAlmostEqual(np_t2.std(), stddev, delta=stddev/10)
- 
+        self.assertAlmostEqual(np_t2.mean(), 0, delta=stddev / 10)
+        self.assertAlmostEqual(np_t2.std(), stddev, delta=stddev / 10)
+
         self.t3.to_device(dev)
         initializer.he_normal(self.t3)
         np_t3 = tensor.to_numpy(self.t3)
         stddev = init(self.t3.shape)
-        self.assertAlmostEqual(np_t3.mean(), 0, delta=stddev/10)
-        self.assertAlmostEqual(np_t3.std(), stddev, delta=stddev/10)
+        self.assertAlmostEqual(np_t3.mean(), 0, delta=stddev / 10)
+        self.assertAlmostEqual(np_t3.std(), stddev, delta=stddev / 10)
 
     @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_he_normal_gpu(self):

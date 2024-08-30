@@ -23,13 +23,13 @@
 #include <cudnn.h>
 // cudnn dropout is added in cudnn 5
 #if CUDNN_MAJOR >= 5
-#include "./dropout.h"
-
 #include <cudnn.h>
-#include <utility>
+
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "./dropout.h"
 #include "singa/model/layer.h"
 
 namespace singa {
@@ -44,6 +44,7 @@ class CudnnDropout : public Dropout {
                                                    const Tensor& grad) override;
 
   void ToDevice(std::shared_ptr<Device> device) override;
+
  private:
   /// Init cudnn related data structures.
   void InitCudnn(int size, DataType dtype, std::shared_ptr<Device> dev,
@@ -56,7 +57,7 @@ class CudnnDropout : public Dropout {
   size_t state_size_, reserve_size_;
   Tensor state_;
 };
-}  // namespace
+}  // namespace singa
 #endif  // CUDNN_MAJOR>=5
 #endif  // USE_CUDNN
 #endif  // SRC_MODEL_LAYER_CUDNN_DROPOUT_H_

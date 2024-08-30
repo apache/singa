@@ -19,8 +19,9 @@
 #ifndef SINGA_MODEL_LOSS_H_
 #define SINGA_MODEL_LOSS_H_
 #include <stack>
-#include "singa/proto/model.pb.h"
+
 #include "singa/core/tensor.h"
+#include "singa/proto/model.pb.h"
 namespace singa {
 
 /// The base loss class, which declares the APIs for computing the objective
@@ -29,14 +30,14 @@ namespace singa {
 /// the prediction. It has similar APIs as Layer.
 // template <typename T = Tensor>
 class Loss {
-public:
+ public:
   Loss() = default;
   void Setup(const string &conf) {
     LossConf loss;
     loss.ParseFromString(conf);
     Setup(loss);
   }
-  virtual ~Loss() {};
+  virtual ~Loss(){};
   virtual void ToDevice(std::shared_ptr<Device> device) {}
   /// Set meta fields from user configurations.
   virtual void Setup(const LossConf &conf) {}
@@ -66,8 +67,8 @@ class MSE : public Loss {
   /// and the target, which is 0.5/||prediction-target||^2
   /// Users can call Average(const Tensor&) to get the average
   /// loss value over all samples in the batch.
-  Tensor Forward(int flag, const Tensor& prediction,
-      const Tensor& target) override;
+  Tensor Forward(int flag, const Tensor &prediction,
+                 const Tensor &target) override;
 
   /// Compute the gradients of the loss values w.r.t. the prediction,
   /// which is (prediction-target)/batchsize
@@ -77,7 +78,6 @@ class MSE : public Loss {
   // to buffer intermediate data, i.e., prediction-target
   std::stack<Tensor> buf_;
 };
-
 
 // ===============Softamx Cross Entropy =======================================
 /// Softmax + cross entropy for multi-category classification
@@ -96,8 +96,8 @@ class SoftmaxCrossEntropy : public Loss {
   ///
   /// Users can call Average(const Tensor&) to get the average
   /// loss value over all samples in the batch.
-  Tensor Forward(int flag, const Tensor& prediction,
-      const Tensor& target) override;
+  Tensor Forward(int flag, const Tensor &prediction,
+                 const Tensor &target) override;
 
   /// Compute the gradients of the loss values w.r.t. the prediction,
   /// which is: p[i] - t[i]/\sum_j t[j]

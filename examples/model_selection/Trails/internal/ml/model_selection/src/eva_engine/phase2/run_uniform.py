@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 from copy import copy
 from src.search_space.core.space import SpaceWrapper
 from src.common.constant import Config
@@ -27,8 +26,11 @@ from src.eva_engine.phase2.evaluator import P2Evaluator
 class UniformAllocation:
 
     def __init__(self,
-                 search_space_ins: SpaceWrapper, dataset_name: str,
-                 eta, time_per_epoch, args=None):
+                 search_space_ins: SpaceWrapper,
+                 dataset_name: str,
+                 eta,
+                 time_per_epoch,
+                 args=None):
 
         self.is_simulate = True
         self._evaluator = P2Evaluator(search_space_ins,
@@ -42,7 +44,8 @@ class UniformAllocation:
         self.time_per_epoch = time_per_epoch
         self.name = "UNIFORM"
 
-    def schedule_budget_per_model_based_on_T(self, space_name, fixed_time_budget, K_):
+    def schedule_budget_per_model_based_on_T(self, space_name,
+                                             fixed_time_budget, K_):
         # for benchmarking only phase 2
 
         # try different K and U combinations
@@ -56,14 +59,19 @@ class UniformAllocation:
         history = []
 
         for U in U_options:
-            expected_time_used = self.pre_calculate_epoch_required(K_, U) * self.time_per_epoch
+            expected_time_used = self.pre_calculate_epoch_required(
+                K_, U) * self.time_per_epoch
             if expected_time_used > fixed_time_budget:
                 break
             else:
                 history.append(U)
         return history[-1]
 
-    def pre_calculate_epoch_required(self, K, U, eta: int=3, max_unit_per_model: int=200):
+    def pre_calculate_epoch_required(self,
+                                     K,
+                                     U,
+                                     eta: int = 3,
+                                     max_unit_per_model: int = 200):
         """
         :param B: total budget for phase 2
         :param U: mini unit computation for each modle
@@ -101,5 +109,6 @@ class UniformAllocation:
         # sort from min to max
         scored_cand = sorted(total_score, key=lambda x: x[1])
         candidate = scored_cand[-1][0]
-        best_perform, _ = self._evaluator.p2_evaluate(candidate, self.max_unit_per_model)
+        best_perform, _ = self._evaluator.p2_evaluate(candidate,
+                                                      self.max_unit_per_model)
         return candidate, best_perform, min_budget_required, total_time

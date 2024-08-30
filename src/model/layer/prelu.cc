@@ -16,22 +16,23 @@
  * limitations under the License.
  */
 
-#include "singa/model/layer.h"
 #include "./prelu.h"
+
+#include "singa/model/layer.h"
 namespace singa {
 
 RegisterLayerClass(singa_prelu, PReLU);
 RegisterLayerClass(singacpp_prelu, PReLU);
 RegisterLayerClass(singacuda_prelu, PReLU);
 RegisterLayerClass(singacl_prelu, PReLU);
-void PReLU::Setup(const Shape& in_sample, const LayerConf &conf) {
+void PReLU::Setup(const Shape &in_sample, const LayerConf &conf) {
   Layer::Setup(in_sample, conf);
   out_sample_shape_ = in_sample;
   channel_shared_ = conf.prelu_conf().channel_shared();
   format_ = conf.prelu_conf().format();
   // Push back params into param_values_
   for (const auto &spec : conf.param()) param_specs_.push_back(spec);
-//  param_values_.push_back(a_);
+  //  param_values_.push_back(a_);
 }
 
 const Tensor PReLU::Forward(int flag, const Tensor &input) {
@@ -69,7 +70,8 @@ const Tensor PReLU::Forward(int flag, const Tensor &input) {
   } else {
     // share the first param of Tensor A along all channels
     LOG(FATAL) << "Not implemented";
-  // TODO(wangwei) cannot access the data in this way. The data could be on GPU.
+    // TODO(wangwei) cannot access the data in this way. The data could be on
+    // GPU.
     auto a = a_.data<float>()[0];
     output = input * ((input > 0.f) + (input <= 0.f) * a);
   }
@@ -130,7 +132,8 @@ const std::pair<Tensor, vector<Tensor> > PReLU::Backward(int flag,
   } else {
     // share the first param of Tensor A along all channels
     LOG(FATAL) << "Not Implemented";
-    // TODO(wangwei) cannot access the data in this way. The data could be on GPU.
+    // TODO(wangwei) cannot access the data in this way. The data could be on
+    // GPU.
     auto a = a_.data<float>()[0];
     input_grad = grad * input * ((input > 0.f) + (input <= 0.f) * a);
     Tensor temp = grad * input * (input <= 0.f);
@@ -147,4 +150,4 @@ void PReLU::ToDevice(std::shared_ptr<Device> device) {
   a_.ToDevice(device);
 }
 
-} // namespace singa
+}  // namespace singa

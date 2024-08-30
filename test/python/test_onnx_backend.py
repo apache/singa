@@ -70,14 +70,14 @@ _exclude_nodes_patterns = [
     r'(test_gather_elements)',  # interrupt gather elements
     r'(test_logsoftmax)',  # interrupt log softmax
     r'(test_gathernd)',  # interrupt gather nd
-    r'(test_maxpool_with_argmax)', # interrupt maxpool_with_argmax
+    r'(test_maxpool_with_argmax)',  # interrupt maxpool_with_argmax
     # todo, some special error
     r'test_transpose',  # the test cases are wrong
-    r'test_conv_with_strides_and_asymmetric_padding', # the test cases are wrong
+    r'test_conv_with_strides_and_asymmetric_padding',  # the test cases are wrong
     r'(test_gemm_default_single_elem_vector_bias_cuda)',  # status == CURAND_STATUS_SUCCESS
     r'(test_equal_bcast_cuda|test_equal_cuda)',  # Unknown combination of data type kInt and language kCuda
     r'(test_maxpool_1d|test_averagepool_1d|test_maxpool_3d|test_averagepool_3d)',  # Check failed: idx < shape_.size() (3 vs. 3)
-    r'test_depthtospace.*cuda', # cuda cannot support transpose with more than 4 dims
+    r'test_depthtospace.*cuda',  # cuda cannot support transpose with more than 4 dims
 ]
 
 _include_real_patterns = []  # todo
@@ -106,24 +106,26 @@ for pattern in _exclude_nodes_patterns:
 if not singa.USE_CUDA:
     backend_test.exclude(r'(cuda)')
 
-OnnxBackendNodeModelTest = backend_test.enable_report().test_cases['OnnxBackendNodeModelTest']
+OnnxBackendNodeModelTest = backend_test.enable_report(
+).test_cases['OnnxBackendNodeModelTest']
+
 
 # disable and enable training before and after test cases
 def setUp(self):
     # print("\nIn method", self._testMethodName)
     autograd.training = False
 
+
 def tearDown(self):
     autograd.training = True
+
 
 OnnxBackendNodeModelTest.setUp = setUp
 OnnxBackendNodeModelTest.tearDown = tearDown
 
 # import all test cases at global scope to make them visible to python.unittest
 # print(backend_test.enable_report().test_cases)
-test_cases = {
-    'OnnxBackendNodeModelTest': OnnxBackendNodeModelTest
-}
+test_cases = {'OnnxBackendNodeModelTest': OnnxBackendNodeModelTest}
 
 globals().update(test_cases)
 

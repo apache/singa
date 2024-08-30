@@ -71,4 +71,3 @@ WORKDIR $HOME/singa
 EXPOSE 22
 
 CMD ["/usr/sbin/sshd", "-D"]
-

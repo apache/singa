@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 from main import parse_arguments, seed_everything
 import os
 import glob
@@ -33,18 +32,10 @@ def write_json(file_name, data):
 args = parse_arguments()
 seed_everything(args.seed)
 
-
 data_dir = os.path.join(args.data_dir, args.dataset)
 train_file = glob.glob("%s/tr*libsvm" % data_dir)[0]
 
+train_loader = SQLAttacedLibsvmDataset(train_file, args.nfield,
+                                       args.max_filter_col)
 
-train_loader = SQLAttacedLibsvmDataset(
-    train_file,
-    args.nfield,
-    args.max_filter_col)
-
-
-write_json(
-    f"{args.dataset}_col_cardinalities",
-    train_loader.col_cardinalities)
-
+write_json(f"{args.dataset}_col_cardinalities", train_loader.col_cardinalities)

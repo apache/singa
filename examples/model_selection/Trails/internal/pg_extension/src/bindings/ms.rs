@@ -262,4 +262,3 @@ pub fn benchmark_filtering_latency_in_db(
     // Step 4: Return to PostgresSQL
     return serde_json::json!(return_result);
 }
-

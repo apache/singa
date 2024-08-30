@@ -75,7 +75,7 @@ requirements:
     - tqdm
     - onnx 1.6.0
     - deprecated 1.2.7
-    
+
 test:
   requires:
     - pytest-cov

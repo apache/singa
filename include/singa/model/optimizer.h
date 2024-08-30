@@ -27,8 +27,8 @@
 #include "singa/proto/model.pb.h"
 
 using std::string;
-using std::vector;
 using std::unordered_map;
+using std::vector;
 namespace singa {
 class Constraint;
 class Regularizer;
@@ -57,24 +57,24 @@ class Optimizer {
   /// parameter.
   virtual void Register(const string& name, const ParamSpec& specs);
 
-
   virtual void ApplyRegularizerConstraint(int epoch, const string& name,
-      const Tensor& value, Tensor& grad, int step = -1);
+                                          const Tensor& value, Tensor& grad,
+                                          int step = -1);
 
   /// Apply the updating algorithm if the gradient is not empty.
   /// No learning rate scaling, gradient constraints/regularization will be
   /// conducted. It assumes all these operations are done either by users or
   /// by Apply(int, const string&, Tensor*, Tensor*).
   /// All sub-classes should override this function.
-  virtual void Apply(int epoch, float lr, const string& name,
-                     Tensor& grad, Tensor& value, int step = -1) = 0;
+  virtual void Apply(int epoch, float lr, const string& name, Tensor& grad,
+                     Tensor& value, int step = -1) = 0;
 
   /// Apply the updating algorithm if the gradient is not empty.
   /// It will apply regularization and constraint to the parameters if
   /// configured during Register(). If will also scale the learning rate if
   /// configured in ParamSpecs (see Register).
   void Apply(int epoch, const string& name, Tensor& grad, Tensor& value,
-      int step = -1);
+             int step = -1);
 
   /// The argument is a function that returns the learning rate given the
   /// current step (i.e., curren running iteration).
@@ -172,8 +172,6 @@ inline std::shared_ptr<Regularizer> CreateRegularizer(std::string type) {
   return std::make_shared<Regularizer>();
 }
 
-
-
 // =============Vallina SGD with Momentum=====================================
 class SGD : public Optimizer {
  public:
@@ -238,9 +236,8 @@ class RMSProp : public Optimizer {
   float delta_, rho_;
 };
 
-
 inline std::shared_ptr<Optimizer> CreateOptimizer(const string& type) {
-  std::shared_ptr<Optimizer>  opt;
+  std::shared_ptr<Optimizer> opt;
   if (type == "SGD")
     opt = std::shared_ptr<Optimizer>(new SGD());
   else if (type == "RMSProp")
@@ -304,5 +301,5 @@ register the specs
   vector<Tensor> aggregated_gradients_;
 };
 */
-}
+}  // namespace singa
 #endif  // SINGA_MODEL_OPTIMIZER_H_

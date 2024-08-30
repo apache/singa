@@ -31,8 +31,8 @@ std::string JPGEncoder::Encode(vector<Tensor>& data) {
   CHECK_LE(data.size(), 2u);
   const Tensor& image = data.at(0);
   CHECK_EQ(image.nDim(), 3u);
-  CHECK_EQ(image.data_type(), kUChar) << "Data type " << image.data_type()
-    << " is invalid for an raw image";
+  CHECK_EQ(image.data_type(), kUChar)
+      << "Data type " << image.data_type() << " is invalid for an raw image";
   const auto* raw = image.data<unsigned char>();
   cv::Mat mat;
   if (image_dim_order_ == "HWC") {
@@ -67,14 +67,13 @@ std::string JPGEncoder::Encode(vector<Tensor>& data) {
 
   std::string output;
   ImageRecord record;
-  for (size_t i = 0; i < image.nDim(); i++)
-    record.add_shape(image.shape(i));
+  for (size_t i = 0; i < image.nDim(); i++) record.add_shape(image.shape(i));
   record.set_pixel(buf);
 
   // suppose each image is attached with at most one label
   if (data.size() == 2) {
     const int* label = data[1].data<int>();
-    //CHECK_EQ(label[0], 2);
+    // CHECK_EQ(label[0], 2);
     record.add_label(label[0]);
   }
 

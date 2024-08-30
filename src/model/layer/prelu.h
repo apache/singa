@@ -17,9 +17,10 @@
  */
 #ifndef SINGA_MODEL_LAYER_PRELU_H_
 #define SINGA_MODEL_LAYER_PRELU_H_
-#include <utility>
 #include <string>
+#include <utility>
 #include <vector>
+
 #include "singa/model/layer.h"
 #include "singa/singa_config.h"
 
@@ -29,7 +30,6 @@ class PReLU : public Layer {
   /// \copydoc Layer::layer_type()
   //  const std::string layer_type() const override { return "PReLU"; }
 
-
   /// \copydoc Layer::Setup(const LayerConf&);
   void Setup(const Shape& in_sample, const LayerConf& conf) override;
   const Shape GetOutputSampleShape() const override {
@@ -38,11 +38,11 @@ class PReLU : public Layer {
   }
 
   /// \copydoc Layer::Forward(int flag, const Tensor&)
-  const Tensor Forward(int flag, const Tensor &input) override;
+  const Tensor Forward(int flag, const Tensor& input) override;
 
   /// \copydoc Layer::Backward(int, const Tensor&, const Tensor&);
   const std::pair<Tensor, vector<Tensor> > Backward(
-      int flag, const Tensor &grad) override;
+      int flag, const Tensor& grad) override;
 
   void ToDevice(std::shared_ptr<Device> device);
 

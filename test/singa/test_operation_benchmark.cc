@@ -111,7 +111,6 @@ TEST(OperationBenchmark, Conv) {
       for (auto prefer : prefers) {
         cout << endl;
         for (auto dtype : dtypes) {
-
           Tensor x(Shape{batch, in_chan, img_hw, img_hw}, cuda, dtype);
           Gaussian(0.0f, 1.0f, &x);
           Tensor w(Shape{out_chan, in_chan, kernel[0], kernel[1]}, cuda, dtype);

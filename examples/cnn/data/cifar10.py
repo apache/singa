@@ -40,7 +40,9 @@ def load_dataset(filepath):
     return image, label
 
 
-def load_train_data(dir_path='/tmp/cifar-10-batches-py', num_batches=5):  # need to save to specific local directories
+def load_train_data(
+        dir_path='/tmp/cifar-10-batches-py',
+        num_batches=5):  # need to save to specific local directories
     labels = []
     batchsize = 10000
     images = np.empty((num_batches * batchsize, 3, 32, 32), dtype=np.uint8)
@@ -54,7 +56,8 @@ def load_train_data(dir_path='/tmp/cifar-10-batches-py', num_batches=5):  # need
     return images, labels
 
 
-def load_test_data(dir_path='/tmp/cifar-10-batches-py'):  # need to save to specific local directories
+def load_test_data(dir_path='/tmp/cifar-10-batches-py'
+                  ):  # need to save to specific local directories
     images, labels = load_dataset(check_dataset_exist(dir_path + "/test_batch"))
     return np.array(images, dtype=np.float32), np.array(labels, dtype=np.int32)
 
@@ -79,6 +82,7 @@ def normalize(train_x, val_x):
         val_x[:, ch, :, :] -= mean[ch]
         val_x[:, ch, :, :] /= std[ch]
     return train_x, val_x
+
 
 def load():
     train_x, train_y = load_train_data()

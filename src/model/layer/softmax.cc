@@ -31,9 +31,8 @@ void Softmax::Setup(const Shape& in_sample, const LayerConf& conf) {
 
 const Tensor Softmax::Forward(int flag, const Tensor& input) {
   CHECK_LE(input.nDim(), 2u);
-  Tensor output =  SoftMax(input);
-  if (flag & kTrain)
-    buf_.push(output);
+  Tensor output = SoftMax(input);
+  if (flag & kTrain) buf_.push(output);
   return output;
 }
 
@@ -64,8 +63,7 @@ const std::pair<Tensor, vector<Tensor>> Softmax::Backward(int flag,
   // dL / dx_i = y_i * (grad_i - sum), where sum = sum_i(grad_i * y_i);
   SubColumn(sum, &input_grad);
   input_grad = input_grad * y;
-  if (grad.nDim() == 1)
-    input_grad.Reshape(Shape{ncol});
+  if (grad.nDim() == 1) input_grad.Reshape(Shape{ncol});
   // Mult(input_grad, y, &input_grad);
   vector<Tensor> param_grad;
   return std::make_pair(input_grad, param_grad);

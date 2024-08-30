@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 import os
 from src.common.constant import Config
 from src.search_space.core.space import SpaceWrapper
@@ -36,21 +35,13 @@ def init_search_space(args) -> SpaceWrapper:
         from .mlp_api.space import DEFAULT_LAYER_CHOICES_20, DEFAULT_LAYER_CHOICES_10
         print("[Singa] src/search_space/init_search_space.py config.MLPSP")
         if args.hidden_choice_len == 10:
-            model_cfg = MlpMacroCfg(
-                args.nfield,
-                args.nfeat,
-                args.nemb,
-                args.num_layers,
-                args.num_labels,
-                DEFAULT_LAYER_CHOICES_10)
+            model_cfg = MlpMacroCfg(args.nfield, args.nfeat, args.nemb,
+                                    args.num_layers, args.num_labels,
+                                    DEFAULT_LAYER_CHOICES_10)
         else:
-            model_cfg = MlpMacroCfg(
-                args.nfield,
-                args.nfeat,
-                args.nemb,
-                args.num_layers,
-                args.num_labels,
-                DEFAULT_LAYER_CHOICES_20)
+            model_cfg = MlpMacroCfg(args.nfield, args.nfeat, args.nemb,
+                                    args.num_layers, args.num_labels,
+                                    DEFAULT_LAYER_CHOICES_20)
 
         return MlpSpace(model_cfg)
     else:

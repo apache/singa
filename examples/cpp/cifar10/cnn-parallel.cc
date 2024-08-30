@@ -1,35 +1,36 @@
 /************************************************************
-*
-* Licensed to the Apache Software Foundation (ASF) under one
-* or more contributor license agreements.  See the NOTICE file
-* distributed with this work for additional information
-* regarding copyright ownership.  The ASF licenses this file
-* to you under the Apache License, Version 2.0 (the
-* "License"); you may not use this file except in compliance
-* with the License.  You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing,
-* software distributed under the License is distributed on an
-* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-* KIND, either express or implied.  See the License for the
-* specific language governing permissions and limitations
-* under the License.
-*
-*************************************************************/
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ *************************************************************/
+
+#include <memory>
+#include <thread>
 
 #include "cifar10.h"
+#include "singa/core/memory.h"
 #include "singa/model/feed_forward_net.h"
-#include "singa/model/optimizer.h"
-#include "singa/model/updater.h"
 #include "singa/model/initializer.h"
 #include "singa/model/metric.h"
+#include "singa/model/optimizer.h"
+#include "singa/model/updater.h"
 #include "singa/utils/channel.h"
 #include "singa/utils/string.h"
-#include "singa/core/memory.h"
-#include <thread>
-#include <memory>
 
 namespace singa {
 const std::string engine = "cudnn";
@@ -155,11 +156,11 @@ void Train(float lr, int num_epoch, string data_dir) {
 
     LOG(INFO) << "Slicing training data...";
     train_x_1 = Tensor(Shape{nsamples / 2, train.first.shape(1),
-        train.first.shape(2), train.first.shape(3)});
+                             train.first.shape(2), train.first.shape(3)});
     LOG(INFO) << "Copying first data slice...";
     CopyDataToFrom(&train_x_1, train_x, train_x.Size() / 2);
     train_x_2 = Tensor(Shape{nsamples / 2, train.first.shape(1),
-        train.first.shape(2), train.first.shape(3)});
+                             train.first.shape(2), train.first.shape(3)});
     LOG(INFO) << "Copying second data slice...";
     CopyDataToFrom(&train_x_2, train_x, train_x.Size() / 2, 0,
                    train_x.Size() / 2);
@@ -245,7 +246,7 @@ void Train(float lr, int num_epoch, string data_dir) {
   t1.join();
   t2.join();
 }
-}
+}  // namespace singa
 
 int main(int argc, char **argv) {
   singa::InitChannel(nullptr);

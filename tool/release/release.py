@@ -49,7 +49,8 @@ def main(args):
         default=False,
         dest='confirmed',
         action='store_true',
-        help="In interactive mode, for user to confirm. Could be used in script")
+        help="In interactive mode, for user to confirm. Could be used in script"
+    )
     parser.add_argument('type',
                         choices=['major', 'minor', 'patch', 'rc', 'stable'],
                         help="Release types")
@@ -105,7 +106,9 @@ def main(args):
             stdout=subprocess.PIPE).stdout)
     # git push dcslin -f --tags
     # print( subprocess.run(['git', 'push', 'dcslin', '-f', '--tags'], stdout=subprocess.PIPE).stdout) # test
-    print( subprocess.run(['git', 'push', '--tags'], stdout=subprocess.PIPE).stdout)
+    print(
+        subprocess.run(['git', 'push', '--tags'],
+                       stdout=subprocess.PIPE).stdout)
     print("Done. Pushed to remote")
 
 

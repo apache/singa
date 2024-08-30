@@ -109,8 +109,7 @@ class VANILLA():
 
             # Training the Generative Net
             noise.uniform(-1, 1)
-            _, g_loss_tensor = self.model.train_one_batch(
-                noise, real_labels)
+            _, g_loss_tensor = self.model.train_one_batch(noise, real_labels)
 
             g_loss = tensor.to_numpy(g_loss_tensor)[0]
 

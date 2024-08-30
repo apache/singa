@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 from abc import abstractmethod
 from typing import Generator
 
@@ -48,7 +47,10 @@ class SpaceWrapper:
         raise NotImplementedError
 
     @classmethod
-    def new_arch_scratch(cls, arch_macro: ModelMacroCfg, arch_micro: ModelMicroCfg, bn: bool = True):
+    def new_arch_scratch(cls,
+                         arch_macro: ModelMacroCfg,
+                         arch_micro: ModelMicroCfg,
+                         bn: bool = True):
         """
         Args:
             arch_macro: macro setting for one architecture
@@ -58,7 +60,8 @@ class SpaceWrapper:
         """
         raise NotImplementedError
 
-    def new_arch_scratch_with_default_setting(self, model_encoding: str, bn: bool):
+    def new_arch_scratch_with_default_setting(self, model_encoding: str,
+                                              bn: bool):
         """
         Use the current search space's macro setting.
         Args:
@@ -77,9 +80,12 @@ class SpaceWrapper:
         raise NotImplementedError
 
     @abstractmethod
-    def profiling(self, dataset: str,
-                  train_loader: DataLoader = None, val_loader: DataLoader = None,
-                  args=None, is_simulate: bool = False) -> (float, float, int):
+    def profiling(self,
+                  dataset: str,
+                  train_loader: DataLoader = None,
+                  val_loader: DataLoader = None,
+                  args=None,
+                  is_simulate: bool = False) -> (float, float, int):
         """
         Profile the training and scoring time.
         Args:
@@ -147,7 +153,8 @@ class SpaceWrapper:
         """
         raise NotImplementedError
 
-    def mutate_architecture(self, parent_arch: ModelMicroCfg) -> (str, ModelMicroCfg):
+    def mutate_architecture(self,
+                            parent_arch: ModelMicroCfg) -> (str, ModelMicroCfg):
         """
         Mutate architecture, this is to support EA sampler
         :rtype: object
@@ -164,8 +171,12 @@ class SpaceWrapper:
 
     """In-RDBMS Helper Functions"""
 
-    def profiling_score_time(self, dataset: str, train_loader: DataLoader = None, val_loader: DataLoader = None,
-                             args=None, is_simulate: bool = False) -> float:
+    def profiling_score_time(self,
+                             dataset: str,
+                             train_loader: DataLoader = None,
+                             val_loader: DataLoader = None,
+                             args=None,
+                             is_simulate: bool = False) -> float:
         """
         Profile the scoring time.
         Args:
@@ -178,8 +189,12 @@ class SpaceWrapper:
         """
         raise NotImplementedError
 
-    def profiling_train_time(self, dataset: str, train_loader: DataLoader = None, val_loader: DataLoader = None,
-                             args=None, is_simulate: bool = False) -> float:
+    def profiling_train_time(self,
+                             dataset: str,
+                             train_loader: DataLoader = None,
+                             val_loader: DataLoader = None,
+                             args=None,
+                             is_simulate: bool = False) -> float:
         """
         Profile the training time.
         Args:

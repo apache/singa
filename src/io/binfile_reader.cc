@@ -54,8 +54,7 @@ bool BinFileReader::Read(std::string* key, std::string* value) {
     if (magic[2] == 1)
       if (!ReadField(key)) return false;
     if (!ReadField(value)) return false;
-  }
-  else {
+  } else {
     LOG(FATAL) << "File format error: magic word does not match!";
   }
   return true;
@@ -97,8 +96,7 @@ void BinFileReader::SeekToFirst() {
 bool BinFileReader::OpenFile() {
   buf_ = new char[capacity_];
   fdat_.open(path_, std::ios::in | std::ios::binary);
-  if (!fdat_.is_open())
-    LOG(WARNING) << "Cannot open file " << path_;
+  if (!fdat_.is_open()) LOG(WARNING) << "Cannot open file " << path_;
   return fdat_.is_open();
 }
 
@@ -111,7 +109,7 @@ bool BinFileReader::ReadField(std::string* content) {
   if (!PrepareNextField(len)) return false;
   content->reserve(len);
   content->insert(0, buf_ + offset_, len);
-  //for (int i = 0; i < len; ++i) content->push_back(buf_[offset_ + i]);
+  // for (int i = 0; i < len; ++i) content->push_back(buf_[offset_ + i]);
   offset_ += len;
   return true;
 }
@@ -126,7 +124,7 @@ bool BinFileReader::PrepareNextField(int size) {
       return false;
     } else {
       fdat_.read(buf_ + bufsize_, capacity_ - bufsize_);
-      bufsize_ += (int) fdat_.gcount();
+      bufsize_ += (int)fdat_.gcount();
       CHECK_LE(size, bufsize_) << "Field size is too large: " << size;
     }
   }

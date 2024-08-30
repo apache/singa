@@ -683,17 +683,9 @@ class Conv2d(Layer):
             if not hasattr(self, "handle"):
                 if _x.dtype == tensor.float16:
                     self.handle = singa.CudnnConvHandle(
-                        _x.data,
-                        self.kernel_size,
-                        self.stride,
-                        self.padding,
-                        self.in_channels,
-                        self.nb_kernels,
-                        self.bias,
-                        self.group,
-                        1024*1024*1024,
-                        "tensor_ops"
-                    )
+                        _x.data, self.kernel_size, self.stride, self.padding,
+                        self.in_channels, self.nb_kernels, self.bias,
+                        self.group, 1024 * 1024 * 1024, "tensor_ops")
                 else:
                     self.handle = singa.CudnnConvHandle(
                         _x.data,
@@ -857,7 +849,7 @@ class BatchNorm2d(Layer):
         self.device_check(x, self.scale, self.bias, self.running_mean,
                           self.running_var)
         self.dtype_check(x, self.scale, self.bias, self.running_mean,
-                        self.running_var)
+                         self.running_var)
 
         y = autograd.batchnorm_2d(
             self.handle,

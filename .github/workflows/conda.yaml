@@ -41,11 +41,11 @@ jobs:
         env:
           TEST_COMMAND: pytest --cov=$PREFIX/lib/python3.7/site-packages/singa --cov-report=xml && codecov --flags singa-python
       - name: upload-package
-        env: 
+        env:
           ANACONDA_UPLOAD_TOKEN: ${{ secrets.ANACONDA_UPLOAD_TOKEN }}
         if: ${{ env.ANACONDA_UPLOAD_TOKEN }}
         run: /usr/share/miniconda/bin/anaconda -t $ANACONDA_UPLOAD_TOKEN upload -u nusdbsystem -l main /usr/share/miniconda/conda-bld/linux-64/singa-*.tar.bz2 --force
-        # 
+        #
 
 
   build-pytest-package-macos:
@@ -54,7 +54,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: set permission
-        run: sudo chmod -R 777 /usr/local/miniconda 
+        run: sudo chmod -R 777 /usr/local/miniconda
         # && xcrun --show-sdk-path
       - name: install-conda-build
         run: conda install conda-build anaconda-client
@@ -65,7 +65,7 @@ jobs:
         env:
           TEST_COMMAND: pytest --cov=$PREFIX/lib/python3.6/site-packages/singa --cov-report=xml && codecov --flags singa-python
       - name: upload-package
-        env: 
+        env:
           ANACONDA_UPLOAD_TOKEN: ${{ secrets.ANACONDA_UPLOAD_TOKEN }}
         if: ${{ env.ANACONDA_UPLOAD_TOKEN }}
         run: /usr/local/miniconda/bin/anaconda -t $ANACONDA_UPLOAD_TOKEN upload -u nusdbsystem -l main /usr/local/miniconda/conda-bld/osx-64/singa-*.tar.bz2 --force
