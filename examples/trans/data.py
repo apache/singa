@@ -56,12 +56,12 @@ class Vocab:
 
 
 class CmnDataset:
-    def __init__(self, path='cmn-eng/cmn.txt', shuffle=False, batch_size=32, train_ratio=0.8, random_seed=0):
+    def __init__(self, path, shuffle=False, batch_size=32, train_ratio=0.8, random_seed=0):
         """
         cmn dataset, download from https://www.manythings.org/anki/, contains 29909 Chinese and English translation
         pairs, the pair format: English + TAB + Chinese + TAB + Attribution
         Args:
-            path: the path of the dataset, default 'cmn-eng/cnn.txt'
+            path: the path of the dataset
             shuffle: shuffle the dataset, default False
             batch_size: the size of every batch, default 32
             train_ratio: the proportion of the training set to the total data set, default 0.8
