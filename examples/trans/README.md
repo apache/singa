@@ -46,7 +46,12 @@ optional arguments:
   --n_layers         int        transformer model n_layers              default 6
 ```
 
-run the example
+**run the example**
+
+step 1: Download the dataset to the cmn-eng directory.
+
+step 2: Run the following script.
+
 ```
-python train.py --dataset cmn-2000.txt --max-epoch 100 --batch-size 32 --lr 0.01
+python train.py --dataset cmn-eng/cmn-2000.txt --max-epoch 100 --batch-size 32 --lr 0.01
 ```

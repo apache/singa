@@ -35,7 +35,7 @@ def run(args):
     np.random.seed(args.seed)
 
     batch_size = args.batch_size
-    cmn_dataset = CmnDataset(path="cmn-eng/"+args.dataset, shuffle=args.shuffle, batch_size=batch_size, train_ratio=0.8)
+    cmn_dataset = CmnDataset(path=args.dataset, shuffle=args.shuffle, batch_size=batch_size, train_ratio=0.8)
 
     print("【step-0】 prepare dataset...")
     src_vocab_size, tgt_vocab_size = cmn_dataset.en_vab_size, cmn_dataset.cn_vab_size
@@ -151,8 +151,7 @@ def run(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Training Transformer Model.")
-    parser.add_argument('--dataset', choices=['cmn.txt', 'cmn-15000.txt',
-                                              'cmn-2000.txt'],  default='cmn-2000.txt')
+    parser.add_argument('--dataset', default='cmn-eng/cmn-2000.txt')
     parser.add_argument('--max-epoch', default=100, type=int, help='maximum epochs.', dest='max_epoch')
     parser.add_argument('--batch-size', default=64, type=int, help='batch size', dest='batch_size')
     parser.add_argument('--shuffle', default=True, type=bool, help='shuffle the dataset', dest='shuffle')
