@@ -31,7 +31,7 @@ requirements:
 build:
   number: 0
   string: py{{ py }}
- 
+
 
 about:
   home: http://singa.apache.org/

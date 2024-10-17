@@ -46,7 +46,6 @@ TEST_F(TestSoftmaxCrossEntropy, CppForward) {
   t.CopyDataFromHostPtr(tdat, 2);
   t.AsType(singa::kInt);
 
-
   singa::SoftmaxCrossEntropy cross_entropy;
   const Tensor& loss = cross_entropy.Forward(singa::kEval, p, t);
   auto ldat = loss.data<float>();

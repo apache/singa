@@ -1,39 +1,40 @@
 /************************************************************
-*
-* Licensed to the Apache Software Foundation (ASF) under one
-* or more contributor license agreements.  See the NOTICE file
-* distributed with this work for additional information
-* regarding copyright ownership.  The ASF licenses this file
-* to you under the Apache License, Version 2.0 (the
-* "License"); you may not use this file except in compliance
-* with the License.  You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing,
-* software distributed under the License is distributed on an
-* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-* KIND, either express or implied.  See the License for the
-* specific language governing permissions and limitations
-* under the License.
-*
-*************************************************************/
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ *************************************************************/
 
 #ifndef SINGA_COMM_NETWORK_H_
 #define SINGA_COMM_NETWORK_H_
 #include "singa/singa_config.h"
 #ifdef ENABLE_DIST
 #include <ev.h>
+#include <netinet/in.h>
+
+#include <atomic>
+#include <condition_variable>
+#include <map>
+#include <mutex>
+#include <queue>
+#include <string>
 #include <thread>
 #include <unordered_map>
-#include <map>
 #include <vector>
-#include <condition_variable>
-#include <mutex>
-#include <atomic>
-#include <string>
-#include <netinet/in.h>
-#include <queue>
 
 namespace singa {
 
@@ -60,7 +61,7 @@ class EndPoint;
 class EndPointFactory;
 
 class Message {
-private:
+ private:
   uint8_t type_;
   uint32_t id_;
   std::size_t msize_ = 0;
@@ -73,7 +74,7 @@ private:
   friend class NetworkThread;
   friend class EndPoint;
 
-public:
+ public:
   Message(int = MSG_DATA, uint32_t = 0);
   Message(const Message &) = delete;
   Message(Message &&);
@@ -90,7 +91,7 @@ public:
 };
 
 class EndPoint {
-private:
+ private:
   std::queue<Message *> send_;
   std::queue<Message *> recv_;
   std::queue<Message *> to_ack_;
@@ -99,7 +100,7 @@ private:
   struct sockaddr_in addr_;
   ev_timer timer_;
   ev_tstamp last_msg_time_;
-  int fd_[2] = { -1, -1 }; // two endpoints simultaneously connect to each other
+  int fd_[2] = {-1, -1};  // two endpoints simultaneously connect to each other
   int pfd_ = -1;
   bool is_socket_loop_ = false;
   int conn_status_ = CONN_INIT;
@@ -111,13 +112,13 @@ private:
   friend class NetworkThread;
   friend class EndPointFactory;
 
-public:
+ public:
   int send(Message *);
   Message *recv();
 };
 
 class EndPointFactory {
-private:
+ private:
   std::unordered_map<uint32_t, EndPoint *> ip_ep_map_;
   std::condition_variable map_cv_;
   std::mutex map_mtx_;
@@ -126,7 +127,7 @@ private:
   EndPoint *getOrCreateEp(uint32_t ip);
   friend class NetworkThread;
 
-public:
+ public:
   EndPointFactory(NetworkThread *thread) : thread_(thread) {}
   ~EndPointFactory();
   EndPoint *getEp(const char *host);
@@ -134,7 +135,7 @@ public:
 };
 
 class NetworkThread {
-private:
+ private:
   struct ev_loop *loop_;
   ev_async ep_sig_;
   ev_async msg_sig_;
@@ -153,7 +154,7 @@ private:
   void asyncSendPendingMsg(EndPoint *);
   void afterConnEst(EndPoint *ep, int fd, bool active);
 
-public:
+ public:
   EndPointFactory *epf_;
 
   NetworkThread(int);
@@ -166,6 +167,6 @@ public:
   void onNewConn();
   void onTimeout(struct ev_timer *timer);
 };
-}
+}  // namespace singa
 #endif  // ENABLE_DIST
 #endif

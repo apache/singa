@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 try:
     from thop import profile
 except:
@@ -37,9 +36,14 @@ import gc
 
 class ConcurrentP1Evaluator:
 
-    def __init__(self, device: str, num_label: int, dataset_name: str,
+    def __init__(self,
+                 device: str,
+                 num_label: int,
+                 dataset_name: str,
                  search_space_ins: SpaceWrapper,
-                 train_loader: DataLoader, is_simulate: bool, metrics: str = CommonVars.ExpressFlow,
+                 train_loader: DataLoader,
+                 is_simulate: bool,
+                 metrics: str = CommonVars.ExpressFlow,
                  enable_cache: bool = False):
         """
         :param device:
@@ -75,7 +79,9 @@ class ConcurrentP1Evaluator:
                     num_classes=self.num_labels)
                 self.mini_batch.to(self.device)
                 self.mini_batch_targets.to(self.device)
-            elif self.dataset_name in [Config.Criteo, Config.Frappe, Config.UCIDataset]:
+            elif self.dataset_name in [
+                    Config.Criteo, Config.Frappe, Config.UCIDataset
+            ]:
                 # this is structure data
                 batch = iter(train_loader).__next__()
                 target = batch['y'].type(torch.LongTensor).to(self.device)
@@ -105,7 +111,8 @@ class ConcurrentP1Evaluator:
         self.enable_cache = enable_cache
         if self.enable_cache:
             # todo: warmup for concurrent usage. this is only test for MLP with embedding.
-            new_model = self.search_space_ins.new_arch_scratch_with_default_setting("8-8-8-8", bn=False)
+            new_model = self.search_space_ins.new_arch_scratch_with_default_setting(
+                "8-8-8-8", bn=False)
             new_model.init_embedding()
             # shared embedding
             manager = Manager()
@@ -157,7 +164,8 @@ class ConcurrentP1Evaluator:
 
         # measure model load time
         begin = time.time()
-        new_model = self.search_space_ins.new_arch_scratch_with_default_setting(model_encoding, bn=bn)
+        new_model = self.search_space_ins.new_arch_scratch_with_default_setting(
+            model_encoding, bn=bn)
 
         # mlp have embedding layer, which can be cached, optimization!
         if self.search_space_ins.name == Config.MLPSP:
@@ -203,10 +211,12 @@ class ConcurrentP1Evaluator:
             if isinstance(self.mini_batch, torch.Tensor):
                 feature_dim = list(self.mini_batch[0, :].shape)
                 # add one dimension to feature dim, [1] + [3, 32, 32] = [1, 3, 32, 32]
-                mini_batch = torch.ones([1] + feature_dim).float().to(self.device)
+                mini_batch = torch.ones([1] + feature_dim).float().to(
+                    self.device)
             else:
                 # this is for the tabular data,
-                mini_batch = new_model.generate_all_ones_embedding().float().to(self.device)
+                mini_batch = new_model.generate_all_ones_embedding().float().to(
+                    self.device)
         else:
             mini_batch = self.mini_batch
 

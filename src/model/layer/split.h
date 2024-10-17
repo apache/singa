@@ -20,6 +20,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+
 #include "singa/model/layer.h"
 
 namespace singa {
@@ -38,11 +39,11 @@ class Split : public Layer {
   }
   /// The inputs should have only one Tensor
   /// The outputs is a set of replicated Tensor
-  const vector<Tensor> Forward(int flag, const vector<Tensor> &inputs) override;
+  const vector<Tensor> Forward(int flag, const vector<Tensor>& inputs) override;
 
   /// \copydoc Layer::Backward(int, const vector<Tensor>&);
-  const std::pair<vector<Tensor>, vector<Tensor> >
-  Backward(int flag, const vector<Tensor> &grads) override;
+  const std::pair<vector<Tensor>, vector<Tensor> > Backward(
+      int flag, const vector<Tensor>& grads) override;
 
   size_t output_size() const { return output_size_; }
 

@@ -1,23 +1,23 @@
 /*********************************************************
-*
-* Licensed to the Apache Software Foundation (ASF) under one
-* or more contributor license agreements.  See the NOTICE file
-* distributed with this work for additional information
-* regarding copyright ownership.  The ASF licenses this file
-* to you under the Apache License, Version 2.0 (the
-* "License"); you may not use this file except in compliance
-* with the License.  You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing,
-* software distributed under the License is distributed on an
-* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-* KIND, either express or implied.  See the License for the
-* specific language governing permissions and limitations
-* under the License.
-*
-************************************************************/
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ ************************************************************/
 #include "cudnn_batchnorm.h"
 #ifdef USE_CUDNN
 
@@ -76,32 +76,29 @@ const Tensor CudnnBatchNorm::Forward(int flag, const Tensor& input) {
   } else {
     int n, c, h, w, s;
     cudnnDataType_t type;
-    CUDNN_CHECK(cudnnGetTensor4dDescriptor(shape_desc_, &type,
-          &n, &c, &h, &w, &s, &s, &s, &s));
-    if (shape[0] != static_cast<size_t>(n))
-      InitCudnn(shape, dtype);
-    CHECK(shape[1] == static_cast<size_t>(c)
-        && shape[2] == static_cast<size_t>(h)
-        && shape[3] == static_cast<size_t>(w))
-      << "input sample shape should not change"
-      << "previous shape " << c << ", " << h << ", " << w
-      << "current shape " << shape[1] << ", " << shape[2] << ", "
-      << shape[3];
+    CUDNN_CHECK(cudnnGetTensor4dDescriptor(shape_desc_, &type, &n, &c, &h, &w,
+                                           &s, &s, &s, &s));
+    if (shape[0] != static_cast<size_t>(n)) InitCudnn(shape, dtype);
+    CHECK(shape[1] == static_cast<size_t>(c) &&
+          shape[2] == static_cast<size_t>(h) &&
+          shape[3] == static_cast<size_t>(w))
+        << "input sample shape should not change" << "previous shape " << c
+        << ", " << h << ", " << w << "current shape " << shape[1] << ", "
+        << shape[2] << ", " << shape[3];
   }
-
 
   // TODO(wangji): check device id of input and params
   output.ResetLike(x);
   if ((flag & kTrain) == kTrain) {
     output.device()->Exec(
         [=](Context* ctx) {
-          Block* inBlock = x.block(), * outBlock = output.block(),
-                 * saveMeanBlock = resultSaveMean_.block(),
-                 * saveVarBlock = resultSaveVariance_.block(),
-                 * runningMeanBlock = runningMean_.block(),
-                 * runningVarBlock = runningVariance_.block(),
-                 * bnScaleBlock = bnScale_.block(),
-                 * bnBiasBlock = bnBias_.block();
+          Block *inBlock = x.block(), *outBlock = output.block(),
+                *saveMeanBlock = resultSaveMean_.block(),
+                *saveVarBlock = resultSaveVariance_.block(),
+                *runningMeanBlock = runningMean_.block(),
+                *runningVarBlock = runningVariance_.block(),
+                *bnScaleBlock = bnScale_.block(),
+                *bnBiasBlock = bnBias_.block();
           const float alpha = 1.0f, beta = 0.0f;
           double epsilon = CUDNN_BN_MIN_EPSILON;
           CUDNN_CHECK(cudnnBatchNormalizationForwardTraining(
@@ -119,11 +116,11 @@ const Tensor CudnnBatchNorm::Forward(int flag, const Tensor& input) {
   } else {
     output.device()->Exec(
         [=](Context* ctx) {
-          Block* inBlock = x.block(), * outBlock = output.block(),
-                 * runningMeanBlock = runningMean_.block(),
-                 * runningVarBlock = runningVariance_.block(),
-                 * bnScaleBlock = bnScale_.block(),
-                 * bnBiasBlock = bnBias_.block();
+          Block *inBlock = x.block(), *outBlock = output.block(),
+                *runningMeanBlock = runningMean_.block(),
+                *runningVarBlock = runningVariance_.block(),
+                *bnScaleBlock = bnScale_.block(),
+                *bnBiasBlock = bnBias_.block();
           const float alpha = 1.0f, beta = 0.0f;
           double epsilon = CUDNN_BN_MIN_EPSILON;
           CUDNN_CHECK(cudnnBatchNormalizationForwardInference(
@@ -150,12 +147,12 @@ const std::pair<Tensor, vector<Tensor>> CudnnBatchNorm::Backward(
     dx.ResetLike(grad);
     dx.device()->Exec(
         [=](Context* ctx) {
-          Block* dyblock = grad.block(), * dxblock = dx.block(),
-                 * xblock = x.block(), * bnScaleBlock = bnScale_.block(),
-                 * dbnScaleBlock = dbnScale_.block(),
-                 * dbnBiasBlock = dbnBias_.block(),
-                 * saveMeanBlock = resultSaveMean_.block(),
-                 * saveVarBlock = resultSaveVariance_.block();
+          Block *dyblock = grad.block(), *dxblock = dx.block(),
+                *xblock = x.block(), *bnScaleBlock = bnScale_.block(),
+                *dbnScaleBlock = dbnScale_.block(),
+                *dbnBiasBlock = dbnBias_.block(),
+                *saveMeanBlock = resultSaveMean_.block(),
+                *saveVarBlock = resultSaveVariance_.block();
           const float alpha = 1.0f, beta = .0f;
           double epsilon = CUDNN_BN_MIN_EPSILON;
           CUDNN_CHECK(cudnnBatchNormalizationBackward(
@@ -165,7 +162,6 @@ const std::pair<Tensor, vector<Tensor>> CudnnBatchNorm::Backward(
               bnScaleBlock->data(), dbnScaleBlock->mutable_data(),
               dbnBiasBlock->mutable_data(), epsilon, saveMeanBlock->data(),
               saveVarBlock->data()));
-
         },
         {x.block(), grad.block(), bnScale_.block(), resultSaveMean_.block(),
          resultSaveVariance_.block()},
@@ -181,6 +177,6 @@ const std::pair<Tensor, vector<Tensor>> CudnnBatchNorm::Backward(
   if (is_2d_) dx.Reshape(Shape{dx.shape().at(0), dx.shape().at(1)});
   return std::make_pair(dx, param_grad);
 }
-}  // namespace
+}  // namespace singa
 
 #endif  // USE_CUDNN

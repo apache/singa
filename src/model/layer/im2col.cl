@@ -22,12 +22,12 @@ __kernel void im2col(const int n, __global const float* data_im,
     const int c_col = c_im * kernel_h * kernel_w;
     const int h_offset = h_col * stride_h - pad_h;
     const int w_offset = w_col * stride_w - pad_w;
-    
+
     __global float* data_col_ptr = data_col + data_col_off;
     data_col_ptr += (c_col * height_col + h_col) * width_col + w_col;
     __global const float* data_im_ptr = data_im + data_im_off;
     data_im_ptr += (c_im * height + h_offset) * width + w_offset;
-    
+
     for (int i = 0; i < kernel_h; ++i) {
       for (int j = 0; j < kernel_w; ++j) {
         int h_im = h_offset + i * dilation_h;
@@ -65,7 +65,7 @@ __kernel void col2im(const int n, __global const float* data_col,
     const int h_col_start =
         (h_im < kernel_extent_h) ? 0 : (h_im - kernel_extent_h) / stride_h + 1;
     const int h_col_end = min(h_im / stride_h + 1, height_col);
-    
+
     // TODO: use LCM of stride and dilation to avoid unnecessary loops
     for (int h_col = h_col_start; h_col < h_col_end; h_col += 1) {
       for (int w_col = w_col_start; w_col < w_col_end; w_col += 1) {

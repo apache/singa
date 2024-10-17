@@ -44,6 +44,7 @@ singa_dtype = {"float32": tensor.float32}
 
 ### MSOptimizer
 class MSOptimizer(Optimizer):
+
     def __call__(self, loss):
         pn_p_g_list = self.call_with_returns(loss)
         # print ("optimizer1 before self.step()")
@@ -248,8 +249,8 @@ def augmentation(x, batch_size):
     for data_num in range(0, batch_size):
         offset = np.random.randint(8, size=2)
         x[data_num, :, :, :] = xpad[data_num, :,
-                               offset[0]:offset[0] + x.shape[2],
-                               offset[1]:offset[1] + x.shape[2]]
+                                    offset[0]:offset[0] + x.shape[2],
+                                    offset[1]:offset[1] + x.shape[2]]
         if_flip = np.random.randint(2)
         if (if_flip):
             x[data_num, :, :, :] = x[data_num, :, :, ::-1]
@@ -303,7 +304,7 @@ def resize_dataset(x, image_size):
         for d in range(0, dim):
             X[n, d, :, :] = np.array(Image.fromarray(x[n, d, :, :]).resize(
                 (image_size, image_size), Image.BILINEAR),
-                dtype=np.float32)
+                                     dtype=np.float32)
     return X
 
 
@@ -318,8 +319,7 @@ class ModelTrainer:
                          val_loader: DataLoader,
                          test_loader: DataLoader,
                          args,
-                         logger=None
-                         ) -> (float, float, dict):
+                         logger=None) -> (float, float, dict):
         """
         Args:
             model:
@@ -359,7 +359,10 @@ class ModelTrainer:
         #     T_max=epoch_num,  # Maximum number of iterations.
         #     eta_min=1e-4)  # Minimum learning rate.
         precision = 'float32'
-        mssgd = MSSGD(lr=args.lr, momentum=0.9, weight_decay=1e-4, dtype=singa_dtype[precision])
+        mssgd = MSSGD(lr=args.lr,
+                      momentum=0.9,
+                      weight_decay=1e-4,
+                      dtype=singa_dtype[precision])
         device_id = 0
         max_epoch = epoch_num
         # model = arch
@@ -378,7 +381,9 @@ class ModelTrainer:
         if args.device == 'cpu':
             dev = singa_device.get_default_device()
         else:  # GPU
-            dev = singa_device.create_cuda_gpu_on(args.local_rank)  # need to change to CPU device for CPU-only machines
+            dev = singa_device.create_cuda_gpu_on(
+                args.local_rank
+            )  # need to change to CPU device for CPU-only machines
         dev.SetRandSeed(0)
 
         # For distributed training, sequential has better performance
@@ -394,12 +399,16 @@ class ModelTrainer:
         valid_loss = 0
 
         ### singa data
-        tx = tensor.Tensor((args.batch_size, args.nfeat), dev, singa_dtype[precision])
+        tx = tensor.Tensor((args.batch_size, args.nfeat), dev,
+                           singa_dtype[precision])
         ty = tensor.Tensor((args.batch_size,), dev, tensor.int32)
         ### singa data
 
         model.set_optimizer(mssgd)
-        model.compile([tx], is_train=True, use_graph=graph, sequential=sequential)
+        model.compile([tx],
+                      is_train=True,
+                      use_graph=graph,
+                      sequential=sequential)
         dev.SetVerbosity(verbosity)
 
         # synflow_flag = False ### just change the model to the absolute value
@@ -476,7 +485,8 @@ class ModelTrainer:
                 y = batch['y'].cpu().numpy()
                 batch['id'] = batch['id'].cpu().numpy().astype(int)
                 # batch['value'] = batch['value'].to(args.device)
-                x = np.zeros((batch['id'].shape[0], args.nfeat), dtype=np.float32)
+                x = np.zeros((batch['id'].shape[0], args.nfeat),
+                             dtype=np.float32)
                 # print ("target shape: ", target.shape)
                 # print ("target: ", target)
                 # print ("batch['id'] shape: ", batch['id'].shape)
@@ -510,7 +520,8 @@ class ModelTrainer:
                 # print ("train_cnn ty: \n", ty)
                 # print ("trainer.py train before model forward ...")
                 # print ("model: ", model)
-                pn_p_g_list, out, loss = model(tx, ty, dist_option, spars, synflow_flag)
+                pn_p_g_list, out, loss = model(tx, ty, dist_option, spars,
+                                               synflow_flag)
                 # print ("trainer.py train normal after model(tx, ty, synflow_flag, dist_option, spars)")
                 # print ("trainer.py train tx shape: ", tx.shape)
                 # print ("trainer.py train ty shape: ", ty.shape)
@@ -534,11 +545,12 @@ class ModelTrainer:
                 print("train total batch_idx: ", batch_idx)
 
                 logger.info('Training loss = %f, training accuracy = %f' %
-                      (train_loss, train_correct /
-                       (batch_idx * args.batch_size * world_size)))
+                            (train_loss, train_correct /
+                             (batch_idx * args.batch_size * world_size)))
 
                 logger.info("train total batch_idx: ", batch_idx)
-                train_metric = train_correct / (batch_idx * args.batch_size * world_size)
+                train_metric = train_correct / (batch_idx * args.batch_size *
+                                                world_size)
 
             # Evaluation phase
             model.eval()
@@ -559,7 +571,8 @@ class ModelTrainer:
                 y = batch['y'].cpu().numpy()
                 batch['id'] = batch['id'].cpu().numpy().astype(int)
                 # batch['value'] = batch['value'].to(args.device)
-                x = np.zeros((batch['id'].shape[0], args.nfeat), dtype=np.float32)
+                x = np.zeros((batch['id'].shape[0], args.nfeat),
+                             dtype=np.float32)
                 # print ("target shape: ", target.shape)
                 # print ("target: ", target)
                 # print ("batch['id'] shape: ", batch['id'].shape)
@@ -573,7 +586,8 @@ class ModelTrainer:
                 x = x.astype(dtype=np.float32)
                 y = y.astype(dtype=np.int32)
 
-                if x.shape[0] != (args.batch_size * 8):  # last batch not processing
+                if x.shape[0] != (args.batch_size *
+                                  8):  # last batch not processing
                     # print ("trainer.py test batch_idx: ", batch_idx)
                     # print ("trainer.py test x.shape: ", x.shape)
                     continue
@@ -598,22 +612,26 @@ class ModelTrainer:
             # Output the evaluation accuracy
             if global_rank == 0:
                 print('Evaluation accuracy = %f, Elapsed Time = %fs' %
-                      (test_correct / (batch_idx * args.batch_size * 8 * world_size),
+                      (test_correct /
+                       (batch_idx * args.batch_size * 8 * world_size),
                        time.time() - start_time),
                       flush=True)
 
                 logger.info('Evaluation accuracy = %f, Elapsed Time = %fs' %
-                      (test_correct / (batch_idx * args.batch_size * 8 * world_size),
-                       time.time() - start_time))
+                            (test_correct /
+                             (batch_idx * args.batch_size * 8 * world_size),
+                             time.time() - start_time))
                 # print ("test all batch_idx: ", batch_idx)
-                test_metric = test_correct / (batch_idx * args.batch_size * 8 * world_size)
+                test_metric = test_correct / (batch_idx * args.batch_size * 8 *
+                                              world_size)
 
             info_dic[epoch] = {
                 "train_metric": str(train_metric[0]),
                 "test_metric": str(test_metric[0]),
                 "train_loss": str(train_loss[0]),
                 # "valid_loss": valid_loss,
-                "train_test_total_time": str(time.time() - start_time)}
+                "train_test_total_time": str(time.time() - start_time)
+            }
 
         dev.PrintTimeProfiling()
 
@@ -635,8 +653,7 @@ class ModelTrainer:
                                 val_loader: DataLoader,
                                 test_loader: DataLoader,
                                 args,
-                                logger=None
-                                ) -> (float, float, dict):
+                                logger=None) -> (float, float, dict):
         """
         Args:
             model:
@@ -691,20 +708,36 @@ class ModelTrainer:
             # print("begin to train...")
             logger.info(f"Begin to train.....")
             train_auc, train_loss = ModelTrainer.run(logger,
-                                                     epoch, iter_per_epoch, model, train_loader, opt_metric, args,
-                                                     optimizer=optimizer, namespace='train')
+                                                     epoch,
+                                                     iter_per_epoch,
+                                                     model,
+                                                     train_loader,
+                                                     opt_metric,
+                                                     args,
+                                                     optimizer=optimizer,
+                                                     namespace='train')
             scheduler.step()
             logger.info(f"Begin to evaluate on valid.....")
             # print("begin to evaluate...")
             valid_auc, valid_loss = ModelTrainer.run(logger,
-                                                     epoch, iter_per_epoch, model, val_loader,
-                                                     opt_metric, args, namespace='val')
+                                                     epoch,
+                                                     iter_per_epoch,
+                                                     model,
+                                                     val_loader,
+                                                     opt_metric,
+                                                     args,
+                                                     namespace='val')
 
             if use_test_acc:
                 logger.info(f"Begin to evaluate on test.....")
                 test_auc, test_loss = ModelTrainer.run(logger,
-                                                       epoch, iter_per_epoch, model, test_loader,
-                                                       opt_metric, args, namespace='test')
+                                                       epoch,
+                                                       iter_per_epoch,
+                                                       model,
+                                                       test_loader,
+                                                       opt_metric,
+                                                       args,
+                                                       namespace='test')
             else:
                 test_auc = -1
 
@@ -713,27 +746,31 @@ class ModelTrainer:
                 "valid_auc": valid_auc,
                 "train_loss": train_loss,
                 "valid_loss": valid_loss,
-                "train_val_total_time": time.time() - start_time}
+                "train_val_total_time": time.time() - start_time
+            }
 
             # record best auc and save checkpoint
             if valid_auc >= best_valid_auc:
                 best_valid_auc, best_test_auc = valid_auc, test_auc
-                logger.info(f'best valid auc: valid {valid_auc:.4f}, test {test_auc:.4f}')
+                logger.info(
+                    f'best valid auc: valid {valid_auc:.4f}, test {test_auc:.4f}'
+                )
             else:
                 logger.info(f'valid {valid_auc:.4f}, test {test_auc:.4f}')
 
         return valid_auc, time.time() - start_time, info_dic
 
     @classmethod
-    def fully_evaluate_arch(cls,
-                            model: nn.Module,
-                            use_test_acc: bool,
-                            epoch_num,
-                            val_loader: DataLoader,
-                            test_loader: DataLoader,
-                            args,
-                            logger=None,
-                            ) -> (float, float, dict):
+    def fully_evaluate_arch(
+        cls,
+        model: nn.Module,
+        use_test_acc: bool,
+        epoch_num,
+        val_loader: DataLoader,
+        test_loader: DataLoader,
+        args,
+        logger=None,
+    ) -> (float, float, dict):
         """
         Args:
             model:
@@ -763,20 +800,32 @@ class ModelTrainer:
             logger.info(f'Epoch [{epoch:3d}/{epoch_num:3d}]')
             # print("begin to evaluate...")
             valid_auc, valid_loss = ModelTrainer.run(logger,
-                                                     epoch, iter_per_epoch, model, val_loader,
-                                                     opt_metric, args, namespace='val')
+                                                     epoch,
+                                                     iter_per_epoch,
+                                                     model,
+                                                     val_loader,
+                                                     opt_metric,
+                                                     args,
+                                                     namespace='val')
 
             if use_test_acc:
                 test_auc, test_loss = ModelTrainer.run(logger,
-                                                       epoch, iter_per_epoch, model, test_loader,
-                                                       opt_metric, args, namespace='test')
+                                                       epoch,
+                                                       iter_per_epoch,
+                                                       model,
+                                                       test_loader,
+                                                       opt_metric,
+                                                       args,
+                                                       namespace='test')
             else:
                 test_auc = -1
 
             # record best auc and save checkpoint
             if valid_auc >= best_valid_auc:
                 best_valid_auc, best_test_auc = valid_auc, test_auc
-                logger.info(f'best valid auc: valid {valid_auc:.4f}, test {test_auc:.4f}')
+                logger.info(
+                    f'best valid auc: valid {valid_auc:.4f}, test {test_auc:.4f}'
+                )
             else:
                 logger.info(f'valid {valid_auc:.4f}, test {test_auc:.4f}')
 
@@ -784,7 +833,15 @@ class ModelTrainer:
 
     #  train one epoch of train/val/test
     @classmethod
-    def run(cls, logger, epoch, iter_per_epoch, model, data_loader, opt_metric, args, optimizer=None,
+    def run(cls,
+            logger,
+            epoch,
+            iter_per_epoch,
+            model,
+            data_loader,
+            opt_metric,
+            args,
+            optimizer=None,
             namespace='train'):
         if optimizer:
             model.train()
@@ -799,7 +856,9 @@ class ModelTrainer:
             # if suer set this, then only train fix number of iteras
             # stop training current epoch for evaluation
             if namespace == 'train' and iter_per_epoch is not None and batch_idx >= iter_per_epoch:
-                logger.info(f"Traing Iteration {batch_idx} > iter_per_epoch = {iter_per_epoch}, breakout")
+                logger.info(
+                    f"Traing Iteration {batch_idx} > iter_per_epoch = {iter_per_epoch}, breakout"
+                )
                 break
 
             target = batch['y'].type(torch.LongTensor).to(args.device)
@@ -819,7 +878,8 @@ class ModelTrainer:
                     loss = opt_metric(y, target)
 
             # for multiple classification
-            auc = utils.roc_auc_compute_fn(torch.nn.functional.softmax(y, dim=1)[:, 1], target)
+            auc = utils.roc_auc_compute_fn(
+                torch.nn.functional.softmax(y, dim=1)[:, 1], target)
             # for binary classification
             # auc = utils.roc_auc_compute_fn(y, target)
             loss_avg.update(loss.item(), target.size(0))
@@ -828,18 +888,20 @@ class ModelTrainer:
             time_avg.update(time.time() - timestamp)
             timestamp = time.time()
             if batch_idx % args.report_freq == 0:
-                logger.info(f'Epoch [{epoch:3d}/{args.epoch_num}][{batch_idx:3d}/{len(data_loader)}]\t'
-                            f'{time_avg.val:.3f} ({time_avg.avg:.3f}) AUC {auc_avg.val:4f} ({auc_avg.avg:4f}) '
-                            f'Loss {loss_avg.val:8.4f} ({loss_avg.avg:8.4f})')
+                logger.info(
+                    f'Epoch [{epoch:3d}/{args.epoch_num}][{batch_idx:3d}/{len(data_loader)}]\t'
+                    f'{time_avg.val:.3f} ({time_avg.avg:.3f}) AUC {auc_avg.val:4f} ({auc_avg.avg:4f}) '
+                    f'Loss {loss_avg.val:8.4f} ({loss_avg.avg:8.4f})')
 
                 # print(f'Epoch [{epoch:3d}/{args.epoch_num}][{batch_idx:3d}/{len(data_loader)}]\t'
                 #       f'{time_avg.val:.3f} ({time_avg.avg:.3f}) AUC {auc_avg.val:4f} ({auc_avg.avg:4f}) '
                 #       f'Loss {loss_avg.val:8.4f} ({loss_avg.avg:8.4f})')
 
         # record the last epoch information
-        logger.info(f'Epoch [{epoch:3d}/{args.epoch_num}][{batch_idx:3d}/{len(data_loader)}]\t'
-                    f'{time_avg.val:.3f} ({time_avg.avg:.3f}) AUC {auc_avg.val:4f} ({auc_avg.avg:4f}) '
-                    f'Loss {loss_avg.val:8.4f} ({loss_avg.avg:8.4f})')
+        logger.info(
+            f'Epoch [{epoch:3d}/{args.epoch_num}][{batch_idx:3d}/{len(data_loader)}]\t'
+            f'{time_avg.val:.3f} ({time_avg.avg:.3f}) AUC {auc_avg.val:4f} ({auc_avg.avg:4f}) '
+            f'Loss {loss_avg.val:8.4f} ({loss_avg.avg:8.4f})')
 
         # print(f'Epoch [{epoch:3d}/{args.epoch_num}][{batch_idx:3d}/{len(data_loader)}]\t'
         #       f'{time_avg.val:.3f} ({time_avg.avg:.3f}) AUC {auc_avg.val:4f} ({auc_avg.avg:4f}) '

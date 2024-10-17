@@ -7,18 +7,19 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# 
+#
 
 from __future__ import print_function
 from future import standard_library
+
 standard_library.install_aliases()
 import urllib.request, urllib.parse, urllib.error
 import tarfile
@@ -56,10 +57,7 @@ def do_download(dirpath, gzfile, url):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Download Cifar10 datasets')
-    parser.add_argument(
-        'file',
-        type=str,
-        choices=['py', 'bin'])
+    parser.add_argument('file', type=str, choices=['py', 'bin'])
     args = parser.parse_args()
     if args.file == 'bin':
         dirpath = 'cifar-10-batches-bin'

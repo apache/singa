@@ -29,7 +29,7 @@ Example usages::
 
     x = tensor.Tensor((3, 5))
     initializer.he_uniform(x)
-    initializer.golorot_norm(x) 
+    initializer.golorot_norm(x)
 '''
 
 from __future__ import division
@@ -41,7 +41,7 @@ from deprecated import deprecated
 def eye(t):
     """Initialize the tensor with ones on the diagonal and zeros elsewhere.
 
-    Note: it is implemented by calling numpy. 
+    Note: it is implemented by calling numpy.
     Do not call it within forward propagation when computation graph is enabled.
 
     # Arguments
@@ -56,7 +56,7 @@ def eye(t):
 def orthogonal(t, gain=1.0):
     """Initializer that generates a random orthogonal matrix.
 
-    Note: it is implemented by calling numpy. 
+    Note: it is implemented by calling numpy.
     Do not call it within forward propagation when computation graph is enabled.
 
     # Arguments
@@ -144,6 +144,7 @@ def he_normal(t):
            ImageNet Classification](http://arxiv.org/abs/1502.01852)
     """
     _random_fill(t, scale=2., mode='fan_in', distribution='normal')
+
 
 def lecun_normal(t):
     """LeCun normal initializer.
@@ -298,12 +299,12 @@ def _random_fill(t, scale, mode, distribution):
 
     Args:
         t (Tensor): Tensor to be filled
-        scale (float): scale factor  
-        mode (str): "fan_in" or "fan_out" or "fan_avg" 
-        distribution (str): "normal" or "uniform" 
+        scale (float): scale factor
+        mode (str): "fan_in" or "fan_out" or "fan_avg"
+        distribution (str): "normal" or "uniform"
 
     Raises:
-        ValueError: In case of an invalid value for scale, mode or distribution 
+        ValueError: In case of an invalid value for scale, mode or distribution
     """
     if scale <= 0.:
         raise ValueError('`scale` must be a positive float. Got:', scale)

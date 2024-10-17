@@ -34,7 +34,10 @@ def get_variable_memory_size(obj):
         return sys.getsizeof(obj)
 
 
-def print_cpu_gpu_usage(interval=1, output_file="path_to_folder", stop_event=None):
+def print_cpu_gpu_usage(interval=1,
+                        output_file="path_to_folder",
+                        stop_event=None):
+
     def print_usage():
         print("Starting to print usage")  # Debugging print
         # Get current process
@@ -47,15 +50,16 @@ def print_cpu_gpu_usage(interval=1, output_file="path_to_folder", stop_event=Non
             cpu_percent = 0
             mem_usage_mb = 0
             main_process.cpu_percent()
-            for process in main_process.children(recursive=True):  # Include all child processes
+            for process in main_process.children(
+                    recursive=True):  # Include all child processes
                 try:
                     cpu_percent += process.cpu_percent()
-                    mem_usage_mb += process.memory_info().rss / (1024 ** 2)
+                    mem_usage_mb += process.memory_info().rss / (1024**2)
                 except psutil.NoSuchProcess:
                     # Process does not exist, so add 0 to cpu_percent and mem_usage_mb
                     pass
             cpu_percent += main_process.cpu_percent()
-            mem_usage_mb += main_process.memory_info().rss / (1024 ** 2)
+            mem_usage_mb += main_process.memory_info().rss / (1024**2)
 
             metrics['cpu_usage'].append(cpu_percent)
             metrics['memory_usage'].append(mem_usage_mb)
@@ -63,7 +67,8 @@ def print_cpu_gpu_usage(interval=1, output_file="path_to_folder", stop_event=Non
             try:
                 gpu_stats = gpustat.GPUStatCollection.new_query()
                 for gpu in gpu_stats:
-                    metrics['gpu_usage'].append((gpu.index, gpu.utilization, gpu.memory_used))
+                    metrics['gpu_usage'].append(
+                        (gpu.index, gpu.utilization, gpu.memory_used))
             except Exception as e:
                 pass
                 # print(f"Exception encountered when fetching GPU stats: {e}")
@@ -91,15 +96,16 @@ def print_memory_usage():
     cpu_percent = 0
     mem_usage_mb = 0
     main_process.cpu_percent()
-    for process in main_process.children(recursive=True):  # Include all child processes
+    for process in main_process.children(
+            recursive=True):  # Include all child processes
         try:
             cpu_percent += process.cpu_percent()
-            mem_usage_mb += process.memory_info().rss / (1024 ** 2)
+            mem_usage_mb += process.memory_info().rss / (1024**2)
         except psutil.NoSuchProcess:
             # Process does not exist, so add 0 to cpu_percent and mem_usage_mb
             pass
     cpu_percent += main_process.cpu_percent()
-    mem_usage_mb += main_process.memory_info().rss / (1024 ** 2)
+    mem_usage_mb += main_process.memory_info().rss / (1024**2)
     metrics['cpu_usage'].append(cpu_percent)
     metrics['memory_usage'].append(mem_usage_mb)
     print(metrics)

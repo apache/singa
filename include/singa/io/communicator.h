@@ -80,7 +80,8 @@ class Communicator {
   int local_rank;
 
   Communicator(int limit);
-  Communicator(int local_rank, int world_size, const NcclIdHolder &holder, int size);
+  Communicator(int local_rank, int world_size, const NcclIdHolder &holder,
+               int size);
   ~Communicator();
   void synch(Tensor &t);
   void fusedSynch(vector<Tensor> &t, bool send = true);

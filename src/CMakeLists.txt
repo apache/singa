@@ -113,5 +113,3 @@ ENDIF(CODE_COVERAGE)
 #pass configure infor to swig
 FILE(REMOVE "${CMAKE_CURRENT_SOURCE_DIR}/api/config.i")
 CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/api/config.i.in" "${CMAKE_CURRENT_SOURCE_DIR}/api/config.i")
-
-

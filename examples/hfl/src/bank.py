@@ -94,4 +94,3 @@ def split(num):
 
 if __name__ == "__main__":
     split(int(sys.argv[1]))
-

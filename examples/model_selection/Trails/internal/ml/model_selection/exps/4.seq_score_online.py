@@ -24,7 +24,9 @@ from exps.shared_args import parse_arguments
 
 
 def generate_data_loader():
-    if args.dataset in [Config.c10, Config.c100, Config.imgNet, Config.imgNetFull]:
+    if args.dataset in [
+            Config.c10, Config.c100, Config.imgNet, Config.imgNetFull
+    ]:
         train_loader, val_loader, class_num = dataset.get_dataloader(
             train_batch_size=args.batch_size,
             test_batch_size=args.batch_size,
@@ -51,7 +53,8 @@ if __name__ == "__main__":
     gmt = time.gmtime()
     ts = calendar.timegm(gmt)
     os.environ.setdefault("log_logger_folder_name", f"{args.log_folder}")
-    os.environ.setdefault("log_file_name", args.log_name + "_" + str(ts) + ".log")
+    os.environ.setdefault("log_file_name",
+                          args.log_name + "_" + str(ts) + ".log")
     os.environ.setdefault("base_dir", args.base_dir)
 
     from src.common.structure import ModelAcquireData
@@ -82,8 +85,12 @@ if __name__ == "__main__":
     explored_n = 0
     output_file = f"{args.result_dir}/score_{args.search_space}_{args.dataset}_batch_size_{args.batch_size}_{args.device}.json"
     result = read_json(output_file)
-    print(f"begin to score all, currently we already explored {len(result.keys())}")
-    logger.info(f"begin to score all, currently we already explored {len(result.keys())}")
+    print(
+        f"begin to score all, currently we already explored {len(result.keys())}"
+    )
+    logger.info(
+        f"begin to score all, currently we already explored {len(result.keys())}"
+    )
     while True:
         arch_id, arch_micro = sampler.sample_next_arch()
         if arch_id is None:
@@ -106,30 +113,30 @@ if __name__ == "__main__":
         # print(f" {datetime.now()} finish arch = {arch_id}, model_score = {model_score}")
 
         if explored_n < 10:
-            print("3. [trails] Phase 1: filter phase explored " + str(explored_n)
-                  + "Total explored " + str(len(result)) +
-                  " model, model_id = " + str(arch_id) +
-                  " model_scores = " + json.dumps(model_score))
-            logger.info("3. [trails] Phase 1: filter phase explored " + str(explored_n)
-                        + "Total explored " + str(len(result)) +
+            print("3. [trails] Phase 1: filter phase explored " +
+                  str(explored_n) + "Total explored " + str(len(result)) +
+                  " model, model_id = " + str(arch_id) + " model_scores = " +
+                  json.dumps(model_score))
+            logger.info("3. [trails] Phase 1: filter phase explored " +
+                        str(explored_n) + "Total explored " + str(len(result)) +
                         " model, model_id = " + str(arch_id) +
                         " model_scores = " + json.dumps(model_score))
         if explored_n % 1000 == 0:
             # print_memory_usg()
             # _evaluator.force_gc()
-            print("3. [trails] Phase 1: filter phase explored " + str(explored_n)
-                  + "Total explored " + str(len(result)) +
-                  " model, model_id = " + str(arch_id) +
-                  " model_scores = " + json.dumps(model_score))
-            logger.info("3. [trails] Phase 1: filter phase explored " + str(explored_n)
-                        + "Total explored " + str(len(result)) +
+            print("3. [trails] Phase 1: filter phase explored " +
+                  str(explored_n) + "Total explored " + str(len(result)) +
+                  " model, model_id = " + str(arch_id) + " model_scores = " +
+                  json.dumps(model_score))
+            logger.info("3. [trails] Phase 1: filter phase explored " +
+                        str(explored_n) + "Total explored " + str(len(result)) +
                         " model, model_id = " + str(arch_id) +
                         " model_scores = " + json.dumps(model_score))
         if explored_n % 1000 == 0:
             # print_memory_usg()
             # _evaluator.force_gc()
-            logger.info("3. [trails] Phase 1: filter phase explored " + str(explored_n) +
-                        " model, model_id = " + str(arch_id) +
+            logger.info("3. [trails] Phase 1: filter phase explored " +
+                        str(explored_n) + " model, model_id = " + str(arch_id) +
                         " model_scores = " + json.dumps(model_score))
             write_json(output_file, result)
     write_json(output_file, result)

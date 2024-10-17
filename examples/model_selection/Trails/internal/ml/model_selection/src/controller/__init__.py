@@ -27,4 +27,3 @@ sampler_register = {
     CommonVars.RL_SAMPLER: RLSampler,
     CommonVars.EA_SAMPLER: RegularizedEASampler,
 }
-

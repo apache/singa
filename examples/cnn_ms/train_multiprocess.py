@@ -17,7 +17,6 @@
 # under the License.
 #
 
-
 from singa import singa_wrap as singa
 from singa import opt
 from singa import tensor
@@ -27,12 +26,20 @@ import multiprocessing
 
 singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 
+
 def run(args, local_rank, world_size, nccl_id):
-    sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5, dtype=singa_dtype[args.precision])
-    sgd = opt.DistOpt(sgd, nccl_id=nccl_id, local_rank=local_rank, world_size=world_size)
-    train_cnn.run(sgd.global_rank, sgd.world_size, sgd.local_rank, args.max_epoch,
-              args.batch_size, args.model, args.data, sgd, args.graph,
-              args.verbosity, args.dist_option, args.spars, args.precision)
+    sgd = opt.SGD(lr=args.lr,
+                  momentum=0.9,
+                  weight_decay=1e-5,
+                  dtype=singa_dtype[args.precision])
+    sgd = opt.DistOpt(sgd,
+                      nccl_id=nccl_id,
+                      local_rank=local_rank,
+                      world_size=world_size)
+    train_cnn.run(sgd.global_rank, sgd.world_size, sgd.local_rank,
+                  args.max_epoch, args.batch_size, args.model, args.data, sgd,
+                  args.graph, args.verbosity, args.dist_option, args.spars,
+                  args.precision)
 
 
 if __name__ == '__main__':
@@ -42,7 +49,9 @@ if __name__ == '__main__':
     parser.add_argument('model',
                         choices=['resnet', 'xceptionnet', 'cnn', 'mlp'],
                         default='cnn')
-    parser.add_argument('data', choices=['cifar10', 'cifar100', 'mnist'], default='mnist')
+    parser.add_argument('data',
+                        choices=['cifar10', 'cifar100', 'mnist'],
+                        default='mnist')
     parser.add_argument('-p',
                         choices=['float32', 'float16'],
                         default='float32',
@@ -71,18 +80,22 @@ if __name__ == '__main__':
                         type=int,
                         help='number of gpus to be used',
                         dest='world_size')
-    parser.add_argument('-d',
-                        '--dist-option',
-                        default='plain',
-                        choices=['plain','half','partialUpdate','sparseTopK','sparseThreshold'],
-                        help='distibuted training options',
-                        dest='dist_option') # currently partialUpdate support graph=False only
-    parser.add_argument('-s',
-                        '--sparsification',
-                        default='0.05',
-                        type=float,
-                        help='the sparsity parameter used for sparsification, between 0 to 1',
-                        dest='spars')
+    parser.add_argument(
+        '-d',
+        '--dist-option',
+        default='plain',
+        choices=[
+            'plain', 'half', 'partialUpdate', 'sparseTopK', 'sparseThreshold'
+        ],
+        help='distibuted training options',
+        dest='dist_option')  # currently partialUpdate support graph=False only
+    parser.add_argument(
+        '-s',
+        '--sparsification',
+        default='0.05',
+        type=float,
+        help='the sparsity parameter used for sparsification, between 0 to 1',
+        dest='spars')
     parser.add_argument('-g',
                         '--disable-graph',
                         default='True',
@@ -105,7 +118,8 @@ if __name__ == '__main__':
     for local_rank in range(0, args.world_size):
         process.append(
             multiprocessing.Process(target=run,
-                                    args=(args, local_rank, args.world_size, nccl_id)))
+                                    args=(args, local_rank, args.world_size,
+                                          nccl_id)))
 
     for p in process:
         p.start()

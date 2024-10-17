@@ -25,5 +25,3 @@ Optimizer
    :member-order: bysource
    :show-inheritance:
    :undoc-members:
-
-

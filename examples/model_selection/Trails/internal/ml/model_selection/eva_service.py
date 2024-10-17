@@ -35,7 +35,8 @@ from shared_config import parse_config_arguments
 from typing import Any, List, Dict, Tuple
 
 
-def refinement_phase(u: int, k_models: List, dataset_name: str, config_file: str):
+def refinement_phase(u: int, k_models: List, dataset_name: str,
+                     config_file: str):
     """
     U: training-epoches
     K-Models: k models to train
@@ -43,13 +44,17 @@ def refinement_phase(u: int, k_models: List, dataset_name: str, config_file: str
     """
     args = parse_config_arguments(config_file)
     args.device = "cuda:7"
-    train_dataloader = StreamingDataLoader(
-        cache_svc_url=args.cache_svc_url, table_name=f"{dataset_name}_train", name_space="train")
-    eval_dataloader = StreamingDataLoader(
-        cache_svc_url=args.cache_svc_url, table_name=f"{dataset_name}_valid", name_space="valid")
+    train_dataloader = StreamingDataLoader(cache_svc_url=args.cache_svc_url,
+                                           table_name=f"{dataset_name}_train",
+                                           name_space="train")
+    eval_dataloader = StreamingDataLoader(cache_svc_url=args.cache_svc_url,
+                                          table_name=f"{dataset_name}_valid",
+                                          name_space="valid")
 
     try:
-        rms = RunModelSelection(args.search_space, args, is_simulate=args.is_simulate)
+        rms = RunModelSelection(args.search_space,
+                                args,
+                                is_simulate=args.is_simulate)
         best_arch, best_arch_performance, _, _ = rms.refinement_phase(
             U=u,
             k_models=k_models,
@@ -58,7 +63,10 @@ def refinement_phase(u: int, k_models: List, dataset_name: str, config_file: str
     finally:
         train_dataloader.stop()
         eval_dataloader.stop()
-    return {"best_arch": best_arch, "best_arch_performance": best_arch_performance}
+    return {
+        "best_arch": best_arch,
+        "best_arch_performance": best_arch_performance
+    }
 
 
 app = Sanic("evaApp")
@@ -77,7 +85,8 @@ async def start_refinement_phase(request):
     config_file = request.json.get('config_file')
 
     if u is None or k_models is None or config_file is None:
-        logger.info(f"Missing 'u' or 'k_models' in JSON payload, {request.json}")
+        logger.info(
+            f"Missing 'u' or 'k_models' in JSON payload, {request.json}")
         raise InvalidUsage("Missing 'u' or 'k_models' in JSON payload")
 
     result = refinement_phase(u, k_models, dataset_name, config_file)
@@ -90,6 +99,8 @@ if __name__ == "__main__":
         u=1,
         k_models=["8-8-8-8", "16-16-16-16"],
         dataset_name="frappe",
-        config_file="/home/xingnaili/firmest_docker/TRAILS/internal/ml/model_selection/config.ini")
+        config_file=
+        "/home/xingnaili/firmest_docker/TRAILS/internal/ml/model_selection/config.ini"
+    )
 
     # app.run(host="0.0.0.0", port=8095)

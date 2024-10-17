@@ -17,7 +17,6 @@
 # under the License.
 #
 
-
 from singa import singa_wrap as singa
 from singa import opt
 from singa import tensor
@@ -33,7 +32,9 @@ if __name__ == '__main__':
     parser.add_argument('model',
                         choices=['cnn', 'resnet', 'xceptionnet', 'mlp'],
                         default='cnn')
-    parser.add_argument('data', choices=['mnist', 'cifar10', 'cifar100'], default='mnist')
+    parser.add_argument('data',
+                        choices=['mnist', 'cifar10', 'cifar100'],
+                        default='mnist')
     parser.add_argument('-p',
                         choices=['float32', 'float16'],
                         default='float32',
@@ -56,18 +57,22 @@ if __name__ == '__main__':
                         type=float,
                         help='initial learning rate',
                         dest='lr')
-    parser.add_argument('-d',
-                        '--dist-option',
-                        default='plain',
-                        choices=['plain','half','partialUpdate','sparseTopK','sparseThreshold'],
-                        help='distibuted training options',
-                        dest='dist_option')  # currently partialUpdate support graph=False only
-    parser.add_argument('-s',
-                        '--sparsification',
-                        default='0.05',
-                        type=float,
-                        help='the sparsity parameter used for sparsification, between 0 to 1',
-                        dest='spars')
+    parser.add_argument(
+        '-d',
+        '--dist-option',
+        default='plain',
+        choices=[
+            'plain', 'half', 'partialUpdate', 'sparseTopK', 'sparseThreshold'
+        ],
+        help='distibuted training options',
+        dest='dist_option')  # currently partialUpdate support graph=False only
+    parser.add_argument(
+        '-s',
+        '--sparsification',
+        default='0.05',
+        type=float,
+        help='the sparsity parameter used for sparsification, between 0 to 1',
+        dest='spars')
     parser.add_argument('-g',
                         '--disable-graph',
                         default='True',
@@ -83,9 +88,13 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5, dtype=singa_dtype[args.precision])
+    sgd = opt.SGD(lr=args.lr,
+                  momentum=0.9,
+                  weight_decay=1e-5,
+                  dtype=singa_dtype[args.precision])
     sgd = opt.DistOpt(sgd)
 
-    train_cnn.run(sgd.global_rank, sgd.world_size, sgd.local_rank, args.max_epoch,
-              args.batch_size, args.model, args.data, sgd, args.graph,
-              args.verbosity, args.dist_option, args.spars, args.precision)
+    train_cnn.run(sgd.global_rank, sgd.world_size, sgd.local_rank,
+                  args.max_epoch, args.batch_size, args.model, args.data, sgd,
+                  args.graph, args.verbosity, args.dist_option, args.spars,
+                  args.precision)

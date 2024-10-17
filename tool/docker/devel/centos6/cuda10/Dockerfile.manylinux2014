@@ -51,10 +51,10 @@ RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.12.tar.gz -P /tmp/ \
     && tar zxf /tmp/swig-3.0.12.tar.gz -C /tmp/ \
     && cd /tmp/swig-3.0.12 && ./configure && make && make install && cd .. && rm -rf swig-3.0.12
 
-# numpy and python versions should be matched; 
+# numpy and python versions should be matched;
 # twine works for all python versions
 RUN /opt/python/cp36-cp36m/bin/pip install numpy twine
-RUN /opt/python/cp37-cp37m/bin/pip install numpy 
+RUN /opt/python/cp37-cp37m/bin/pip install numpy
 RUN /opt/python/cp38-cp38/bin/pip install numpy
 
 # install cuda and cudnn

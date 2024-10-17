@@ -86,5 +86,3 @@ class Config:
     SUCCHALF = "SUCCHALF"
     SUCCREJCT = "SUCCREJCT"
     UNIFORM = "UNIFORM"
-
-

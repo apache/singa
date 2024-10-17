@@ -24,50 +24,48 @@
 
 #include <cstdint>
 
-namespace singa{
+namespace singa {
 static bool isNetworkOrder() {
-    int test = 1;
-    return (1 != *(uint8_t*)&test);
+  int test = 1;
+  return (1 != *(uint8_t*)&test);
 }
 
 template <typename T>
 static inline T byteSwap(const T& v) {
-    int size = sizeof(v);
-    T ret;
-    uint8_t *dest = reinterpret_cast<uint8_t *>(&ret);
-    uint8_t *src = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(&v));
-    for (int i = 0; i < size; ++i) {
-        dest[i] = src[size - i - 1];
-    }
-    return ret;
+  int size = sizeof(v);
+  T ret;
+  uint8_t* dest = reinterpret_cast<uint8_t*>(&ret);
+  uint8_t* src = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(&v));
+  for (int i = 0; i < size; ++i) {
+    dest[i] = src[size - i - 1];
+  }
+  return ret;
 }
 
 template <typename T>
-static inline T hton(const T& v)
-{
-    return isNetworkOrder() ? v : byteSwap(v);
+static inline T hton(const T& v) {
+  return isNetworkOrder() ? v : byteSwap(v);
 }
 
 template <typename T>
-static inline T ntoh(const T& v) 
-{
-    return hton(v);
+static inline T ntoh(const T& v) {
+  return hton(v);
 }
 
-static inline int appendInteger(char* buf) {return 0;}
-static inline int readInteger(char* buf) {return 0;}
+static inline int appendInteger(char* buf) { return 0; }
+static inline int readInteger(char* buf) { return 0; }
 
-template<typename Type, typename... Types>
+template <typename Type, typename... Types>
 static int appendInteger(char* buf, Type value, Types... values) {
-    *(Type*)buf = hton(value);
-    return sizeof(Type) + appendInteger(buf + sizeof(Type), values...);
+  *(Type*)buf = hton(value);
+  return sizeof(Type) + appendInteger(buf + sizeof(Type), values...);
 }
 
-template<typename Type, typename... Types>
+template <typename Type, typename... Types>
 static int readInteger(char* buf, Type& value, Types&... values) {
-    value = ntoh(*(Type*)buf);
-    return sizeof(Type) + readInteger(buf + sizeof(Type), values...);
+  value = ntoh(*(Type*)buf);
+  return sizeof(Type) + readInteger(buf + sizeof(Type), values...);
 }
 
-}
+}  // namespace singa
 #endif

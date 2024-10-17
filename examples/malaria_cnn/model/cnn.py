@@ -27,7 +27,11 @@ class CNN(model.Model):
         self.num_classes = num_classes
         self.input_size = 128
         self.dimension = 4
-        self.conv1 = layer.Conv2d(num_channels, 32, 3, padding=0, activation="RELU")
+        self.conv1 = layer.Conv2d(num_channels,
+                                  32,
+                                  3,
+                                  padding=0,
+                                  activation="RELU")
         self.conv2 = layer.Conv2d(32, 64, 3, padding=0, activation="RELU")
         self.conv3 = layer.Conv2d(64, 64, 3, padding=0, activation="RELU")
         self.linear1 = layer.Linear(128)

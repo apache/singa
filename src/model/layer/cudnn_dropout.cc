@@ -68,29 +68,36 @@ const Tensor CudnnDropout::Forward(int flag, const Tensor& input) {
     DataType dtype = input.data_type();
     auto dev = input.device();
     if (!has_init_cudnn_) {
-      input.device()->Exec([size, dtype, this, dev](Context* ctx) {
-          this->InitCudnn(size, dtype, dev, ctx);
-          }, {}, {this->state_.block()}, "InitCudnn");
+      input.device()->Exec(
+          [size, dtype, this, dev](Context* ctx) {
+            this->InitCudnn(size, dtype, dev, ctx);
+          },
+          {}, {this->state_.block()}, "InitCudnn");
     } else {
       int n, c, h, w, s;
       cudnnDataType_t type;
-      CUDNN_CHECK(cudnnGetTensor4dDescriptor(x_desc_, &type,
-            &n, &c, &h, &w, &s, &s, &s, &s));
+      CUDNN_CHECK(cudnnGetTensor4dDescriptor(x_desc_, &type, &n, &c, &h, &w, &s,
+                                             &s, &s, &s));
       if (size != static_cast<size_t>(w))
-        input.device()->Exec([size, dtype, this, dev](Context* ctx) {
-            this->InitCudnn(size, dtype, dev, ctx);
-            }, {}, {this->state_.block()}, "InitCudnn");
+        input.device()->Exec(
+            [size, dtype, this, dev](Context* ctx) {
+              this->InitCudnn(size, dtype, dev, ctx);
+            },
+            {}, {this->state_.block()}, "InitCudnn");
     }
     Tensor output;
     output.ResetLike(input);
-    output.device()->Exec([input, output, this](Context* ctx) {
-      Block* inblock = input.block(), * outblock = output.block(),
-             * mblock = mask_.block();
-      cudnnDropoutForward(ctx->cudnn_handle, this->drop_desc_, this->x_desc_,
-                          inblock->data(), this->y_desc_,
-                          outblock->mutable_data(), mblock->mutable_data(),
-                          this->reserve_size_);
-    }, {input.block()}, {output.block(), mask_.block()}, "cudnnDropoutForward");
+    output.device()->Exec(
+        [input, output, this](Context* ctx) {
+          Block *inblock = input.block(), *outblock = output.block(),
+                *mblock = mask_.block();
+          cudnnDropoutForward(ctx->cudnn_handle, this->drop_desc_,
+                              this->x_desc_, inblock->data(), this->y_desc_,
+                              outblock->mutable_data(), mblock->mutable_data(),
+                              this->reserve_size_);
+        },
+        {input.block()}, {output.block(), mask_.block()},
+        "cudnnDropoutForward");
     return output;
   } else {
     return input;
@@ -103,14 +110,16 @@ const std::pair<Tensor, vector<Tensor>> CudnnDropout::Backward(
   Tensor dx;
   if (flag & kTrain) {
     dx.ResetLike(grad);
-    dx.device()->Exec([dx, grad, this](Context* ctx) {
-      Block* dyblock = grad.block(), * dxblock = dx.block(),
-             * mblock = this->mask_.block();
-      cudnnDropoutBackward(ctx->cudnn_handle, this->drop_desc_, this->y_desc_,
-                           dyblock->data(), this->x_desc_,
-                           dxblock->mutable_data(), mblock->mutable_data(),
-                           this->reserve_size_);
-    }, {grad.block(), mask_.block()}, {dx.block()}, "cudnnDropoutBackward");
+    dx.device()->Exec(
+        [dx, grad, this](Context* ctx) {
+          Block *dyblock = grad.block(), *dxblock = dx.block(),
+                *mblock = this->mask_.block();
+          cudnnDropoutBackward(ctx->cudnn_handle, this->drop_desc_,
+                               this->y_desc_, dyblock->data(), this->x_desc_,
+                               dxblock->mutable_data(), mblock->mutable_data(),
+                               this->reserve_size_);
+        },
+        {grad.block(), mask_.block()}, {dx.block()}, "cudnnDropoutBackward");
   } else {
     LOG(ERROR) << "Do not call backward for evaluation phase";
   }

@@ -201,8 +201,8 @@
    limitations under the License.
 ============================================================================
 
-The SINGA project contains subcomponents and dependencies with separate 
-copyright notices and license terms. Your use of the source code for the 
+The SINGA project contains subcomponents and dependencies with separate
+copyright notices and license terms. Your use of the source code for the
 these subcomponents is subject to the terms and conditions of the following
 licenses.
 
@@ -559,4 +559,3 @@ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
 OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-

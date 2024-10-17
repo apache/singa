@@ -25,7 +25,7 @@ from typing import *
 
 def profile_NK_trade_off(dataset):
     """
-    This is get from the profling result.  
+    This is get from the profling result.
     We try various N/K combinations, and find this is better.
     """
     if dataset == Config.c10:
@@ -51,24 +51,31 @@ class SimulateTrain:
         self.api = None
 
     # get the test_acc and time usage to train of this arch_id
-    def get_ground_truth(self, arch_id: str, dataset: str, epoch_num: int = None, total_epoch: int = 200):
+    def get_ground_truth(self,
+                         arch_id: str,
+                         dataset: str,
+                         epoch_num: int = None,
+                         total_epoch: int = 200):
         """
-        :param arch_id: 
-        :param dataset: 
+        :param arch_id:
+        :param dataset:
         :param epoch_num: which epoch's performance to return
-        :param total_epoch: 
+        :param total_epoch:
         """
         if self.space_name == Config.NB101:
             self.api = Gt101()
-            acc, time_usage = self.api.get_c10_test_info(arch_id, dataset, epoch_num)
+            acc, time_usage = self.api.get_c10_test_info(
+                arch_id, dataset, epoch_num)
             return acc, time_usage
 
         elif self.space_name == Config.NB201:
             self.api = Gt201()
             if total_epoch == 200:
-                acc, time_usage = self.api.query_200_epoch(arch_id, dataset, epoch_num)
+                acc, time_usage = self.api.query_200_epoch(
+                    arch_id, dataset, epoch_num)
             else:  # 12
-                acc, time_usage = self.api.query_12_epoch(arch_id, dataset, epoch_num)
+                acc, time_usage = self.api.query_12_epoch(
+                    arch_id, dataset, epoch_num)
             return acc, time_usage
 
         elif self.space_name == Config.MLPSP:
@@ -110,6 +117,7 @@ class SimulateTrain:
 
 
 class SimulateScore:
+
     def __init__(self, space_name: str, dataset_name: str):
         """
         :param space_name: NB101 or NB201, MLP

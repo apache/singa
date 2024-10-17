@@ -1476,9 +1476,9 @@ class ScatterElements(Operator):
         Args:
             indices (Tensor): index tensor
             updates (Tensor): source tensor
-            axis (int): Which axis to scatter on. A negative value means 
+            axis (int): Which axis to scatter on. A negative value means
                 counting dimension from the back. Accepted range is [-r,r-1]
-                where r=rank(destination_tensor) 
+                where r=rank(destination_tensor)
         """
         super(ScatterElements, self).__init__()
         self.indices = indices
@@ -1506,8 +1506,8 @@ class ScatterElements(Operator):
         ), "Index should have the same number of dimensions as output"
         assert -x_rank < self.axis <= x_rank, "Axis is out of range"
         assert np.logical_and(
-            -_x.shape[self.axis] < self.indices,
-            self.indices <= _x.shape[self.axis]).all(
+            -_x.shape[self.axis] < self.indices, self.indices
+            <= _x.shape[self.axis]).all(
             ), "The values of the indexes should be between %d and %d" % (
                 -_x.shape[self.axis], _x.shape[self.axis] - 1)
 
@@ -1547,9 +1547,9 @@ def scatter_elements(x, indices, updates, axis=0):
         x (Tensor): input tensor.
         indices (Tensor): index tensor
         updates (Tensor): source tensor
-        axis (int): Which axis to scatter on. A negative value means 
+        axis (int): Which axis to scatter on. A negative value means
             counting dimension from the back. Accepted range is [-r,r-1]
-            where r=rank(destination_tensor) 
+            where r=rank(destination_tensor)
     Returns:
         the output Tensor.
     """
@@ -4306,7 +4306,7 @@ def ceil(x):
 
 class Floor(Operator):
     """
-    Floor takes one input data (Tensor) and produces one output data (Tensor), 
+    Floor takes one input data (Tensor) and produces one output data (Tensor),
     where the floor is, `y = floor(x)`, is applied to the tensor elementwise
     """
 
@@ -4316,20 +4316,20 @@ class Floor(Operator):
     def forward(self, x):
         """
         forward of floor
-        Args: 
+        Args:
             x (CTensor): input tensor
         Returns:
-            the output CTensor    
+            the output CTensor
         """
         return singa.Floor(x)
 
     def backward(self, dy):
         """
         backward of floor. Derivative of floor is 0
-        Args: 
+        Args:
             dy (CTensor): gradient tensor
         Returns:
-            the gradient tensor over the input tensor. 
+            the gradient tensor over the input tensor.
         """
         dy = singa.Tensor(dy.shape(), dy.device())
         dy.SetFloatValue(0.)
@@ -4339,11 +4339,11 @@ class Floor(Operator):
 def floor(x):
     """
     floor takes one input data (Tensor) and produces one output data (Tensor)
-    the value of floor is `y = floor(x)`, is applied to the tensor elementwise. 
-    Args: 
+    the value of floor is `y = floor(x)`, is applied to the tensor elementwise.
+    Args:
         x(Tensor): input tensor.
-    Returns: 
-        the output tensor    
+    Returns:
+        the output tensor
     """
     return Floor()(x)[0]
 
@@ -5027,7 +5027,7 @@ class Expand(Operator):
 
     # dim_changed
     shape = [2, 1, 6]
-    output = [[[1., 1., 1., 1., 1., 1.], 
+    output = [[[1., 1., 1., 1., 1., 1.],
                [2., 2., 2., 2., 2., 2.],
                [3., 3., 3., 3., 3., 3.]],
               [[1., 1., 1., 1., 1., 1.],
@@ -5044,7 +5044,7 @@ class Expand(Operator):
     def __init__(self, shape):
         """
         Args:
-            shape (list[int]: indicates the shape you want to expand to, 
+            shape (list[int]: indicates the shape you want to expand to,
                 following the broadcast rule
         """
         super(Expand, self).__init__()
@@ -5110,7 +5110,7 @@ def expand(x, shape):
     Produces a Expand operator
     Args:
         x (Tensor): input tensor.
-        shape (list[int]: indicates the shape you want to expand to, 
+        shape (list[int]: indicates the shape you want to expand to,
             following the broadcast rule
     Returns:
         the output Tensor.
@@ -5124,18 +5124,18 @@ class Pad(Operator):
     https://github.com/onnx/onnx/blob/master/docs/Operators.md#Pad
 
     Example usage::
-        data = 
+        data =
         [
             [1.0, 1.2],
             [2.3, 3.4],
             [4.5, 5.7],
-        ] 
+        ]
         pads = [0, 2, 0, 0]
 
         # constant mode
         mode = 'constant'
         constant_value = 0.0
-        output = 
+        output =
         [
             [
                 [0.0, 0.0, 1.0, 1.2],
@@ -5146,7 +5146,7 @@ class Pad(Operator):
 
         # reflect mode
         mode = 'reflect'
-        output = 
+        output =
         [
             [
                 [1.0, 1.2, 1.0, 1.2],
@@ -5157,7 +5157,7 @@ class Pad(Operator):
 
         # edge mode
         mode = 'edge'
-        output = 
+        output =
         [
             [
                 [1.0, 1.0, 1.0, 1.2],
@@ -5171,9 +5171,9 @@ class Pad(Operator):
         """
         Args:
             mode (string): Supported modes: `constant`(default), `reflect`, `edge`.
-            pads (list[int]): list of integers indicating the number of padding elements 
+            pads (list[int]): list of integers indicating the number of padding elements
                 to add at the beginning each axis.
-            constant (float): A scalar value to be used if the mode chosen is 
+            constant (float): A scalar value to be used if the mode chosen is
                 `constant`
         """
         super(Pad, self).__init__()
@@ -5250,9 +5250,9 @@ def pad(x, mode, pads, constant=0.):
     Args:
         x (Tensor): input tensor.
         mode (string): Supported modes: `constant`(default), `reflect`, `edge`.
-        pads (list[int]): list of integers indicating the number of padding elements 
+        pads (list[int]): list of integers indicating the number of padding elements
             to add at the beginning each axis.
-        constant (float): A scalar value to be used if the mode chosen is 
+        constant (float): A scalar value to be used if the mode chosen is
             `constant`
     Returns:
         the output Tensor.
@@ -5280,8 +5280,8 @@ class UpSample(Operator):
     def __init__(self, mode, scales):
         """
         Args:
-            scales (list[int]): The scale array along each dimension. It takes 
-                value greater than or equal to 1. 
+            scales (list[int]): The scale array along each dimension. It takes
+                value greater than or equal to 1.
         """
         super(UpSample, self).__init__()
         self.scales = scales
@@ -5335,8 +5335,8 @@ def upsample(x, mode, scales):
     Produces a upsample operator
     Args:
         x (Tensor): input tensor.
-        scales (list[int]): The scale array along each dimension. It takes 
-                value greater than or equal to 1. 
+        scales (list[int]): The scale array along each dimension. It takes
+                value greater than or equal to 1.
     Returns:
         the output Tensor.
     """
@@ -5426,8 +5426,8 @@ class DepthToSpace(Operator):
     def backward(self, dy):
         b, c, h, w = self.x_shape
         blocksize = self.blocksize
-        dy = singa.Reshape(
-            dy, [b, c // (blocksize**2), h, blocksize, w, blocksize])
+        dy = singa.Reshape(dy,
+                           [b, c // (blocksize**2), h, blocksize, w, blocksize])
         if self.mode == "DCR":
             dy = singa.Transpose(dy, [0, 3, 5, 1, 2, 4])
         elif self.mode == "CRD":
@@ -5475,8 +5475,8 @@ class SpaceToDepth(Operator):
         b, c, h, w = b, c * (blocksize**2), h // blocksize, w // blocksize
         if training:
             self.x_shape = (b, c, h, w)
-        x = singa.Reshape(
-            x, [b, c // (blocksize**2), h, blocksize, w, blocksize])
+        x = singa.Reshape(x,
+                          [b, c // (blocksize**2), h, blocksize, w, blocksize])
         if self.mode == "DCR":
             x = singa.Transpose(x, [0, 3, 5, 1, 2, 4])
         elif self.mode == "CRD":
@@ -5527,11 +5527,11 @@ class Where(Operator):
     and Numpy
     https://numpy.org/doc/stable/reference/generated/numpy.where.html
     Example usage::
-    condition = [[True, False], 
+    condition = [[True, False],
               [True, True]]
-    x = [[1, 2], 
+    x = [[1, 2],
         [3, 4]]
-    y =  [[9, 8], 
+    y =  [[9, 8],
         [7, 6]]
 
     output = [[1, 8],
@@ -5735,7 +5735,7 @@ class Erf(Operator):
 
     def backward(self, dy):
         dx = singa.MultFloat(singa.PowFloat(dy, 2.0), -1.0)
-        dx = singa.MultFloat(singa.Exp(dx), 2. / np.pi ** 0.5)
+        dx = singa.MultFloat(singa.Exp(dx), 2. / np.pi**0.5)
         return dx
 
 
@@ -5756,6 +5756,7 @@ Operation = Operator
 ''' import layer at the end to resolve circular import
 '''
 from singa import layer
+
 Linear = layer.Linear
 Conv2d = layer.Conv2d
 SeparableConv2d = layer.SeparableConv2d

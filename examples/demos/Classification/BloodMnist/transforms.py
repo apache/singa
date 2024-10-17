@@ -17,7 +17,6 @@
 # under the License.
 #
 
-
 import numpy as np
 from PIL import Image
 
@@ -35,6 +34,7 @@ class Compose(object):
         >>> ])
 
     """
+
     def __init__(self, transforms):
         self.transforms = transforms
 
@@ -62,7 +62,7 @@ class Compose(object):
 class ToTensor(object):
     """Convert a ``PIL Image`` to ``numpy.ndarray``.
 
-    Converts a PIL Image (H x W x C) in the range [0, 255] to a ``numpy.array`` of shape 
+    Converts a PIL Image (H x W x C) in the range [0, 255] to a ``numpy.array`` of shape
     (C x H x W) in the range [0.0, 1.0]
     if the PIL Image belongs to one of the modes (L, LA, P, I, F, RGB, YCbCr, RGBA, CMYK, 1).
 
@@ -70,7 +70,7 @@ class ToTensor(object):
 
     .. note::
         Because the input image is scaled to [0.0, 1.0], this transformation should not be used when
-        transforming target image masks. 
+        transforming target image masks.
     """
 
     def forward(self, pic):
@@ -82,7 +82,7 @@ class ToTensor(object):
             Array: Converted image.
         """
         if not isinstance(pic, Image.Image):
-           raise TypeError('pic should be PIL Image. Got {}'.format(type(pic)))
+            raise TypeError('pic should be PIL Image. Got {}'.format(type(pic)))
 
         # Handle PIL Image
         mode_to_nptype = {'I': np.int32, 'I;16': np.int16, 'F': np.float32}
@@ -95,7 +95,7 @@ class ToTensor(object):
         img = np.transpose(img, (2, 0, 1))
 
         if img.dtype == np.uint8:
-            return np.array(np.float32(img)/255.0, dtype=np.float)
+            return np.array(np.float32(img) / 255.0, dtype=np.float)
         else:
             return np.float(img)
 
@@ -105,7 +105,7 @@ class ToTensor(object):
 
 class Normalize(object):
     """Normalize a ``numpy.array`` image with mean and standard deviation.
-    
+
     This transform does not support PIL Image.
     Given mean: ``(mean[1],...,mean[n])`` and std: ``(std[1],..,std[n])`` for ``n``
     channels, this transform will normalize each channel of the input
@@ -137,14 +137,18 @@ class Normalize(object):
             d_res (Numpy ndarray): Normalized Tensor image.
         """
         if not isinstance(img, np.ndarray):
-            raise TypeError('Input img should be a numpy array. Got {}.'.format(type(img)))
+            raise TypeError('Input img should be a numpy array. Got {}.'.format(
+                type(img)))
 
         if not img.dtype == np.float:
-            raise TypeError('Input array should be a float array. Got {}.'.format(img.dtype))
+            raise TypeError(
+                'Input array should be a float array. Got {}.'.format(
+                    img.dtype))
 
         if img.ndim < 3:
-            raise ValueError('Expected array to be an array image of size (..., C, H, W). Got img.shape = '
-                            '{}.'.format(img.shape))
+            raise ValueError(
+                'Expected array to be an array image of size (..., C, H, W). Got img.shape = '
+                '{}.'.format(img.shape))
 
         if not self.inplace:
             img = img.copy()
@@ -153,14 +157,14 @@ class Normalize(object):
         mean = np.array(self.mean, dtype=dtype)
         std = np.array(self.std, dtype=dtype)
         if (std == 0).any():
-            raise ValueError('std evaluated to zero after conversion to {}, leading to division by zero.'.format(dtype))
+            raise ValueError(
+                'std evaluated to zero after conversion to {}, leading to division by zero.'
+                .format(dtype))
         s_res = np.subtract(img, mean[:, None, None])
         d_res = np.divide(s_res, std[:, None, None])
 
         return d_res
 
-
     def __repr__(self):
-        return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
-
-
+        return self.__class__.__name__ + '(mean={0}, std={1})'.format(
+            self.mean, self.std)

@@ -1,32 +1,32 @@
 /************************************************************
-*
-* Licensed to the Apache Software Foundation (ASF) under one
-* or more contributor license agreements.  See the NOTICE file
-* distributed with this work for additional information
-* regarding copyright ownership.  The ASF licenses this file
-* to you under the Apache License, Version 2.0 (the
-* "License"); you may not use this file except in compliance
-* with the License.  You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing,
-* software distributed under the License is distributed on an
-* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-* KIND, either express or implied.  See the License for the
-* specific language governing permissions and limitations
-* under the License.
-*
-*************************************************************/
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ *************************************************************/
 
 #include "singa/model/feed_forward_net.h"
+
 #include "singa/model/initializer.h"
-#include "singa/utils/logging.h"
 #include "singa/utils/channel.h"
+#include "singa/utils/logging.h"
 namespace singa {
 
-FeedForwardNet::~FeedForwardNet() {
-}
+FeedForwardNet::~FeedForwardNet() {}
 
 std::shared_ptr<Layer> FeedForwardNet::Add(std::shared_ptr<Layer> layer) {
   layers_.push_back(layer);
@@ -34,7 +34,7 @@ std::shared_ptr<Layer> FeedForwardNet::Add(std::shared_ptr<Layer> layer) {
 }
 
 std::shared_ptr<Layer> FeedForwardNet::Add(const LayerConf& conf,
-    const Shape* sample_shape) {
+                                           const Shape* sample_shape) {
   std::shared_ptr<Layer> layer(CreateLayer(conf.type()));
   CHECK(conf.has_name()) << "Must set layer name";
   if (sample_shape == nullptr)
@@ -129,7 +129,7 @@ void FeedForwardNet::AsType(DataType dtype) {
 void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
                            const Tensor& y, float val_split) {
   CHECK_EQ(x.shape(0), y.shape(0)) << "Diff num of sampels in x and y";
-  size_t num_train = (size_t) (x.shape(0) * val_split);
+  size_t num_train = (size_t)(x.shape(0) * val_split);
   if (val_split == 0.0f) {
     Tensor dummy;
     Train(batchsize, nb_epoch, x, y, dummy, dummy);
@@ -173,16 +173,16 @@ void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
     loss /= b;
     metric /= b;
     train_ch->Send(
-        "Epoch " + std::to_string(epoch) + ", training loss = " +
-        std::to_string(loss) + ", accuracy = " + std::to_string(metric) +
-        ", lr = " +
+        "Epoch " + std::to_string(epoch) +
+        ", training loss = " + std::to_string(loss) +
+        ", accuracy = " + std::to_string(metric) + ", lr = " +
         std::to_string(updater_->GetOptimizer()->GetLearningRate(epoch)));
     if (val_x.Size() && val_y.Size()) {
       const auto val_perf = Evaluate(val_x, val_y, batchsize);
-      val_ch->Send("Epoch " + std::to_string(epoch) + ", val loss = " +
-                   std::to_string(Sum(val_perf.first) / val_y.Size()) +
-                   ", metric = " +
-                   std::to_string(Sum(val_perf.second) / val_y.Size()));
+      val_ch->Send(
+          "Epoch " + std::to_string(epoch) +
+          ", val loss = " + std::to_string(Sum(val_perf.first) / val_y.Size()) +
+          ", metric = " + std::to_string(Sum(val_perf.second) / val_y.Size()));
     }
   }
 }

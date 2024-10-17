@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 import argparse
 import configparser
 
@@ -78,7 +77,8 @@ def parse_config_arguments(config_path: str):
     # seq_train args
     args.worker_id = parser.getint('SEQ_TRAIN', 'worker_id')
     args.total_workers = parser.getint('SEQ_TRAIN', 'total_workers')
-    args.total_models_per_worker = parser.getint('SEQ_TRAIN', 'total_models_per_worker')
+    args.total_models_per_worker = parser.getint('SEQ_TRAIN',
+                                                 'total_models_per_worker')
     args.pre_partitioned_file = parser.get('SEQ_TRAIN', 'pre_partitioned_file')
 
     # dis_train args
@@ -95,7 +95,8 @@ def parse_config_arguments(config_path: str):
     # system performance exps
     args.models_explore = parser.getint('SYS_PERFORMANCE', 'models_explore')
     args.tfmem = parser.get('SYS_PERFORMANCE', 'tfmem')
-    args.embedding_cache_filtering = parser.getboolean('SYS_PERFORMANCE', 'embedding_cache_filtering')
+    args.embedding_cache_filtering = parser.getboolean(
+        'SYS_PERFORMANCE', 'embedding_cache_filtering')
     args.concurrency = parser.getint('SYS_PERFORMANCE', 'concurrency')
 
     args.refinement_url = parser.get('SERVER', 'refinement_url')

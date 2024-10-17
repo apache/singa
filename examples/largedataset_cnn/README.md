@@ -31,7 +31,7 @@ In the current setting, 'classes.txt' contains the names of the classes at each 
     bagel_and_croissant
     bak_kut_teh
 
-Then, the directory '/Data/' contains all the folders for images of different classes, while each folder name should be the same as that appeared in 'classes.txt'. The name of an image file should not be a concern, but it should be placed inside the folder of the class it belongs to. For the same example above, the folder structure may look like this: 
+Then, the directory '/Data/' contains all the folders for images of different classes, while each folder name should be the same as that appeared in 'classes.txt'. The name of an image file should not be a concern, but it should be placed inside the folder of the class it belongs to. For the same example above, the folder structure may look like this:
 
     Data/
         Fish_and_chips/
@@ -49,12 +49,12 @@ Then, the directory '/Data/' contains all the folders for images of different cl
         bak_kut_teh/
             photo.jpg
             photo2.jpg
-            ...             
+            ...
 
 Before running the code, the `model` folder in `examples/cnn` should be copied to this directory.
 
 * `train_largedata.py` is the training script, which controls the training flow by
   doing BackPropagation and SGD update.
 
-* `train_mpi.py` is the script for distributed training (among multiple nodes) 
+* `train_mpi.py` is the script for distributed training (among multiple nodes)
   using MPI and NCCL for communication.

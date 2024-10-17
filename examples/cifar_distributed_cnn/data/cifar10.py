@@ -41,7 +41,9 @@ def load_dataset(filepath):
 
 
 #def load_train_data(dir_path='/scratch1/07801/nusbin20/gordon-bell/cifar-10-batches-py', num_batches=5):
-def load_train_data(dir_path='/scratch/snx3000/lyongbin/singa_my/cifar10_log/cifar-10-batches-py', num_batches=5):
+def load_train_data(
+        dir_path='/scratch/snx3000/lyongbin/singa_my/cifar10_log/cifar-10-batches-py',
+        num_batches=5):
     labels = []
     batchsize = 10000
     images = np.empty((num_batches * batchsize, 3, 32, 32), dtype=np.uint8)
@@ -56,7 +58,9 @@ def load_train_data(dir_path='/scratch/snx3000/lyongbin/singa_my/cifar10_log/cif
 
 
 #def load_test_data(dir_path='/scratch1/07801/nusbin20/gordon-bell/cifar-10-batches-py'):
-def load_test_data(dir_path='/scratch/snx3000/lyongbin/singa_my/cifar10_log/cifar-10-batches-py'):
+def load_test_data(
+    dir_path='/scratch/snx3000/lyongbin/singa_my/cifar10_log/cifar-10-batches-py'
+):
     images, labels = load_dataset(check_dataset_exist(dir_path + "/test_batch"))
     return np.array(images, dtype=np.float32), np.array(labels, dtype=np.int32)
 
@@ -81,6 +85,7 @@ def normalize(train_x, val_x):
         val_x[:, ch, :, :] -= mean[ch]
         val_x[:, ch, :, :] /= std[ch]
     return train_x, val_x
+
 
 def load():  # Need to pass in the path for loading training data
     train_x, train_y = load_train_data()

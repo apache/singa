@@ -35,7 +35,9 @@ if __name__ == "__main__":
     ts = calendar.timegm(gmt)
 
     os.environ.setdefault("log_logger_folder_name", f"{args.log_folder}")
-    os.environ.setdefault("log_file_name", f"{args.log_name}_{args.dataset}_ep{args.epoch}_{ts}.log")
+    os.environ.setdefault(
+        "log_file_name",
+        f"{args.log_name}_{args.dataset}_ep{args.epoch}_{ts}.log")
     os.environ.setdefault("base_dir", args.base_dir)
 
     from src.logger import logger
@@ -64,7 +66,9 @@ if __name__ == "__main__":
         if args.device == 'cpu':
             dev = singa_device.get_default_device()
         else:  # GPU
-            dev = singa_device.create_cuda_gpu_on(args.local_rank)  # need to change to CPU device for CPU-only machines
+            dev = singa_device.create_cuda_gpu_on(
+                args.local_rank
+            )  # need to change to CPU device for CPU-only machines
         dev.SetRandSeed(0)
         np.random.seed(0)
 
@@ -77,10 +81,12 @@ if __name__ == "__main__":
             test_loader=test_loader,
             args=args)
 
-        logger.info(f' ----- model id: {arch_id}, Val_AUC : {valid_auc} Total running time: '
-                    f'{total_run_time}-----')
-        print(f' ----- model id: {arch_id}, Val_AUC : {valid_auc} Total running time: '
-              f'{total_run_time}-----')
+        logger.info(
+            f' ----- model id: {arch_id}, Val_AUC : {valid_auc} Total running time: '
+            f'{total_run_time}-----')
+        print(
+            f' ----- model id: {arch_id}, Val_AUC : {valid_auc} Total running time: '
+            f'{total_run_time}-----')
 
         # update the shared model eval res
         logger.info(f" ---- info: {json.dumps({arch_id: train_log})}")

@@ -17,9 +17,10 @@
  */
 #ifndef SINGA_MODEL_LAYER_ACTIVATION_H_
 #define SINGA_MODEL_LAYER_ACTIVATION_H_
-#include <utility>
 #include <string>
+#include <utility>
 #include <vector>
+
 #include "singa/model/layer.h"
 
 namespace singa {

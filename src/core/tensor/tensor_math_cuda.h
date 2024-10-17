@@ -62,7 +62,8 @@ vector<int> generate_shape_cuda(const Tensor& x) {
   // maximum dimension allowed defined in cudnn.h, variable CUDNN_DIM_MAX
   // TODO: check other side effects
   CHECK_LE(shape.size(), CUDNN_DIM_MAX)
-      << "Dimensions (shape) beyond " << CUDNN_DIM_MAX << " are currently not supported";
+      << "Dimensions (shape) beyond " << CUDNN_DIM_MAX
+      << " are currently not supported";
   vector<int> shape_arr;
   if (shape.size() < 4) {
     for (int n = 0; n < 4 - int(shape.size()); ++n) {
@@ -78,7 +79,8 @@ vector<int> generate_shape_cuda(const Tensor& x) {
 int generate_dim_cuda(const Tensor& x) {
   // maximum dimension allowed defined in cudnn.h, variable CUDNN_DIM_MAX
   CHECK_LE(x.nDim(), CUDNN_DIM_MAX)
-      << "Dimensions (shape) beyond " << CUDNN_DIM_MAX << " are currently not supported";
+      << "Dimensions (shape) beyond " << CUDNN_DIM_MAX
+      << " are currently not supported";
   if (x.shape().size() <= 4) {
     return 4;
   } else {
@@ -1040,23 +1042,29 @@ void Axpy<float, lang::Cuda>(const float alpha, const Tensor& in, Tensor* out,
 
 /// out = alpha * in + out
 template <>
-void Axpy<float, lang::Cuda>(const Tensor &alpha, const Tensor& in, Tensor* out, Context* ctx) {
+void Axpy<float, lang::Cuda>(const Tensor& alpha, const Tensor& in, Tensor* out,
+                             Context* ctx) {
   auto handle = ctx->cublas_handle;
   const size_t num = in.Size();
   CUBLAS_CHECK(cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_DEVICE));
-  CUBLAS_CHECK(cublasAxpyEx(handle, num, alpha.block()->data(), CUDA_R_32F, in.block()->data(), CUDA_R_32F, 1, out->block()->mutable_data(), CUDA_R_32F, 1, CUDA_R_32F));
+  CUBLAS_CHECK(cublasAxpyEx(
+      handle, num, alpha.block()->data(), CUDA_R_32F, in.block()->data(),
+      CUDA_R_32F, 1, out->block()->mutable_data(), CUDA_R_32F, 1, CUDA_R_32F));
   CUBLAS_CHECK(cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST));
 }
 
-template<>
-void Axpy<half_float::half, lang::Cuda>(const Tensor &alpha, const Tensor &in, Tensor *out, Context *ctx) {
+template <>
+void Axpy<half_float::half, lang::Cuda>(const Tensor& alpha, const Tensor& in,
+                                        Tensor* out, Context* ctx) {
   auto handle = ctx->cublas_handle;
   const size_t num = in.Size();
 
   auto _alpha = alpha.AsType(kFloat32);
 
   CUBLAS_CHECK(cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_DEVICE));
-  CUBLAS_CHECK(cublasAxpyEx(handle, num, _alpha.block()->data(), CUDA_R_32F, in.block()->data(), CUDA_R_16F, 1, out->block()->mutable_data(), CUDA_R_16F, 1, CUDA_R_32F));
+  CUBLAS_CHECK(cublasAxpyEx(
+      handle, num, _alpha.block()->data(), CUDA_R_32F, in.block()->data(),
+      CUDA_R_16F, 1, out->block()->mutable_data(), CUDA_R_16F, 1, CUDA_R_32F));
   CUBLAS_CHECK(cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST));
 }
 
@@ -1067,7 +1075,9 @@ void Axpy<half_float::half, lang::Cuda>(const half_float::half alpha,
   auto handle = ctx->cublas_handle;
   const size_t num = in.Size();
   const float _alpha = static_cast<const float>(alpha);
-  CUBLAS_CHECK(cublasAxpyEx(handle, num, &alpha, CUDA_R_32F, in.block()->data(), CUDA_R_16F, 1, out->block()->mutable_data(), CUDA_R_16F, 1, CUDA_R_32F));
+  CUBLAS_CHECK(cublasAxpyEx(handle, num, &alpha, CUDA_R_32F, in.block()->data(),
+                            CUDA_R_16F, 1, out->block()->mutable_data(),
+                            CUDA_R_16F, 1, CUDA_R_32F));
 }
 
 /// out = \sum_i in1[i] * in2[i]

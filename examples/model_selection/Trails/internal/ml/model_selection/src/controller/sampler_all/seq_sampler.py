@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 import random
 
 from src.controller.core.sample import Sampler
@@ -31,7 +30,8 @@ class SequenceSampler(Sampler):
 
         self.arch_gene = self.space.sample_all_models()
 
-    def sample_next_arch(self, sorted_model: list = None) -> (str, ModelMicroCfg):
+    def sample_next_arch(self,
+                         sorted_model: list = None) -> (str, ModelMicroCfg):
         """
         Sample one random architecture, can sample max 10k architectures.
         :return: arch_id, architecture

@@ -1,27 +1,28 @@
 /************************************************************
-*
-* Licensed to the Apache Software Foundation (ASF) under one
-* or more contributor license agreements.  See the NOTICE file
-* distributed with this work for additional information
-* regarding copyright ownership.  The ASF licenses this file
-* to you under the Apache License, Version 2.0 (the
-* "License"); you may not use this file except in compliance
-* with the License.  You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing,
-* software distributed under the License is distributed on an
-* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-* KIND, either express or implied.  See the License for the
-* specific language governing permissions and limitations
-* under the License.
-*
-*************************************************************/
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ *************************************************************/
 
 #include "singa/singa_config.h"
 #ifdef USE_OPENCV
 #include <cmath>
+
 #include "./ilsvrc12.h"
 #include "singa/io/snapshot.h"
 #include "singa/model/feed_forward_net.h"
@@ -174,7 +175,8 @@ void TrainOneEpoch(FeedForwardNet &net, ILSVRC &data,
   size_t b = 0;
   size_t n_read;
   Timer timer, ttr;
-  Tensor prefetch_x(Shape{batchsize, 3, kCropSize, kCropSize}), prefetch_y(Shape{batchsize}, kInt);
+  Tensor prefetch_x(Shape{batchsize, 3, kCropSize, kCropSize}),
+      prefetch_y(Shape{batchsize}, kInt);
   string binfile = bin_folder + "/train1.bin";
   timer.Tick();
   data.LoadData(kTrain, binfile, batchsize, &prefetch_x, &prefetch_y, &n_read,
@@ -218,11 +220,11 @@ void TrainOneEpoch(FeedForwardNet &net, ILSVRC &data,
     }
     if (b % pfreq == 0) {
       train_ch->Send(
-          "Epoch " + std::to_string(epoch) + ", training loss = " +
-          std::to_string(loss / b) + ", accuracy = " +
+          "Epoch " + std::to_string(epoch) +
+          ", training loss = " + std::to_string(loss / b) + ", accuracy = " +
           std::to_string(metric / b) + ", lr = " + std::to_string(lr) +
-          ", time of loading " + std::to_string(batchsize) + " images = " +
-          std::to_string(load_time / b) +
+          ", time of loading " + std::to_string(batchsize) +
+          " images = " + std::to_string(load_time / b) +
           " ms, time of training (batchsize = " + std::to_string(batchsize) +
           ") = " + std::to_string(train_time / b) + " ms.");
       loss = 0.0f;
@@ -336,26 +338,27 @@ void Train(int num_epoch, float lr, size_t batchsize, size_t train_file_size,
                  val_ch, nthreads);
   }
 }
-}
+}  // namespace singa
 
 int main(int argc, char **argv) {
   singa::InitChannel(nullptr);
   int pos = singa::ArgPos(argc, argv, "-h");
   if (pos != -1) {
-    std::cout << "Usage:\n"
-              << "\t-epoch <int>: number of epoch to be trained, default is 90;\n"
-              << "\t-lr <float>: base learning rate;\n"
-              << "\t-batchsize <int>: batchsize, it should be changed regarding "
-                 "to your memory;\n"
-              << "\t-filesize <int>: number of training images that stores in "
-                 "each binary file;\n"
-              << "\t-ntrain <int>: number of training images;\n"
-              << "\t-ntest <int>: number of test images;\n"
-              << "\t-data <folder>: the folder which stores the binary files;\n"
-              << "\t-pfreq <int>: the frequency(in batch) of printing current "
-                 "model status(loss and accuracy);\n"
-              << "\t-nthreads <int>`: the number of threads to load data which "
-                 "feed to the model.\n";
+    std::cout
+        << "Usage:\n"
+        << "\t-epoch <int>: number of epoch to be trained, default is 90;\n"
+        << "\t-lr <float>: base learning rate;\n"
+        << "\t-batchsize <int>: batchsize, it should be changed regarding "
+           "to your memory;\n"
+        << "\t-filesize <int>: number of training images that stores in "
+           "each binary file;\n"
+        << "\t-ntrain <int>: number of training images;\n"
+        << "\t-ntest <int>: number of test images;\n"
+        << "\t-data <folder>: the folder which stores the binary files;\n"
+        << "\t-pfreq <int>: the frequency(in batch) of printing current "
+           "model status(loss and accuracy);\n"
+        << "\t-nthreads <int>`: the number of threads to load data which "
+           "feed to the model.\n";
     return 0;
   }
   pos = singa::ArgPos(argc, argv, "-epoch");

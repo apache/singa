@@ -135,4 +135,3 @@ class CudnnRNN : public RNN {
 #endif  // CUDNN_VERSION >= 5005
 #endif  // USE_CUDA && USE_CUDNN
 }
-

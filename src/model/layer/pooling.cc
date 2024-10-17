@@ -17,8 +17,10 @@
  */
 
 #include "./pooling.h"
-#include "singa/model/layer.h"
+
 #include <cmath>
+
+#include "singa/model/layer.h"
 
 namespace singa {
 
@@ -68,15 +70,20 @@ void Pooling::Setup(const Shape& in_sample, const LayerConf& conf) {
     // TODO(wangwei): caffe also ensures the last pooling window starts strictly
     // within the original area
     if (stride_h_ > 0)
-      pooled_height_ = static_cast<int>(ceil(static_cast<float>(
-              height_ + 2 * pad_h_ - kernel_h_) / stride_h_)) + 1;
-    pooled_width_ = static_cast<int>(ceil(static_cast<float>(
-        width_ + 2 * pad_w_ - kernel_w_) / stride_w_)) + 1;
-  }
-  else {
+      pooled_height_ =
+          static_cast<int>(
+              ceil(static_cast<float>(height_ + 2 * pad_h_ - kernel_h_) /
+                   stride_h_)) +
+          1;
+    pooled_width_ =
+        static_cast<int>(ceil(
+            static_cast<float>(width_ + 2 * pad_w_ - kernel_w_) / stride_w_)) +
+        1;
+  } else {
     if (stride_h_ > 0)
       pooled_height_ =
-          static_cast<size_t>((height_ + 2 * pad_h_ - kernel_h_) / stride_h_) + 1;
+          static_cast<size_t>((height_ + 2 * pad_h_ - kernel_h_) / stride_h_) +
+          1;
     pooled_width_ =
         static_cast<size_t>((width_ + 2 * pad_w_ - kernel_w_) / stride_w_) + 1;
   }
@@ -92,7 +99,8 @@ const Tensor Pooling::Forward(int flag, const Tensor& input) {
 
   // TODO(wangwei) update the layer config if the input sample shape changes
   CHECK(input.shape(1) == channels_ && input.shape(2) == height_ &&
-      input.shape(3) == width_) << "input sample shape should not change";
+        input.shape(3) == width_)
+      << "input sample shape should not change";
 
   auto dev = input.device();
   Shape shape{batchsize, channels_, pooled_height_, pooled_width_};
@@ -105,8 +113,7 @@ const Tensor Pooling::Forward(int flag, const Tensor& input) {
     float* maskptr = new float[mask.Size()];
     ForwardMaxPooling(inptr, batchsize, channels_, height_, width_,
                       pooled_height_, pooled_width_, kernel_h_, kernel_w_,
-                      pad_h_, pad_w_, stride_h_, stride_w_, outptr,
-                      maskptr);
+                      pad_h_, pad_w_, stride_h_, stride_w_, outptr, maskptr);
     mask.CopyDataFromHostPtr(maskptr, mask.Size());
     if (flag & kTrain) buf_.push(mask);
     delete[] maskptr;
@@ -122,8 +129,8 @@ const Tensor Pooling::Forward(int flag, const Tensor& input) {
   return output;
 }
 
-const std::pair<Tensor, vector<Tensor>>
-Pooling::Backward(int flag, const Tensor& grad) {
+const std::pair<Tensor, vector<Tensor>> Pooling::Backward(int flag,
+                                                          const Tensor& grad) {
   CHECK_EQ(grad.device()->lang(), kCpp);
   CHECK_EQ(grad.nDim(), 4u);
 
@@ -160,13 +167,12 @@ Pooling::Backward(int flag, const Tensor& grad) {
 }
 
 void Pooling::ForwardMaxPooling(const float* bottom, const int num,
-                                const int channels,
-                                const int height, const int width,
-                                const int pooled_h, const int pooled_w,
-                                const int kernel_h, const int kernel_w,
-                                const int pad_h, const int pad_w,
-                                const int stride_h, const int stride_w,
-                                float* top, float* mask) {
+                                const int channels, const int height,
+                                const int width, const int pooled_h,
+                                const int pooled_w, const int kernel_h,
+                                const int kernel_w, const int pad_h,
+                                const int pad_w, const int stride_h,
+                                const int stride_w, float* top, float* mask) {
   int top_count = num * pooled_h * pooled_w * channels;
   for (int i = 0; i < top_count; i++) {
     mask[i] = -1;
@@ -191,7 +197,7 @@ void Pooling::ForwardMaxPooling(const float* bottom, const int num,
               const int index = h * width + w;
               if (bottom[index] > top[top_index]) {
                 top[top_index] = bottom[index];
-                mask[top_index] = (float) index;
+                mask[top_index] = (float)index;
               }
             }
           }
@@ -205,14 +211,11 @@ void Pooling::ForwardMaxPooling(const float* bottom, const int num,
   }
 }
 
-void Pooling::BackwardMaxPooling(const float* top, const float* mask,
-                                 const int num, const int channels,
-                                 const int height, const int width,
-                                 const int pooled_h, const int pooled_w,
-                                 const int kernel_h, const int kernel_w,
-                                 const int pad_h, const int pad_w,
-                                 const int stride_h, const int stride_w,
-                                 float* bottom) {
+void Pooling::BackwardMaxPooling(
+    const float* top, const float* mask, const int num, const int channels,
+    const int height, const int width, const int pooled_h, const int pooled_w,
+    const int kernel_h, const int kernel_w, const int pad_h, const int pad_w,
+    const int stride_h, const int stride_w, float* bottom) {
   const int top_offset = pooled_h * pooled_w;
   const int bottom_offset = height * width;
   memset(bottom, 0, sizeof(float) * num * channels * bottom_offset);
@@ -233,13 +236,12 @@ void Pooling::BackwardMaxPooling(const float* top, const float* mask,
 }
 
 void Pooling::ForwardAvgPooling(const float* bottom, const int num,
-                                const int channels,
-                                const int height, const int width,
-                                const int pooled_h, const int pooled_w,
-                                const int kernel_h, const int kernel_w,
-                                const int pad_h, const int pad_w,
-                                const int stride_h, const int stride_w,
-                                float* top) {
+                                const int channels, const int height,
+                                const int width, const int pooled_h,
+                                const int pooled_w, const int kernel_h,
+                                const int kernel_w, const int pad_h,
+                                const int pad_w, const int stride_h,
+                                const int stride_w, float* top) {
   int top_count = num * pooled_h * pooled_w * channels;
   for (int i = 0; i < top_count; i++) {
     top[i] = 0;
@@ -278,13 +280,12 @@ void Pooling::ForwardAvgPooling(const float* bottom, const int num,
 }
 
 void Pooling::BackwardAvgPooling(const float* top, const int num,
-                                 const int channels,
-                                 const int height, const int width,
-                                 const int pooled_h, const int pooled_w,
-                                 const int kernel_h, const int kernel_w,
-                                 const int pad_h, const int pad_w,
-                                 const int stride_h, const int stride_w,
-                                 float* bottom) {
+                                 const int channels, const int height,
+                                 const int width, const int pooled_h,
+                                 const int pooled_w, const int kernel_h,
+                                 const int kernel_w, const int pad_h,
+                                 const int pad_w, const int stride_h,
+                                 const int stride_w, float* bottom) {
   const int top_offset = pooled_h * pooled_w;
   const int bottom_offset = height * width;
   memset(bottom, 0, sizeof(float) * num * channels * bottom_offset);

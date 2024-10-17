@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 # set PYTHONPATH
 import sys
 
@@ -24,8 +23,11 @@ import sys
 sys.path = [
     '/project/Trails/internal/ml/model_slicing',
     '/project/Trails/internal/ml/model_slicing/algorithm',
-    '/project/Trails/internal/ml',
-    '/usr/lib/python38.zip', '/usr/lib/python3.8', '/usr/lib/python3.8/lib-dynload', '/home/postgres/.local/lib/python3.8/site-packages', '/usr/local/lib/python3.8/dist-packages', '/usr/lib/python3/dist-packages']
+    '/project/Trails/internal/ml', '/usr/lib/python38.zip',
+    '/usr/lib/python3.8', '/usr/lib/python3.8/lib-dynload',
+    '/home/postgres/.local/lib/python3.8/site-packages',
+    '/usr/local/lib/python3.8/dist-packages', '/usr/lib/python3/dist-packages'
+]
 
 import calendar
 import os
@@ -53,6 +55,7 @@ def read_json(file_name):
 
 
 def exception_catcher(func):
+
     def wrapper(encoded_str: str):
         try:
             # each functon accepts a json string
@@ -66,13 +69,15 @@ def exception_catcher(func):
             ts = calendar.timegm(time.gmtime())
             os.environ.setdefault("base_dir", args.base_dir)
             os.environ.setdefault("log_logger_folder_name", args.log_folder)
-            os.environ.setdefault("log_file_name", args.log_name + "_" + str(ts) + ".log")
+            os.environ.setdefault("log_file_name",
+                                  args.log_name + "_" + str(ts) + ".log")
 
             # Call the original function with the parsed parameters
             return func(params, args)
         except Exception as e:
-            return orjson.dumps(
-                {"Errored": traceback.format_exc()}).decode('utf-8')
+            return orjson.dumps({
+                "Errored": traceback.format_exc()
+            }).decode('utf-8')
 
     return wrapper
 
@@ -112,14 +117,17 @@ def model_inference_load_model(params: dict, args: Namespace):
             logger.info("Load model .....")
             model, config = load_model(model_path)
             model.eval()
-            sliced_model = model.tailor_by_sql(torch.tensor(target_sql).reshape(1, -1))
+            sliced_model = model.tailor_by_sql(
+                torch.tensor(target_sql).reshape(1, -1))
             sliced_model.eval()
             logger.info("Load model Done!")
         else:
             logger.info("Skip Load model")
     except:
-        logger.info(orjson.dumps(
-            {"Errored": traceback.format_exc()}).decode('utf-8'))
+        logger.info(
+            orjson.dumps({
+                "Errored": traceback.format_exc()
+            }).decode('utf-8'))
     return orjson.dumps({"ok": 1}).decode('utf-8')
 
 
@@ -140,7 +148,9 @@ def model_inference_compute(params: dict, args: Namespace):
         #     raise Exception
 
         # todo: for credit datasets, it has 23 fields
-        mini_batch_used = [mini_batch[i:i + 23] for i in range(0, len(mini_batch), 23)]
+        mini_batch_used = [
+            mini_batch[i:i + 23] for i in range(0, len(mini_batch), 23)
+        ]
 
         begin = time.time()
         # pre-processing mini_batch
@@ -160,10 +170,14 @@ def model_inference_compute(params: dict, args: Namespace):
         time_usage_dic["py_diff"] = time_usage_dic["py_overall_duration"] - \
                                     (time_usage_dic["py_conver_to_tensor"] + time_usage_dic["py_compute"])
 
-        logger.info(f"time usage of inference {len(transformed_data)} rows is {time_usage_dic}")
+        logger.info(
+            f"time usage of inference {len(transformed_data)} rows is {time_usage_dic}"
+        )
     except:
-        logger.info(orjson.dumps(
-            {"Errored": traceback.format_exc()}).decode('utf-8'))
+        logger.info(
+            orjson.dumps({
+                "Errored": traceback.format_exc()
+            }).decode('utf-8'))
 
     return orjson.dumps({"model_outputs": 1}).decode('utf-8')
 
@@ -188,9 +202,10 @@ def model_inference_compute_shared_memory(params: dict, args: Namespace):
 
         begin = time.time()
         # pre-processing mini_batch
-        transformed_data = torch.LongTensor([
-            [int(item.split(':')[0]) for item in sublist[2:]]
-            for sublist in mini_batch["data"]])
+        transformed_data = torch.LongTensor(
+            [[int(item.split(':')[0])
+              for item in sublist[2:]]
+             for sublist in mini_batch["data"]])
         time_usage_dic["py_conver_to_tensor"] = time.time() - begin
 
         logger.info(f"transformed data size: {len(transformed_data)}")
@@ -206,10 +221,14 @@ def model_inference_compute_shared_memory(params: dict, args: Namespace):
         time_usage_dic["py_diff"] = time_usage_dic["py_overall_duration"] - \
                                     (time_usage_dic["py_conver_to_tensor"] + time_usage_dic["py_compute"])
 
-        logger.info(f"time usage of inference {len(transformed_data)} rows is {time_usage_dic}")
+        logger.info(
+            f"time usage of inference {len(transformed_data)} rows is {time_usage_dic}"
+        )
     except:
-        logger.info(orjson.dumps(
-            {"Errored": traceback.format_exc()}).decode('utf-8'))
+        logger.info(
+            orjson.dumps({
+                "Errored": traceback.format_exc()
+            }).decode('utf-8'))
 
     return orjson.dumps({"model_outputs": 1}).decode('utf-8')
 
@@ -239,12 +258,15 @@ def pre_processing(mini_batch_data: List[Tuple]):
 
 
 @exception_catcher
-def model_inference_compute_shared_memory_write_once(params: dict, args: Namespace):
+def model_inference_compute_shared_memory_write_once(params: dict,
+                                                     args: Namespace):
     global model, sliced_model, col_cardinalities, time_usage_dic
     from model_selection.src.logger import logger
     try:
         mini_batch_shared = get_data_from_shared_memory()
-        logger.info(f"mini_batch_shared: <-{mini_batch_shared[:50]}->, type: {type(mini_batch_shared)}")
+        logger.info(
+            f"mini_batch_shared: <-{mini_batch_shared[:50]}->, type: {type(mini_batch_shared)}"
+        )
 
         overall_begin = time.time()
         mini_batch = json.loads(mini_batch_shared)
@@ -269,15 +291,21 @@ def model_inference_compute_shared_memory_write_once(params: dict, args: Namespa
         time_usage_dic["py_diff"] = time_usage_dic["py_overall_duration"] - \
                                     (time_usage_dic["py_conver_to_tensor"] + time_usage_dic["py_compute"])
 
-        logger.info(f"time usage of inference {len(transformed_data)} rows is {time_usage_dic}")
+        logger.info(
+            f"time usage of inference {len(transformed_data)} rows is {time_usage_dic}"
+        )
     except:
-        logger.info(orjson.dumps(
-            {"Errored": traceback.format_exc()}).decode('utf-8'))
+        logger.info(
+            orjson.dumps({
+                "Errored": traceback.format_exc()
+            }).decode('utf-8'))
 
     return orjson.dumps({"model_outputs": 1}).decode('utf-8')
 
+
 @exception_catcher
-def model_inference_compute_shared_memory_write_once_int(params: dict, args: Namespace):
+def model_inference_compute_shared_memory_write_once_int(
+        params: dict, args: Namespace):
     global model, sliced_model, col_cardinalities, time_usage_dic
     from model_selection.src.logger import logger
     time_usage_dic = {}
@@ -285,7 +313,9 @@ def model_inference_compute_shared_memory_write_once_int(params: dict, args: Nam
     try:
         mini_batch_shared = get_data_from_shared_memory_int(int(params["rows"]))
         # logger.info(f"mini_batch_shared: <-{mini_batch_shared[:50]}->, type: {type(mini_batch_shared)}")
-        logger.info(f"mini_batch_shared: <-{mini_batch_shared}->, type: {type(mini_batch_shared)}")
+        logger.info(
+            f"mini_batch_shared: <-{mini_batch_shared}->, type: {type(mini_batch_shared)}"
+        )
 
         overall_begin = time.time()
         logger.info("-----" * 10)
@@ -307,10 +337,14 @@ def model_inference_compute_shared_memory_write_once_int(params: dict, args: Nam
         time_usage_dic["py_diff"] = time_usage_dic["py_overall_duration"] - \
                                     (time_usage_dic["py_conver_to_tensor"] + time_usage_dic["py_compute"])
 
-        logger.info(f"time usage of inference {len(transformed_data)} rows is {time_usage_dic}")
+        logger.info(
+            f"time usage of inference {len(transformed_data)} rows is {time_usage_dic}"
+        )
     except:
-        logger.info(orjson.dumps(
-            {"Errored": traceback.format_exc()}).decode('utf-8'))
+        logger.info(
+            orjson.dumps({
+                "Errored": traceback.format_exc()
+            }).decode('utf-8'))
 
     return orjson.dumps({"model_outputs": 1}).decode('utf-8')
 
@@ -323,8 +357,10 @@ def records_results(params: str):
         params.update(time_usage_dic)
         logger.info(f"final result = {params}")
     except:
-        logger.info(orjson.dumps(
-            {"Errored": traceback.format_exc()}).decode('utf-8'))
+        logger.info(
+            orjson.dumps({
+                "Errored": traceback.format_exc()
+            }).decode('utf-8'))
     return orjson.dumps({"Done": 1}).decode('utf-8')
 
 
@@ -340,6 +376,7 @@ def get_data_from_shared_memory(shmem_name="my_shmem"):
 
 import numpy as np
 
+
 def get_data_from_shared_memory_int(n_rows):
     # Connect to existing shared memory by name
     shm = shared_memory.SharedMemory(name="my_shared_memory")
@@ -348,4 +385,3 @@ def get_data_from_shared_memory_int(n_rows):
     # Reshape the 1D array to have n_rows and let numpy infer the number of columns
     data = data.reshape(n_rows, -1)
     return data
-

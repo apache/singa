@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 import time
 
 from src.controller.core.sample import Sampler
@@ -24,6 +23,7 @@ from src.search_space.core.model_params import ModelMicroCfg
 
 
 class ModelScore:
+
     def __init__(self, model_id, score):
         self.model_id = model_id
         self.score = score
@@ -92,8 +92,12 @@ class SampleController(object):
         """
         return self.search_strategy.sample_next_arch(self.ranked_models)
 
-    def fit_sampler(self, arch_id: str, alg_score: dict, simple_score_sum: bool = False,
-                    is_sync: bool = True, arch_micro=None) -> float:
+    def fit_sampler(self,
+                    arch_id: str,
+                    alg_score: dict,
+                    simple_score_sum: bool = False,
+                    is_sync: bool = True,
+                    arch_micro=None) -> float:
         """
         :param arch_id:
         :param alg_score: {alg_name1: score1, alg_name2: score2}
@@ -123,7 +127,8 @@ class SampleController(object):
 
         # add model and score to local list
         for alg, score in alg_score.items():
-            binary_insert_get_rank(self.history[alg], ModelScore(model_id, score))
+            binary_insert_get_rank(self.history[alg],
+                                   ModelScore(model_id, score))
 
         new_rank_score = self._re_rank_model_id(model_id, alg_score)
         return new_rank_score
@@ -137,7 +142,8 @@ class SampleController(object):
         for alg in alg_score:
             final_score += float(alg_score[alg])
         # insert and get rank
-        index = binary_insert_get_rank(self.history[score_sum_key], ModelScore(model_id, final_score))
+        index = binary_insert_get_rank(self.history[score_sum_key],
+                                       ModelScore(model_id, final_score))
         self.ranked_models.insert(index, model_id)
         return final_score
 
@@ -156,9 +162,13 @@ class SampleController(object):
                     model_new_rank_score[ms_ins.model_id] = rank_index + 1
 
         for ele in model_new_rank_score.keys():
-            model_new_rank_score[ele] = model_new_rank_score[ele] / current_explored_models
+            model_new_rank_score[
+                ele] = model_new_rank_score[ele] / current_explored_models
 
-        self.ranked_models = [k for k, v in sorted(model_new_rank_score.items(), key=lambda item: item[1])]
+        self.ranked_models = [
+            k for k, v in sorted(model_new_rank_score.items(),
+                                 key=lambda item: item[1])
+        ]
         new_rank_score = model_new_rank_score[model_id]
         return new_rank_score
 

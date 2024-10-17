@@ -33,7 +33,7 @@ jobs:
       - name: install-build-dependencies
         run: |
          brew install protobuf swig opencv glog lmdb numpy
-         wget https://github.com/oneapi-src/oneTBB/releases/download/v2020.1/tbb-2020.1-mac.tgz 
+         wget https://github.com/oneapi-src/oneTBB/releases/download/v2020.1/tbb-2020.1-mac.tgz
          mkdir /tmp/tbb
          tar zxvf tbb-2020.1-mac.tgz -C /tmp/tbb --strip-components=1
          mv /tmp/tbb/lib/lib* /usr/local/lib/

@@ -19,6 +19,7 @@
 #ifndef SINGA_MODEL_INITIALIZER_H_
 #define SINGA_MODEL_INITIALIZER_H_
 #include <string>
+
 #include "singa/core/tensor.h"
 #include "singa/proto/model.pb.h"
 #include "singa/utils/string.h"
@@ -42,7 +43,7 @@ class Initializer {
 
 namespace init {
 class Constant : public Initializer {
-public:
+ public:
   Constant() = default;
   Constant(const float x) : v_(x) {}
   void Setup(const InitializerConf& conf) override { v_ = conf.value(); }
@@ -53,7 +54,7 @@ public:
 };
 
 class Uniform : public Initializer {
-public:
+ public:
   Uniform() = default;
   Uniform(const float low, const float high) : min_(low), max_(high) {}
   void Setup(const InitializerConf& conf) override {
@@ -67,9 +68,9 @@ public:
 };
 
 class Gaussian : public Initializer {
-public:
+ public:
   Gaussian() = default;
-  Gaussian(const float m, const float s): mean_(m), std_(s) {}
+  Gaussian(const float m, const float s) : mean_(m), std_(s) {}
   void Setup(const InitializerConf& conf) override {
     mean_ = conf.mean();
     std_ = conf.std();
@@ -83,7 +84,7 @@ public:
 /// Ref: [Bengio and Glorot 2010] Understanding the difficulty of training deep
 /// feedforward neural networks
 class Xavier : public Initializer {
-public:
+ public:
   void Fill(Tensor& t) override {
     CHECK_EQ(t.nDim(), 2u);
     float scale = sqrt(6.0f / (t.shape(0) + t.shape(1)));

@@ -28,10 +28,7 @@ class Lime:
     https://github.com/marcotcr/lime
     """
 
-    def __init__(self, model,
-                 image_size,
-                 normalize_mean,
-                 normalize_std,
+    def __init__(self, model, image_size, normalize_mean, normalize_std,
                  device):
 
         self._model = model

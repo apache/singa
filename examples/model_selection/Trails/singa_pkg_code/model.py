@@ -111,11 +111,11 @@ class ModelMeta(layer.LayerMeta):
             else:
                 return func(self, *args, **kwargs)
 
-        print ("model.py return buffer_operation wrapper: ", wrapper)
+        print("model.py return buffer_operation wrapper: ", wrapper)
         return wrapper
 
     def __new__(cls, name, bases, attr):
-        print ("in __new__ attr['train_one_batch']: \n", attr['train_one_batch'])
+        print("in __new__ attr['train_one_batch']: \n", attr['train_one_batch'])
         if 'train_one_batch' in attr:
             attr['train_one_batch'] = ModelMeta.buffer_operation(
                 attr['train_one_batch'])

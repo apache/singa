@@ -1,29 +1,30 @@
 /*********************************************************
-*
-* Licensed to the Apache Software Foundation (ASF) under one
-* or more contributor license agreements.  See the NOTICE file
-* distributed with this work for additional information
-* regarding copyright ownership.  The ASF licenses this file
-* to you under the Apache License, Version 2.0 (the
-* "License"); you may not use this file except in compliance
-* with the License.  You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing,
-* software distributed under the License is distributed on an
-* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-* KIND, either express or implied.  See the License for the
-* specific language governing permissions and limitations
-* under the License.
-*
-************************************************************/
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ ************************************************************/
 #ifndef SINGA_MODEL_LAYER_BATCHNORM_H
 #define SINGA_MODEL_LAYER_BATCHNORM_H
-#include "singa/model/layer.h"
-#include "singa/core/common.h"
-#include "singa/proto/core.pb.h"
 #include <stack>
+
+#include "singa/core/common.h"
+#include "singa/model/layer.h"
+#include "singa/proto/core.pb.h"
 
 namespace singa {
 class BatchNorm : public Layer {
@@ -38,15 +39,14 @@ class BatchNorm : public Layer {
     return out_sample_shape_;
   }
 
-  const Tensor Forward(int flag, const Tensor& input)
-    override;
+  const Tensor Forward(int flag, const Tensor& input) override;
 
   /// \copydoc Layer::Backward(int, const Tensor&, const Tensor&);
-  const std::pair<Tensor, vector<Tensor>> Backward(
-      int flag, const Tensor& grad) override;
+  const std::pair<Tensor, vector<Tensor>> Backward(int flag,
+                                                   const Tensor& grad) override;
   virtual const std::vector<Tensor> param_values() override {
-    return std::vector<Tensor> { bnScale_, bnBias_, runningMean_,
-                                 runningVariance_ };
+    return std::vector<Tensor>{bnScale_, bnBias_, runningMean_,
+                               runningVariance_};
   }
   float factor() const { return factor_; }
   const Tensor& bnScale() const { return bnScale_; }
@@ -84,7 +84,7 @@ class BatchNorm : public Layer {
   // Store intermediate data, i.e., input tensor
   std::stack<Tensor> buf_;
   Shape out_sample_shape_;
-}; // class batchnorm
-} // namespace
+};  // class batchnorm
+}  // namespace singa
 
 #endif  // SINGA_MODEL_LAYER_BATCHNORM_H

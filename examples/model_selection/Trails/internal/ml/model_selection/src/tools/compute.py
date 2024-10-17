@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 # for binary insert
 from typing import List
 import numpy as np
@@ -65,13 +64,14 @@ def generate_global_rank(ml_data_score_dic: dict, alg_name_list: List) -> dict:
 
     history = {}
     for alg in alg_name_list:
-            history[alg] = []
+        history[alg] = []
 
     for arch_id, arch_score in ml_data_score_dic.items():
         # add model and score to local list
         for alg, score in arch_score.items():
             if alg in alg_name_list:
-                binary_insert_get_rank(history[alg], [str(arch_id), float(score)])
+                binary_insert_get_rank(
+                    history[alg], [str(arch_id), float(score)])
 
     # convert multiple scores into rank value
     model_new_rank_score = {}
@@ -102,7 +102,10 @@ def log_scale_x_array(num_points, max_minute, base=10, min_val=1) -> list:
     max_val = max_minute * 60  # 1440 minutes converted to seconds
 
     # Generate the log scale values
-    log_vals = np.logspace(np.log10(min_val), np.log10(max_val), num=num_points, base=base)
+    log_vals = np.logspace(np.log10(min_val),
+                           np.log10(max_val),
+                           num=num_points,
+                           base=base)
 
     # Convert the log scale values to minutes
     log_vals_min = log_vals / 60
@@ -113,7 +116,10 @@ def log_scale_x_array(num_points, max_minute, base=10, min_val=1) -> list:
 
 
 def sample_in_log_scale(lst: List, num_points: int) -> List:
-    indices = np.logspace(0, np.log10(len(lst) - 1), num_points + num_points // 2, dtype=int)
+    indices = np.logspace(0,
+                          np.log10(len(lst) - 1),
+                          num_points + num_points // 2,
+                          dtype=int)
     # Remove any duplicate indices
     indices = np.unique(indices)
     return list(indices)
@@ -122,9 +128,10 @@ def sample_in_log_scale(lst: List, num_points: int) -> List:
 def sample_in_log_scale_new(lstM: List, num_points: int) -> List:
     lst = np.array(lstM)
     # Create an evenly spaced array in the log scale domain
-    evenly_spaced_log_x = np.linspace(np.log10(lst.min()), np.log10(lst.max()), num_points)
+    evenly_spaced_log_x = np.linspace(np.log10(lst.min()), np.log10(lst.max()),
+                                      num_points)
     # Convert the new array back to the original scale
-    evenly_spaced_x = 10 ** evenly_spaced_log_x
+    evenly_spaced_x = 10**evenly_spaced_log_x
     # Find the indices of the sampled points in the original x-array
     indices = [np.abs(lst - point).argmin() for point in evenly_spaced_x]
     return indices
@@ -135,4 +142,3 @@ def sample_in_line_scale(lst: List, num_points: int) -> List:
     # Remove any duplicate indices
     indices = np.unique(indices)
     return list(indices)
-

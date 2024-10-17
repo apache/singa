@@ -19,12 +19,14 @@
 import sys
 import unittest
 
+
 def main():
     loader = unittest.TestLoader()
     tests = loader.discover('.')
     testRunner = unittest.runner.TextTestRunner()
     ret = not testRunner.run(tests).wasSuccessful()
     sys.exit(ret)
+
 
 if __name__ == "__main__":
     main()

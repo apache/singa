@@ -22,11 +22,13 @@
 #include <cstring>
 #include <fstream>
 #include <string>
+
 #include "singa/singa_config.h"
 
 #ifdef USE_LMDB
 #include <lmdb.h>
 #include <sys/stat.h>
+
 #include <vector>
 #endif  // USE_LMDB
 

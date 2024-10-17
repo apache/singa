@@ -35,18 +35,21 @@ def load_train_data(dir_path="/tmp/malaria", resize_size=(128, 128)):
     train_label_1 = load_image_path(os.listdir(path_train_label_1))
     train_label_0 = load_image_path(os.listdir(path_train_label_0))
     labels = []
-    Images = np.empty((len(train_label_1) + len(train_label_0),
-                       3, resize_size[0], resize_size[1]), dtype=np.uint8)
+    Images = np.empty((len(train_label_1) + len(train_label_0), 3,
+                       resize_size[0], resize_size[1]),
+                      dtype=np.uint8)
     for i in range(len(train_label_0)):
         image_path = os.path.join(path_train_label_0, train_label_0[i])
-        temp_image = np.array(Image.open(image_path).resize(
-            resize_size).convert("RGB")).transpose(2, 0, 1)
+        temp_image = np.array(
+            Image.open(image_path).resize(resize_size).convert(
+                "RGB")).transpose(2, 0, 1)
         Images[i] = temp_image
         labels.append(0)
     for i in range(len(train_label_1)):
         image_path = os.path.join(path_train_label_1, train_label_1[i])
-        temp_image = np.array(Image.open(image_path).resize(
-            resize_size).convert("RGB")).transpose(2, 0, 1)
+        temp_image = np.array(
+            Image.open(image_path).resize(resize_size).convert(
+                "RGB")).transpose(2, 0, 1)
         Images[i + len(train_label_0)] = temp_image
         labels.append(1)
 
@@ -63,18 +66,21 @@ def load_test_data(dir_path='/tmp/malaria', resize_size=(128, 128)):
     test_label_1 = load_image_path(os.listdir(path_test_label_1))
     test_label_0 = load_image_path(os.listdir(path_test_label_0))
     labels = []
-    Images = np.empty((len(test_label_1) + len(test_label_0),
-                       3, resize_size[0], resize_size[1]), dtype=np.uint8)
+    Images = np.empty((len(test_label_1) + len(test_label_0), 3, resize_size[0],
+                       resize_size[1]),
+                      dtype=np.uint8)
     for i in range(len(test_label_0)):
         image_path = os.path.join(path_test_label_0, test_label_0[i])
-        temp_image = np.array(Image.open(image_path).resize(
-            resize_size).convert("RGB")).transpose(2, 0, 1)
+        temp_image = np.array(
+            Image.open(image_path).resize(resize_size).convert(
+                "RGB")).transpose(2, 0, 1)
         Images[i] = temp_image
         labels.append(0)
     for i in range(len(test_label_1)):
         image_path = os.path.join(path_test_label_1, test_label_1[i])
-        temp_image = np.array(Image.open(image_path).resize(
-            resize_size).convert("RGB")).transpose(2, 0, 1)
+        temp_image = np.array(
+            Image.open(image_path).resize(resize_size).convert(
+                "RGB")).transpose(2, 0, 1)
         Images[i + len(test_label_0)] = temp_image
         labels.append(1)
 
@@ -93,9 +99,7 @@ def load_image_path(list):
 
 def check_dataset_exist(dirpath):
     if not os.path.exists(dirpath):
-        print(
-            'Please download the malaria dataset first'
-        )
+        print('Please download the malaria dataset first')
         sys.exit(0)
     return dirpath
 

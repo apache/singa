@@ -4,7 +4,7 @@
 // file at the root of this repository.
 
 __kernel void max_pool_forward(
-    const int nthreads, __global const float* bottom, const int channels, 
+    const int nthreads, __global const float* bottom, const int channels,
     const int height, const int width,
     const int pooled_h, const int pooled_w,
     const int kernel_h, const int kernel_w,
@@ -18,14 +18,14 @@ __kernel void max_pool_forward(
     const int ph = (i / pooled_w) % pooled_h;
     const int c = (i / pooled_w / pooled_h) % channels;
     const int n = i / pooled_w / pooled_h / channels;
-    
+
     int hstart = ph * stride_h - pad_h;
     int wstart = pw * stride_w - pad_w;
     const int hend = min(hstart + kernel_h, height);
     const int wend = min(wstart + kernel_w, width);
     hstart = max(hstart, (int)0);
     wstart = max(wstart, (int)0);
-    
+
     float maxval = -FLT_MAX;
     int maxidx = -1;
     __global const float* bottom_slice = bottom + (n * channels + c) * height * width;
@@ -44,13 +44,13 @@ __kernel void max_pool_forward(
 }
 
 __kernel void ave_pool_forward(
-    const int nthreads, __global const float* const bottom, const int channels, 
+    const int nthreads, __global const float* const bottom, const int channels,
     const int height, const int width,
     const int pooled_h, const int pooled_w,
     const int kernel_h, const int kernel_w,
-    const int stride_h, const int stride_w, 
+    const int stride_h, const int stride_w,
     const int pad_h, const int pad_w, __global float* top) {
-    
+
   for (int i = get_global_id(0); i < nthreads; i += get_global_size(0)) {
     const int pw = i % pooled_w;
     const int ph = (i / pooled_w) % pooled_h;
@@ -82,13 +82,13 @@ __kernel void sto_pool_forward_train(
     const int pooled_h, const int pooled_w, const int kernel_h,
     const int kernel_w, const int stride_h, const int stride_w,
     __global float* rand_idx, __global float* top) {
-    
+
   for (int i = get_global_id(0); i < nthreads; i += get_global_size(0)) {
     const int pw = i % pooled_w;
     const int ph = (i / pooled_w) % pooled_h;
     const int c = (i / pooled_w / pooled_h) % channels;
     const int n = i / pooled_w / pooled_h / channels;
-    
+
     const int hstart = ph * stride_h;
     const int hend = min(hstart + kernel_h, height);
     const int wstart = pw * stride_w;
@@ -119,19 +119,19 @@ __kernel void sto_pool_forward_train(
 }
 
 __kernel void sto_pool_forward_test(
-    const int nthreads, __global const float* const bottom, const int channels, 
+    const int nthreads, __global const float* const bottom, const int channels,
     const int height, const int width,
-    const int pooled_h, const int pooled_w, 
-    const int kernel_h, const int kernel_w, 
+    const int pooled_h, const int pooled_w,
+    const int kernel_h, const int kernel_w,
     const int stride_h, const int stride_w,
     __global float* top) {
-    
+
   for (int i = get_global_id(0); i < nthreads; i += get_global_size(0)) {
     const int pw = i % pooled_w;
     const int ph = (i / pooled_w) % pooled_h;
     const int c = (i / pooled_w / pooled_h) % channels;
     const int n = i / pooled_w / pooled_h / channels;
-    
+
     const int hstart = ph * stride_h;
     const int hend = min(hstart + kernel_h, height);
     const int wstart = pw * stride_w;
@@ -168,7 +168,7 @@ __kernel void max_pool_backward(const int nthreads,
     const int h = (i / width) % height;
     const int c = (i / width / height) % channels;
     const int n = i / width / height / channels;
-    
+
     const int phstart =
         (h + pad_h < kernel_h) ? 0 : (h + pad_h - kernel_h) / stride_h + 1;
     const int phend = min((h + pad_h) / stride_h + 1, pooled_h);
@@ -206,7 +206,7 @@ __kernel void ave_pool_backward(const int nthreads,
     const int h = (i / width) % height + pad_h;
     const int c = (i / width / height) % channels;
     const int n = i / width / height / channels;
-    
+
     const int phstart = (h < kernel_h) ? 0 : (h - kernel_h) / stride_h + 1;
     const int phend = min(h / stride_h + 1, pooled_h);
     const int pwstart = (w < kernel_w) ? 0 : (w - kernel_w) / stride_w + 1;
@@ -244,7 +244,7 @@ __kernel void sto_pool_backward(
     const int h = (i / width) % height;
     const int c = (i / width / height) % channels;
     const int n = i / width / height / channels;
-    
+
     const int phstart = (h < kernel_h) ? 0 : (h - kernel_h) / stride_h + 1;
     const int phend = min(h / stride_h + 1, pooled_h);
     const int pwstart = (w < kernel_w) ? 0 : (w - kernel_w) / stride_w + 1;
@@ -261,4 +261,3 @@ __kernel void sto_pool_backward(
     bottom_diff[i] = gradient;
   }
 }
-

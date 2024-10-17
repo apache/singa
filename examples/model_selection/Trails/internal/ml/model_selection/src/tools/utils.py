@@ -88,6 +88,7 @@ def accuracy(output, target, topk=(1,)):
 
 
 class Cutout(object):
+
     def __init__(self, length):
         self.length = length
 
@@ -131,12 +132,14 @@ def _data_transforms_cifar10(args):
 
 def _get_cifar10(args):
     train_transform, valid_transform = _data_transforms_cifar10(args)
-    train_data = dset.CIFAR10(
-        root=args.data, train=True, download=True, transform=train_transform
-    )
-    valid_data = dset.CIFAR10(
-        root=args.data, train=False, download=True, transform=valid_transform
-    )
+    train_data = dset.CIFAR10(root=args.data,
+                              train=True,
+                              download=True,
+                              transform=train_transform)
+    valid_data = dset.CIFAR10(root=args.data,
+                              train=False,
+                              download=True,
+                              transform=valid_transform)
 
     train_queue = torch.utils.data.DataLoader(
         train_data,
@@ -158,24 +161,25 @@ def _get_cifar10(args):
 
 def _get_dist_cifar10(args):
     train_transform, valid_transform = _data_transforms_cifar10(args)
-    train_data = dset.CIFAR10(
-        root=args.data, train=True, download=True, transform=train_transform
-    )
-    valid_data = dset.CIFAR10(
-        root=args.data, train=False, download=True, transform=valid_transform
-    )
+    train_data = dset.CIFAR10(root=args.data,
+                              train=True,
+                              download=True,
+                              transform=train_transform)
+    valid_data = dset.CIFAR10(root=args.data,
+                              train=False,
+                              download=True,
+                              transform=valid_transform)
 
     sampler = torch.utils.data.distributed.DistributedSampler(
         train_data, num_replicas=args.gpu_num, rank=args.local_rank)
 
-    train_queue = torch.utils.data.DataLoader(
-        train_data,
-        batch_size=args.batch_size // args.gpu_num,
-        pin_memory=True,
-        num_workers=4,
-        drop_last=True,
-        sampler=sampler
-    )
+    train_queue = torch.utils.data.DataLoader(train_data,
+                                              batch_size=args.batch_size //
+                                              args.gpu_num,
+                                              pin_memory=True,
+                                              num_workers=4,
+                                              drop_last=True,
+                                              sampler=sampler)
 
     valid_queue = torch.utils.data.DataLoader(
         valid_data,
@@ -198,11 +202,10 @@ def _get_dist_imagenet(args):
         transforms.Compose([
             transforms.RandomResizedCrop(224),
             transforms.RandomHorizontalFlip(),
-            transforms.ColorJitter(
-                brightness=0.4,
-                contrast=0.4,
-                saturation=0.4,
-                hue=0.2),
+            transforms.ColorJitter(brightness=0.4,
+                                   contrast=0.4,
+                                   saturation=0.4,
+                                   hue=0.2),
             transforms.ToTensor(),
             normalize,
         ]))
@@ -211,18 +214,25 @@ def _get_dist_imagenet(args):
         train_dataset, num_replicas=args.gpu_num, rank=args.local_rank)
 
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=args.batch_size // args.gpu_num, num_workers=max(args.gpu_num * 2, 4),
-        pin_memory=True, drop_last=True, sampler=sampler)
+        train_dataset,
+        batch_size=args.batch_size // args.gpu_num,
+        num_workers=max(args.gpu_num * 2, 4),
+        pin_memory=True,
+        drop_last=True,
+        sampler=sampler)
 
-    val_loader = torch.utils.data.DataLoader(
-        dset.ImageFolder(valdir, transforms.Compose([
+    val_loader = torch.utils.data.DataLoader(dset.ImageFolder(
+        valdir,
+        transforms.Compose([
             transforms.Resize(256),
             transforms.CenterCrop(224),
             transforms.ToTensor(),
             normalize,
         ])),
-        batch_size=args.batch_size, shuffle=False,
-        num_workers=4, pin_memory=True)
+                                             batch_size=args.batch_size,
+                                             shuffle=False,
+                                             num_workers=4,
+                                             pin_memory=True)
 
     return train_loader, val_loader, sampler
 
@@ -249,12 +259,14 @@ def _data_transforms_cifar100(args):
 
 def _get_cifar100(args):
     train_transform, valid_transform = _data_transforms_cifar100(args)
-    train_data = dset.CIFAR100(
-        root=args.data, train=True, download=True, transform=train_transform
-    )
-    valid_data = dset.CIFAR100(
-        root=args.data, train=False, download=True, transform=valid_transform
-    )
+    train_data = dset.CIFAR100(root=args.data,
+                               train=True,
+                               download=True,
+                               transform=train_transform)
+    valid_data = dset.CIFAR100(root=args.data,
+                               train=False,
+                               download=True,
+                               transform=valid_transform)
 
     train_queue = torch.utils.data.DataLoader(
         train_data,
@@ -277,10 +289,8 @@ def _get_cifar100(args):
 def _get_imagenet_tiny(args):
     traindir = os.path.join(args.data, 'train')
     validdir = os.path.join(args.data, 'val')
-    normalize = transforms.Normalize(
-        mean=[0.4802, 0.4481, 0.3975],
-        std=[0.2302, 0.2265, 0.2262]
-    )
+    normalize = transforms.Normalize(mean=[0.4802, 0.4481, 0.3975],
+                                     std=[0.2302, 0.2265, 0.2262])
     train_transform = transforms.Compose([
         transforms.RandomCrop(64, padding=4),
         transforms.RandomHorizontalFlip(),
@@ -290,23 +300,24 @@ def _get_imagenet_tiny(args):
     if args.cutout:
         train_transform.transforms.append(Cutout(args.cutout_length))
 
-    train_data = dset.ImageFolder(
-        traindir,
-        train_transform
-    )
+    train_data = dset.ImageFolder(traindir, train_transform)
     valid_data = dset.ImageFolder(
-        validdir,
-        transforms.Compose([
+        validdir, transforms.Compose([
             transforms.ToTensor(),
             normalize,
-        ])
-    )
+        ]))
 
-    train_queue = torch.utils.data.DataLoader(
-        train_data, batch_size=args.batch_size, shuffle=True, pin_memory=True, num_workers=4)
+    train_queue = torch.utils.data.DataLoader(train_data,
+                                              batch_size=args.batch_size,
+                                              shuffle=True,
+                                              pin_memory=True,
+                                              num_workers=4)
 
-    valid_queue = torch.utils.data.DataLoader(
-        valid_data, batch_size=args.batch_size // 2, shuffle=False, pin_memory=True, num_workers=4)
+    valid_queue = torch.utils.data.DataLoader(valid_data,
+                                              batch_size=args.batch_size // 2,
+                                              shuffle=False,
+                                              pin_memory=True,
+                                              num_workers=4)
     return train_queue, valid_queue
 
 
@@ -336,16 +347,18 @@ def load_ckpt(ckpt_path):
     try:
         checkpoint = torch.load(ckpt_path)
     except:
-        print(f"=> fail loading {ckpt_path}...");
+        print(f"=> fail loading {ckpt_path}...")
         exit()
     return checkpoint
 
 
 def save_ckpt(ckpt, file_dir, file_name='model.ckpt', is_best=False):
-    if not os.path.exists(file_dir): os.makedirs(file_dir)
+    if not os.path.exists(file_dir):
+        os.makedirs(file_dir)
     ckpt_path = os.path.join(file_dir, file_name)
     torch.save(ckpt, ckpt_path)
-    if is_best: shutil.copyfile(ckpt_path, os.path.join(file_dir, f'best_{file_name}'))
+    if is_best:
+        shutil.copyfile(ckpt_path, os.path.join(file_dir, f'best_{file_name}'))
 
 
 def drop_path(x, drop_prob, dims=(0,)):
@@ -373,6 +386,7 @@ def create_exp_dir(path, scripts_to_save=None):
 
 
 class Performance(object):
+
     def __init__(self, path):
         self.path = path
         self.data = None
@@ -382,9 +396,11 @@ class Performance(object):
         # print("alpha normal size: ", a_normal.data.size())
         a_reduce = F.softmax(alphas_reduce, dim=-1)
         # print("alpha reduce size: ", a_reduce.data.size())
-        data = np.concatenate([a_normal.data.view(-1),
-                               a_reduce.data.view(-1),
-                               np.array([val_loss.data])]).reshape(1, -1)
+        data = np.concatenate([
+            a_normal.data.view(-1),
+            a_reduce.data.view(-1),
+            np.array([val_loss.data])
+        ]).reshape(1, -1)
         if self.data is not None:
             self.data = np.concatenate([self.data, data], axis=0)
         else:
@@ -399,7 +415,8 @@ def logger(log_dir, need_time=True, need_stdout=False):
     log.setLevel(logging.DEBUG)
     fh = logging.FileHandler(log_dir)
     fh.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(fmt='%(asctime)s %(message)s', datefmt='%m/%d/%Y-%I:%M:%S')
+    formatter = logging.Formatter(fmt='%(asctime)s %(message)s',
+                                  datefmt='%m/%d/%Y-%I:%M:%S')
     if need_stdout:
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(logging.DEBUG)
@@ -422,7 +439,8 @@ class CrossEntropyLabelSmooth(nn.Module):
 
     def forward(self, inputs, targets):
         log_probs = self.logsoftmax(inputs)
-        targets = torch.zeros_like(log_probs).scatter_(1, targets.unsqueeze(1), 1)
+        targets = torch.zeros_like(log_probs).scatter_(1, targets.unsqueeze(1),
+                                                       1)
         targets = (1 - self.epsilon) * targets + self.epsilon / self.num_classes
         loss = (-targets * log_probs).mean(0).sum()
         return loss
@@ -433,7 +451,8 @@ def roc_auc_compute_fn(y_pred, y_target):
     try:
         from sklearn.metrics import roc_auc_score
     except ImportError:
-        raise RuntimeError("This contrib module requires sklearn to be installed.")
+        raise RuntimeError(
+            "This contrib module requires sklearn to be installed.")
 
     if y_pred.requires_grad:
         y_pred = y_pred.detach()
@@ -464,7 +483,9 @@ def save_checkpoint(ckpt, is_best, file_dir, file_name='model.ckpt'):
         os.makedirs(file_dir)
     ckpt_name = "{0}{1}".format(file_dir, file_name)
     torch.save(ckpt, ckpt_name)
-    if is_best: shutil.copyfile(ckpt_name, "{0}{1}".format(file_dir, 'best_' + file_name))
+    if is_best:
+        shutil.copyfile(ckpt_name, "{0}{1}".format(file_dir,
+                                                   'best_' + file_name))
 
 
 def seed_everything(seed=2022):

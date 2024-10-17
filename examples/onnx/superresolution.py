@@ -28,6 +28,7 @@ import onnx
 from utils import download_model, check_exist_or_download
 
 import logging
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(message)s')
 
 

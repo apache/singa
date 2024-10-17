@@ -19,8 +19,9 @@
 #ifndef SINGA_IO_DECODER_H_
 #define SINGA_IO_DECODER_H_
 
-#include <vector>
 #include <string>
+#include <vector>
+
 #include "singa/core/tensor.h"
 #include "singa/proto/io.pb.h"
 
@@ -28,8 +29,8 @@ namespace singa {
 /// The base decoder that converts a string into a set of tensors.
 class Decoder {
  public:
-  Decoder() { }
-  virtual ~Decoder() { }
+  Decoder() {}
+  virtual ~Decoder() {}
 
   virtual void Setup(const DecoderConf& conf) {}
 
@@ -70,5 +71,5 @@ class CSVDecoder : public Decoder {
   /// if ture the first value is the label
   bool has_label_ = false;
 };
-} // namespace singa
-#endif // SINGA_IO_DECODER_H_
+}  // namespace singa
+#endif  // SINGA_IO_DECODER_H_

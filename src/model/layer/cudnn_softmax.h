@@ -20,8 +20,9 @@
 #define SINGA_MODEL_LAYER_CUDNN_SOFTMAX_H_
 #ifdef USE_CUDNN
 #include <cudnn.h>
-#include <utility>
+
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "./softmax.h"
@@ -37,7 +38,7 @@ class CudnnSoftmax : public Softmax {
   // const std::string layer_type() const override { return "CudnnSoftmax"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
-  void Setup(const Shape& in_sample_shape, const LayerConf &conf) override;
+  void Setup(const Shape& in_sample_shape, const LayerConf& conf) override;
 
   const Tensor Forward(int flag, const Tensor& input) override;
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
@@ -54,6 +55,6 @@ class CudnnSoftmax : public Softmax {
   cudnnTensorDescriptor_t desc_ = nullptr;
   cudnnSoftmaxAlgorithm_t algorithm_;
 };
-}  // namespace
+}  // namespace singa
 #endif  // USE_CUDNN
 #endif  // SINGA_MODEL_LAYER_CUDNN_SOFTMAX_H_

@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-
 import collections
 from src.search_space.core.model_params import ModelMicroCfg
 from src.controller.core.sample import Sampler
@@ -25,6 +24,7 @@ from src.search_space.core.space import SpaceWrapper
 
 
 class Model(object):
+
     def __init__(self):
         self.arch = None
         self.score = None
@@ -36,7 +36,8 @@ class Model(object):
 
 class RegularizedEASampler(Sampler):
 
-    def __init__(self, space: SpaceWrapper, population_size: int, sample_size: int):
+    def __init__(self, space: SpaceWrapper, population_size: int,
+                 sample_size: int):
         super().__init__(space)
 
         self.population_size = population_size
@@ -92,20 +93,25 @@ class RegularizedEASampler(Sampler):
                 sample_ids = []
                 while len(sample) < self.sample_size:
                     candidate = random.choice(list(self.population))
-                    candidate_id = self.population_model_ids[self.population.index(candidate)]
+                    candidate_id = self.population_model_ids[
+                        self.population.index(candidate)]
                     sample.append(candidate)
                     sample_ids.append(candidate_id)
 
                 # Select the best parent from the sample (based on the order in sorted_model_ids)
-                parent_id = max(sample_ids, key=lambda _id: sorted_model_ids.index(str(_id)))
+                parent_id = max(
+                    sample_ids,
+                    key=lambda _id: sorted_model_ids.index(str(_id)))
                 parent = sample[sample_ids.index(parent_id)]
 
                 # Try to mutate the parent up to 'max_mutate_time' times
                 while cur_mutate_time < self.max_mutate_time:
-                    arch_id, arch_micro = self.space.mutate_architecture(parent.arch)
+                    arch_id, arch_micro = self.space.mutate_architecture(
+                        parent.arch)
 
                     # If the mutated architecture hasn't been visited or we've visited all possible architectures, stop
-                    if arch_id not in self.visited or len(self.space) == len(self.visited):
+                    if arch_id not in self.visited or len(self.space) == len(
+                            self.visited):
                         self.visited[arch_id] = True
                         is_found_new = True
                         break
@@ -151,7 +157,8 @@ class RegularizedEASampler(Sampler):
 
 class AsyncRegularizedEASampler(Sampler):
 
-    def __init__(self, space: SpaceWrapper, population_size: int, sample_size: int):
+    def __init__(self, space: SpaceWrapper, population_size: int,
+                 sample_size: int):
         super().__init__(space)
 
         self.population_size = population_size
@@ -193,20 +200,25 @@ class AsyncRegularizedEASampler(Sampler):
                 sample_ids = []
                 while len(sample) < self.sample_size:
                     candidate = random.choice(list(self.population))
-                    candidate_id = self.population_model_ids[self.population.index(candidate)]
+                    candidate_id = self.population_model_ids[
+                        self.population.index(candidate)]
                     sample.append(candidate)
                     sample_ids.append(candidate_id)
 
                 # Select the best parent from the sample (based on the order in sorted_model_ids)
-                parent_id = max(sample_ids, key=lambda _id: sorted_model_ids.index(str(_id)))
+                parent_id = max(
+                    sample_ids,
+                    key=lambda _id: sorted_model_ids.index(str(_id)))
                 parent = sample[sample_ids.index(parent_id)]
 
                 # Try to mutate the parent up to 'max_mutate_time' times
                 while cur_mutate_time < self.max_mutate_time:
-                    arch_id, arch_micro = self.space.mutate_architecture(parent.arch)
+                    arch_id, arch_micro = self.space.mutate_architecture(
+                        parent.arch)
 
                     # If the mutated architecture hasn't been visited or we've visited all possible architectures, stop
-                    if arch_id not in self.visited or len(self.space) == len(self.visited):
+                    if arch_id not in self.visited or len(self.space) == len(
+                            self.visited):
                         self.visited[arch_id] = True
                         is_found_new = True
                         break
@@ -225,7 +237,8 @@ class AsyncRegularizedEASampler(Sampler):
             # Update current architecture details
             return arch_id, arch_micro
 
-    def async_fit_sampler(self, current_arch_id, current_arch_micro, score: float):
+    def async_fit_sampler(self, current_arch_id, current_arch_micro,
+                          score: float):
         # if it's in Initialize stage, add to the population with random models.
         if len(self.population) < self.population_size:
             model = Model()

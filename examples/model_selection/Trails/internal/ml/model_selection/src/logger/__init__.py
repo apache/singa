@@ -38,4 +38,5 @@ else:
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(levelname)-8s %(message)s',
                     datefmt='%d %b %Y %H:%M:%S',
-                    filename=log_name, filemode='w')
+                    filename=log_name,
+                    filemode='w')

@@ -24,15 +24,19 @@ import traceback
 from src.common.constant import Config
 
 base_folder_dir = os.environ.get("base_dir")
-if base_folder_dir is None: base_folder_dir = os.getcwd()
+if base_folder_dir is None:
+    base_folder_dir = os.getcwd()
 base_dir = os.path.join(base_folder_dir, "img_data")
 print("local api running at {}".format(base_dir))
 
 # sum score is better
-tf_smt_file_NB101C10 = os.path.join(base_dir, "TFMEM_101_c10_100run_8k_models_score_sum")
+tf_smt_file_NB101C10 = os.path.join(base_dir,
+                                    "TFMEM_101_c10_100run_8k_models_score_sum")
 tf_smt_file_NB201C10 = os.path.join(base_dir, "TFMEM_201_c10_100run_score_sum")
-tf_smt_file_NB201C100 = os.path.join(base_dir, "TFMEM_201_c100_100run_score_sum")
-tf_smt_file_NB201Img = os.path.join(base_dir, "TFMEM_201_imgNet_100run_score_sum")
+tf_smt_file_NB201C100 = os.path.join(base_dir,
+                                     "TFMEM_201_c100_100run_score_sum")
+tf_smt_file_NB201Img = os.path.join(base_dir,
+                                    "TFMEM_201_imgNet_100run_score_sum")
 
 # rank is not as good as sum
 # tf_smt_file_NB201C10 = os.path.join(base_dir, "TFMEM_201_c10_100run_rank_bugs")
@@ -78,7 +82,8 @@ def fetch_from_db(space_name, dataset, run_id_m, N_m):
         cur = con.cursor()
 
     res = cur.execute(
-        "SELECT * FROM simulateExp WHERE run_num = {} and model_explored = {}".format(run_id_m, N_m))
+        "SELECT * FROM simulateExp WHERE run_num = {} and model_explored = {}".
+        format(run_id_m, N_m))
     fetch_res = res.fetchone()
 
     try:

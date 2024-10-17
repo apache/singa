@@ -17,6 +17,7 @@
  */
 
 #include <stack>
+
 #include "singa/model/loss.h"
 
 namespace singa {
@@ -26,8 +27,7 @@ Tensor SoftmaxCrossEntropy::Forward(int flag, const Tensor& prediction,
   CHECK(buf_.empty()) << "Do not call Forward successively for more than twice."
                       << " The calling pattern is [Forward|Evaluate] Backward";
   size_t batchsize = 1;
-  if (prediction.nDim() == 2)
-    batchsize = prediction.shape(0);
+  if (prediction.nDim() == 2) batchsize = prediction.shape(0);
   size_t dim = prediction.Size() / batchsize;
   const Tensor& input = Reshape(prediction, Shape{batchsize, dim});
   Tensor prob = SoftMax(input);
@@ -54,4 +54,3 @@ Tensor SoftmaxCrossEntropy::Backward() {
   return prob;
 }
 }  // namespace singa
-

@@ -1,28 +1,28 @@
 /************************************************************
-*
-* Licensed to the Apache Software Foundation (ASF) under one
-* or more contributor license agreements.  See the NOTICE file
-* distributed with this work for additional information
-* regarding copyright ownership.  The ASF licenses this file
-* to you under the Apache License, Version 2.0 (the
-* "License"); you may not use this file except in compliance
-* with the License.  You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing,
-* software distributed under the License is distributed on an
-* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-* KIND, either express or implied.  See the License for the
-* specific language governing permissions and limitations
-* under the License.
-*
-*************************************************************/
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ *************************************************************/
 
 #include "./cifar10.h"
 #include "singa/model/feed_forward_net.h"
-#include "singa/model/optimizer.h"
 #include "singa/model/metric.h"
+#include "singa/model/optimizer.h"
 #include "singa/utils/channel.h"
 #include "singa/utils/string.h"
 namespace singa {
@@ -53,7 +53,7 @@ LayerConf GenConvConf(string name, int nb_filter, int kernel, int stride,
   ParamSpec *bspec = conf.add_param();
   bspec->set_name(name + "_bias");
   bspec->set_lr_mult(2);
-//  bspec->set_decay_mult(0);
+  //  bspec->set_decay_mult(0);
   return conf;
 }
 
@@ -144,8 +144,8 @@ void Train(int num_epoch, string data_dir) {
     auto train = data.ReadTrainData();
     size_t nsamples = train.first.shape(0);
     auto mtrain =
-         Reshape(train.first, Shape{nsamples, train.first.Size() / nsamples});
-    const Tensor& mean = Average(mtrain, 0);
+        Reshape(train.first, Shape{nsamples, train.first.Size() / nsamples});
+    const Tensor &mean = Average(mtrain, 0);
     SubRow(mean, &mtrain);
     train_x = Reshape(mtrain, train.first.shape());
     train_y = train.second;
@@ -190,7 +190,7 @@ void Train(int num_epoch, string data_dir) {
 #endif  // USE_CUDNN
   net.Train(100, num_epoch, train_x, train_y, test_x, test_y);
 }
-}
+}  // namespace singa
 
 int main(int argc, char **argv) {
   singa::InitChannel(nullptr);

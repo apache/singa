@@ -16,15 +16,16 @@
  * limitations under the License.
  */
 
-#include "singa/model/layer.h"
 #include "./flatten.h"
+
+#include "singa/model/layer.h"
 namespace singa {
 
 RegisterLayerClass(singa_flatten, Flatten);
 RegisterLayerClass(singacpp_flatten, Flatten);
 RegisterLayerClass(singacuda_flatten, Flatten);
 RegisterLayerClass(singacl_flatten, Flatten);
-void Flatten::Setup(const Shape& in_sample, const LayerConf &conf) {
+void Flatten::Setup(const Shape &in_sample, const LayerConf &conf) {
   Layer::Setup(in_sample, conf);
   axis_ = conf.flatten_conf().axis();
   size_t len = 1;
@@ -53,4 +54,4 @@ const std::pair<Tensor, vector<Tensor> > Flatten::Backward(int flag,
   return std::make_pair(input_grad, param_grad);
 }
 
-} // namespace singa
+}  // namespace singa

@@ -16,7 +16,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 '''Extract Opencl source code into c++ strings, for runtime use.
 
 This file is executed only if .cl files are updated.
@@ -28,9 +27,12 @@ distribution = "./src/core/tensor/distribution.cl"
 tensormath = "./src/core/tensor/tensor_math_opencl.cl"
 im2col = "./src/model/layer/im2col.cl"
 pooling = "./src/model/layer/pooling.cl"
-files = {"distribution_str": distribution, "tensormath_str": tensormath,
-         "im2col_str": im2col, "pooling_str": pooling}
-
+files = {
+    "distribution_str": distribution,
+    "tensormath_str": tensormath,
+    "im2col_str": im2col,
+    "pooling_str": pooling
+}
 
 if __name__ == "__main__":
     fullpath = './src/core/device/opencl_func.h'
