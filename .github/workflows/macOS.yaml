@@ -26,10 +26,10 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.7"
+          python-version: "3.9"
       - name: install-build-dependencies
         run: |
          brew install protobuf swig opencv glog lmdb numpy
@@ -46,7 +46,7 @@ jobs:
           CMAKE_LIBRARY_PATH: /usr/local/opt/openblas/lib:$CMAKE_LIBRARY_PATH
           DNNL_ROOT: /tmp/dnnl_mac_1.2.0_cpu_tbb/
       - name: build
-        run: cd build && make
+        run: cd build && make -j
         env:
           CXXFLAGS: -I  /Users/runner/hostedtoolcache/Python/3.7.8/x64/lib/python3.7/site-packages/numpy/core/include $CXXFLAGS
           LD_LIBRARY_PATH: /usr/local/opt/openblas/lib:/tmp/dnnl_mac_1.2.0_cpu_tbb/lib:$LD_LIBRARY_PATH
