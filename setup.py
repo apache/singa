@@ -353,7 +353,7 @@ class custom_build_ext(build_ext):
         print('build temp', self.build_temp)
         print('build lib', self.build_lib)
         super(custom_build_ext, self).finalize_options()
-        self.swig_opts = '-py3 -outdir {}/singa/'.format(self.build_lib).split()
+        self.swig_opts = '-outdir {}/singa/'.format(self.build_lib).split()
         print('build temp', self.build_temp)
         print('build lib', self.build_lib)
 
