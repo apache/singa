@@ -372,7 +372,7 @@ class Tensor(object):
             self.data.CopyFloatDataFromHostPtr(np_array)
         elif dt == np.float16:
             self.data.CopyHalfFloatDataFromHostPtr(np_array)
-        elif dt == np.int or dt == np.int32:
+        elif dt == np.int64 or dt == np.int32:
             self.data.CopyIntDataFromHostPtr(np_array)
         else:
             raise NotImplementedError('Not implemented yet for ', dt)
@@ -886,10 +886,10 @@ def from_numpy(np_array, dev=None):
     '''
     assert type(np_array) is np.ndarray, 'Must input numpy array'
     # convert to float32 array
-    if np_array.dtype == np.float64 or np_array.dtype == np.float:
+    if np_array.dtype == np.float64 or np_array.dtype == float:
         np_array = np_array.astype(np.float32)
 
-    if np_array.dtype == np.int64 or np_array.dtype == np.int:
+    if np_array.dtype == np.int64 or np_array.dtype == int:
         np_array = np_array.astype(np.int32)
 
     if np_array.dtype == np.float32:
@@ -1791,7 +1791,7 @@ def copy_from_numpy(data, np_array):
         data.CopyFloatDataFromHostPtr(np_array)
     elif dt == np.float16:
         data.CopyHalfFloatDataFromHostPtr(np_array)
-    elif dt == np.int or dt == np.int32:
+    elif dt == int or dt == np.int32:
         data.CopyIntDataFromHostPtr(np_array)
     else:
         raise NotImplementedError('Not implemented yet for ', dt)

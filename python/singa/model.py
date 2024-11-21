@@ -21,13 +21,18 @@ to use Computational Graph in their model.
 '''
 
 import os
+import sys
 import gc
 import time
 import json
 import zipfile
 import numpy as np
 from functools import wraps
-from collections import Iterable
+
+if sys.version_info < (3, 10):
+    from collections import Iterable
+else:
+    from collections.abc import Iterable
 
 from singa import tensor
 from singa import autograd

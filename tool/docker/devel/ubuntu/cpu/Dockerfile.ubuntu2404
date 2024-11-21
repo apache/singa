@@ -78,7 +78,6 @@ RUN cd $HOME/singa/build \
     && make -j && make install
 
 RUN cd $HOME/singa \
-    && python3 setup.py build \
     && python3 setup.py install
 
 WORKDIR $HOME/singa
