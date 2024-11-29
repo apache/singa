@@ -32,6 +32,7 @@ np_dtype = {"float16": np.float16, "float32": np.float32}
 
 singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 
+
 #### self-defined loss begin
 
 ### from autograd.py
@@ -62,10 +63,12 @@ class SumError(Operator):
         dx *= dy
         return dx
 
+
 def se_loss(x):
     # assert x.shape == t.shape, "input and target shape different: %s, %s" % (
     #     x.shape, t.shape)
     return SumError()(x)[0]
+
 
 ### from layer.py
 class SumErrorLayer(Layer):
@@ -78,6 +81,7 @@ class SumErrorLayer(Layer):
 
     def forward(self, x):
         return se_loss(x)
+
 
 #### self-defined loss end
 
@@ -92,7 +96,6 @@ class MSMLP(model.Model):
         self.linear1 = layer.Linear(perceptron_size)
         self.linear2 = layer.Linear(num_classes)
         self.softmax_cross_entropy = layer.SoftMaxCrossEntropy()
-
         self.sum_error = SumErrorLayer()
 
     def forward(self, inputs):
@@ -101,12 +104,24 @@ class MSMLP(model.Model):
         y = self.linear2(y)
         return y
 
-    def train_one_batch(self, x, y, synflow_flag, dist_option, spars):
+    def train_one_batch(self, x, y, dist_option, spars, synflow_flag):
+        # print ("in train_one_batch")
         out = self.forward(x)
-        loss = self.softmax_cross_entropy(out, y)
+        # print ("train_one_batch x.data: \n", x.data)
+        # print ("train_one_batch y.data: \n", y.data)
+        # print ("train_one_batch out.data: \n", out.data)
+        if synflow_flag:
+            # print ("sum_error")
+            loss = self.sum_error(out)
+        else:  # normal training
+            # print ("softmax_cross_entropy")
+            loss = self.softmax_cross_entropy(out, y)
+        # print ("train_one_batch loss.data: \n", loss.data)
 
         if dist_option == 'plain':
+            # print ("before pn_p_g_list = self.optimizer(loss)")
             pn_p_g_list = self.optimizer(loss)
+            # print ("after pn_p_g_list = self.optimizer(loss)")
         elif dist_option == 'half':
             self.optimizer.backward_and_update_half(loss)
         elif dist_option == 'partialUpdate':
@@ -119,7 +134,13 @@ class MSMLP(model.Model):
             self.optimizer.backward_and_sparse_update(loss,
                                                       topK=False,
                                                       spars=spars)
+        # print ("len(pn_p_g_list): \n", len(pn_p_g_list))
+        # print ("len(pn_p_g_list[0]): \n", len(pn_p_g_list[0]))
+        # print ("pn_p_g_list[0][0]: \n", pn_p_g_list[0][0])
+        # print ("pn_p_g_list[0][1].data: \n", pn_p_g_list[0][1].data)
+        # print ("pn_p_g_list[0][2].data: \n", pn_p_g_list[0][2].data)
         return pn_p_g_list, out, loss
+        # return pn_p_g_list[0], pn_p_g_list[1], pn_p_g_list[2], out, loss
 
     def set_optimizer(self, optimizer):
         self.optimizer = optimizer
@@ -127,9 +148,10 @@ class MSMLP(model.Model):
 
 def create_model(pretrained=False, **kwargs):
     """Constructs a CNN model.
+
     Args:
         pretrained (bool): If True, returns a pre-trained model.
-    
+
     Returns:
         The created CNN model.
     """
