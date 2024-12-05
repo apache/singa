@@ -45,9 +45,14 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
       - name: get-oneDNN
         run: wget https://github.com/oneapi-src/oneDNN/releases/download/v1.1/dnnl_lnx_1.1.0_cpu_gomp.tgz -P /tmp/ && tar zxf /tmp/dnnl_lnx_1.1.0_cpu_gomp.tgz -C /tmp
+      - name: update APT sources
+        run: sudo apt-get update
       - name: setup-sys-env
         run: sudo apt-get install -y curl wget git cmake
       - name: install-build-dependencies
@@ -57,10 +62,10 @@ jobs:
         env:
           DNNL_ROOT: /tmp/dnnl_lnx_1.1.0_cpu_gomp/
       - name: build
-        run: cd build && make -j8
+        run: cd build && make -j
       - name: C++ test
         run: build/bin/test_singa
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v5
         with:
           flags: singa-cpp

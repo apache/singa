@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: install-conda-build
         run: conda install conda-build=3.20.4 anaconda-client
       - name: conda-config
@@ -45,14 +45,12 @@ jobs:
           ANACONDA_UPLOAD_TOKEN: ${{ secrets.ANACONDA_UPLOAD_TOKEN }}
         if: ${{ env.ANACONDA_UPLOAD_TOKEN }}
         run: /usr/share/miniconda/bin/anaconda -t $ANACONDA_UPLOAD_TOKEN upload -u nusdbsystem -l main /usr/share/miniconda/conda-bld/linux-64/singa-*.tar.bz2 --force
-        # 
-
 
   build-pytest-package-macos:
     runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: set permission
         run: sudo chmod -R 777 /usr/local/miniconda 
         # && xcrun --show-sdk-path
