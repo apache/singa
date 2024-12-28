@@ -20,6 +20,10 @@ __pycache__
 *.cxx
 
 build/
+src/api/config.i
+src/api/singa_wrap.cpp
+dist/
+include/singa/singa_config.h
 thirdparty/*
 !thirdparty/install.sh
 test/samples/
@@ -30,3 +34,6 @@ test/samples/
 doc/_build/*
 doc/en/docs/model_zoo/
 cmake-build-debug/*
+
+# Python package
+python/singa.egg-info/

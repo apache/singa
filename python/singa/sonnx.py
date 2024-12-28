@@ -19,15 +19,48 @@
 
 from __future__ import division
 
-import numpy as np
-
-import onnx
-import onnx.utils
-from onnx.backend.base import Backend, BackendRep
-from onnx import (checker, helper, numpy_helper, GraphProto, NodeProto,
-                  TensorProto, OperatorSetIdProto, optimizer, mapping,
-                  shape_inference)
+import collections
+import sys
 import warnings
+import pkg_resources
+
+if sys.version_info < (3, 10):
+    from collections import Iterable
+else:
+    from collections.abc import Iterable
+
+import numpy as np
+import onnx
+from onnx.backend.base import Backend, BackendRep
+
+from onnx import (checker, helper, numpy_helper, GraphProto, NodeProto,
+                  TensorProto, OperatorSetIdProto, mapping,
+                  shape_inference)
+
+# ref: https://github.com/onnx/onnx/issues/582
+# ref: https://github.com/onnx/optimizer/blob/master/onnxoptimizer/__init__.py
+ONNX_VERSION = pkg_resources.parse_version(onnx.__version__)
+if ONNX_VERSION < pkg_resources.parse_version('1.9.0'):
+    from onnx import optimizer
+    import onnx.utils
+    
+    OPTIMIZE_MODEL_FUNC = onnx.utils.polish_model
+else:
+    import onnxoptimizer as optimizer
+    
+    def polish_model(model):  # type: (ModelProto) -> ModelProto
+        '''
+            This function combines several useful utility functions together.
+        '''
+        onnx.checker.check_model(model)
+        onnx.helper.strip_doc_string(model)
+        model = onnx.shape_inference.infer_shapes(model)
+        model = optimizer.optimize(model)
+        onnx.checker.check_model(model)
+        return model
+    
+    OPTIMIZE_MODEL_FUNC = polish_model
+
 
 from . import device
 from . import autograd
@@ -37,7 +70,6 @@ from . import model
 from . import utils
 from . import singa_wrap as singa
 
-import collections
 OrderedDict = collections.OrderedDict
 namedtuple = collections.namedtuple
 
@@ -57,7 +89,7 @@ NP_TYPE_TO_SINGA_SUPPORT_TYPE = {
     np.dtype('complex128'): None,
     np.dtype('uint32'): None,
     np.dtype('uint64'): None,
-    np.dtype(np.object): None
+    np.dtype(object): None
 }
 
 
@@ -900,7 +932,7 @@ class SingaFrontend(object):
         else:
             translator = cls._common_singa_tensor_to_onnx_node
         nodes = translator(op, op_t)
-        if not isinstance(nodes, collections.Iterable):
+        if not isinstance(nodes, Iterable):
             nodes = [nodes]
         nodes = [node for node in nodes if node is not None]
         return nodes
@@ -1826,7 +1858,7 @@ class SingaBackend(Backend):
             list, the output
         """
         outputs = operator(*inputs)
-        if not isinstance(outputs, collections.Iterable):
+        if not isinstance(outputs, Iterable):
             outputs = [outputs]
         return outputs
 
@@ -1920,7 +1952,7 @@ class SingaBackend(Backend):
         super(SingaBackend, cls).prepare(model, device, **kwargs)
         # optimize and infer the shape of the model
         try:
-            model = onnx.utils.polish_model(model)
+            model = OPTIMIZE_MODEL_FUNC(model)
         except IndexError as err:
             model = shape_inference.infer_shapes(model)
 

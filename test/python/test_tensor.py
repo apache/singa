@@ -208,7 +208,7 @@ class TestTensorMethods(unittest.TestCase):
         self.assertTrue(y is x)
 
     def test_numpy_convert(self):
-        a = np.asarray([[1, 0, 0], [0, 1, 0]], dtype=np.int)
+        a = np.asarray([[1, 0, 0], [0, 1, 0]], dtype=np.int64)
         t = tensor.from_numpy(a)
         b = tensor.to_numpy(t)
         self.assertEqual(np.sum(a - b), 0)
