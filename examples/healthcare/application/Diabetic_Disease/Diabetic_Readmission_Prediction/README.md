@@ -41,5 +41,5 @@ To address this issue, we use Singa to implement a machine learning model for pr
 
 ## Command
 ```bash
-python train.py mlp diabetic
+python train_mlp.py mlp diabetic
 ```
