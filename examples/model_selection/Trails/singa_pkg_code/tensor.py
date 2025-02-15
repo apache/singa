@@ -855,7 +855,7 @@ def from_numpy(np_array, dev=None):
     '''
     assert type(np_array) is np.ndarray, 'Must input numpy array'
     # convert to float32 array
-    if np_array.dtype == np.float64 or np_array.dtype == np.float:
+    if np_array.dtype == np.float64:
         np_array = np_array.astype(np.float32)
 
     if np_array.dtype == np.int64 or np_array.dtype == int:

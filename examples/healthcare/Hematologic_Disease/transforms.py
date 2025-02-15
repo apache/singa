@@ -95,9 +95,9 @@ class ToTensor(object):
         img = np.transpose(img, (2, 0, 1))
 
         if img.dtype == np.uint8:
-            return np.array(np.float32(img)/255.0, dtype=np.float)
+            return np.array(np.float32(img)/255.0, dtype=np.float64)
         else:
-            return np.float(img)
+            return np.float64(img)
 
     def __repr__(self):
         return self.__class__.__name__ + '()'
@@ -139,7 +139,7 @@ class Normalize(object):
         if not isinstance(img, np.ndarray):
             raise TypeError('Input img should be a numpy array. Got {}.'.format(type(img)))
 
-        if not img.dtype == np.float:
+        if not img.dtype == float:
             raise TypeError('Input array should be a float array. Got {}.'.format(img.dtype))
 
         if img.ndim < 3:
