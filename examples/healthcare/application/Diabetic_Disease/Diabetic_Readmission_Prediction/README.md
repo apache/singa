@@ -36,7 +36,7 @@ To address this issue, we use Singa to implement a machine learning model for pr
   a subclass of `Module` to wrap the neural network operations 
   of each model.
 
-* `train_mlp.py` is the training script, which controls the training flow by
+* `train.py` is the training script, which controls the training flow by
   doing BackPropagation and SGD update.
 
 ## Command
