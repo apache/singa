@@ -1,4 +1,22 @@
-from singa import singa_wrap as singa
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
 from singa import device
 from singa import tensor
 from singa import opt
@@ -6,30 +24,13 @@ import numpy as np
 import time
 import argparse
 import sys
-sys.path.append("../../..")
-
-from PIL import Image
-
-from healthcare.data import diaret
-from healthcare.models import diabetic_retinopthy_net
+sys.path.append("../../../..")
+from healthcare.data import diabetic
+from healthcare.models import diabetic_net
 
 np_dtype = {"float16": np.float16, "float32": np.float32}
 
 singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
-
-
-# Data augmentation
-def augmentation(x, batch_size):
-    xpad = np.pad(x, [[0, 0], [0, 0], [4, 4], [4, 4]], 'symmetric')
-    for data_num in range(0, batch_size):
-        offset = np.random.randint(8, size=2)
-        x[data_num, :, :, :] = xpad[data_num, :,
-                               offset[0]:offset[0] + x.shape[2],
-                               offset[1]:offset[1] + x.shape[2]]
-        if_flip = np.random.randint(2)
-        if (if_flip):
-            x[data_num, :, :, :] = x[data_num, :, :, ::-1]
-    return x
 
 
 # Calculate accuracy
@@ -68,22 +69,9 @@ def reduce_variable(variable, dist_opt, reducer):
     return output
 
 
-def resize_dataset(x, image_size):
-    num_data = x.shape[0]
-    dim = x.shape[1]
-    X = np.zeros(shape=(num_data, dim, image_size, image_size),
-                 dtype=np.float32)
-    for n in range(0, num_data):
-        for d in range(0, dim):
-            X[n, d, :, :] = np.array(Image.fromarray(x[n, d, :, :]).resize(
-                (image_size, image_size), Image.BILINEAR),
-                dtype=np.float32)
-    return X
-
-
 def run(global_rank,
         world_size,
-        dir_path,
+        local_rank,
         max_epoch,
         batch_size,
         model,
@@ -94,33 +82,30 @@ def run(global_rank,
         dist_option='plain',
         spars=None,
         precision='float32'):
-    # now CPU version only, could change to GPU device for GPU-support machines
-    dev = device.get_default_device()
+    dev = device.create_cpu_device()  # now CPU version only, could change to GPU device for GPU-support machines
     dev.SetRandSeed(0)
     np.random.seed(0)
-    if data == 'diaret':
-        train_x, train_y, val_x, val_y = diaret.load(dir_path=dir_path)
-    else:
-        print(
-            'Wrong dataset!'
-        )
-        sys.exit(0)
 
-    num_channels = train_x.shape[1]
-    image_size = train_x.shape[2]
-    data_size = np.prod(train_x.shape[1:train_x.ndim]).item()
-    num_classes = (np.max(train_y) + 1).item()
+    # Load data based on specified dataset
+    if data == 'diabetic':
+        train_x, train_y, val_x, val_y = diabetic.load()
+    elif data == 'mnist' or data == 'cifar10' or data == 'cifar100':
+        raise ValueError("Only 'diabetic' dataset (2D table data) is supported with MLP model.")
 
-    if model == 'cnn':
-        model = diabetic_retinopthy_net.create_model(num_channels=num_channels,
-                                                     num_classes=num_classes)
+    # Ensure the data is already 2D (train_x.shape[1:] should have only one dimension)
+    data_size = train_x.shape[1]
+    num_classes = int(np.max(train_y) + 1)
+
+    # Initialize MLP model
+    if model == 'mlp':
+        model = diabetic_net.create_model(data_size=data_size,
+                                          num_classes=num_classes)
     else:
         print(
             'Wrong model!'
         )
         sys.exit(0)
-
-    # For distributed training, sequential has better performance
+    # Setup distributed training flags
     if hasattr(sgd, "communicator"):
         DIST = True
         sequential = True
@@ -128,27 +113,21 @@ def run(global_rank,
         DIST = False
         sequential = False
 
+    # Partition data if distributed training is used
     if DIST:
         train_x, train_y, val_x, val_y = partition(global_rank, world_size,
                                                    train_x, train_y, val_x,
                                                    val_y)
 
-    if model.dimension == 4:
-        tx = tensor.Tensor(
-            (batch_size, num_channels, model.input_size, model.input_size), dev,
-            singa_dtype[precision])
-    elif model.dimension == 2:
-        tx = tensor.Tensor((batch_size, data_size),
-                           dev, singa_dtype[precision])
-        np.reshape(train_x, (train_x.shape[0], -1))
-        np.reshape(val_x, (val_x.shape[0], -1))
-
+    # Define tensors for inputs and labels
+    tx = tensor.Tensor((batch_size, data_size), dev, singa_dtype[precision])
     ty = tensor.Tensor((batch_size,), dev, tensor.int32)
+
     num_train_batch = train_x.shape[0] // batch_size
     num_val_batch = val_x.shape[0] // batch_size
     idx = np.arange(train_x.shape[0], dtype=np.int32)
 
-    # Attach model to graph
+    # Attach optimizer to model
     model.set_optimizer(sgd)
     model.compile([tx], is_train=True, use_graph=graph, sequential=sequential)
     dev.SetVerbosity(verbosity)
@@ -159,7 +138,7 @@ def run(global_rank,
         np.random.shuffle(idx)
 
         if global_rank == 0:
-            print('Starting Epoch %d:' % (epoch))
+            print('Starting Epoch %d:' % epoch)
 
         # Training phase
         train_correct = np.zeros(shape=[1], dtype=np.float32)
@@ -168,18 +147,10 @@ def run(global_rank,
 
         model.train()
         for b in range(num_train_batch):
-            # if b % 100 == 0:
-            #     print ("b: \n", b)
-            # Generate the patch data in this iteration
             x = train_x[idx[b * batch_size:(b + 1) * batch_size]]
-            if model.dimension == 4:
-                x = augmentation(x, batch_size)
-                if (image_size != model.input_size):
-                    x = resize_dataset(x, model.input_size)
-            x = x.astype(np_dtype[precision])
             y = train_y[idx[b * batch_size:(b + 1) * batch_size]]
 
-            # Copy the patch data into input tensors
+            x = x.astype(np_dtype[precision])  # Ensure correct precision
             tx.copy_from_numpy(x)
             ty.copy_from_numpy(y)
 
@@ -189,7 +160,7 @@ def run(global_rank,
             train_loss += tensor.to_numpy(loss)[0]
 
         if DIST:
-            # Reduce the evaluation accuracy and loss from multiple devices
+            # Reduce training stats across distributed devices
             reducer = tensor.Tensor((1,), dev, tensor.float32)
             train_correct = reduce_variable(train_correct, sgd, reducer)
             train_loss = reduce_variable(train_loss, sgd, reducer)
@@ -204,21 +175,19 @@ def run(global_rank,
         model.eval()
         for b in range(num_val_batch):
             x = val_x[b * batch_size:(b + 1) * batch_size]
-            if model.dimension == 4:
-                if (image_size != model.input_size):
-                    x = resize_dataset(x, model.input_size)
-            x = x.astype(np_dtype[precision])
             y = val_y[b * batch_size:(b + 1) * batch_size]
+
+            x = x.astype(np_dtype[precision])
             tx.copy_from_numpy(x)
             ty.copy_from_numpy(y)
+
             out_test = model(tx)
             test_correct += accuracy(tensor.to_numpy(out_test), y)
 
         if DIST:
-            # Reduce the evaulation accuracy from multiple devices
+            # Reduce evaluation stats across distributed devices
             test_correct = reduce_variable(test_correct, sgd, reducer)
 
-        # Output the evaluation accuracy
         if global_rank == 0:
             print('Evaluation accuracy = %f, Elapsed Time = %fs' %
                   (test_correct / (num_val_batch * batch_size * world_size),
@@ -228,30 +197,25 @@ def run(global_rank,
     dev.PrintTimeProfiling()
 
 
+
 if __name__ == '__main__':
     # Use argparse to get command config: max_epoch, model, data, etc., for single gpu training
     parser = argparse.ArgumentParser(
         description='Training using the autograd and graph.')
     parser.add_argument(
         'model',
-        choices=['cnn'],
-        default='cnn')
+        choices=['cnn', 'resnet', 'xceptionnet', 'mlp', 'alexnet'],
+        default='mlp')
     parser.add_argument('data',
-                        choices=['diaret'],
-                        default='diaret')
+                        choices=['mnist', 'cifar10', 'cifar100', 'diabetic'],
+                        default='mnist')
     parser.add_argument('-p',
                         choices=['float32', 'float16'],
                         default='float32',
                         dest='precision')
-    parser.add_argument('-dir',
-                        '--dir-path',
-                        default="/tmp/diaret",
-                        type=str,
-                        help='the directory to store the Diabetic Retinopathy dataset',
-                        dest='dir_path')
     parser.add_argument('-m',
                         '--max-epoch',
-                        default=300,
+                        default=100,
                         type=int,
                         help='maximum epochs',
                         dest='max_epoch')
@@ -267,6 +231,13 @@ if __name__ == '__main__':
                         type=float,
                         help='initial learning rate',
                         dest='lr')
+    # Determine which gpu to use
+    parser.add_argument('-i',
+                        '--device-id',
+                        default=0,
+                        type=int,
+                        help='which GPU to use',
+                        dest='device_id')
     parser.add_argument('-g',
                         '--disable-graph',
                         default='True',
@@ -282,11 +253,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5,
-                  dtype=singa_dtype[args.precision])
+    sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5, dtype=singa_dtype[args.precision])
     run(0,
         1,
-        args.dir_path,
+        args.device_id,
         args.max_epoch,
         args.batch_size,
         args.model,
