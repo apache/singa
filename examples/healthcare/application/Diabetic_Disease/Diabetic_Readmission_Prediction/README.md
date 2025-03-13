@@ -17,7 +17,7 @@
     under the License.
 -->
 
-# Singa for Diabetic Readmission Prediction task
+# Singa for Diabetic Readmission Prediction Task
 
 ## Diabetic Readmission
 
