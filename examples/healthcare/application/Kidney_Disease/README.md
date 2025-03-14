@@ -17,13 +17,13 @@
     under the License.
 -->
 
-# Singa for Kidney disease Prediction
+# Singa for Kidney Disease Prediction
 
-## Kidney disease Prediction Task
+## Kidney Disease Prediction Task
 
-Kidney disease prediction is an important tool that uses data science and machine learning techniques to predict the likelihood of a patient suffering from Kidney disease. The core goal of this technology is to judge whether a patient suffers from kidney disease by analyzing multiple data such as a patient’s medical history, physiological indicators, diagnostic information, treatment options, and socioeconomic factors, so as to take appropriate interventions in advance to provide treatment.
+Kidney disease prediction is an important tool that uses data science and machine learning techniques to predict the likelihood of a patient suffering from Kidney disease. The goal is to judge whether a patient suffers from kidney disease by analyzing multiple data such as a patient’s medical history, physiological indicators, diagnostic information, treatment options, and socioeconomic factors, so as to take appropriate interventions in advance to provide treatment.
 
-The dataset used in this task is MIMIC-III after preprocessed. The features are data containing 6 visit windows, with 2549 frequent diagnoses, procedures and drugs for each window. Each item in features are data for one patient, and these features are encoded by one-hot code. The labels are corresponding flags to mark whether the patient suffered from kidney disease, where the label equals "1" if the patient had kidn  disease, the label equals "0" if not.
+The dataset used in this task is MIMIC-III. The features are data containing 6 visit windows, with 2549 frequent diagnoses, procedures and drugs for each window. These features are encoded by one-hot. The labels are corresponding flags to mark whether the patient suffered from kidney disease, where the label equals "1" if the patient had kidney  disease, and the label equals "0" if not.
 
 
 ## Structure
@@ -35,7 +35,7 @@ The dataset used in this task is MIMIC-III after preprocessed. The features are 
   of each model.
 
 * `train_kidney_mlp.py` is the training script, which controls the training flow by
-  doing BackPropagation and SGD update.
+  doing BackPropagation and the SGD update.
 
 ## Command
 ```bash
