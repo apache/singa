@@ -17,4 +17,4 @@
 #
 
 ### diabetic retinopathy dataset
-python train_cnn.py cnn diaret -dir pathToDataset
+python train.py drnet -dir pathToDataset
