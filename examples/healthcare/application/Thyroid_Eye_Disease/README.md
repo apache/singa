@@ -22,12 +22,14 @@
 We have successfully applied the idea of prototype loss in various medical image classification task to improve performance, for example, detecting thyroid eye disease from CT images. Here we provide the implementation of the convolution prototype model in Singa. Due to data privacy, we are not able to release the CT image dataset used. The training script `./train.py` demonstrates how to apply this model on the cifar-10 dataset.
 
 
-## run
+## Running instructions
 
-1. Download `healthcare` directory then change to the `healthcare/application/TED_CT_Detection` directory.
-2. Command.
+1. Download the [CIFAR-10 python version](https://www.cs.toronto.edu/~kriz/cifar.html) to a folder(pathToDataset).
+
+2. Start the training
+
 ```bash
-python train.py -dir pathToDataset
+python train.py tedctnet -dir pathToDataset
 ```
 
 ## reference

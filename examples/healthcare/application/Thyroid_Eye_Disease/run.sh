@@ -17,4 +17,4 @@
 #
 
 ### command
-python train.py -dir pathToDataset
+python train.py tedctnet -dir pathToDataset

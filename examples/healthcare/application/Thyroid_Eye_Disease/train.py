@@ -60,6 +60,7 @@ def run(
     dir_path,
     max_epoch,
     batch_size,
+    model,
     sgd,
     graph,
     verbosity,
@@ -77,8 +78,14 @@ def run(
     data_size = np.prod(train_x.shape[1 : train_x.ndim]).item()
     num_classes = (np.max(train_y) + 1).item()
 
-    backbone = tedct_net.create_cnn_model(num_channels=num_channels, num_classes=num_classes)
-    model = tedct_net.create_model(backbone, prototype_count=10, lamb=0.5, temp=10)
+    if model == 'tedctnet':
+        backbone = tedct_net.create_backbone(num_channels=num_channels, num_classes=num_classes)
+        model = tedct_net.create_model(backbone, prototype_count=10, lamb=0.5, temp=10)
+    else:
+        print(
+            'Wrong model!'
+        )
+        sys.exit(0)
 
     if backbone.dimension == 4:
         tx = tensor.Tensor(
@@ -105,7 +112,6 @@ def run(
         np.random.shuffle(idx)
 
         train_correct = np.zeros(shape=[1], dtype=np.float32)
-        test_correct = np.zeros(shape=[1], dtype=np.float32)
         train_loss = np.zeros(shape=[1], dtype=np.float32)
 
         model.train()
@@ -119,11 +125,12 @@ def run(
             train_correct += accuracy(tensor.to_numpy(out), y)
             train_loss += tensor.to_numpy(loss)[0]
         print(
-            "Training loss = %f, training accuracy = %f"
-            % (train_loss, train_correct / (num_train_batch * batch_size)),
+            "Training loss = %f, training accuracy = %.2f %%"
+            % (train_loss, 100.0 * train_correct / (num_train_batch * batch_size)),
             flush=True,
         )
 
+    test_correct = np.zeros(shape=[1], dtype=np.float32)
     model.eval()
     for b in range(num_val_batch):
         x = val_x[b * batch_size : (b + 1) * batch_size]
@@ -132,22 +139,26 @@ def run(
         tx.copy_from_numpy(x)
         ty.copy_from_numpy(y)
 
-        out_test = model(tx, ty, dist_option="fp32", spars=None)
+        out_test = model(tx)
         test_correct += accuracy(tensor.to_numpy(out_test), y)
-
+    print('Evaluation accuracy = %.2f %%' %
+          (100.0 * test_correct / (num_val_batch * batch_size)))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train a CPL model")
+    parser.add_argument(
+        'model',
+        choices=['tedctnet'],
+        default='tedctnet')
     parser.add_argument('-dir',
                         '--dir-path',
-                        default="/tmp/cifar-10-batches-py",
                         type=str,
                         help='the directory to store the dataset',
                         dest='dir_path')
     parser.add_argument(
         "-m",
         "--max-epoch",
-        default=20,
+        default=10,
         type=int,
         help="maximum epochs",
         dest="max_epoch",
@@ -196,6 +207,7 @@ if __name__ == "__main__":
         args.dir_path,
         args.max_epoch,
         args.batch_size,
+        args.model,
         sgd,
         args.graph,
         args.verbosity

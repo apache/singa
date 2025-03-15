@@ -73,7 +73,7 @@ class CPLayer(layer.Layer):
         self.prototype.copy_from(parameters[self.prototype.name])
 
 
-class CPL(model.Model):
+class TEDctNet(model.Model):
 
     def __init__(
         self,
@@ -84,7 +84,7 @@ class CPL(model.Model):
         label=None,
         prototype_weight=None,
     ):
-        super(CPL, self).__init__()
+        super(TEDctNet, self).__init__()
         # config
         self.lamb = lamb
         self.prototype_weight = prototype_weight
@@ -111,10 +111,10 @@ class CPL(model.Model):
         self.optimizer = optimizer
 
 
-class CNN(model.Model):
+class Backbone(model.Model):
 
     def __init__(self, num_classes=10, num_channels=1):
-        super(CNN, self).__init__()
+        super(Backbone, self).__init__()
         self.num_classes = num_classes
         self.input_size = 28
         self.dimension = 4
@@ -162,7 +162,7 @@ class CNN(model.Model):
     def set_optimizer(self, optimizer):
         self.optimizer = optimizer
 
-def create_cnn_model(pretrained=False, **kwargs):
+def create_backbone(pretrained=False, **kwargs):
     """Constructs a CNN model.
 
     Args:
@@ -171,13 +171,13 @@ def create_cnn_model(pretrained=False, **kwargs):
     Returns:
         The created CNN model.
     """
-    model = CNN(**kwargs)
+    model = Backbone(**kwargs)
 
     return model
 
-def create_model(backbone, prototype_count=2, lamb=0.5, temp=10.0):
-    model = CPL(backbone, prototype_count=prototype_count, lamb=lamb, temp=temp)
+def create_model(backbone, prototype_count=2, lamb=0.5, temp=10):
+    model = TEDctNet(backbone, prototype_count=prototype_count, lamb=lamb, temp=temp)
     return model
 
 
-__all__ = ["CPL", "CNN", "create_cnn_model", "create_model"]
+__all__ = ["TEDctNet", "Backbone", "create_backbone", "create_model"]
