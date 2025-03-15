@@ -17,4 +17,4 @@
 #
 
 ### bloodminist dataset
-python train_cnn.py cnn bloodminist -dir pathToDataset
+python train.py hematologicnet -dir pathToDataset
