@@ -20,10 +20,10 @@ from singa import layer
 from singa import model
 
 
-class CNN(model.Model):
+class DRNet(model.Model):
 
     def __init__(self, num_classes=10, num_channels=1):
-        super(CNN, self).__init__()
+        super(DRNet, self).__init__()
         self.num_classes = num_classes
         self.input_size = 128
         self.dimension = 4
@@ -78,17 +78,17 @@ class CNN(model.Model):
 
 
 def create_model(**kwargs):
-    """Constructs a CNN model.
+    """Constructs a DRNet model.
 
     Args:
         pretrained (bool): If True, returns a pre-trained model.
 
     Returns:
-        The created CNN model.
+        The created DRNet model.
     """
-    model = CNN(**kwargs)
+    model = DRNet(**kwargs)
 
     return model
 
 
-__all__ = ['CNN', 'create_model']
+__all__ = ['DRNet', 'create_model']
