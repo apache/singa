@@ -28,10 +28,10 @@ np_dtype = {"float16": np.float16, "float32": np.float32}
 
 singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 
-class CNN(model.Model):
+class MalariaNet(model.Model):
 
     def __init__(self, num_classes=10, num_channels=1):
-        super(CNN, self).__init__()
+        super(MalariaNet, self).__init__()
         self.num_classes = num_classes
         self.input_size = 128
         self.dimension = 4
@@ -127,20 +127,20 @@ class MLP(model.Model):
         self.optimizer = optimizer
 
 
-def create_model(model_option='cnn', **kwargs):
-    """Constructs a CNN model.
+def create_model(model_option='MalariaNet', **kwargs):
+    """Constructs a MalariaNet model.
 
     Args:
         pretrained (bool): If True, returns a pre-trained model.
 
     Returns:
-        The created CNN model.
+        The created MalariaNet model.
     """
-    model = CNN(**kwargs)
+    model = MalariaNet(**kwargs)
     if model_option=='mlp':
         model = MLP(**kwargs)
 
     return model
 
 
-__all__ = ['CNN', 'MLP', 'create_model']
+__all__ = ['MalariaNet', 'MLP', 'create_model']
