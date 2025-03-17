@@ -25,7 +25,7 @@ Diabetic readmission is a significant concern in healthcare, with a substantial 
 
 Although diabetes is a manageable condition, early identification of patients at high risk of readmission remains a challenge. A reliable and efficient predictive model can help identify these patients, enabling healthcare providers to intervene early and prevent unnecessary readmissions.
 
-To address this issue, we use Singa to implement a machine learning model for predicting diabetic readmission. The dataset is from [Diabetes 130-US Hospitals for Years 1999-2008](https://archive.ics.uci.edu/ml/datasets/diabetes+130-us+hospitals+for+years+1999-2008). Please download the dataset before running the scripts.
+To address this issue, we use Singa to implement a machine learning model for predicting diabetic readmission. The dataset is from [Diabetes 130-US Hospitals for Years 1999-2008](https://archive.ics.uci.edu/ml/datasets/diabetes+130-us+hospitals+for+years+1999-2008).
 
 
 ## Structure
@@ -41,5 +41,5 @@ To address this issue, we use Singa to implement a machine learning model for pr
 
 ## Command
 ```bash
-python train.py mlp diabetic
+python train.py diabeticnet
 ```
