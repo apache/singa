@@ -19,25 +19,26 @@
 
 # Singa for Kidney Disease Prediction
 
-## Kidney Disease Prediction Task
+## Kidney disease Prediction Task
 
-Kidney disease prediction is an important tool that uses data science and machine learning techniques to predict the likelihood of a patient suffering from Kidney disease. The goal is to judge whether a patient suffers from kidney disease by analyzing multiple data such as a patient’s medical history, physiological indicators, diagnostic information, treatment options, and socioeconomic factors, so as to take appropriate interventions in advance to provide treatment.
+Kidney disease prediction is an important tool that uses data science and machine learning techniques to predict the likelihood of a patient suffering from Kidney disease. The core goal of this technology is to judge whether a patient suffers from kidney disease by analyzing multiple data such as a patient’s medical history, physiological indicators, diagnostic information, treatment options, and socioeconomic factors, so as to take appropriate interventions in advance to provide treatment.
 
-The dataset used in this task is MIMIC-III. The features are data containing 6 visit windows, with 2549 frequent diagnoses, procedures and drugs for each window. These features are encoded by one-hot. The labels are corresponding flags to mark whether the patient suffered from kidney disease, where the label equals "1" if the patient had kidney  disease, and the label equals "0" if not.
+The dataset used in this task is MIMIC-III after preprocessed. The features are data containing 6 visit windows, with 2549 frequent diagnoses, procedures and drugs for each window. Each item in features are data for one patient, and these features are encoded by one-hot code. The labels are corresponding flags to mark whether the patient suffered from kidney disease, where the label equals "1" if the patient had kidn  disease, the label equals "0" if not.
+
 
 
 ## Structure
 
-* `data` includes the load of mimic-iii data to be utilized.
+* `kidney.py` in floder `healthcare\data` includes the load of pre-processed kidney data to be utilized.
 
-* `model` includes the MLP model construction codes by creating
-  a subclass of `Module` to wrap the neural network operations 
-  of each model.
+* `kidney_net.py` in folder `healthcare\models` includes the construction codes of the KidneyNet model to be applied for kidney disease prediction.
 
-* `train_kidney_mlp.py` is the training script, which controls the training flow by
-  doing BackPropagation and the SGD update.
+* `train.py` is the training script, which controls the training flow bydoing BackPropagation and SGD update.
 
-## Command
+## Instruction
+Before starting to use this model for kidney disease prediction, download the sample dataset for kidney disease prediction: https://github.com/lzjpaul/singa-healthcare/tree/main/data/kidney
+The provided dataset is from MIMIC-III, which has been pre-processed. And the dataset contains 100 samples for model testing.
+Please download the dataset to a folder(pathToDataset), and then pass the path to run the codes using the following command:
 ```bash
-python train_kidney_mlp.py mlp kidney-disease -dir pathToDataset
+python train.py kidneynet -dir pathToDataset
 ```
