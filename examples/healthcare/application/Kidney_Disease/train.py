@@ -25,6 +25,10 @@ import numpy as np
 import time
 import argparse
 from PIL import Image
+import sys
+sys.path.append("../../..")
+from healthcare.data import kidney
+from healthcare.models import kidney_net
 
 np_dtype = {"float16": np.float16, "float32": np.float32}
 
@@ -107,6 +111,7 @@ def run(global_rank,
         sgd,
         graph,
         verbosity,
+        dir_path,
         dist_option='plain',
         spars=None,
         precision='float32'):
@@ -115,9 +120,9 @@ def run(global_rank,
     dev.SetRandSeed(0)
     np.random.seed(0)
 
-    if data == 'kidney-disease':
-        from data import load_kidneydata
-        train_x, train_y, val_x, val_y = load_kidneydata.load()
+    if data == 'kidney':
+        
+        train_x, train_y, val_x, val_y = kidney.load(dir_path)
     else:
     	print('Wrong Dataset!')
     	sys.exit(0)
@@ -130,14 +135,14 @@ def run(global_rank,
     print(num_channels,image_size)
 
 
-    if model == 'mlp':
+    if model == 'kidneynet':
         import os, sys, inspect
         current = os.path.dirname(
             os.path.abspath(inspect.getfile(inspect.currentframe())))
         parent = os.path.dirname(current)
         sys.path.insert(0, parent)
-        from mlp import model
-        model = model.create_model(data_size=data_size,
+
+        model = kidney_net.create_model(data_size=data_size,
                                     num_classes=num_classes)
     else:
     	print('Wrong model!')
@@ -256,11 +261,11 @@ if __name__ == '__main__':
         description='Training using the autograd and graph.')
     parser.add_argument(
         'model',
-        choices=['cnn', 'resnet', 'xceptionnet', 'mlp', 'alexnet'],
-        default='cnn')
-    parser.add_argument('data',
-                        choices=['mnist', 'cifar10', 'cifar100','mimic-iii','kidney-disease'],
-                        default='kidney-disease')
+        choices=[ 'cardionet', 'diabeticnet',  'drnet', 'hematologicnet', 'kidneynet', 'malarianet', 'tedctnet'],
+        default='kidneynet')
+    parser.add_argument('-data',
+                        choices=['mnist', 'cifar10', 'cifar100','kidney'],
+                        default='kidney')
     parser.add_argument('-p',
                         choices=['float32', 'float16'],
                         default='float32',
@@ -302,7 +307,12 @@ if __name__ == '__main__':
                         type=int,
                         help='logging verbosity',
                         dest='verbosity')
-
+    parser.add_argument('-dir',
+                        '--dir-path',
+                        default="/tmp/kidney",
+                        type=str,
+                        help='the directory to store the kidney dataset',
+                        dest='dir_path')
     args = parser.parse_args()
 
     sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5, dtype=singa_dtype[args.precision])
@@ -316,4 +326,5 @@ if __name__ == '__main__':
         sgd,
         args.graph,
         args.verbosity,
+        args.dir_path,
         precision=args.precision)
