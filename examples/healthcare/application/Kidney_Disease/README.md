@@ -29,9 +29,9 @@ The dataset used in this task is MIMIC-III after preprocessed. The features are 
 
 ## Structure
 
-* `kidney.py` in floder `healthcare\data` includes the load of pre-processed kidney data to be utilized.
+* `kidney.py` in floder `healthcare/data` includes the load of pre-processed kidney data to be utilized.
 
-* `kidney_net.py` in folder `healthcare\models` includes the construction codes of the KidneyNet model to be applied for kidney disease prediction.
+* `kidney_net.py` in folder `healthcare/models` includes the construction codes of the KidneyNet model to be applied for kidney disease prediction.
 
 * `train.py` is the training script, which controls the training flow bydoing BackPropagation and SGD update.
 
