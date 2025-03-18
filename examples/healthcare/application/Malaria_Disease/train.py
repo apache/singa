@@ -130,8 +130,8 @@ def run(global_rank,
     data_size = np.prod(train_x.shape[1:train_x.ndim]).item()
     num_classes = (np.max(train_y) + 1).item()
 
-    if model == 'cnn':
-        model = malaria_net.create_model(model_option='cnn', num_channels=num_channels,
+    if model == 'malarianet':
+        model = malaria_net.create_model(model_option='MalariaNet', num_channels=num_channels,
                                          num_classes=num_classes)
     else:
         print(
@@ -255,8 +255,8 @@ if __name__ == '__main__':
         description='Training using the autograd and graph.')
     parser.add_argument(
         'model',
-        choices=['cnn'],
-        default='cnn')
+        choices=['malarianet'],
+        default='malarianet')
     parser.add_argument('data',
                         choices=['malaria'],
                         default='malaria')
