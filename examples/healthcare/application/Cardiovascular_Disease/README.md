@@ -25,18 +25,17 @@ Cardiovascular disease is primarily caused by risk factors like high blood press
 
 Although early detection can significantly improve outcomes, insufficient screening methods and delayed diagnosis often lead to preventable complications. Therefore, developing rapid and accurate diagnostic tools is crucial for effective prevention and treatment of cardiovascular conditions.
 
-To address this challenge, we utilize Singa to develop a machine learning model for cardiovascular disease risk prediction. The training dataset is sourced from Kaggle https://www.kaggle.com/datasets/sulianova/cardiovascular-disease-dataset. Please download the dataset before running the scripts.
+To address this challenge, we utilize Singa to develop a machine learning model for cardiovascular disease risk prediction. The training dataset is sourced from Kaggle https://www.kaggle.com/datasets/sulianova/cardiovascular-disease-dataset. You can download the dataset, pass the path to the script, and then you can run the program by using the script.
 
 ## Structure
 
 * `cardiovascular.py` in the `healthcare/data` directory is the scripts for preprocessing Cardiovascular Disease datasets.
 
-* `cardiovascular_net.py` in the `healthcare/models` directory includes the MLP model construction codes.
+* `cardionet.py` in the `healthcare/models` directory includes the MLP model construction codes.
 
-* `train_cnn.py` is the training script, which controls the training flow by
-  doing BackPropagation and SGD update.
+* `train.py` is the training script, which controls the training flow by doing BackPropagation and SGD update.
 
 ## Command
 ```bash
-python train_cnn.py mlp cardiovascular
+python train.py cardionet -dir pathToDataset
 ```
