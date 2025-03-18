@@ -18,46 +18,74 @@
 #
 
 import numpy as np
-import os
-import sys
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+from sklearn.model_selection import train_test_split
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
 
-def load_cardiovascular_data(file_path):
-    data = np.loadtxt(file_path, delimiter=',')  
+def load_cardio_data(file_path):
 
+    data = np.genfromtxt(file_path, delimiter=',', skip_header=0)
+
+    continuous_cols = [0, 2, 3, 4, 5]    
+    binary1_col = [1]                    
+    ternary_cols = [6, 7]                
+    binary2_cols = [8, 9, 10]            
     
-    X = data[:, :-1]  
-    y = data[:, -1]   
+    X = data[:, :-1]
+    y = data[:, -1]
+    
+    X_train, X_val, y_train, y_val = train_test_split(
+        X, y, test_size=0.2, random_state=42, shuffle=False
+    )
     
 
-    # Split the data into training and validation sets
-    train_size = int(0.8 * data.shape[0])
-    train_x, val_x = X[:train_size], X[train_size:]
-    train_y, val_y = y[:train_size], y[train_size:]
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('cont', Pipeline([
+                ('imputer', SimpleImputer(strategy='mean')),
+                ('scaler', StandardScaler())
+            ]), continuous_cols),
+            ('binary1', Pipeline([
+                ('imputer', SimpleImputer(strategy='most_frequent')),
+                ('onehot', OneHotEncoder(sparse_output=False, drop=None))
+            ]), binary1_col),
+            ('ternary', Pipeline([
+                ('imputer', SimpleImputer(strategy='most_frequent')),
+                ('onehot', OneHotEncoder(sparse_output=False, drop=None))
+            ]), ternary_cols),
+            ('binary2', Pipeline([
+                ('imputer', SimpleImputer(strategy='most_frequent')),
+                ('onehot', OneHotEncoder(sparse_output=False, drop=None))
+            ]), binary2_cols)
+        ],
+        remainder='drop'
+    )
+    
 
-    # Normalize the data
-    mean = np.mean(train_x, axis=0)
-    std = np.std(train_x, axis=0)
-    train_x = (train_x - mean) / std
-    val_x = (val_x - mean) / std
+    X_train_processed = preprocessor.fit_transform(X_train)
+    X_val_processed = preprocessor.transform(X_val)
+    
+    return X_train_processed, y_train, X_val_processed, y_val
+   
+def load(file_path):
+    
+    
+    try:
+        X_train, y_train, X_val, y_val = load_cardio_data(file_path)
+    except FileNotFoundError:
+        raise SystemExit(f"Error：File {file_path} is not found.")
+    
 
-    return train_x, train_y, val_x, val_y
+    X_train = X_train.astype(np.float32)
+    X_val = X_val.astype(np.float32)
+    y_train = y_train.astype(np.int32)
+    y_val = y_val.astype(np.int32)
+    
+    
+    return X_train, y_train, X_val, y_val
 
-def load():
-    file_path = 'cardio_train.csv'  #need to change
-
-    train_x, train_y, val_x, val_y = load_cardiovascular_data(file_path)
-
-    train_x = np.array(train_x, dtype=np.float32)
-    val_x = np.array(val_x, dtype=np.float32)
-    train_y = np.array(train_y, dtype=np.int32)
-    val_y = np.array(val_y, dtype=np.int32)
-
-    return train_x, train_y, val_x, val_y
-
-if __name__ == '__main__':
-    train_x, train_y, val_x, val_y = load()
-    print("Training data shape:", train_x.shape)
-    print("Training labels shape:", train_y.shape)
-    print("Validation data shape:", val_x.shape)
-    print("Validation labels shape:", val_y.shape) 
 
