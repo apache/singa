@@ -111,7 +111,7 @@ def run(global_rank,
     data_size = np.prod(train_x.shape[1:train_x.ndim]).item()
     num_classes = (np.max(train_y) + 1).item()
 
-    if model == 'cnn':
+    if model == 'drnet':
         model = diabetic_retinopthy_net.create_model(num_channels=num_channels,
                                                      num_classes=num_classes)
     else:
@@ -234,8 +234,8 @@ if __name__ == '__main__':
         description='Training using the autograd and graph.')
     parser.add_argument(
         'model',
-        choices=['cnn'],
-        default='cnn')
+        choices=['drnet'],
+        default='drnet')
     parser.add_argument('data',
                         choices=['diaret'],
                         default='diaret')
