@@ -17,4 +17,4 @@
 #
 
 ### cardiovascular dataset
-python train_cnn.py mlp cardiovascular
+python train.py cardionet -dir pathToDataset
