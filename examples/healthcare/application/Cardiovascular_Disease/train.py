@@ -6,8 +6,8 @@ import numpy as np
 import time
 import argparse
 from PIL import Image
-from healthcare.data import cardiovascular
-from healthcare.models import cardiovascular_net
+from data import cardiovascular
+from model import cardionet
 
 np_dtype = {"float16": np.float16, "float32": np.float32}
 
@@ -83,30 +83,21 @@ def run(global_rank,
         max_epoch,
         batch_size,
         model,
-        data,
         sgd,
         graph,
         verbosity,
+        path,
         dist_option='plain',
         spars=None,
         precision='float32'):
-    #dev = device.get_default_device()
-    dev = device.create_cuda_gpu_on(local_rank)
+    dev = device.get_default_device()
+    #dev = device.create_cuda_gpu_on(local_rank)
     # need to change to CPU device for CPU-only machines
     dev.SetRandSeed(0)
     np.random.seed(0)
 
-    if data == 'cifar10':
-        from data import cifar10
-        train_x, train_y, val_x, val_y = cifar10.load()
-    elif data == 'cifar100':
-        from data import cifar100
-        train_x, train_y, val_x, val_y = cifar100.load()
-    elif data == 'mnist':
-        from data import mnist
-        train_x, train_y, val_x, val_y = mnist.load()
-    elif data == 'cardiovascular':
-        train_x, train_y, val_x, val_y = cardiovascular.load()
+   
+    train_x, train_y, val_x, val_y = cardiovascular.load(path)
 
 
     num_channels = 1
@@ -131,13 +122,13 @@ def run(global_rank,
         from model import alexnet
         model = alexnet.create_model(num_channels=num_channels,
                                      num_classes=num_classes)
-    elif model == 'mlp':
+    elif model == 'cardionet':
         import os, sys, inspect
         current = os.path.dirname(
             os.path.abspath(inspect.getfile(inspect.currentframe())))
         parent = os.path.dirname(current)
         sys.path.insert(0, parent)
-        model = cardiovascular_net.create_model(data_size=data_size, perceptron_size=1000, num_classes=num_classes)
+        model = cardionet.create_model(data_size=data_size, perceptron_size=1000, num_classes=num_classes)
 
     # For distributed training, sequential has better performance
     if hasattr(sgd, "communicator"):
@@ -253,11 +244,8 @@ if __name__ == '__main__':
         description='Training using the autograd and graph.')
     parser.add_argument(
         'model',
-        choices=['cnn', 'resnet', 'xceptionnet', 'mlp', 'alexnet'],
-        default='cnn')
-    parser.add_argument('data',
-                        choices=['mnist', 'cifar10', 'cifar100', 'cardiovascular'],
-                        default='cardiovascular')
+        choices=['cnn', 'resnet', 'xceptionnet', 'cardionet', 'alexnet'],
+        default='cardionet')
     parser.add_argument('-p',
                         choices=['float32', 'float16'],
                         default='float32',
@@ -299,6 +287,12 @@ if __name__ == '__main__':
                         type=int,
                         help='logging verbosity',
                         dest='verbosity')
+    parser.add_argument('-dir',
+                        '--path-to-dataset',
+                        default=None,
+                        help='path to dataset',
+                        dest='path')                    
+                        
 
     args = parser.parse_args()
 
@@ -309,8 +303,8 @@ if __name__ == '__main__':
         args.max_epoch,
         args.batch_size,
         args.model,
-        args.data,
         sgd,
         args.graph,
         args.verbosity,
+        args.path,
         precision=args.precision)
