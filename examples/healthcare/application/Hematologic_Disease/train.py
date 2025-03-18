@@ -23,7 +23,6 @@ from singa import device
 from singa import tensor
 from singa import opt
 import numpy as np
-from tqdm import tqdm
 import argparse
 import sys
 sys.path.append("../../..")
@@ -55,7 +54,6 @@ def run(dir_path,
         max_epoch,
         batch_size,
         model,
-        data,
         lr,
         graph,
         verbosity,
@@ -66,15 +64,10 @@ def run(dir_path,
     dev = device.create_cpu_device()
     dev.SetRandSeed(0)
     np.random.seed(0)
-    if data == 'bloodmnist':
-        train_dataset, val_dataset, num_class = bloodmnist.load(dir_path=dir_path)
-    else:
-        print(
-            'Wrong dataset!'
-        )
-        sys.exit(0)
 
-    if model == 'cnn':
+    train_dataset, val_dataset, num_class = bloodmnist.load(dir_path=dir_path)
+
+    if model == 'hematologicnet':
         model = hematologic_net.create_model(num_classes=num_class)
     else:
         print(
@@ -112,7 +105,7 @@ def run(dir_path,
 
         # Training part
         model.train()
-        for b in tqdm(range(num_train_batch)):
+        for b in range(num_train_batch):
             # Extract batch from image list
             x, y = train_dataset.batchgenerator(idx[b * batch_size:(b + 1) * batch_size],
                 batch_size=batch_size, data_size=(3, model.input_size, model.input_size))
@@ -124,13 +117,13 @@ def run(dir_path,
             out, loss = model(tx, ty, dist_option, spars)
             train_correct += accuracy(tensor.to_numpy(out), y)
             train_loss += tensor.to_numpy(loss)[0]
-        print('Training loss = %f, training accuracy = %f' %
-                      (train_loss, train_correct /
+        print('Training loss = %f, training accuracy = %.2f %%' %
+                      (train_loss, 100.0 * train_correct /
                        (num_train_batch * batch_size)))
 
         # Validation part
         model.eval()
-        for b in tqdm(range(num_val_batch)):
+        for b in range(num_val_batch):
             x, y = train_dataset.batchgenerator(idx[b * batch_size:(b + 1) * batch_size],
                 batch_size=batch_size, data_size=(3, model.input_size, model.input_size))
             x = x.astype(np_dtype[precision])
@@ -141,8 +134,8 @@ def run(dir_path,
             out = model(tx)
             test_correct += accuracy(tensor.to_numpy(out), y)
 
-        print('Evaluation accuracy = %f, Elapsed Time = %fs' %
-                      (test_correct / (num_val_batch * batch_size),
+        print('Evaluation accuracy = %.2f%%, Elapsed Time = %fs' %
+                      (100.0*test_correct / (num_val_batch * batch_size),
                        time.time() - start_time))
 
 
@@ -152,18 +145,14 @@ if __name__ == '__main__':
         description='Training using the autograd and graph.')
     parser.add_argument(
         'model',
-        choices=['cnn'],
-        default='cnn')
-    parser.add_argument('data',
-                        choices=['bloodmnist'],
-                        default='bloodmnist')
+        choices=['hematologicnet'],
+        default='hematologicnet')
     parser.add_argument('-p',
                         choices=['float32', 'float16'],
                         default='float32',
                         dest='precision')
     parser.add_argument('-dir',
                         '--dir-path',
-                        default="/tmp/bloodmnist",
                         type=str,
                         help='the directory to store the bloodmnist dataset',
                         dest='dir_path')
@@ -175,7 +164,7 @@ if __name__ == '__main__':
                         dest='max_epoch')
     parser.add_argument('-b',
                         '--batch-size',
-                        default=256,
+                        default=8,
                         type=int,
                         help='batch size',
                         dest='batch_size')
@@ -204,7 +193,6 @@ if __name__ == '__main__':
         args.max_epoch,
         args.batch_size,
         args.model,
-        args.data,
         args.lr,
         args.graph,
         args.verbosity,
