@@ -30,10 +30,10 @@ np_dtype = {"float16": np.float16, "float32": np.float32}
 singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 
 
-class MLP(model.Model):
+class KidneyNet(model.Model):
 
     def __init__(self, data_size=10, perceptron_size=100, num_classes=10):
-        super(MLP, self).__init__()
+        super(KidneyNet, self).__init__()
         self.num_classes = num_classes
         self.dimension = 2
 
@@ -73,20 +73,13 @@ class MLP(model.Model):
 
 
 def create_model(pretrained=False, **kwargs):
-    """Constructs a CNN model.
 
-    Args:
-        pretrained (bool): If True, returns a pre-trained model.
-    
-    Returns:
-        The created CNN model.
-    """
-    model = MLP(**kwargs)
+    model = KidneyNet(**kwargs)
 
     return model
 
 
-__all__ = ['MLP', 'create_model']
+__all__ = ['KidneyNet', 'create_model']
 
 if __name__ == "__main__":
     np.random.seed(0)
@@ -131,7 +124,7 @@ if __name__ == "__main__":
     sgd = opt.SGD(0.1, 0.9, 1e-5, dtype=singa_dtype[args.precision])
     tx = tensor.Tensor((400, 2), dev, precision)
     ty = tensor.Tensor((400,), dev, tensor.int32)
-    model = MLP(data_size=2, perceptron_size=3, num_classes=2)
+    model = KidneyNet(data_size=2, perceptron_size=3, num_classes=2)
 
     # attach model to graph
     model.set_optimizer(sgd)
@@ -145,5 +138,3 @@ if __name__ == "__main__":
 
         if i % 100 == 0:
             print("training loss = ", tensor.to_numpy(loss)[0])
-
-
