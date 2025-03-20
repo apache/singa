@@ -97,7 +97,7 @@ def run(global_rank,
     num_classes = int(np.max(train_y) + 1)
 
     # Initialize MLP model
-    if model == 'mlp':
+    if model == 'diabeticnet':
         model = diabetic_net.create_model(data_size=data_size,
                                           num_classes=num_classes)
     else:
@@ -204,11 +204,11 @@ if __name__ == '__main__':
         description='Training using the autograd and graph.')
     parser.add_argument(
         'model',
-        choices=['cnn', 'resnet', 'xceptionnet', 'mlp', 'alexnet'],
-        default='mlp')
+        choices=['cnn', 'resnet', 'xceptionnet', 'mlp', 'alexnet', 'diabeticnet'],
+        default='diabeticnet')
     parser.add_argument('data',
                         choices=['mnist', 'cifar10', 'cifar100', 'diabetic'],
-                        default='mnist')
+                        default='diabetic')
     parser.add_argument('-p',
                         choices=['float32', 'float16'],
                         default='float32',

@@ -30,10 +30,10 @@ np_dtype = {"float16": np.float16, "float32": np.float32}
 singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 
 
-class MLP(model.Model):
+class diabeticnet(model.Model):
 
     def __init__(self, data_size=10, perceptron_size=100, num_classes=10):
-        super(MLP, self).__init__()
+        super(diabeticnet, self).__init__()
         self.num_classes = num_classes
         self.dimension = 2
 
@@ -81,12 +81,12 @@ def create_model(pretrained=False, **kwargs):
     Returns:
         The created CNN model.
     """
-    model = MLP(**kwargs)
+    model = diabeticnet(**kwargs)
 
     return model
 
 
-__all__ = ['MLP', 'create_model']
+__all__ = ['diabeticnet', 'create_model']
 
 if __name__ == "__main__":
     np.random.seed(0)
@@ -131,7 +131,7 @@ if __name__ == "__main__":
     sgd = opt.SGD(0.1, 0.9, 1e-5, dtype=singa_dtype[args.precision])
     tx = tensor.Tensor((400, 2), dev, precision)
     ty = tensor.Tensor((400,), dev, tensor.int32)
-    model = MLP(data_size=2, perceptron_size=3, num_classes=2)
+    model = diabeticnet(data_size=2, perceptron_size=3, num_classes=2)
 
     # attach model to graph
     model.set_optimizer(sgd)

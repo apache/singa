@@ -17,4 +17,4 @@
 #
 
 ### diabetic dataset
-python train.py mlp diabetic
+python train.py diabeticnet
