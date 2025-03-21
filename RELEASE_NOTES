@@ -1,3 +1,31 @@
+Release Notes - SINGA - Version singa-5.0.0
+
+SINGA is a distributed deep learning library.
+
+This release includes following changes:
+
+  * Add the implementations of the healthcare model zoo.
+    * Add the implementation for the cardiovascular disease.
+    * Add the implementation for the diabetic disease.
+    * Add the implementation for the hematologic disease.
+    * Add the implementation for the kidney disease.
+    * Add the implementation for the malaria disease.
+    * Add the implementation for the thyroid eye disease.
+  
+  * Optimize the distributed training by updating the MSOptimizer and MSSGD.
+  
+  * Improve the efficiency of the transformer example.
+  
+  * Add the sparsification version of the model for the model selection example.
+  
+  * Update data processing for the benchmark dataset.
+  
+  * Update the pom.xml file to include paths for datasets.
+  
+  * Update the online documentations for the healthcare model zoo.
+
+----------------------------------------------------------------------------------------------
+
 Release Notes - SINGA - Version singa-4.3.0
 
 SINGA is a distributed deep learning library.
