@@ -17,4 +17,4 @@
 #
 
 ### kidney disease dataset
-python train_kidney_mlp.py mlp kidney-disease -dir pathToDataset
+python train.py kidneynet -dir pathToDataset
