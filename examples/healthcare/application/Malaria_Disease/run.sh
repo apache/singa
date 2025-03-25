@@ -17,4 +17,4 @@
 #
 
 ### malaria dataset
-python train_cnn.py cnn malaria -dir pathToDataset
+python train.py malarianet -dir pathToDataset
