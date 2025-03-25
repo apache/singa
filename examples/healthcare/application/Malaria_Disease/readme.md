@@ -40,5 +40,5 @@ To mitigate the problem, we use Singa to implement a machine learning model to h
 
 ## Command
 ```bash
-python train_cnn.py cnn malaria -dir pathToDataset
+python train.py malarianet -dir pathToDataset
 ```
