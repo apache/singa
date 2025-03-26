@@ -1,4 +1,4 @@
-# 
+#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -7,15 +7,14 @@
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
 #
-#   http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.    
-# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 from singa import singa_wrap as singa
 from singa import device
@@ -25,7 +24,12 @@ import numpy as np
 import time
 import argparse
 import sys
+sys.path.append("../../../..")
+
 from PIL import Image
+
+from healthcare.data import diaret
+from healthcare.models import diabetic_retinopthy_net
 
 np_dtype = {"float16": np.float16, "float32": np.float32}
 
@@ -112,9 +116,8 @@ def run(global_rank,
     dev = device.get_default_device()
     dev.SetRandSeed(0)
     np.random.seed(0)
-    if data == 'malaria':
-        from data import malaria
-        train_x, train_y, val_x, val_y = malaria.load(dir_path=dir_path)
+    if data == 'diaret':
+        train_x, train_y, val_x, val_y = diaret.load(dir_path=dir_path)
     else:
         print(
             'Wrong dataset!'
@@ -126,10 +129,9 @@ def run(global_rank,
     data_size = np.prod(train_x.shape[1:train_x.ndim]).item()
     num_classes = (np.max(train_y) + 1).item()
 
-    if model == 'cnn':
-        from model import cnn
-        model = cnn.create_model(num_channels=num_channels,
-                                 num_classes=num_classes)
+    if model == 'drnet':
+        model = diabetic_retinopthy_net.create_model(num_channels=num_channels,
+                                                     num_classes=num_classes)
     else:
         print(
             'Wrong model!'
@@ -250,24 +252,24 @@ if __name__ == '__main__':
         description='Training using the autograd and graph.')
     parser.add_argument(
         'model',
-        choices=['cnn'],
-        default='cnn')
+        choices=['drnet'],
+        default='drnet')
     parser.add_argument('data',
-                        choices=['malaria'],
-                        default='malaria')
+                        choices=['diaret'],
+                        default='diaret')
     parser.add_argument('-p',
                         choices=['float32', 'float16'],
                         default='float32',
                         dest='precision')
     parser.add_argument('-dir',
                         '--dir-path',
-                        default="/tmp/malaria",
+                        default="/tmp/diaret",
                         type=str,
-                        help='the directory to store the malaria dataset',
+                        help='the directory to store the Diabetic Retinopathy dataset',
                         dest='dir_path')
     parser.add_argument('-m',
                         '--max-epoch',
-                        default=100,
+                        default=300,
                         type=int,
                         help='maximum epochs',
                         dest='max_epoch')

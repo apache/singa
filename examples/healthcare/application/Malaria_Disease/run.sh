@@ -16,5 +16,5 @@
 # limitations under the License.
 #
 
-### bloodminist dataset
-python train.py hematologicnet -dir pathToDataset
+### malaria dataset
+python train.py malarianet -dir pathToDataset

@@ -1,3 +1,22 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
 from singa import singa_wrap as singa
 from singa import device
 from singa import tensor
@@ -5,13 +24,11 @@ from singa import opt
 import numpy as np
 import time
 import argparse
+from PIL import Image
 import sys
 sys.path.append("../../..")
-
-from PIL import Image
-
-from healthcare.data import diaret
-from healthcare.models import diabetic_retinopthy_net
+from healthcare.data import kidney
+from healthcare.models import kidney_net
 
 np_dtype = {"float16": np.float16, "float32": np.float32}
 
@@ -24,8 +41,8 @@ def augmentation(x, batch_size):
     for data_num in range(0, batch_size):
         offset = np.random.randint(8, size=2)
         x[data_num, :, :, :] = xpad[data_num, :,
-                               offset[0]:offset[0] + x.shape[2],
-                               offset[1]:offset[1] + x.shape[2]]
+                                    offset[0]:offset[0] + x.shape[2],
+                                    offset[1]:offset[1] + x.shape[2]]
         if_flip = np.random.randint(2)
         if (if_flip):
             x[data_num, :, :, :] = x[data_num, :, :, ::-1]
@@ -36,7 +53,10 @@ def augmentation(x, batch_size):
 def accuracy(pred, target):
     # y is network output to be compared with ground truth (int)
     y = np.argmax(pred, axis=1)
+    #print('y:',y)
+    #print('tar:',target)    
     a = y == target
+    #print(np.array(a, "int"))
     correct = np.array(a, "int").sum()
     return correct
 
@@ -77,13 +97,13 @@ def resize_dataset(x, image_size):
         for d in range(0, dim):
             X[n, d, :, :] = np.array(Image.fromarray(x[n, d, :, :]).resize(
                 (image_size, image_size), Image.BILINEAR),
-                dtype=np.float32)
+                                     dtype=np.float32)
     return X
 
 
 def run(global_rank,
         world_size,
-        dir_path,
+        local_rank,
         max_epoch,
         batch_size,
         model,
@@ -91,34 +111,42 @@ def run(global_rank,
         sgd,
         graph,
         verbosity,
+        dir_path,
         dist_option='plain',
         spars=None,
         precision='float32'):
-    # now CPU version only, could change to GPU device for GPU-support machines
+    #dev = device.create_cuda_gpu_on(local_rank)  # need to change to CPU device for CPU-only machines
     dev = device.get_default_device()
     dev.SetRandSeed(0)
     np.random.seed(0)
-    if data == 'diaret':
-        train_x, train_y, val_x, val_y = diaret.load(dir_path=dir_path)
+
+    if data == 'kidney':
+        
+        train_x, train_y, val_x, val_y = kidney.load(dir_path)
     else:
-        print(
-            'Wrong dataset!'
-        )
-        sys.exit(0)
+    	print('Wrong Dataset!')
+    	sys.exit(0)
+
 
     num_channels = train_x.shape[1]
     image_size = train_x.shape[2]
     data_size = np.prod(train_x.shape[1:train_x.ndim]).item()
     num_classes = (np.max(train_y) + 1).item()
+    print(num_channels,image_size)
 
-    if model == 'cnn':
-        model = diabetic_retinopthy_net.create_model(num_channels=num_channels,
-                                                     num_classes=num_classes)
+
+    if model == 'kidneynet':
+        import os, sys, inspect
+        current = os.path.dirname(
+            os.path.abspath(inspect.getfile(inspect.currentframe())))
+        parent = os.path.dirname(current)
+        sys.path.insert(0, parent)
+
+        model = kidney_net.create_model(data_size=data_size,
+                                    num_classes=num_classes)
     else:
-        print(
-            'Wrong model!'
-        )
-        sys.exit(0)
+    	print('Wrong model!')
+    	sys.exit(0)    
 
     # For distributed training, sequential has better performance
     if hasattr(sgd, "communicator"):
@@ -138,8 +166,7 @@ def run(global_rank,
             (batch_size, num_channels, model.input_size, model.input_size), dev,
             singa_dtype[precision])
     elif model.dimension == 2:
-        tx = tensor.Tensor((batch_size, data_size),
-                           dev, singa_dtype[precision])
+        tx = tensor.Tensor((batch_size, data_size), dev, singa_dtype[precision])
         np.reshape(train_x, (train_x.shape[0], -1))
         np.reshape(val_x, (val_x.shape[0], -1))
 
@@ -234,24 +261,18 @@ if __name__ == '__main__':
         description='Training using the autograd and graph.')
     parser.add_argument(
         'model',
-        choices=['cnn'],
-        default='cnn')
-    parser.add_argument('data',
-                        choices=['diaret'],
-                        default='diaret')
+        choices=[ 'cardionet', 'diabeticnet',  'drnet', 'hematologicnet', 'kidneynet', 'malarianet', 'tedctnet'],
+        default='kidneynet')
+    parser.add_argument('-data',
+                        choices=['mnist', 'cifar10', 'cifar100','kidney'],
+                        default='kidney')
     parser.add_argument('-p',
                         choices=['float32', 'float16'],
                         default='float32',
                         dest='precision')
-    parser.add_argument('-dir',
-                        '--dir-path',
-                        default="/tmp/diaret",
-                        type=str,
-                        help='the directory to store the Diabetic Retinopathy dataset',
-                        dest='dir_path')
     parser.add_argument('-m',
                         '--max-epoch',
-                        default=300,
+                        default=20,
                         type=int,
                         help='maximum epochs',
                         dest='max_epoch')
@@ -267,6 +288,13 @@ if __name__ == '__main__':
                         type=float,
                         help='initial learning rate',
                         dest='lr')
+    # Determine which gpu to use
+    parser.add_argument('-i',
+                        '--device-id',
+                        default=0,
+                        type=int,
+                        help='which GPU to use',
+                        dest='device_id')
     parser.add_argument('-g',
                         '--disable-graph',
                         default='True',
@@ -279,14 +307,18 @@ if __name__ == '__main__':
                         type=int,
                         help='logging verbosity',
                         dest='verbosity')
-
+    parser.add_argument('-dir',
+                        '--dir-path',
+                        default="/tmp/kidney",
+                        type=str,
+                        help='the directory to store the kidney dataset',
+                        dest='dir_path')
     args = parser.parse_args()
 
-    sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5,
-                  dtype=singa_dtype[args.precision])
+    sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5, dtype=singa_dtype[args.precision])
     run(0,
         1,
-        args.dir_path,
+        args.device_id,
         args.max_epoch,
         args.batch_size,
         args.model,
@@ -294,4 +326,5 @@ if __name__ == '__main__':
         sgd,
         args.graph,
         args.verbosity,
+        args.dir_path,
         precision=args.precision)

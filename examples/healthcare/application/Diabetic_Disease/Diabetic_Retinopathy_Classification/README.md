@@ -42,10 +42,10 @@ To mitigate the problem, we use Singa to implement a machine learning model to h
   a subclass of `Module` to wrap the neural network operations 
   of each model.
 
-* `train_cnn.py` is the training script, which controls the training flow by
+* `train.py` is the training script, which controls the training flow by
   doing BackPropagation and SGD update.
 
 ## Command
 ```bash
-python train_cnn.py cnn diaret -dir pathToDataset
+python train.py drnet -dir pathToDataset
 ```

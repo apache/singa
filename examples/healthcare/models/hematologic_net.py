@@ -30,9 +30,9 @@ np_dtype = {"float16": np.float16, "float32": np.float32}
 singa_dtype = {"float16": tensor.float16, "float32": tensor.float32}
 
 
-class CNNModel(model.Model):
+class HematologicNet(model.Model):
     def __init__(self, num_classes):
-        super(CNNModel, self).__init__()
+        super(HematologicNet, self).__init__()
         self.input_size = 28
         self.dimension = 4
         self.num_classes = num_classes
@@ -108,17 +108,14 @@ class CNNModel(model.Model):
 
 
 def create_model(**kwargs):
-    """Constructs a CNN model.
-
-    Args:
-        pretrained (bool): If True, returns a pre-trained model.
+    """Constructs a HematologicNet model.
 
     Returns:
-        The created CNN model.
+        The created HematologicNet model.
     """
-    model = CNNModel(**kwargs)
+    model = HematologicNet(**kwargs)
 
     return model
 
 
-__all__ = ['CNNModel', 'create_model']
+__all__ = ['HematologicNet', 'create_model']

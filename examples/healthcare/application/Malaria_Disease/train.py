@@ -1,4 +1,4 @@
-# 
+#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -7,15 +7,14 @@
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
 #
-#   http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.    
-# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 from singa import singa_wrap as singa
 from singa import device
@@ -25,7 +24,12 @@ import numpy as np
 import time
 import argparse
 import sys
+sys.path.append("../../..")
+
 from PIL import Image
+
+from healthcare.data import malaria
+from healthcare.models import malaria_net
 
 np_dtype = {"float16": np.float16, "float32": np.float32}
 
@@ -113,7 +117,7 @@ def run(global_rank,
     dev.SetRandSeed(0)
     np.random.seed(0)
     if data == 'malaria':
-        from data import malaria
+
         train_x, train_y, val_x, val_y = malaria.load(dir_path=dir_path)
     else:
         print(
@@ -126,10 +130,9 @@ def run(global_rank,
     data_size = np.prod(train_x.shape[1:train_x.ndim]).item()
     num_classes = (np.max(train_y) + 1).item()
 
-    if model == 'cnn':
-        from model import cnn
-        model = cnn.create_model(num_channels=num_channels,
-                                 num_classes=num_classes)
+    if model == 'malarianet':
+        model = malaria_net.create_model(model_option='MalariaNet', num_channels=num_channels,
+                                         num_classes=num_classes)
     else:
         print(
             'Wrong model!'
@@ -204,6 +207,8 @@ def run(global_rank,
             train_correct += accuracy(tensor.to_numpy(out), y)
             train_loss += tensor.to_numpy(loss)[0]
 
+            # print('batch training loss = %f' % train_loss, flush=True)
+
         if DIST:
             # Reduce the evaluation accuracy and loss from multiple devices
             reducer = tensor.Tensor((1,), dev, tensor.float32)
@@ -250,8 +255,8 @@ if __name__ == '__main__':
         description='Training using the autograd and graph.')
     parser.add_argument(
         'model',
-        choices=['cnn'],
-        default='cnn')
+        choices=['malarianet'],
+        default='malarianet')
     parser.add_argument('data',
                         choices=['malaria'],
                         default='malaria')
@@ -310,4 +315,4 @@ if __name__ == '__main__':
         sgd,
         args.graph,
         args.verbosity,
-        precision=args.precision)
+        precision=args.precision);

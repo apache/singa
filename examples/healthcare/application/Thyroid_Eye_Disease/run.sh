@@ -16,5 +16,5 @@
 # limitations under the License.
 #
 
-### bloodminist dataset
-python train.py hematologicnet -dir pathToDataset
+### command
+python train.py tedctnet -dir pathToDataset

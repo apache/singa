@@ -17,7 +17,7 @@
     under the License.
 -->
 
-# Singa for Diabetic Readmission Prediction task
+# Singa for Diabetic Readmission Prediction Task
 
 ## Diabetic Readmission
 
@@ -25,7 +25,7 @@ Diabetic readmission is a significant concern in healthcare, with a substantial 
 
 Although diabetes is a manageable condition, early identification of patients at high risk of readmission remains a challenge. A reliable and efficient predictive model can help identify these patients, enabling healthcare providers to intervene early and prevent unnecessary readmissions.
 
-To address this issue, we use Singa to implement a machine learning model for predicting diabetic readmission. The dataset is from [BMC Medical Informatics and Decision-Making](https://bmcmedinformdecismak.biomedcentral.com/articles/10.1186/s12911-021-01423-y). Please download the dataset before running the scripts.
+To address this issue, we use Singa to implement a machine learning model for predicting diabetic readmission. The dataset is from [Diabetes 130-US Hospitals for Years 1999-2008](https://archive.ics.uci.edu/ml/datasets/diabetes+130-us+hospitals+for+years+1999-2008).
 
 
 ## Structure
@@ -36,10 +36,10 @@ To address this issue, we use Singa to implement a machine learning model for pr
   a subclass of `Module` to wrap the neural network operations 
   of each model.
 
-* `train_mlp.py` is the training script, which controls the training flow by
+* `train.py` is the training script, which controls the training flow by
   doing BackPropagation and SGD update.
 
 ## Command
 ```bash
-python train.py mlp diabetic
+python train.py diabeticnet
 ```

@@ -23,13 +23,9 @@ from singa import opt
 import numpy as np
 import time
 import argparse
-import sys
-sys.path.append("../../..")
-
 from PIL import Image
-
-from healthcare.data import malaria
-from healthcare.models import malaria_net
+from data import cardiovascular
+from model import cardionet
 
 np_dtype = {"float16": np.float16, "float32": np.float32}
 
@@ -101,43 +97,56 @@ def resize_dataset(x, image_size):
 
 def run(global_rank,
         world_size,
-        dir_path,
+        local_rank,
         max_epoch,
         batch_size,
         model,
-        data,
         sgd,
         graph,
         verbosity,
+        path,
         dist_option='plain',
         spars=None,
         precision='float32'):
-    # now CPU version only, could change to GPU device for GPU-support machines
     dev = device.get_default_device()
+    #dev = device.create_cuda_gpu_on(local_rank)
+    # need to change to CPU device for CPU-only machines
     dev.SetRandSeed(0)
     np.random.seed(0)
-    if data == 'malaria':
 
-        train_x, train_y, val_x, val_y = malaria.load(dir_path=dir_path)
-    else:
-        print(
-            'Wrong dataset!'
-        )
-        sys.exit(0)
+   
+    train_x, train_y, val_x, val_y = cardiovascular.load(path)
 
-    num_channels = train_x.shape[1]
-    image_size = train_x.shape[2]
-    data_size = np.prod(train_x.shape[1:train_x.ndim]).item()
-    num_classes = (np.max(train_y) + 1).item()
 
-    if model == 'cnn':
-        model = malaria_net.create_model(model_option='cnn', num_channels=num_channels,
+    num_channels = 1
+    image_size = 1
+    data_size = train_x.shape[1]
+
+    num_classes = 2
+
+    if model == 'resnet':
+        from model import resnet
+        model = resnet.resnet50(num_channels=num_channels,
+                                num_classes=num_classes)
+    elif model == 'xceptionnet':
+        from model import xceptionnet
+        model = xceptionnet.create_model(num_channels=num_channels,
                                          num_classes=num_classes)
-    else:
-        print(
-            'Wrong model!'
-        )
-        sys.exit(0)
+    elif model == 'cnn':
+        from model import cnn
+        model = cnn.create_model(num_channels=num_channels,
+                                 num_classes=num_classes)
+    elif model == 'alexnet':
+        from model import alexnet
+        model = alexnet.create_model(num_channels=num_channels,
+                                     num_classes=num_classes)
+    elif model == 'cardionet':
+        import os, sys, inspect
+        current = os.path.dirname(
+            os.path.abspath(inspect.getfile(inspect.currentframe())))
+        parent = os.path.dirname(current)
+        sys.path.insert(0, parent)
+        model = cardionet.create_model(data_size=data_size, perceptron_size=1000, num_classes=num_classes)
 
     # For distributed training, sequential has better performance
     if hasattr(sgd, "communicator"):
@@ -157,10 +166,9 @@ def run(global_rank,
             (batch_size, num_channels, model.input_size, model.input_size), dev,
             singa_dtype[precision])
     elif model.dimension == 2:
-        tx = tensor.Tensor((batch_size, data_size),
-                           dev, singa_dtype[precision])
-        np.reshape(train_x, (train_x.shape[0], -1))
-        np.reshape(val_x, (val_x.shape[0], -1))
+        tx = tensor.Tensor((batch_size, data_size), dev, singa_dtype[precision])
+        # np.reshape(train_x, (train_x.shape[0], -1))
+        # np.reshape(val_x, (val_x.shape[0], -1))
 
     ty = tensor.Tensor((batch_size,), dev, tensor.int32)
     num_train_batch = train_x.shape[0] // batch_size
@@ -179,6 +187,7 @@ def run(global_rank,
 
         if global_rank == 0:
             print('Starting Epoch %d:' % (epoch))
+
 
         # Training phase
         train_correct = np.zeros(shape=[1], dtype=np.float32)
@@ -206,8 +215,6 @@ def run(global_rank,
             out, loss = model(tx, ty, dist_option, spars)
             train_correct += accuracy(tensor.to_numpy(out), y)
             train_loss += tensor.to_numpy(loss)[0]
-
-            # print('batch training loss = %f' % train_loss, flush=True)
 
         if DIST:
             # Reduce the evaluation accuracy and loss from multiple devices
@@ -255,21 +262,12 @@ if __name__ == '__main__':
         description='Training using the autograd and graph.')
     parser.add_argument(
         'model',
-        choices=['cnn'],
-        default='cnn')
-    parser.add_argument('data',
-                        choices=['malaria'],
-                        default='malaria')
+        choices=['cnn', 'resnet', 'xceptionnet', 'cardionet', 'alexnet'],
+        default='cardionet')
     parser.add_argument('-p',
                         choices=['float32', 'float16'],
                         default='float32',
                         dest='precision')
-    parser.add_argument('-dir',
-                        '--dir-path',
-                        default="/tmp/malaria",
-                        type=str,
-                        help='the directory to store the malaria dataset',
-                        dest='dir_path')
     parser.add_argument('-m',
                         '--max-epoch',
                         default=100,
@@ -284,10 +282,17 @@ if __name__ == '__main__':
                         dest='batch_size')
     parser.add_argument('-l',
                         '--learning-rate',
-                        default=0.005,
+                        default=0.001,
                         type=float,
                         help='initial learning rate',
                         dest='lr')
+    # Determine which gpu to use
+    parser.add_argument('-i',
+                        '--device-id',
+                        default=0,
+                        type=int,
+                        help='which GPU to use',
+                        dest='device_id')
     parser.add_argument('-g',
                         '--disable-graph',
                         default='True',
@@ -300,19 +305,24 @@ if __name__ == '__main__':
                         type=int,
                         help='logging verbosity',
                         dest='verbosity')
+    parser.add_argument('-dir',
+                        '--path-to-dataset',
+                        default=None,
+                        help='path to dataset',
+                        dest='path')                    
+                        
 
     args = parser.parse_args()
 
-    sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5,
-                  dtype=singa_dtype[args.precision])
+    sgd = opt.SGD(lr=args.lr, momentum=0.9, weight_decay=1e-5, dtype=singa_dtype[args.precision])
     run(0,
         1,
-        args.dir_path,
+        args.device_id,
         args.max_epoch,
         args.batch_size,
         args.model,
-        args.data,
         sgd,
         args.graph,
         args.verbosity,
-        precision=args.precision);
+        args.path,
+        precision=args.precision)

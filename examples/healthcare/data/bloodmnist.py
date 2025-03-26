@@ -221,7 +221,7 @@ class ClassDataset(object):
         return batch_x, batch_y
 
 
-def load(dir_path="tmp/bloodmnist"):
+def load(dir_path):
     # Dataset loading
     train_path = os.path.join(dir_path, "train")
     val_path = os.path.join(dir_path, "val")

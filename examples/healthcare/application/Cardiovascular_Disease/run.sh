@@ -16,5 +16,5 @@
 # limitations under the License.
 #
 
-### malaria dataset
-python train_cnn.py cnn malaria -dir pathToDataset
+### cardiovascular dataset
+python train.py cardionet -dir pathToDataset
