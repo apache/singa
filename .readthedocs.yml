@@ -16,16 +16,16 @@
 #
 
 # .readthedocs.yml
-build:
-  image: stable
-conda:
-  environment: doc/environment.yml
-python:
-    version: 3.7
-
-# Required
 version: 2
 
-# Build documentation in the docs/ directory with Sphinx
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.9"
+
 sphinx:
   configuration: doc/conf.py
+
+python:
+  install:
+    - requirements: doc/requirements.txt
