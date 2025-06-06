@@ -41,7 +41,7 @@ The source images with resolution 3×360×363 pixels are center-cropped into 3×
 
 ## Running instructions
 
-1. Download the pre-processed [BloodMnist dataset](https://github.com/lzjpaul/singa-healthcare/blob/main/data/bloodmnist/bloodmnist.tar.gz) to a folder(pathToDataset), which contains a few training samples and test samples. For the complete BloodMnist dataset, please download it via this [link](https://github.com/gzrp/bloodmnist/blob/master/bloodmnist.zip).
+1. Download the pre-processed [BloodMnist dataset](https://github.com/lzjpaul/singa-healthcare/blob/main/data/bloodmnist/bloodmnist.tar.gz) to the folder (pathToDataset), which contains a few training samples and test samples. For the complete BloodMnist dataset, please download it via this [link](https://github.com/gzrp/bloodmnist/blob/master/bloodmnist.zip).
 
 2. Start the training
 
