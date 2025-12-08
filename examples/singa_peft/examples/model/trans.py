@@ -101,6 +101,38 @@ class Transformer(model.Model):
     def set_optimizer(self, opt):
         self.opt = opt
 
+class TransformerDecoderLayer(layer.Layer):
+    def __init__(self, d_model=512, n_head=8, dim_feedforward=2048):
+        super(TransformerDecoderLayer, self).__init__()
+
+        self.d_model = d_model
+        self.n_head = n_head
+        self.dim_feedforward = dim_feedforward
+
+        self.dec_self_attn = MultiHeadAttention(d_model=d_model, n_head=n_head)
+        self.dec_enc_attn = MultiHeadAttention(d_model=d_model, n_head=n_head)
+        self.pos_ffn = PoswiseFeedForwardNet(d_model=d_model, dim_feedforward=dim_feedforward)
+
+    def forward(self, dec_inputs, enc_outputs, dec_self_attn_mask, dec_enc_attn_mask):
+        """
+        Args:
+            dec_inputs: [batch_size, tgt_len, d_model]
+            enc_outputs: [batch_size, src_len, d_model]
+            dec_self_attn_mask: [batch_size, tgt_len, tgt_len]
+            dec_enc_attn_mask: [batch_size, tgt_len, src_len]
+        """
+
+        # dec_outputs: [batch_size, tgt_len, d_model]
+        # dec_self_attn: [batch_size, n_heads, tgt_len, tgt_len]
+        dec_outputs, dec_self_attn = self.dec_self_attn(dec_inputs, dec_inputs, dec_inputs, dec_self_attn_mask)
+
+        # dec_outputs: [batch_size, tgt_len, d_model]
+        # dec_self_attn: [batch_size, n_heads, tgt_len, src_len]
+        dec_outputs, dec_enc_attn = self.dec_enc_attn(dec_outputs, enc_outputs, enc_outputs, dec_enc_attn_mask)
+        # [batch_size, tgt_len, d_model]
+        dec_outputs = self.pos_ffn(dec_outputs)
+        return dec_outputs, dec_self_attn, dec_enc_attn
+
 
 class TransformerDecoder(layer.Layer):
     """TransformerDecoder is a stack of N decoder layers
