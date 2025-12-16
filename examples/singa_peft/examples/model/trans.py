@@ -250,3 +250,82 @@ class TransformerDecoder(layer.Layer):
         sinusoid_table[:, 1::2] = np.cos(sinusoid_table[:, 1::2])  # Cosine function for odd digits
         return tensor.Tensor(data=sinusoid_table, requires_grad=False)
 
+class TransformerEncoder(layer.Layer):
+    """TransformerEncoder is a stack of N encoder layers
+        Args:
+           src_n_token: the source vocab size
+           d_model: the number of expected features in the encoder inputs (default=512).
+           n_head: the number of heads in the multi head attention models (default=8).
+           dim_feedforward: the dimension of the feedforward network model (default=2048).
+           n_layers: the number of sub-encoder-layers in the encoder (default=6).
+    """
+
+    def __init__(self, src_n_token, d_model=512, n_head=8, dim_feedforward=2048, n_layers=6):
+        super(TransformerEncoder, self).__init__()
+        self.src_n_token = src_n_token
+        self.d_model = d_model
+        self.n_head = n_head
+        self.dim_feedforward = dim_feedforward
+        self.n_layers = n_layers
+
+        # input_emb / pos_emb / n-encoder layers
+        self.input_emb = layer.Embedding(input_dim=src_n_token, output_dim=d_model)
+        self.pos_emb = layer.Embedding(input_dim=src_n_token, output_dim=d_model)
+        self.layers = []
+        for _ in range(self.n_layers):
+            self.layers.append(TransformerEncoderLayer(d_model=d_model, n_head=n_head, dim_feedforward=dim_feedforward))
+
+    def forward(self, enc_inputs):
+        """Pass the input through the encoder in turn.
+        Args:
+            enc_inputs: the sequence to the encoder (required).   [batch_size, src_len]
+        """
+        # [batch_size, src_len, d_model]
+        word_emb = self.input_emb(enc_inputs)
+
+        self.pos_emb.initialize(enc_inputs)
+        self.pos_emb.from_pretrained(W=TransformerEncoder._get_sinusoid_encoding_table(self.src_n_token, self.d_model), freeze=True)
+        # [batch_size, src_len, d_model]
+        pos_emb = self.pos_emb(enc_inputs)
+        # enc_outputs [batch_size, src_len, d_model]
+        enc_outputs = autograd.add(word_emb, pos_emb)
+
+        # enc_self_attn_mask [batch_size, src_len, src_len]
+        enc_self_attn_mask = TransformerEncoder._get_attn_pad_mask(enc_inputs, enc_inputs)
+
+        enc_self_attns = []
+        for layer in self.layers:
+            enc_outputs, enc_self_attn = layer(enc_outputs, enc_self_attn_mask)
+            enc_self_attns.append(enc_self_attn)
+        return enc_outputs, enc_self_attns
+
+    @staticmethod
+    def _get_attn_pad_mask(seq_q, seq_k):
+        """
+        Args:
+            seq_q: [batch_size, seq_len]
+            seq_k: [batch_size, seq_len]
+        Returns: [batch_size, seq_len, seq_len]
+        """
+        batch_size, len_q = seq_q.shape
+        batch_size, len_k = seq_k.shape
+        seq_k_np = tensor.to_numpy(seq_k)
+        pad_attn_mask_np = np.where(seq_k_np == 0, 1, 0)
+        pad_attn_mask_np.astype(np.int32)
+        pad_attn_mask_np = np.expand_dims(pad_attn_mask_np, axis=1)
+        pad_attn_mask_np = np.broadcast_to(pad_attn_mask_np, (batch_size, len_q, len_k))
+        pad_attn_mask_np = tensor.from_numpy(pad_attn_mask_np)
+        return pad_attn_mask_np
+
+    @staticmethod
+    def _get_sinusoid_encoding_table(n_position, d_model):
+        def cal_angle(position, hid_idx):
+            return position / np.power(10000, 2 * (hid_idx // 2) / d_model)
+
+        def get_posi_angle_vec(position):
+            return [cal_angle(position, hid_j) for hid_j in range(d_model)]
+
+        sinusoid_table = np.array([get_posi_angle_vec(pos_i) for pos_i in range(n_position)], np.float32)
+        sinusoid_table[:, 0::2] = np.sin(sinusoid_table[:, 0::2])
+        sinusoid_table[:, 1::2] = np.cos(sinusoid_table[:, 1::2])
+        return tensor.Tensor(data=sinusoid_table, requires_grad=False)
