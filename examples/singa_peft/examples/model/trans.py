@@ -329,3 +329,46 @@ class TransformerEncoder(layer.Layer):
         sinusoid_table[:, 0::2] = np.sin(sinusoid_table[:, 0::2])
         sinusoid_table[:, 1::2] = np.cos(sinusoid_table[:, 1::2])
         return tensor.Tensor(data=sinusoid_table, requires_grad=False)
+
+
+class TransformerEncoderLayer(layer.Layer):
+    def __init__(self, d_model=512, n_head=8, dim_feedforward=2048):
+        super(TransformerEncoderLayer, self).__init__()
+        self.d_model = d_model
+        self.n_head = n_head
+        self.dim_feedforward = dim_feedforward
+        self.enc_self_attn = MultiHeadAttention(d_model, n_head)
+        self.pos_ffn = PoswiseFeedForwardNet(d_model=d_model, dim_feedforward=dim_feedforward, bias=False)
+
+    def forward(self, enc_inputs, enc_self_attn_mask):
+        """
+        Args:
+            enc_inputs: [batch_size, src_len, d_model]
+            enc_self_attn_mask: [batch_size, src_len, src_len]
+
+        Returns:
+            enc_outputs: [batch_size, src_len, d_model]
+            attn: [batch_size, n_heads, src_len, src_len]
+        """
+        # enc_inputs to same Q,K,V
+        enc_outputs, attn = self.enc_self_attn(enc_inputs, enc_inputs, enc_inputs, enc_self_attn_mask)
+        enc_outputs = self.pos_ffn(enc_outputs)
+        return enc_outputs, attn
+
+
+def matmul4d(x1, x2):
+    batchs, heads = x1.shape[0], x1.shape[1]
+    ys = []
+    for b in range(batchs):
+        x1b, x2b = autograd.squeeze(x1[b]), autograd.squeeze(x2[b])
+        yb = []
+        for h in range(heads):
+            x1h, x2h = autograd.squeeze(x1b[h]), autograd.squeeze(x2b[h])
+            yh = autograd.matmul(x1h, x2h)
+            yh = autograd.unsqueeze(yh, axis=[0])
+            yb.append(yh)
+        yb = autograd.cat(yb, axis=0)
+        yb = autograd.unsqueeze(yb, axis=[0])
+        ys.append(yb)
+    y = autograd.cat(ys, axis=0)
+    return y
