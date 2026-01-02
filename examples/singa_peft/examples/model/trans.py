@@ -444,3 +444,40 @@ class MultiHeadAttention(layer.Layer):
         attn_mask_np = np.expand_dims(attn_mask_np, axis=1)
         attn_mask_np = np.broadcast_to(attn_mask_np, (batch_size, n_head, seq_q_len, seq_k_len))
         return tensor.from_numpy(attn_mask_np)
+
+class ScaledDotProductAttention(layer.Layer):
+    def __init__(self, d_model=512, n_head=8):
+        super(ScaledDotProductAttention, self).__init__()
+        self.d_k = d_model // n_head
+        assert (
+                self.d_k * n_head == d_model
+        ), "embed_dim must be divisible by num_heads"
+
+    def forward(self, query, key, value, attn_mask):
+        """
+        Args:
+            query: [batch_size, n_heads, len_q, d_k]
+            key: [batch_size, n_heads, len_k, d_k]
+            value: [batch_size, n_heads, len_v(=len_k), d_v]
+            attn_mask: [batch_size, n_heads, seq_len, seq_len]
+        Returns:
+        """
+        K_trans = autograd.transpose(key, [0, 1, 3, 2])
+
+        # scores : [batch_size, n_heads, len_q, len_k]
+        # query [batch_size, n_heads, len_q, d_k]
+        # k^T   [batch_size, n_heads, d_k, len_k]
+        scores = matmul4d(query, K_trans)
+        d_k_sqrt = Tensor(shape=(1,), requires_grad=False, stores_grad=False)
+        d_k_sqrt.set_value(np.sqrt(self.d_k))
+        scores = autograd.div(scores, d_k_sqrt)
+
+        mask_fill = Tensor(shape=attn_mask.shape, data=np.full(attn_mask.shape, -1e6, dtype=np.float32), requires_grad=False, stores_grad=False)
+        attn_mask_np = tensor.to_numpy(attn_mask)
+        scores = autograd.where(mask_fill, scores, attn_mask_np)
+
+        attn = autograd.softmax(scores, axis=-1)
+        # context: [batch_size, n_heads, len_q, d_v]
+        # attn: [batch_size, n_heads, len_q, len_k]  value: [batch_size, n_heads, len_v(=len_k), d_v]
+        context = matmul4d(attn, value)
+        return context, attn
