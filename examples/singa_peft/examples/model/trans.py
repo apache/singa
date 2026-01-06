@@ -507,3 +507,30 @@ class PoswiseFeedForwardNet(layer.Layer):
         output = self.add(output, residual)
         output = self.norm(output)
         return output
+
+class LayerNorm(layer.Layer):
+    def __init__(self, n_features, eps=1e-6):
+        super(LayerNorm, self).__init__()
+        self.n_features = n_features
+        self.eps = eps
+
+    def initialize(self, x):
+        shape = (self.n_features,)
+        self.Gamma = Tensor(shape=shape, dtype=x.dtype, requires_grad=False, stores_grad=False)
+        self.Beta = Tensor(shape=shape, dtype=x.dtype, requires_grad=False, stores_grad=False)
+        self.Gamma.set_value(1.0)
+        self.Beta.set_value(0.0)
+
+    def forward(self, x):
+        # x: input tensor with shape [batch_size, n_features]
+        # x_normalized = (x - tensor.from_numpy(self.mean)) / tensor.from_numpy(np.sqrt(self.var + self.eps))
+        # y = self.gamma * x_normalized + self.beta
+        mean = np.mean(tensor.to_numpy(x), axis=-1, keepdims=True)
+        var = np.var(tensor.to_numpy(x), axis=-1, keepdims=True)
+
+        sub1 = tensor.from_numpy(mean)
+        div1 = tensor.from_numpy(np.sqrt(var + self.eps))
+        x_normalized = autograd.div(autograd.sub(x, sub1), div1)
+        y = autograd.mul(self.Gamma, x_normalized)
+        y = autograd.add(y, self.Beta)
+        return y
