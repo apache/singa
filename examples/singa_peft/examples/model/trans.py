@@ -481,3 +481,29 @@ class ScaledDotProductAttention(layer.Layer):
         # attn: [batch_size, n_heads, len_q, len_k]  value: [batch_size, n_heads, len_v(=len_k), d_v]
         context = matmul4d(attn, value)
         return context, attn
+
+
+class PoswiseFeedForwardNet(layer.Layer):
+    def __init__(self, d_model=512, dim_feedforward=2048, bias=False):
+        super(PoswiseFeedForwardNet, self).__init__()
+
+        self.d_model = d_model
+        self.dim_feedforward = dim_feedforward
+        self.bias = bias
+
+        self.linear1 = Linear3D(d_model, dim_feedforward, bias=bias)
+        self.relu = layer.ReLU()
+        self.linear2 = Linear3D(dim_feedforward, d_model, bias=bias)
+        self.add = layer.Add()
+        self.norm = LayerNorm(d_model)
+
+    def forward(self, inputs):
+        # inputs: [batch_size, seq_len, d_model]
+        residual = inputs
+        output = self.linear1(inputs)
+        output = self.relu(output)
+        output = self.linear2(output)
+        # [batch_size, seq_len, d_model]
+        output = self.add(output, residual)
+        output = self.norm(output)
+        return output
