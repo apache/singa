@@ -534,3 +534,85 @@ class LayerNorm(layer.Layer):
         y = autograd.mul(self.Gamma, x_normalized)
         y = autograd.add(y, self.Beta)
         return y
+
+class Linear3D(layer.Layer):
+    """
+    Generate a Linear3D operator
+    """
+
+    # TODO: replace current with
+    #   def __init__(self, out_features, bias=True):
+    def __init__(self, out_features, *args, bias=False, **kwargs):
+        """
+        Args:
+            ut_channels: int, the channel of output, also is the number of
+                filters
+            bias: bool
+        """
+        super(Linear3D, self).__init__()
+        self.out_features = out_features
+
+        # TODO: for backward compatibility, to remove
+        if len(args) > 0:
+            self.in_features = out_features
+            self.out_features = args[0]
+        if len(args) > 1:
+            self.bias = args[1]
+        else:
+            self.bias = bias
+            
+    def initialize(self, x):
+        self.in_features = x.shape[-1]
+        w_shape = (self.in_features, self.out_features)
+        b_shape = (self.out_features,)
+
+        self.W = Tensor(shape=w_shape,
+                        dtype=x.dtype,
+                        requires_grad=True,
+                        stores_grad=True)
+        std = math.sqrt(2.0 / (self.in_features + self.out_features))
+        self.W.gaussian(0.0, std)
+
+        if self.bias:
+            self.b = Tensor(shape=b_shape,
+                            dtype=x.dtype,
+                            requires_grad=True,
+                            stores_grad=True)
+            self.b.set_value(0.0)
+        else:
+            self.b = None
+            
+    def forward(self, x):
+        if self.b:
+            self.device_check(x, self.W, self.b)
+            self.dtype_check(x, self.W, self.b)
+        else:
+            self.device_check(x, self.W)
+            self.dtype_check(x, self.W)
+
+        assert x.shape[-1] == self.W.shape[0], (
+                "Linear3D layer expects input features size %d received %d" %
+                (self.W.shape[0], x.shape[-1]))
+
+        ys = []
+        batch = x.shape[0]
+        for i in range(batch):
+            xi = autograd.squeeze(x[i])
+            yi = autograd.matmul(xi, self.W)
+            if self.bias:
+                yi = autograd.add_bias(yi, self.b, axis=0)
+            yi = autograd.unsqueeze(yi, axis=[0])
+            ys.append(yi)
+        y = autograd.cat(ys, axis=0)
+        return y
+
+    def get_params(self):
+        if self.bias:
+            return {self.W.name: self.W, self.b.name: self.b}
+        else:
+            return {self.W.name: self.W}
+
+    def set_params(self, parameters):
+        self.W.copy_from(parameters[self.W.name])
+        if self.bias:
+            self.b.copy_from(parameters[self.b.name])
