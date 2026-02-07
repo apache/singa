@@ -208,7 +208,7 @@ def backward(y, dy=None):
             if y_stores_grad and tensor_dep[x_id] == 0:
                 # store the gradient for final return, e.g. for parameters.
                 # it may cause a delay to yield. Only after src_op's all
-                # output tensors have recieved the gradients, then output
+                # output tensors have received the gradients, then output
                 g = not_ready[src_op][y_idx]
                 tg = Tensor(device=g.device(),
                             data=g,

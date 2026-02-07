@@ -1787,7 +1787,7 @@ class SingaBackend(Backend):
                 node.op_type, len(valid_inputs), len(inputs))
 
         operator = cls._onnx_node_to_singa_op(node, opset_version)
-        # seperate weights with inputs, and init inputs as Tensor
+        # separate weights with inputs, and init inputs as Tensor
         weights = {}
         _inputs = []
         for (key, val) in zip(valid_inputs, inputs):
