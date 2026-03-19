@@ -1,3 +1,32 @@
+Release Notes - SINGA - Version singa-5.1.0
+
+SINGA is a distributed deep learning library.
+
+This release includes following changes:
+
+ - Add the implementations for Parameter-Efficient Fine-Tuning (PEFT).
+   - Add the implementations of distributed models for SINGA PEFT.
+   - Add the implementations of tuners for SINGA PEFT.
+   - Add the implementations of the autograd functions for SINGA PEFT.
+   - Add the multiprocess implementations for SINGA PEFT.
+
+ - Update the healthcare model zoo.
+   - Restructure the folders for the healthcare model zoo.
+   - Update the training files and model files for the healthcare model zoo.
+   - Update the documentations for the healthcare model zoo.
+
+ - Add more healthcare examples.
+   - Add the implementations of the candidiasis disease application.
+   - Add the implementations of the cardiovascular disease application.
+
+ - Add the implementations for more attention mechanisms.
+
+ - Update the encoder layers for the transformer model.
+
+ - Fix typos in Python module docstrings.
+
+----------------------------------------------------------------------------------------------
+
 Release Notes - SINGA - Version singa-5.0.0
 
 SINGA is a distributed deep learning library.
