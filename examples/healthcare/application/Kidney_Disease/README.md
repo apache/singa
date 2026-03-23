@@ -38,9 +38,9 @@ The dataset used in this task is MIMIC-III after preprocessed. The features are 
 ## Instruction
 Before starting to use this model for kidney disease prediction, download the sample dataset for kidney disease prediction: https://github.com/lzjpaul/singa-healthcare/tree/main/data/kidney
 
-The provided dataset is from MIMIC-III, which has been pre-processed. And the dataset contains 100 samples for model testing.
+The provided dataset is from MIMIC-III, which has been pre-processed. The dataset contains 100 samples for model testing.
 
-Please download the dataset to a folder(pathToDataset), and then pass the path to run the codes using the following command:
+Please download the dataset to the folder (pathToDataset), and then pass the path to run the codes using the following command:
 ```bash
 python train.py kidneynet -dir pathToDataset
 ```

@@ -920,12 +920,12 @@ class DistOpt(object):
         self.opt.step()
 
     def backward_and_partial_update(self, loss, threshold=2097152):
-        """Performs backward propagation from the loss and parameter update using asychronous training.
+        """Performs backward propagation from the loss and parameter update using asynchronous training.
 
         THIS IS A EXPERIMENTAL FUNCTION FOR RESEARCH PURPOSE:
         From the loss, it performs backward propagation to get the gradients and do the parameter
         update. It fuses the tensors smaller than the threshold value to reduce network latency,
-        as well as performing asychronous training where one parameter partition is all-reduced
+        as well as performing asynchronous training where one parameter partition is all-reduced
         per iteration. The size of the parameter partition depends on the threshold value.
 
         Args:

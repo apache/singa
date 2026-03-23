@@ -24,7 +24,7 @@ We have successfully applied the idea of prototype loss in various medical image
 
 ## Running instructions
 
-1. Download the [CIFAR-10 python version](https://www.cs.toronto.edu/~kriz/cifar.html) to a folder(pathToDataset).
+1. Download the [CIFAR-10 python version](https://www.cs.toronto.edu/~kriz/cifar.html) to the folder (pathToDataset).
 
 2. Start the training
 
