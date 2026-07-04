@@ -23,17 +23,17 @@ import urllib.request
 
 
 def check_exist_or_download(url, download_dir):
+    download_dir = os.path.abspath(download_dir)
     os.makedirs(download_dir, exist_ok=True)
 
     name = url.rsplit('/', 1)[-1]
     filename = os.path.join(download_dir, name)
 
     if not os.path.isfile(filename):
-        print("Downloading %s to %s" % (url, filename))
+        print("Downloading %s -> %s" % (url, filename))
         urllib.request.urlretrieve(url, filename)
     else:
-        print("Already Downloaded: %s" % filename)
-
+        print("Already Downloaded: %s -> %s" % (url, filename))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
