@@ -17,33 +17,43 @@
 # under the License.
 #
 
+import argparse
 import os
 import urllib.request
 
 
-def check_exist_or_download(url):
+def check_exist_or_download(url, download_dir):
+    os.makedirs(download_dir, exist_ok=True)
 
-    download_dir = '/tmp/'  # downloaded to the /tmp/ folder
     name = url.rsplit('/', 1)[-1]
     filename = os.path.join(download_dir, name)
 
     if not os.path.isfile(filename):
-        print("Downloading %s" % url)
+        print("Downloading %s to %s" % (url, filename))
         urllib.request.urlretrieve(url, filename)
     else:
-        print("Already Downloaded: %s" % url)
+        print("Already Downloaded: %s" % filename)
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Download the MNIST dataset.'
+    )
+    parser.add_argument(
+        '-dir',
+        '--dir-path',
+        dest='dir_path',
+        default='/tmp/mnist',
+        help='Directory to save the MNIST dataset.'
+    )
+    args = parser.parse_args()
 
-    # List urls of the mnist dataset
     train_x_url = 'https://github.com/fgnt/mnist/raw/master/train-images-idx3-ubyte.gz'
     train_y_url = 'https://github.com/fgnt/mnist/raw/master/train-labels-idx1-ubyte.gz'
     valid_x_url = 'https://github.com/fgnt/mnist/raw/master/t10k-images-idx3-ubyte.gz'
     valid_y_url = 'https://github.com/fgnt/mnist/raw/master/t10k-labels-idx1-ubyte.gz'
-    
-    # Download the mnist dataset
-    check_exist_or_download(train_x_url)
-    check_exist_or_download(train_y_url)
-    check_exist_or_download(valid_x_url)
-    check_exist_or_download(valid_y_url)
+
+    check_exist_or_download(train_x_url, args.dir_path)
+    check_exist_or_download(train_y_url, args.dir_path)
+    check_exist_or_download(valid_x_url, args.dir_path)
+    check_exist_or_download(valid_y_url, args.dir_path)
