@@ -42,3 +42,9 @@ The dataset used in this task is MIMIC-III after preprocessed. Before starting t
 ```bash
 python train.py cerebrovascularnet -dir pathToDataset
 ```
+
+## Data Preprocessing for Cerebrovascular Disease Prediction
+
+During the data preprocessing stage, we constructed the task dataset based on the MIMIC-III database. We first extracted each patient’s admission records from the **ADMISSIONS** table and generated fixed time-window historical sequence samples for each admission to capture the patient’s clinical trajectory over time. Then, by combining information from **DIAGNOSES_ICD**, **PROCEDURES_ICD**, and **PRESCRIPTIONS**, we collected the diagnoses, procedures, and major medications that occurred within these windows, and retained the most frequent items through frequency filtering to build a unified code dictionary.
+
+Based on this, each sample was converted into a **multi-hot vector representation**: if a diagnosis, procedure, or medication occurred within a window, the corresponding dimension was marked. We then took the last window of each sample as the **feature** and the corresponding **Cerebrovascular Disease** column as the **label**, resulting in a sample dataset for cerebrovascular disease prediction.
