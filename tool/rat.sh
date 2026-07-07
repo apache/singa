@@ -16,4 +16,4 @@
 #
 
 cd java
-mvn apache-rat:check -Pcheck-licence -Drat.basedir=..
+mvn apache-rat:check -Pcheck-license -Drat.basedir=..
