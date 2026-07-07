@@ -44,11 +44,8 @@ Distributed deep learning system
 
 ## Code Analysis:
 
-![LGTM C++ Grade](https://img.shields.io/lgtm/grade/cpp/github/apache/singa)
-![LGTM Python Grade](https://img.shields.io/lgtm/grade/python/github/apache/singa)
 [![codecov](https://codecov.io/gh/apache/singa/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/singa)
 
-[![Stargazers over time](https://starchart.cc/apache/singa.svg)](https://starchart.cc/apache/singa)
 
 ## Mailing Lists
 
