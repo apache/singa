@@ -23,10 +23,10 @@
 
 ## Environment variables
 
-We export the CUDA version if SINGA is compiled with CUDA enabled. The cuDNN version is fixed by SINGA and cuDNN is installed from [anaconda cloud](https://anaconda.org/anaconda/cudnn).
+We export the CUDA version if SINGA is compiled with CUDA enabled. The value must be in `x.y` form and must match a CUDA variant in `conda_build_config.yaml`. The CUDA and cuDNN packages are installed into the conda-build environment from the configured conda channels.
 
-    # for SINGA with GPU, e.g. cuda9.0-cudnn7.3.1
-    export CUDA=9.0
+    # for SINGA with GPU, e.g. cuda12.2-cudnn8.9.2
+    export CUDA=12.2
 
 Then, we export a flag DIST to indicate if SINGA is compiled with distributed training enabled.
 
@@ -39,6 +39,7 @@ We need to export both CUDA and DIST for GPU version. For CPU-only version, we d
 
 After exporting the environment variables, we need to add the necessary conda channels
 
+    conda config --add channels nvidia
     conda config --add channels conda-forge
     conda config --add channels nusdbsystem
 
@@ -46,7 +47,7 @@ Then, we can execute the following commands to compile SINGA and package it
 
     conda-build .  --python 3.6
 
-You will see the package path from the screen output, e.g., `xx/yy/singa-1.2.0-cpu.tar.bz2` or `xx/yy/singa-1.2.0-cudnn7.3.1_cuda9.0.tar.bz2`.
+You will see the package path from the screen output, e.g., `xx/yy/singa-1.2.0-cpu.tar.bz2` or `xx/yy/singa-1.2.0-cudnn8.9.2_cuda12.2.tar.bz2`.
 
 To clean the cache
 

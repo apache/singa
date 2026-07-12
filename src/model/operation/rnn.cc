@@ -111,12 +111,23 @@ void CudnnRNNHandle::init_rnn_desc() {
     RNNMode = CUDNN_LSTM;
   else if (mode == 3)
     RNNMode = CUDNN_GRU;
+#if CUDNN_MAJOR >= 8
+  CUDNN_CHECK(cudnnSetRNNDescriptor_v8(
+      rnnDesc, cudnnRNNAlgo, RNNMode,
+      bias ? CUDNN_RNN_DOUBLE_BIAS : CUDNN_RNN_NO_BIAS,
+      bidirectional ? CUDNN_BIDIRECTIONAL : CUDNN_UNIDIRECTIONAL,
+      CUDNN_LINEAR_INPUT, cudnnDataType, cudnnDataType, CUDNN_DEFAULT_MATH,
+      static_cast<int32_t>(feature_size), static_cast<int32_t>(hidden_size),
+      static_cast<int32_t>(hidden_size), static_cast<int32_t>(num_layers),
+      dropoutDesc, 0));
+#else
   CUDNN_CHECK(cudnnSetRNNDescriptor(
       ctx->cudnn_handle, rnnDesc, hidden_size, num_layers, dropoutDesc,
       CUDNN_LINEAR_INPUT,
       bidirectional ? CUDNN_BIDIRECTIONAL : CUDNN_UNIDIRECTIONAL, RNNMode,
       cudnnRNNAlgo,  // CUDNN_RNN_ALGO_STANDARD,
       cudnnDataType));
+#endif  // CUDNN_MAJOR >= 8
 }
 void CudnnRNNHandle::init_dropout_desc() {
   /* drop out */

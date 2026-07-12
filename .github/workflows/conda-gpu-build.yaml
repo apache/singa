@@ -1,0 +1,51 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+name: Conda GPU Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-gpu-conda-package:
+    runs-on: ubuntu-latest
+
+    env:
+      CUDA: "12.2"
+      DIST: "OFF"
+      TEST_COMMAND: python -c "import singa; import singa.singa_wrap; print(singa.__version__)"
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: setup-miniconda
+        uses: conda-incubator/setup-miniconda@v4.0.1
+        with:
+          auto-update-conda: true
+          channels: nvidia,conda-forge,nusdbsystem,defaults
+          channel-priority: flexible
+
+      - name: install-conda-build
+        shell: bash -el {0}
+        run: conda install -y conda-build
+
+      - name: build-gpu-package
+        shell: bash -el {0}
+        run: |
+          conda-build tool/conda/singa -c nvidia -c conda-forge -c nusdbsystem -c defaults --python 3.8 --no-anaconda-upload --output-folder conda-bld
