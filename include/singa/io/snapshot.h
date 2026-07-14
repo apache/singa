@@ -35,9 +35,9 @@
 
 namespace singa {
 /// The snapshot management.
-/// It dumps the model parameter snapshot as checkpoint files, which coud be
+/// It dumps the model parameter snapshot as checkpoint files, which could be
 /// used for fine-tuning and deployment.
-/// The model paramters are separated from model definition, i.e., net
+/// The model parameters are separated from model definition, i.e., net
 /// construction. Users either randomly initialize the layer parameters or using
 /// the parameters from checkpoint files using Snapshot after creating the
 /// neural network.
@@ -45,7 +45,7 @@ class Snapshot {
  public:
   enum Mode { kRead, kWrite };
   /// <prefix>.model is the binary file for parameter key-value pair.
-  /// <prefix>.meta is the text file describing information about paramters,
+  /// <prefix>.meta is the text file describing information about parameters,
   /// i.e.
   /// name and shape, one line per parameter.
   /// kRead for reading snapshot, whereas kWrite for dumping out snapshot.

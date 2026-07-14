@@ -32,7 +32,7 @@ std::string JPGEncoder::Encode(vector<Tensor>& data) {
   const Tensor& image = data.at(0);
   CHECK_EQ(image.nDim(), 3u);
   CHECK_EQ(image.data_type(), kUChar) << "Data type " << image.data_type()
-    << " is invalid for an raw image";
+    << " is invalid for a raw image";
   const auto* raw = image.data<unsigned char>();
   cv::Mat mat;
   if (image_dim_order_ == "HWC") {
@@ -53,7 +53,7 @@ std::string JPGEncoder::Encode(vector<Tensor>& data) {
         for (size_t k = 0; k < channel; k++)
           mat.at<cv::Vec3b>(i, j)[k] = raw[k * height * width + i * width + j];
   } else {
-    LOG(FATAL) << "Unknow dimension order for images " << image_dim_order_
+    LOG(FATAL) << "Unknown dimension order for images " << image_dim_order_
                << " Only support 'HWC' and 'CHW'";
   }
 

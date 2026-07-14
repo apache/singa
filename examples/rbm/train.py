@@ -46,7 +46,7 @@ def load_train_data(file_path):
 
 
 def train(data_file, use_gpu, num_epoch=10, batch_size=100):
-    print('Start intialization............')
+    print('Start initialization............')
     lr = 0.0005   # Learning rate
     weight_decay = 0.0002
     hdim = 1000

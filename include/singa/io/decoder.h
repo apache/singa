@@ -38,7 +38,7 @@ class Decoder {
 };
 
 #ifdef USE_OPENCV
-/// Decode the string as an ImageRecord object and convert it into a image
+/// Decode the string as an ImageRecord object and convert it into an image
 /// tensor (dtype is kFloat32) and a label tensor (dtype is kInt).
 class JPGDecoder : public Decoder {
  public:
@@ -55,7 +55,7 @@ class JPGDecoder : public Decoder {
 };
 #endif
 
-/// Decode the string of csv formated data  into data tensor
+/// Decode the string of csv formatted data  into data tensor
 /// (dtype is kFloat32) and optionally a label tensor (dtype is kInt).
 class CSVDecoder : public Decoder {
  public:

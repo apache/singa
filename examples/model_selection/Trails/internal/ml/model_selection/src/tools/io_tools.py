@@ -34,7 +34,7 @@ def read_json(file_name):
 
 
 def write_json(file_name, data):
-    print(f"writting {file_name}...")
+    print(f"writing {file_name}...")
     with open(file_name, 'w') as outfile:
         outfile.write(json.dumps(data))
 

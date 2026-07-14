@@ -110,7 +110,7 @@ To add the container into a network for easy access
     docker network create <network name>
     docker network connect <network name> <node name>
 
-After connecting both the jenkins and node contaniners into the same network, we can ssh to the node from jenkins container like
+After connecting both the jenkins and node containers into the same network, we can ssh to the node from jenkins container like
 
 
     # inside jenkins container
@@ -119,7 +119,7 @@ After connecting both the jenkins and node contaniners into the same network, we
 You need execute the above command manually for the first ssh login.
 
 In the Jenkins node configuration page, the container name is used to configure the `Host` field.
-Notice that Oracle username and account are required to luanch the node by Jenkins.
+Notice that Oracle username and account are required to launch the node by Jenkins.
 
 The working nodes (or Docker containers) are configured in Jenkins-Manage Jenkins-Mange Nodes.
 Each node should configure the following environment variable

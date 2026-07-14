@@ -128,7 +128,7 @@ void FeedForwardNet::AsType(DataType dtype) {
 
 void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
                            const Tensor& y, float val_split) {
-  CHECK_EQ(x.shape(0), y.shape(0)) << "Diff num of sampels in x and y";
+  CHECK_EQ(x.shape(0), y.shape(0)) << "Diff num of samples in x and y";
   size_t num_train = (size_t) (x.shape(0) * val_split);
   if (val_split == 0.0f) {
     Tensor dummy;
@@ -145,7 +145,7 @@ void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
 void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
                            const Tensor& y, const Tensor& val_x,
                            const Tensor& val_y) {
-  CHECK_EQ(x.shape(0), y.shape(0)) << "Diff num of sampels in x and y";
+  CHECK_EQ(x.shape(0), y.shape(0)) << "Diff num of samples in x and y";
   int num_extra_samples = (int)x.shape(0) % batchsize;
   if (num_extra_samples != 0)
     LOG(WARNING) << "Pls set batchsize to make num_total_samples "
@@ -240,7 +240,7 @@ const vector<Tensor> FeedForwardNet::Backward(int flag, const Tensor& grad) {
 std::pair<Tensor, Tensor> FeedForwardNet::Evaluate(const Tensor& x,
                                                    const Tensor& y,
                                                    size_t batchsize) {
-  CHECK_EQ(x.shape(0), y.shape(0)) << "Diff num of sampels in x and y";
+  CHECK_EQ(x.shape(0), y.shape(0)) << "Diff num of samples in x and y";
   CHECK_GE(x.shape(0), batchsize);
   int num_extra_samples = (int)x.shape(0) % batchsize;
   Tensor loss(Shape{x.shape(0)}), metric(Shape{x.shape(0)});

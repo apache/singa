@@ -32,7 +32,7 @@ class ModelMacroCfg:
 class ModelMicroCfg:
     """
     Micro space cfg
-    Identifier for each model, connection patter, operations etc.
+    Identifier for each model, connection pattern, operations etc.
     encoding = serialized(ModelMicroCfg)
     """
 

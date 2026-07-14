@@ -431,7 +431,7 @@ void GEMV(const DType alpha, const Tensor &A, const Tensor &v, const DType beta,
   LOG_FATAL("GEMV", DType, Lang);
 }
 
-/// multiply a matrix with a diagnoal matrix constructed using values from 'v'.
+/// multiply a matrix with a diagonal matrix constructed using values from 'v'.
 /// if matrix_lef_side is true, do M*v; else do v*M
 template <typename DType, typename Lang>
 void DGMM(const bool side_right, const Tensor &M, const Tensor &v, Tensor *out,

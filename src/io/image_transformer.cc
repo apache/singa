@@ -30,7 +30,7 @@ Tensor ImageTransformer::Apply(int flag, Tensor& input) {
   CHECK_LE(input.nDim(), 4u);
   CHECK_GE(input.nDim(), 2u);
   CHECK_EQ(input.data_type(), kFloat32) << "Data type " << input.data_type()
-                                        << " is invalid for an raw image";
+                                        << " is invalid for a raw image";
   srand((unsigned int)time(NULL));
   /// TODO
   /// currently only consider one sample each time
@@ -52,7 +52,7 @@ Tensor ImageTransformer::Apply(int flag, Tensor& input) {
     else if (image_dim_order_ == "HWC")
       height = temp1.shape(input.nDim() - 3), width = temp1.shape(input.nDim() - 2);
     else
-      LOG(FATAL) << "Unknow dimension order for images " << image_dim_order_
+      LOG(FATAL) << "Unknown dimension order for images " << image_dim_order_
                  << " Only support 'HWC' and 'CHW'";
   } else /// input is 2D gray image
     height = temp1.shape(0), width = temp1.shape(1);
@@ -129,7 +129,7 @@ Tensor resize(Tensor& input, const size_t resize_height,
             mat.at<cv::Vec<float, 1>>(i, j)[0] = in[i * width + j];
       } else LOG(FATAL) << "Invalid channel size: " << channel;
     } else {
-      LOG(FATAL) << "Unknow dimension order for images " << image_dim_order
+      LOG(FATAL) << "Unknown dimension order for images " << image_dim_order
                  << " Only support 'HWC' and 'CHW'";
     }
   } else { /// 2D gray image
@@ -248,7 +248,7 @@ Tensor crop(Tensor& input, const size_t crop_height, const size_t crop_width,
       output.CopyDataFromHostPtr<float>(out, crop_height * crop_width * channel);
       delete[] out;
     } else {
-      LOG(FATAL) << "Unknow dimension order for images " << image_dim_order
+      LOG(FATAL) << "Unknown dimension order for images " << image_dim_order
                  << " Only support 'HWC' and 'CHW'";
     }
   } else { /// 2D gray image
@@ -326,7 +326,7 @@ Tensor mirror(Tensor& input, const bool horizontal_mirror,
       output.CopyDataFromHostPtr<float>(out, height * width * channel);
       delete[] out;
     } else {
-      LOG(FATAL) << "Unknow dimension order for images " << image_dim_order
+      LOG(FATAL) << "Unknown dimension order for images " << image_dim_order
                  << " Only support 'HWC' and 'CHW'";
     }
   } else { /// 2D gray image

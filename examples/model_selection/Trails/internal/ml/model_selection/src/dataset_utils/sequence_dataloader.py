@@ -53,14 +53,14 @@ class SquenceDataLoader:
             if response.status_code == 200:
                 batch = response.json()
 
-                # in trianing, we use iteraiton-per-epoch to control the end
+                # in training, we use iteraiton-per-epoch to control the end
                 if batch == self.end_signal:
                     if self.name_space == "valid":
                         # end_signal in inference, stop !
                         logger.info("[StreamingDataLoader]: last iteration in valid is meet!")
                         self.data_queue.put({self.end_signal: True})
                     else:
-                        # end_signal in trianing, then keep training
+                        # end_signal in training, then keep training
                         continue
                 else:
                     # convert to tensor again

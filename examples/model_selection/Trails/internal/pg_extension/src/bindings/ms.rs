@@ -259,7 +259,7 @@ pub fn benchmark_filtering_latency_in_db(
         &record_task_json,
         "records_results");
 
-    // Step 4: Return to PostgresSQL
+    // Step 4: Return to PostgreSQL
     return serde_json::json!(return_result);
 }
 

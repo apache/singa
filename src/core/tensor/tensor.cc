@@ -525,7 +525,7 @@ Tensor &Tensor::Transpose() {
 // transpose with axes
 Tensor &Tensor::Transpose(const vector<size_t> &axes) {
   CHECK_EQ(axes.size(), shape_.size())
-      << "Tranpose axes's length should be equal to shape";
+      << "Transpose axes's length should be equal to shape";
 
   auto shape = shape_;
   auto stride = stride_;
@@ -718,7 +718,7 @@ void RepeatDataToFrom(bool broadcast_flag, const vector<size_t> &repeats,
 }
 
 //============================================================================
-/// typedef DType accroding to type value.
+/// typedef DType according to type value.
 /// DType would be used in the code block __VA_ARGS__.
 #define TYPE_SWITCH(type, DType, ...)                               \
   do {                                                              \
@@ -749,7 +749,7 @@ void RepeatDataToFrom(bool broadcast_flag, const vector<size_t> &repeats,
         break;                                                      \
       }                                                             \
       default:                                                      \
-        LOG(FATAL) << "Unknow data type = " << DataType_Name(type); \
+        LOG(FATAL) << "Unknown data type = " << DataType_Name(type); \
     }                                                               \
   } while (0)
 
@@ -868,7 +868,7 @@ template <typename SType>
 void Tensor::get_value(SType *value, const size_t num) const {
   CHECK(device_ == defaultDevice);
   Tensor t(shape_, device_, data_type_);
-  // transform function arrange data in memory considering stride
+  // transform function arrange data in memory considerring stride
   singa::Transform(*this, &t);
   auto ptr = static_cast<const SType *>(t.block()->data());
   for (size_t i = 0; i < num; i++) value[i] = ptr[i];
@@ -1194,8 +1194,8 @@ Tensor Average(const Tensor &M, int axis) {
   // D CastTo(S x) {
   //   return D(x);
   // }
-  // for speical types, e.g., fp16:
-  // tempalte<>
+  // for special types, e.g., fp16:
+  // template<>
   // fp16 CastType(float x) {
   //    ....
   // }
@@ -1207,7 +1207,7 @@ Tensor Average(const Tensor &M, int axis) {
     LOG(FATAL) << "Not currently support Sum over axis = " << axis;
   }
 }
-// TODO(wangwei) conside async exec
+// TODO(wangwei) consider async exec
 template <>
 float Sum<float>(const Tensor &in) {
   float s = 0.0f;
@@ -1700,7 +1700,7 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
           read_blocks, {C->block()}, "GEMMBatched");
     });
   } else {
-    LOG(FATAL) << "Un-supported tensor dimentions " << A.nDim() << "d matmul "
+    LOG(FATAL) << "Un-supported tensor dimensions " << A.nDim() << "d matmul "
                << B.nDim() << "d\n";
   }
 }
@@ -1774,7 +1774,7 @@ Tensor Contiguous(const Tensor &in) {
 // if tensor is not transposed yet, we change the shape and generate new stride
 // if tensor is already transposed, we reallocate the memory and generate stride
 Tensor &Tensor::Reshape(const Shape &shape) {
-  // Check original volumn with the new one
+  // Check original volume with the new one
   // do not use Product(shape_) due to stride 0 from broadcasting.
   // printf("reshape loc b\n");
   CHECK_EQ(Product(shape), Size());

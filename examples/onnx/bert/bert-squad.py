@@ -139,14 +139,14 @@ if __name__ == "__main__":
 
         # prepare the model
         if m is None:
-            logging.info("model compling...")
+            logging.info("model compiling...")
             m = MyModel(onnx_model)
             # m.compile(x_batch, is_train=False, use_graph=True, sequential=True)
 
         logging.info("model running for sample {}...".format(idx))
         outputs = m.forward(*x_batch)
 
-        logging.info("hanlde the result of sample {}...".format(idx))
+        logging.info("handle the result of sample {}...".format(idx))
         result = []
         for outp in outputs:
             result.append(tensor.to_numpy(outp))

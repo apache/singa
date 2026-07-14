@@ -60,7 +60,7 @@ class JPGEncoder : public Encoder {
 };
 #endif  // USE_OPENCV
 
-/// Convert values from tensors into a csv formated string.
+/// Convert values from tensors into a csv formatted string.
 class CSVEncoder : public Encoder {
  public:
   void Setup(const EncoderConf& conf) override {}
