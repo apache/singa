@@ -276,7 +276,7 @@ def run(global_rank,
             test_correct += accuracy(tensor.to_numpy(out_test), y)
 
         if DIST:
-            # Reduce the Evaulation Accuracy from Multiple Devices
+            # Reduce the Evaluation Accuracy from Multiple Devices
             test_correct = reduce_variable(test_correct, sgd, reducer)
 
         # Output the Evaluation Accuracy

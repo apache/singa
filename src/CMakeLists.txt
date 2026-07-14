@@ -110,7 +110,7 @@ IF(CODE_COVERAGE)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g --coverage")
 ENDIF(CODE_COVERAGE)
 
-#pass configure infor to swig
+#pass configure info to swig
 FILE(REMOVE "${CMAKE_CURRENT_SOURCE_DIR}/api/config.i")
 CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/api/config.i.in" "${CMAKE_CURRENT_SOURCE_DIR}/api/config.i")
 

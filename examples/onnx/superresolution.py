@@ -79,7 +79,7 @@ if __name__ == "__main__":
     # sg_ir = sonnx.prepare(onnx_model) # run without graph
     # y = sg_ir.run([img])
 
-    logging.info("model compling...")
+    logging.info("model compiling...")
     dev = device.create_cuda_gpu()
     x = tensor.PlaceHolder(img_y.shape, device=dev)
     model = MyModel(onnx_model)

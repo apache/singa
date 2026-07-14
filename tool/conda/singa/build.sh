@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-# to compile swig api files which depdend on numpy.i
+# to compile swig api files which depend on numpy.i
 # export CPLUS_INCLUDE_PATH=`python -c "from __future__ import print_function; import numpy; print(numpy.get_include())"`:$CPLUS_INCLUDE_PATH
 
 # to let cmake use the dependent libs installed by conda, including python

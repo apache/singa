@@ -47,7 +47,7 @@ def axis_helper(y_shape, x_shape):
         y_shape: the shape of result
         x_shape: the shape of x
     Return:
-        a tuple refering the axes
+        a tuple referring the axes
     """
     res = []
     j = len(x_shape) - 1
@@ -89,7 +89,7 @@ class TestPythonOperation(unittest.TestCase):
     def check_shape(self, actual, expect):
         self.assertEqual(
             actual, expect, 'shape mismatch, actual shape is %s'
-            ' exepcted is %s' %
+            ' expected is %s' %
             (_tuple_to_string(actual), _tuple_to_string(expect)))
 
     def _greater_helper(self, dev):
@@ -2428,7 +2428,7 @@ class TestPythonOperation(unittest.TestCase):
 
             result = autograd.div(x, x1)
             dx0, dx1 = result.creator.backward(dy.data)
-            # use realtive and total error instead of demical number
+            # use relative and total error instead of demical number
             np.testing.assert_allclose(tensor.to_numpy(result),
                                        y,
                                        rtol=1e-4,
@@ -2904,7 +2904,7 @@ class TestPythonOperation(unittest.TestCase):
         self.floor_test(gpu_dev)    
 
     def _test_scatter_elements(self, dev):
-        # testing witout axis
+        # testing without axis
         data = np.zeros((3, 3), dtype=np.float32)
         indices = np.array([[1, 0, 2], [0, 2, 1]], dtype=np.int32)
         updates = np.array([[1.0, 1.1, 1.2], [2.0, 2.1, 2.2]], dtype=np.float32)

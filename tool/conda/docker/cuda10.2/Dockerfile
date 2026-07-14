@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-# 18.04 has erros in ssh
+# 18.04 has errors in ssh
 FROM nvidia/cuda:10.2-devel-ubuntu16.04
 
 # install dependencies

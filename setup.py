@@ -22,17 +22,17 @@ inside the docker container created via tool/docker/devel/centos/cudaxx/Dockerfi
 
     # launch docker container
     $ nvidia-docker run -v <local singa dir>:/root/singa -it apache/singa:manylinux2014-cuda10.2
-    # build the wheel packag; replace cp36-cp36m to compile singa for other py version
+    # build the wheel package; replace cp36-cp36m to compile singa for other py version
     $ /opt/python/cp36-cp36m/bin/python setup.py bdist_wheel
     $ /opt/python/cp37-cp37m/bin/python setup.py bdist_wheel
     $ /opt/python/cp38-cp38/bin/python setup.py bdist_wheel
 
-The generted wheel file should be repaired by the auditwheel tool to make it 
+The generated wheel file should be repaired by the auditwheel tool to make it
 compatible with PEP513. Otherwise, the dependent libs will not be included in
 the wheel package and the wheel file will be rejected by PYPI website during
 uploading due to file name error.
 
-    # repair the wheel pakage and upload to pypi
+    # repair the wheel package and upload to pypi
     $ /opt/python/cp36-cp36m/bin/python setup.py audit
 
 For the Dockerfile with CUDA and CUDNN installed, the CUDA version and 
@@ -309,7 +309,7 @@ def customize_compiler_for_nvcc(self):
     If you subclass UnixCCompiler, it's not trivial to get your subclass
     injected in, and still have the right customizations (i.e.
     distutils.sysconfig.customize_compiler) run on it. So instead of going
-    the OO route, I have this. Note, it's kindof like a wierd functional
+    the OO route, I have this. Note, it's kindof like a weird functional
     subclassing going on.
     """
 
@@ -342,7 +342,7 @@ def customize_compiler_for_nvcc(self):
 
 
 class custom_build_ext(build_ext):
-    '''Customize the process for building the extension by chaning 
+    '''Customize the process for building the extension by changing
     the options for compiling swig files and cu files.
 
     Ref: https://github.com/python/cpython/blob/master/Lib/distutils/command/build_ext.py

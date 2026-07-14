@@ -542,7 +542,7 @@ class MlpSpace(SpaceWrapper):
         device = "cpu"
         if is_simulate:
             gtmlp = GTMLP(dataset)
-            # todo, we use hybird here.
+            # todo, we use hybrid here.
             # those are from the pre-calculator
             _train_time_per_epoch = gtmlp.get_score_one_model_time("cpu")
             score_time = _train_time_per_epoch
@@ -575,7 +575,7 @@ class MlpSpace(SpaceWrapper):
             #     batch_data=batch,
             #     batch_labels=target)
             #
-            # # re-init hte net
+            # # re-init the net
             # del super_net
             # # super_net = DNNModel(
             # super_net = SINGADNNModel(
@@ -607,7 +607,7 @@ class MlpSpace(SpaceWrapper):
 
             score_time = time.time() - score_time_begin
 
-            # re-init hte net
+            # re-init the net
             del super_net
         return score_time
 
@@ -633,7 +633,7 @@ class MlpSpace(SpaceWrapper):
                 noutput=self.model_cfg.num_labels)
             # super_net.init_embedding(requires_grad=True)
             # super_net.to(device)
-            # only train for ony iteratin to evaluat the time usage.
+            # only train for only iteration to evaluat the time usage.
             targs = copy.deepcopy(args)
             valid_auc, train_time_epoch, train_log = ModelTrainer.fully_train_arch(
                 model=super_net,
@@ -657,7 +657,7 @@ class MlpSpace(SpaceWrapper):
 
         if is_simulate:
             gtmlp = GTMLP(dataset)
-            # todo, we use hybird here.
+            # todo, we use hybrid here.
             # those are from the pre-calculator
             _train_time_per_epoch = gtmlp.get_score_one_model_time("cpu")
             score_time = _train_time_per_epoch
@@ -692,7 +692,7 @@ class MlpSpace(SpaceWrapper):
                 batch_data=batch,
                 batch_labels=target)
 
-            # re-init hte net
+            # re-init the net
             del super_net
             # super_net = DNNModel(
             super_net = SINGADNNModel(
@@ -715,7 +715,7 @@ class MlpSpace(SpaceWrapper):
 
             score_time = time.time() - score_time_begin
 
-            # re-init hte net
+            # re-init the net
             del super_net
 
         if is_simulate:
@@ -735,7 +735,7 @@ class MlpSpace(SpaceWrapper):
             # super_net.init_embedding(requires_grad=True)
             # super_net.to(device)
 
-            # only train for ony iteratin to evaluat the time usage.
+            # only train for only iteration to evaluat the time usage.
             targs = copy.deepcopy(args)
             valid_auc, train_time_epoch, train_log = ModelTrainer.fully_train_arch(
                 model=super_net,
@@ -778,7 +778,7 @@ class MlpSpace(SpaceWrapper):
 
     def sample_all_models(self) -> Generator[str, ModelMicroCfg, None]:
         assert isinstance(self.model_cfg, MlpMacroCfg)
-        # 2-dimensional matrix for the search spcae
+        # 2-dimensional matrix for the search space
         space = []
         for _ in range(self.model_cfg.num_layers):
             space.append(self.model_cfg.layer_choices)

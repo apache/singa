@@ -741,7 +741,7 @@ void Uniform<float, lang::Cpp>(const float low, const float high, Tensor *out,
 
 // ====================Blas operations======================================
 
-// warning, this function has block M overwritting to block M itself
+// warning, this function has block M overwriting to block M itself
 template <>
 void DGMM<float, lang::Cpp>(const bool side_right, const Tensor &M,
                             const Tensor &v, Tensor *out, Context *ctx) {
@@ -832,7 +832,7 @@ void Dot<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, float *out,
     const float *in2Ptr = static_cast<const float *>(in2.block()->data());
     *out = cblas_sdot(in1.Size(), in1Ptr, 1, in2Ptr, 1);
   } else {
-    LOG(FATAL) << "Dot, one of the input is tranposed. Not implemented yet.";
+    LOG(FATAL) << "Dot, one of the input is transposed. Not implemented yet.";
   }
 }
 template <>
@@ -845,7 +845,7 @@ void Dot<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
     float *outPtr = static_cast<float *>(out->block()->mutable_data());
     *outPtr = cblas_sdot(in1.Size(), in1Ptr, 1, in2Ptr, 1);
   } else {
-    LOG(FATAL) << "Dot, one of the input is tranposed. Not implemented yet.";
+    LOG(FATAL) << "Dot, one of the input is transposed. Not implemented yet.";
   }
 }
 

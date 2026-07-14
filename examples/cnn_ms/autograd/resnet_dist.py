@@ -33,7 +33,7 @@ if __name__ == "__main__":
     sgd = opt.DistOpt(sgd)
 
     if (sgd.global_rank == 0):
-        print("Start intialization...........", flush=True)
+        print("Start initialization...........", flush=True)
 
     dev = device.create_cuda_gpu_on(sgd.local_rank)
 

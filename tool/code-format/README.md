@@ -19,10 +19,10 @@
 
 # How to format code
 
-This guide is for singa devoloper who should sanitize the code
+This guide is for singa developer who should sanitize the code
 before merging into the main branch.
 
-## tools to auto formating code
+## tools to auto formatting code
 
 Install clang-format for C++:
 
@@ -35,13 +35,13 @@ Install yapf for Python:
 
 `pip install yapf`
 
-## Formating a single file
+## Formatting a single file
 
 - C++: `clang-format -i path/to/file`
 
 - Python: `yapf -i path/to/file`
 
-## Formating the whole project
+## Formatting the whole project
 usage: `bash tool/code-format/format.sh`
 
 ## Configuration:

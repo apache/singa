@@ -38,7 +38,7 @@ def axis_helper(y_shape, x_shape):
         y_shape: the shape of result
         x_shape: the shape of x
     Return:
-        a tuple refering the axes
+        a tuple referring the axes
     """
     res = []
     j = len(x_shape) - 1
@@ -133,7 +133,7 @@ def backward(y, dy=None):
         dy: a number or a Tensor instance, for the gradient of the
             objective/loss w.r.t y, usually None, i.e., 1.0
     Return:
-        yeild the parameter (tensor with stores_grad true) and the
+        yield the parameter (tensor with stores_grad true) and the
             gradient tensors.
     """
     assert isinstance(y, Tensor), "wrong input type."
@@ -180,7 +180,7 @@ def backward(y, dy=None):
             # not_ready[src_op][y_idx] records the intermediate gradient
             # of the y_idx'th output of src_op. 'intermediate gradient'
             # indicates that if this output is used in multiple children
-            # operations, then we have to add the graident (dx) from all these
+            # operations, then we have to add the gradient (dx) from all these
             # children operations. When src_op is ready, it means that
             # the gradient of all its outputs are available, i.e. all children
             # operations have been backwarded.
@@ -191,7 +191,7 @@ def backward(y, dy=None):
 
             y_idx = src_op.y_id2idx[x_id]
             if src_op not in not_ready:
-                # src_op may have mulitple outputs
+                # src_op may have multiple outputs
                 not_ready[src_op] = [None for _ in src_op.y_id2idx]
                 not_ready[src_op][y_idx] = dx
             else:
@@ -342,7 +342,7 @@ class Operator(object):
 
 
 class Dummy(Operator):
-    """Dummy operation whice serves as a placehoder for autograd
+    """Dummy operation whice serves as a placeholder for autograd
     Args:
         name(string): set it for debug
     """
@@ -556,7 +556,7 @@ def clip(x, min=None, max=None):
 
 class Identity(Operator):
     """
-    Init a identity operator
+    Init an identity operator
     """
 
     def __init__(self):
@@ -583,7 +583,7 @@ class Identity(Operator):
 
 def identity(x):
     """
-    Init a identity operator.
+    Init an identity operator.
     Args:
         x (Tensor): input tensor.
     Returns:
@@ -1159,7 +1159,7 @@ class BinaryCrossEntropy(Operator):
         self.t = t.data
 
     """
-    Calculte negative log likelihood loss for a batch of training data.
+    Calculate negative log likelihood loss for a batch of training data.
     """
 
     def forward(self, x):
@@ -1216,7 +1216,7 @@ class CrossEntropy(Operator):
         self.t = t.data
 
     """
-    Calculte negative log likelihood loss for a batch of training data.
+    Calculate negative log likelihood loss for a batch of training data.
     """
 
     def forward(self, x):
@@ -1644,9 +1644,9 @@ class _Conv2d(Operator):
         """
         Args:
             handle (object): ConvHandle for cpu or CudnnConvHandle for gpu
-            odd_padding (tuple of four ints):, the odd paddding is the value
+            odd_padding (tuple of four ints):, the odd padding is the value
                 that cannot be handled by the tuple padding (w, h) mode so
-                we need to firstly handle the input, then use the nomal padding
+                we need to firstly handle the input, then use the normal padding
                 method.
         """
         super(_Conv2d, self).__init__()
@@ -1726,9 +1726,9 @@ def conv2d(handle, x, W, b=None, odd_padding=(0, 0, 0, 0)):
         x (Tensor): input
         W (Tensor): weight
         b (Tensor): bias
-        odd_padding (tuple of four ints):, the odd paddding is the value
+        odd_padding (tuple of four ints):, the odd padding is the value
             that cannot be handled by the tuple padding (w, h) mode so
-            we need to firstly handle the input, then use the nomal padding
+            we need to firstly handle the input, then use the normal padding
             method.
     """
     if b is None:
@@ -1854,7 +1854,7 @@ class _Pooling2d(Operator):
         Args:
             handle (object): PoolingHandle for cpu or CudnnPoolingHandle for
                 gpu
-            odd_padding (tuple of four int): the odd paddding is the value
+            odd_padding (tuple of four int): the odd padding is the value
                 that cannot be handled by the tuple padding (w, h) mode so
                 it needs to firstly handle the input, then use the normal
                 padding method.
@@ -1908,7 +1908,7 @@ def pooling_2d(handle, x, odd_padding=(0, 0, 0, 0)):
         handle (object): PoolingHandle for cpu or CudnnPoolingHandle for
             gpu
         x (Tensor): input
-        odd_padding (tuple of four int): the odd paddding is the value
+        odd_padding (tuple of four int): the odd padding is the value
             that cannot be handled by the tuple padding (w, h) mode so
             it needs to firstly handle the input, then use the normal
             padding method.
@@ -3712,7 +3712,7 @@ class Gemm(Operator):
 
     def forward(self, A, B, C=None):
         """
-        forward propogation of Gemm
+        forward propagation of Gemm
         Args:
             A (CTensor): The shape of A should be (M, K) if transA is 0, or
                 (K, M) if transA is non-zero.
@@ -3735,7 +3735,7 @@ class Gemm(Operator):
 
     def backward(self, dy):
         """
-        backward propogation of Gemm
+        backward propagation of Gemm
         Args:
             dy (CTensor): The shape of A should be (M, K) if transA is 0, or (K, M) if transA is non-zero.
         Returns:
@@ -3816,7 +3816,7 @@ class GlobalAveragePool(Operator):
 
     def forward(self, x):
         """
-        forward propogation of GlobalAveragePool
+        forward propagation of GlobalAveragePool
         Args:
             x (CTensor): the input tensor
         Returns:
@@ -3848,7 +3848,7 @@ class GlobalAveragePool(Operator):
 
     def backward(self, dy):
         """
-        backward propogation of GlobalAveragePool
+        backward propagation of GlobalAveragePool
         Args:
             dy (CTensor): the gradient tensor from upper operations
         Returns:
@@ -4992,7 +4992,7 @@ class CosSim(Operator):
         ad = singa.Reshape(ad, list(ad.shape()) + [1])  # b * 1
         bd = singa.Reshape(bd, list(bd.shape()) + [1])  # b * 1
         ret = singa.Reshape(ret, list(ret.shape()) + [1])  # b * 1
-        dy = singa.Reshape(dy, list(dy.shape()) + [1])  # boardcast
+        dy = singa.Reshape(dy, list(dy.shape()) + [1])  # broadcast
         da = singa.__sub__(singa.__div__(b, ab),
                            singa.__div__(singa.__mul__(ret, a), ad))
         db = singa.__sub__(singa.__div__(a, ab),
@@ -5107,7 +5107,7 @@ class Expand(Operator):
 
 def expand(x, shape):
     """
-    Produces a Expand operator
+    Produces an Expand operator
     Args:
         x (Tensor): input tensor.
         shape (list[int]: indicates the shape you want to expand to, 
@@ -5332,7 +5332,7 @@ class UpSample(Operator):
 
 def upsample(x, mode, scales):
     """
-    Produces a upsample operator
+    Produces an upsample operator
     Args:
         x (Tensor): input tensor.
         scales (list[int]): The scale array along each dimension. It takes 

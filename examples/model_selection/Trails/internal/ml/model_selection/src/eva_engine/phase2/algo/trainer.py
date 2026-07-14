@@ -592,7 +592,7 @@ class ModelTrainer:
                 # print ("test_correct: ", test_correct)
 
             if DIST:
-                # Reduce the evaulation accuracy from multiple devices
+                # Reduce the evaluation accuracy from multiple devices
                 test_correct = reduce_variable(test_correct, mssgd, reducer)
 
             # Output the evaluation accuracy

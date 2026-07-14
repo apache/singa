@@ -36,7 +36,7 @@ pub fn run_python_function(
     let parameters_str = parameters.to_string();
     let results = Python::with_gil(|py| -> String {
 
-        // load package such that it can import python packages, we do this onyl for integrate with polarDB env
+        // load package such that it can import python packages, we do this only for integrate with polarDB env
         let sys_module = py.import("sys").unwrap();
         let sys_path: &PyList = sys_module.getattr("path").unwrap().downcast().unwrap();
         sys_path.append("/home/postgres/Trails/internal/ml/model_selection/").unwrap();

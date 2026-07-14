@@ -54,14 +54,14 @@ NcclIdHolder::~NcclIdHolder() {}
 Communicator::Communicator(int local_rank, int world_size,
                            const NcclIdHolder &holder, int buffSize) {
   maxSize = (size_t)buffSize;
-  // this contructor is for NCCL WITHOUT MPI
+  // this constructor is for NCCL WITHOUT MPI
   UseMPI = false;
   // Determine the rank of the collective communication
   this->world_size = world_size;
   this->local_rank = local_rank;
   this->global_rank = local_rank;
 
-  // copy the nccl unqiue id from the input id holder
+  // copy the nccl unique id from the input id holder
   id = holder.id;
 
   // setup cuda stream and nccl communicator
@@ -72,7 +72,7 @@ Communicator::Communicator(int local_rank, int world_size,
 // contructer for application with MPI
 Communicator::Communicator(int buffSize) {
   maxSize = (size_t)buffSize;
-  // this contructor is for NCCL WITH MPI
+  // this constructor is for NCCL WITH MPI
   UseMPI = true;
 
   // MPI initialization
@@ -114,7 +114,7 @@ void Communicator::setup() {
 }
 
 void Communicator::halfInit() {
-  // initialze the buffer
+  // initialize the buffer
   CUDA_CHECK(cudaMalloc(&fusedSendBuffHalf, maxSize * sizeof(__half)));
   CUDA_CHECK(cudaMalloc(&fusedRecvBuffHalf, maxSize * sizeof(__half)));
   halfInitialized = true;

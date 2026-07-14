@@ -261,7 +261,7 @@ class Tensor {
   Tensor &Transpose(const vector<size_t> &axes);
 
   /// Return a view of the input tensor whose shape is broadcasted to be
-  /// compitable with the given shape
+  /// compatible with the given shape
   Tensor &Broadcast(const Shape &shape, const int ignore_last_dim = 0);
 
   /// Reset the shape, device, and data type as given tensor.
@@ -331,7 +331,7 @@ ToType TypeCast(const FromType &x) {
   return static_cast<ToType>(x);
 }
 
-Tensor Boradcast(const Shape &shape);
+Tensor Broadcast(const Shape &shape);
 
 /// Reshape the given tensor and generate a new tensor; the total vol should
 /// match
@@ -346,7 +346,7 @@ Tensor Resize(const Tensor &in, const Shape &s);
 Tensor Transpose(const Tensor &in);
 
 /// Return a view of the input tensor whose shape is broadcasted to be
-/// compitable with the given shape
+/// compatible with the given shape
 Tensor Broadcast(const Tensor &in, const Shape &shape,
                  const int ignore_last_dim = 0);
 
@@ -425,15 +425,15 @@ void Transform(const Tensor &in, Tensor *out);
 Tensor ReLUBackward(const Tensor &in1, const Tensor &in2);
 void ReLUBackward(const Tensor &in1, const Tensor &in2, Tensor *out);
 
-/// Element-wise opeartion, out[i]=in[i]^x
+/// Element-wise operation, out[i]=in[i]^x
 template <typename SType>
 Tensor Pow(const Tensor &in, const SType x);
-/// Element-wise opeartion, out[i]=in[i]^x
+/// Element-wise operation, out[i]=in[i]^x
 template <typename SType>
 void Pow(const Tensor &in, const SType x, Tensor *out);
-/// Element-wise opeartion, out[i]=baes[i]^exp[i]
+/// Element-wise operation, out[i]=baes[i]^exp[i]
 Tensor Pow(const Tensor &base, const Tensor &exp);
-/// Element-wise opeartion, out[i]=baes[i]^exp[i]
+/// Element-wise operation, out[i]=baes[i]^exp[i]
 void Pow(const Tensor &base, const Tensor &exp, Tensor *out);
 
 /// Element-wise operation, out[i]= (in[i] < x) ? 1.f : 0.f
@@ -598,13 +598,13 @@ void Axpy(SType alpha, const Tensor &in, Tensor *out);
 
 void Axpy(const Tensor &alpha, const Tensor &in, Tensor *out);
 
-/// Do matrix vector multipication or matrix matrix multiplication depdending
+/// Do matrix vector multiplication or matrix matrix multiplication depending
 /// on the Tensor shape.  result = A * B
 Tensor Mult(const Tensor &A, const Tensor &B);
-/// Do matrix vector multipication or matrix matrix multiplication depdending
+/// Do matrix vector multiplication or matrix matrix multiplication depending
 /// on the Tensor shape.  C = A * B
 void Mult(const Tensor &A, const Tensor &B, Tensor *C);
-/// Do matrix vector multipication or matrix matrix multiplication depdending
+/// Do matrix vector multiplication or matrix matrix multiplication depending
 /// on the Tensor shape. out = alpha lhs * rhs + beta * out
 template <typename SType>
 void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,

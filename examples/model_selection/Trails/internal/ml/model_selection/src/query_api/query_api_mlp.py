@@ -43,7 +43,7 @@ exp_mlp_score_frappe = os.path.join(base_dir, "micro_sensitivity/3_batch_size/4/
 exp_mlp_score_uci = os.path.join(base_dir, "micro_sensitivity/3_batch_size/4/score_mlp_sp_uci_diabetes_batch_size_32_cpu.json")
 exp_mlp_score_criteo = os.path.join(base_dir, "micro_sensitivity/3_batch_size/4/score_mlp_sp_criteo_batch_size_32_cpu.json")
 
-# todo here we use weigth sharing.
+# todo here we use weight sharing.
 mlp_score_frappe_weight_share = os.path.join(base_dir, "tab_data/weight_share_nas_frappe.json")
 
 # pre computed result
@@ -76,7 +76,7 @@ train_one_epoch_time_dict = {
 
 class GTMLP:
     _instances = {}
-    # use those algoroithm => new tfmem
+    # use those algorithm => new tfmem
     default_alg_name_list = ["nas_wot", "synflow"]
     device = "cpu"
 

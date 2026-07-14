@@ -690,7 +690,7 @@ class DistOpt(object):
     on multiprocessing. Each process has an individual rank, which gives information of
     which GPU the individual process is using. The training data is partitioned, so that
     each process can evaluate the sub-gradient based on the partitioned training data.
-    Once the sub-graident is calculated on each processes, the overall stochastic gradient
+    Once the sub-gradient is calculated on each processes, the overall stochastic gradient
     is obtained by all-reducing the sub-gradients evaluated by all processes. The all-reduce
     operation is supported by the NVidia Collective Communication Library (NCCL).
 
@@ -721,7 +721,7 @@ class DistOpt(object):
                  buffSize=4194304):
         self.opt = opt
         if nccl_id is None:
-            # constructure for application using MPI
+            # constructor for application using MPI
             self.communicator = singa.Communicator(buffSize)
         else:
             # constructor for application using python multi-process module
@@ -954,7 +954,7 @@ class DistOpt(object):
         for p, g in autograd.backward(loss):
             # every parameters update locally
             self.opt.update(p, g)
-            # then do the partial parameter sychronization
+            # then do the partial parameter synchronization
             if p.size() > threshold:
                 # larger than threshold -> reduced directly
                 # k is the partition number of the full gradient set
