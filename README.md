@@ -21,7 +21,7 @@
 
 # Apache SINGA
 
-![Native Ubuntu build status](https://github.com/apache/singa/workflows/Native-Ubuntu/badge.svg)
+[![Native-Ubuntu](https://github.com/apache/singa/actions/workflows/ubuntu.yaml/badge.svg?branch=master)](https://github.com/apache/singa/actions/workflows/ubuntu.yaml)
 ![Native Mac build status](https://github.com/apache/singa/workflows/Native-MacOS/badge.svg)
 ![conda build status](https://github.com/apache/singa/workflows/conda/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/apache-singa/badge/?version=latest)](https://apache-singa.readthedocs.io/en/latest/?badge=latest)
