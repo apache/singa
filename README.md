@@ -23,7 +23,7 @@
 
 ![Native Ubuntu build status](https://github.com/apache/singa/workflows/Native-Ubuntu/badge.svg)
 ![Native Mac build status](https://github.com/apache/singa/workflows/Native-MacOS/badge.svg)
-![conda build status](https://github.com/apache/singa/workflows/conda/badge.svg)
+[![conda](https://github.com/apache/singa/actions/workflows/conda.yaml/badge.svg?branch=master)](https://github.com/apache/singa/actions/workflows/conda.yaml)
 [![Documentation Status](https://readthedocs.org/projects/apache-singa/badge/?version=latest)](https://apache-singa.readthedocs.io/en/latest/?badge=latest)
 ![License](http://img.shields.io/:license-Apache%202.0-blue.svg)
 [![Follow Apache SINGA on Twitter](https://img.shields.io/twitter/follow/apachesinga.svg?style=social&label=Follow)](https://twitter.com/ApacheSinga)
