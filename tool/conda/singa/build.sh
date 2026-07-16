@@ -32,12 +32,13 @@ else
 fi
 
 
-if [ $DIST == "ON" ]; then
+if [ "${DIST:-}" == "ON" ]; then
 	USE_DIST=ON
 else
 	USE_DIST=OFF
 fi
 
+rm -rf build
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX=$PREFIX -DUSE_CUDA=$USE_CUDA \
