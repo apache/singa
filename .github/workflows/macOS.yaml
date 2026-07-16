@@ -27,33 +27,33 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.7"
+          python-version: "3.11"
       - name: install-build-dependencies
         run: |
-         brew install protobuf swig opencv glog lmdb numpy
-         wget https://github.com/oneapi-src/oneTBB/releases/download/v2020.1/tbb-2020.1-mac.tgz 
+         brew install protobuf abseil swig lmdb numpy
+         echo "BREW_PREFIX=$(brew --prefix)" >> "$GITHUB_ENV"
+         echo "PROTOBUF_ROOT=$(brew --prefix protobuf)" >> "$GITHUB_ENV"
+         echo "ABSL_ROOT=$(brew --prefix abseil)" >> "$GITHUB_ENV"
+         wget https://github.com/oneapi-src/oneTBB/releases/download/v2020.1/tbb-2020.1-mac.tgz
          mkdir /tmp/tbb
          tar zxvf tbb-2020.1-mac.tgz -C /tmp/tbb --strip-components=1
-         mv /tmp/tbb/lib/lib* /usr/local/lib/
-         pip3 install numpy && wget https://github.com/oneapi-src/oneDNN/releases/download/v1.2/dnnl_mac_1.2.0_cpu_tbb.tgz -P /tmp
-         tar zxf /tmp/dnnl_mac_1.2.0_cpu_tbb.tgz -C /tmp
+         echo "TBB_ROOT=/tmp/tbb" >> "$GITHUB_ENV"
+         python -m pip install numpy
       - name: configure
-        run: mkdir build && cd build && cmake -DUSE_PYTHON3=YES -DENABLE_TEST=YES -DUSE_DNNL=YES ..
-        env:
-          CMAKE_INCLUDE_PATH: /usr/local/opt/openblas/include:$CMAKE_INCLUDE_PATH
-          CMAKE_LIBRARY_PATH: /usr/local/opt/openblas/lib:$CMAKE_LIBRARY_PATH
-          DNNL_ROOT: /tmp/dnnl_mac_1.2.0_cpu_tbb/
+        run: |
+         export CMAKE_INCLUDE_PATH="$PROTOBUF_ROOT/include:$ABSL_ROOT/include:$BREW_PREFIX/opt/openblas/include:$CMAKE_INCLUDE_PATH"
+         export CMAKE_LIBRARY_PATH="$PROTOBUF_ROOT/lib:$ABSL_ROOT/lib:$BREW_PREFIX/opt/openblas/lib:$CMAKE_LIBRARY_PATH"
+         export CXXFLAGS="-I$PROTOBUF_ROOT/include -I$ABSL_ROOT/include -I$(python -c 'import numpy; print(numpy.get_include())') $CXXFLAGS"
+         mkdir build && cd build && cmake -DUSE_PYTHON3=YES -DENABLE_TEST=YES -DUSE_DNNL=NO -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ..
       - name: build
-        run: cd build && make
-        env:
-          CXXFLAGS: -I  /Users/runner/hostedtoolcache/Python/3.7.8/x64/lib/python3.7/site-packages/numpy/core/include $CXXFLAGS
-          LD_LIBRARY_PATH: /usr/local/opt/openblas/lib:/tmp/dnnl_mac_1.2.0_cpu_tbb/lib:$LD_LIBRARY_PATH
+        run: |
+         export LD_LIBRARY_PATH="$BREW_PREFIX/opt/openblas/lib:/tmp/tbb/lib:$LD_LIBRARY_PATH"
+         export DYLD_LIBRARY_PATH="$BREW_PREFIX/opt/openblas/lib:/tmp/tbb/lib:$DYLD_LIBRARY_PATH"
+         cd build && make
       - name: C++ test
         run: |
-         install_name_tool -change libdnnl.1.dylib /tmp/dnnl_mac_1.2.0_cpu_tbb/lib/libdnnl.1.dylib /Users/runner/work/singa/singa/build/lib/libsinga.dylib
-         install_name_tool -change libdnnl.1.dylib /tmp/dnnl_mac_1.2.0_cpu_tbb/lib/libdnnl.1.dylib build/bin/test_singa
+         export LD_LIBRARY_PATH="$BREW_PREFIX/opt/openblas/lib:/tmp/tbb/lib:$LD_LIBRARY_PATH"
+         export DYLD_LIBRARY_PATH="$BREW_PREFIX/opt/openblas/lib:/tmp/tbb/lib:$DYLD_LIBRARY_PATH"
          build/bin/test_singa
-        env:
-          LD_LIBRARY_PATH: /usr/local/opt/openblas/lib:/tmp/dnnl_mac_1.2.0_cpu_tbb/lib:$LD_LIBRARY_PATH
