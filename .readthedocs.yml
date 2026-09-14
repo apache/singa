@@ -17,11 +17,12 @@
 
 # .readthedocs.yml
 build:
-  image: stable
+  os: ubuntu-24.04
+  tools:
+    python: "miniforge3-latest"
+
 conda:
   environment: doc/environment.yml
-python:
-    version: 3.7
 
 # Required
 version: 2
