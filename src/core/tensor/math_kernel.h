@@ -24,6 +24,7 @@
 #include "singa/singa_config.h"
 #ifdef USE_CUDA
 
+#include <thrust/count.h>
 #include <thrust/execution_policy.h>
 #include <thrust/remove.h>
 #include <thrust/sort.h>

@@ -18,16 +18,25 @@
 #
 
 c_compiler_version:         # [linux]
-    - 5.4                   # [linux]
+    - 11                    # [linux]
 cxx_compiler_version:       # [linux]
-    - 5.4                   # [linux]
+    - 11                    # [linux]
 # https://docs.conda.io/projects/conda-build/en/latest/resources/compiler-tools.html#macos-sdk
 CONDA_BUILD_SYSROOT:
     - "/Applications/Xcode_11.7.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk" # [osx]
 cudnn:                      # [linux]
+    - "8.9.2.26 cuda12_0"   # [environ.get("CUDA")=="12.2"]
     - "7.6.5 cuda10.2_0"    # [environ.get("CUDA")=="10.2"]
 #    - "7.6.5 cuda10.0_0"    # [environ.get("CUDA")=="10.0"]
 #    - "7.6.5 cuda9.0_0"     # [environ.get("CUDA")=="9.0"]
+cuda_nvcc:                  # [linux]
+    - 12.2.140              # [environ.get("CUDA")=="12.2"]
+cuda_libraries:             # [linux]
+    - 12.2.2                # [environ.get("CUDA")=="12.2"]
+cuda_cudart:                # [linux]
+    - 12.2.140              # [environ.get("CUDA")=="12.2"]
+cuda_cccl:                  # [linux]
+    - 12.2.140              # [environ.get("CUDA")=="12.2"]
 dnnl:
     - 1.1
 python:
@@ -40,10 +49,11 @@ nccl:
 mpich:
     - 3.3.2
 build_str:
-    - "cudnn7.6.5_cuda10.2"   # [environ.get("CUDA")=="10.2"] && [environ.get("DIST")=="OFF"]
-    - "cudnn7.6.5_cuda10.0"   # [environ.get("CUDA")=="10.0"] && [environ.get("DIST")=="OFF"]
-    - "cudnn7.6.5_cuda9.0"    # [environ.get("CUDA")=="9.0"] && [environ.get("DIST")=="OFF"]
+    - "cudnn8.9.2_cuda12.2"  # [environ.get("CUDA")=="12.2" and environ.get("DIST")=="OFF"]
+    - "cudnn7.6.5_cuda10.2"   # [environ.get("CUDA")=="10.2" and environ.get("DIST")=="OFF"]
+    - "cudnn7.6.5_cuda10.0"   # [environ.get("CUDA")=="10.0" and environ.get("DIST")=="OFF"]
+    - "cudnn7.6.5_cuda9.0"    # [environ.get("CUDA")=="9.0" and environ.get("DIST")=="OFF"]
     - "cpu"                   # [environ.get("CUDA", "")== ""]
-    - "cudnn7.6.5_cuda10.2_nccl2.6.4.1_mpich3.3.2"     # [environ.get("CUDA")=="10.2"] && [environ.get("DIST")=="ON"]
-    - "cudnn7.6.5_cuda10.0_nccl2.4.8.1_mpich3.3.2"     # [environ.get("CUDA")=="10.0"] && [environ.get("DIST")=="ON"]
-    - "cudnn7.6.5_cuda9.0_nccl2.4.8.1_mpich3.3.2"      # [environ.get("CUDA")=="9.0"] && [environ.get("DIST")=="ON"]
+    - "cudnn7.6.5_cuda10.2_nccl2.6.4.1_mpich3.3.2"     # [environ.get("CUDA")=="10.2" and environ.get("DIST")=="ON"]
+    - "cudnn7.6.5_cuda10.0_nccl2.4.8.1_mpich3.3.2"     # [environ.get("CUDA")=="10.0" and environ.get("DIST")=="ON"]
+    - "cudnn7.6.5_cuda9.0_nccl2.4.8.1_mpich3.3.2"      # [environ.get("CUDA")=="9.0" and environ.get("DIST")=="ON"]

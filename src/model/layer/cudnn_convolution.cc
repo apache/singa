@@ -19,6 +19,7 @@
 #ifdef USE_CUDNN
 #include <cudnn.h>
 #include <chrono>
+#include <limits>
 #include "./cudnn_utils.h"
 #include "singa/utils/logging.h"
 
@@ -88,6 +89,62 @@ void CudnnConvolution::InitCudnn(const Tensor &input) {
                                          channels_, kernel_h_, kernel_w_));
   if (prefer_ == "fastest" || prefer_ == "limited_workspace" ||
       prefer_ == "no_workspace") {
+#if CUDNN_MAJOR >= 8
+    const int max_algos = 16;
+    int num_fp_alg = 0, num_bp_filt_alg = 0, num_bp_data_alg = 0;
+    cudnnConvolutionFwdAlgoPerf_t fp_alg_perf[max_algos];
+    cudnnConvolutionBwdFilterAlgoPerf_t bp_filt_perf[max_algos];
+    cudnnConvolutionBwdDataAlgoPerf_t bp_data_perf[max_algos];
+    const size_t workspace_limit =
+        prefer_ == "fastest" ? std::numeric_limits<size_t>::max()
+                             : (prefer_ == "limited_workspace" ?
+                                workspace_byte_limit_ : 0);
+
+    CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm_v7(
+                  ctx->cudnn_handle, x_desc_, filter_desc_, conv_desc_, y_desc_,
+                  max_algos, &num_fp_alg, fp_alg_perf));
+    bool found_alg = false;
+    for (int i = 0; i < num_fp_alg; ++i) {
+      if (fp_alg_perf[i].status == CUDNN_STATUS_SUCCESS &&
+          fp_alg_perf[i].memory <= workspace_limit) {
+        fp_alg_ = fp_alg_perf[i].algo;
+        found_alg = true;
+        break;
+      }
+    }
+    CHECK(found_alg) << "No cuDNN forward convolution algorithm matched "
+                     << prefer_ << " workspace preference";
+
+    CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm_v7(
+                  ctx->cudnn_handle, x_desc_, y_desc_, conv_desc_, filter_desc_,
+                  max_algos, &num_bp_filt_alg, bp_filt_perf));
+    found_alg = false;
+    for (int i = 0; i < num_bp_filt_alg; ++i) {
+      if (bp_filt_perf[i].status == CUDNN_STATUS_SUCCESS &&
+          bp_filt_perf[i].memory <= workspace_limit) {
+        bp_filter_alg_ = bp_filt_perf[i].algo;
+        found_alg = true;
+        break;
+      }
+    }
+    CHECK(found_alg) << "No cuDNN backward-filter convolution algorithm matched "
+                     << prefer_ << " workspace preference";
+
+    CUDNN_CHECK(cudnnGetConvolutionBackwardDataAlgorithm_v7(
+                  ctx->cudnn_handle, filter_desc_, y_desc_, conv_desc_, x_desc_,
+                  max_algos, &num_bp_data_alg, bp_data_perf));
+    found_alg = false;
+    for (int i = 0; i < num_bp_data_alg; ++i) {
+      if (bp_data_perf[i].status == CUDNN_STATUS_SUCCESS &&
+          bp_data_perf[i].memory <= workspace_limit) {
+        bp_data_alg_ = bp_data_perf[i].algo;
+        found_alg = true;
+        break;
+      }
+    }
+    CHECK(found_alg) << "No cuDNN backward-data convolution algorithm matched "
+                     << prefer_ << " workspace preference";
+#else
     cudnnConvolutionFwdPreference_t fwd_pref;
     cudnnConvolutionBwdFilterPreference_t bwd_filt_pref;
     cudnnConvolutionBwdDataPreference_t bwd_data_pref;
@@ -110,10 +167,10 @@ void CudnnConvolution::InitCudnn(const Tensor &input) {
     CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm(
                   ctx->cudnn_handle, x_desc_, y_desc_, conv_desc_, filter_desc_,
                   bwd_filt_pref, workspace_byte_limit_, &bp_filter_alg_));
-    // deprecated in cudnn v7
     CUDNN_CHECK(cudnnGetConvolutionBackwardDataAlgorithm(
                   ctx->cudnn_handle, filter_desc_, y_desc_, conv_desc_, x_desc_,
                   bwd_data_pref, workspace_byte_limit_, &bp_data_alg_));
+#endif  // CUDNN_MAJOR >= 8
   } else if (prefer_ == "autotune") {
     const int topk = 1;
     int num_fp_alg, num_bp_filt_alg, num_bp_data_alg;
