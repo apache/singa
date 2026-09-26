@@ -27,7 +27,7 @@ import json
 import zipfile
 import numpy as np
 from functools import wraps
-from collections import Iterable
+from collections.abc import Iterable
 
 from singa import tensor
 from singa import autograd
