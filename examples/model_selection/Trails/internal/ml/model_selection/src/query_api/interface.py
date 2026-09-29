@@ -25,7 +25,7 @@ from typing import *
 
 def profile_NK_trade_off(dataset):
     """
-    This is get from the profling result.  
+    This is obtained from the profiling results.
     We try various N/K combinations, and find this is better.
     """
     if dataset == Config.c10:

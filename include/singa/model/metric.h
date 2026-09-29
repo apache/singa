@@ -47,15 +47,15 @@ class Metric {
   /// Compute the metric for each data sample
   virtual Tensor Forward(const Tensor& prediction, const Tensor& target) = 0;
 
-  /// Comptue the metric value averaged over all samples (in a batch)
+  /// Compute the metric value averaged over all samples (in a batch)
   float Evaluate(const Tensor& prediction, const Tensor& target) {
     const Tensor metric = Forward(prediction, target);
     return Sum<float>(metric) / (1.0f * metric.Size());
   }
 };
-/// Compute the accuray of the prediction, which is matched against the
+/// Compute the accuracy of the prediction, which is matched against the
 /// ground truth labels.
-/// TODO(wangwei) consider multi-label cases.
+/// TODO(wangwei) considerr multi-label cases.
 class Accuracy : public Metric {
  public:
   /// Set meta fields from user configurations.

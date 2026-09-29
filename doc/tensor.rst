@@ -29,7 +29,7 @@ allocated on the same device except copy functions.
 Tensor implementation
 ---------------------
 
-SINGA has three different sets of implmentations of Tensor functions, one for each
+SINGA has three different sets of implementations of Tensor functions, one for each
 type of Device.
 
 * 'tensor_math_cpp.h' implements operations using Cpp (with CBLAS) for CppGPU devices.

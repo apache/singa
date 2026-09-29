@@ -139,13 +139,13 @@ if __name__ == "__main__":
     # sg_ir = sonnx.prepare(onnx_model) # run without graph
     # y = sg_ir.run([img])
 
-    logging.info("model compling...")
+    logging.info("model compiling...")
     dev = device.create_cuda_gpu()
     x = tensor.PlaceHolder(img.shape, device=dev)
     model = MyModel(onnx_model)
     model.compile([x], is_train=False, use_graph=True, sequential=True)
 
-    # verifty the test
+    # verify the test
     # from utils import load_dataset
     # inputs, ref_outputs = load_dataset(os.path.join('/tmp', 'tiny_yolov2', 'test_data_set_0'))
     # x_batch = tensor.Tensor(device=dev, data=inputs[0])

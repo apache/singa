@@ -16,7 +16,7 @@
     specific language governing permissions and limitations
     under the License.
 -->
-# Train CNN over Cifar-10
+# Train CNN over CIFAR-10
 
 
 Convolution neural network (CNN) is a type of feed-forward artificial neural
@@ -42,7 +42,7 @@ are required. Please refer to the installation page for detailed instructions.
 
 ### Data preparation
 
-The binary Cifar-10 dataset could be downloaded by
+The binary CIFAR-10 dataset could be downloaded by
 
     python download_data.py bin
 
@@ -55,7 +55,7 @@ The Python version could be downloaded by
 There are four training programs
 
 1. train.py. The following command would train the VGG model using the python
-version of the Cifar-10 dataset in 'cifar-10-batches-py' folder.
+version of the CIFAR-10 dataset in 'cifar-10-batches-py' folder.
 
         python train.py vgg cifar-10-batches-py
 

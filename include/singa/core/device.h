@@ -68,7 +68,7 @@ class Device {
 
   void EnableGraph(bool enable) { graph_enabled_ = enable; }
 
-  static void EnableLazyAlloc(bool enbale) { lazy_alloc_ = enbale; }
+  static void EnableLazyAlloc(bool enable) { lazy_alloc_ = enable; }
 
   /// Called by Tensor.
   Block* NewBlock(int size);
@@ -206,7 +206,7 @@ class CppCPU : public Device {
 // class OpenclDevice : public Device { };
 
 #ifdef USE_CUDA
-// Represent a Nvidia GPU which runs cuda code.
+// Represent a NVIDIA GPU which runs cuda code.
 class CudaGPU : public Device {
  public:
   ~CudaGPU();
@@ -322,7 +322,7 @@ class Platform {
   static int GetNumGPUs();
 
   /// Return the device IDs of available GPUs.
-  /// TODO(wangwei) return the IDs according to free memory in decending order
+  /// TODO(wangwei) return the IDs according to free memory in descending order
   static const std::vector<int> GetGPUIDs();
 
   static const std::pair<size_t, size_t> GetGPUMemSize(const int device);
@@ -342,7 +342,7 @@ class Platform {
       const std::vector<int>& devices, size_t init_size = 0);
 
   static std::vector<std::shared_ptr<Device>> UsedDevice;
-  /// This function is implementd by Caffe (http://caffe.berkeleyvision.org/).
+  /// This function is implemented by Caffe (http://caffe.berkeleyvision.org/).
   /// This function checks the availability of GPU #device_id.
   /// It attempts to create a context on the device by calling cudaFree(0).
   /// cudaSetDevice() alone is not sufficient to check the availability.

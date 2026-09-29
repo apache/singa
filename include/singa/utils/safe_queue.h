@@ -51,7 +51,7 @@ class SafeQueue {
 
   /**
    * Pop an element from the queue.
-   * It will be blocked until one element is poped.
+   * It will be blocked until one element is popped.
    */
   void Pop(T& e) {
     std::unique_lock<std::mutex> lock(mutex_);
@@ -60,7 +60,7 @@ class SafeQueue {
     queue_.pop();
   }
   /**
-   * Pop an item from the queue until one element is poped or timout.
+   * Pop an item from the queue until one element is popped or timeout.
    * @param[in] timeout, return false after waiting this number of microseconds
    */
   bool Pop(T& item, std::uint64_t timeout) {
@@ -129,7 +129,7 @@ class PriorityQueue {
 
   /**
    * Pop an element from the queue with the highest priority.
-   * It blocks until one element is poped.
+   * It blocks until one element is popped.
    */
   void Pop(T& e) {
     Element ele;
@@ -138,8 +138,8 @@ class PriorityQueue {
   }
   /**
    * Pop the item with the highest priority from the queue until one element is
-   * poped or timeout.
-   * @param[in] timeout, return false if no element is poped after this number
+   * popped or timeout.
+   * @param[in] timeout, return false if no element is popped after this number
    * of microseconds.
    */
   bool Pop(T& e, std::uint64_t timeout) {

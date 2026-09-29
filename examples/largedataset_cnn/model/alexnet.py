@@ -102,7 +102,7 @@ class AlexNet(model.Model):
 
 
 def create_model(pretrained=False, **kwargs):
-    """Constructs a AlexNet model.
+    """Constructs an AlexNet model.
 
     Args:
         pretrained (bool): If True, returns a pre-trained model.

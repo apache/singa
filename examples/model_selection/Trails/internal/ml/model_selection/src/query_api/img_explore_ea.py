@@ -47,7 +47,7 @@ cur = None
 def fetch_from_db(space_name, dataset, run_id_m, N_m):
     """
     :param run_id_m: run_id 100 max
-    :param B1_m: number of models evaluted
+    :param B1_m: number of models evaluated
     :return:
     """
     global con

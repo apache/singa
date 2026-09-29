@@ -127,7 +127,7 @@ class Layer(object, metaclass=LayerMeta):
 
         Args:
             parameters(dict): A dictionary contains parameter names
-            and corresponding values. The value shoud be either a
+            and corresponding values. The value should be either a
             PyTensor or numpy ndarray
         """
         names = parameters.keys()
@@ -157,7 +157,7 @@ class Layer(object, metaclass=LayerMeta):
 
         Args:
             states(dict): A dictionary contains state names and
-            corresponding values. The value shoud be either a
+            corresponding values. The value should be either a
             PyTensor or numpy ndarray
         """
         names = states.keys()
@@ -527,7 +527,7 @@ class Conv2d(Layer):
             nb_kernels (int): the channel of output, also is the number of filters
             kernel_size (int or tuple): kernel size for two direction of each
                 axis. For example, (2, 3), the first 2 means will add 2 at the
-                beginning and also 2 at the end for its axis.and if a int is
+                beginning and also 2 at the end for its axis, and if an int is
                 accepted, the kernel size will be initiated as (int, int)
             stride (int or tuple): stride, the logic is the same as kernel size.
             padding (int): tuple, list or None, padding, the logic is the same
@@ -591,8 +591,8 @@ class Conv2d(Layer):
             elif len(padding) == 4:
                 _h_mask = padding[0] - padding[1]
                 _w_mask = padding[2] - padding[3]
-                # the odd paddding is the value that cannot be handled by the tuple padding (w, h) mode
-                # so we need to firstly handle the input, then use the nomal padding method.
+                # the odd padding is the value that cannot be handled by the tuple padding (w, h) mode
+                # so we need to firstly handle the input, then use the normal padding method.
                 self.odd_padding = (max(_h_mask, 0), max(-_h_mask, 0),
                                     max(_w_mask, 0), max(-_w_mask, 0))
                 self.padding = (
@@ -715,7 +715,7 @@ class Conv2d(Layer):
                 == 0), "please set reasonable group."
 
         assert (self.nb_kernels >= self.group and self.nb_kernels % self.group
-                == 0), "nb_kernels and group dismatched."
+                == 0), "nb_kernels and group mismatched."
 
         y = autograd.conv2d(self.handle, x, self.W, self.b, self.odd_padding)
 
@@ -754,7 +754,7 @@ class SeparableConv2d(Layer):
             nb_kernels (int): the channel of output, also is the number of filters
             kernel_size (int or tuple): kernel size for two direction of each
                 axis. For example, (2, 3), the first 2 means will add 2 at the
-                beginning and also 2 at the end for its axis.and if a int is
+                beginning and also 2 at the end for its axis, and if an int is
                 accepted, the kernel size will be initiated as (int, int)
             stride (int or tuple): stride, the logic is the same as kernel size.
             padding (int): tuple, list or None, padding, the logic is the same
@@ -851,7 +851,7 @@ class BatchNorm2d(Layer):
 
     def forward(self, x):
         assert x.shape[1] == self.channels, (
-            "number of channels dismatched. %d vs %d" %
+            "number of channels mismatched. %d vs %d" %
             (x.shape[1], self.channels))
 
         self.device_check(x, self.scale, self.bias, self.running_mean,
@@ -903,7 +903,7 @@ class Pooling2d(Layer):
         Args:
             kernel_size (int or tuple): kernel size for two direction of each
                 axis. For example, (2, 3), the first 2 means will add 2 at the
-                beginning and also 2 at the end for its axis.and if a int is
+                beginning and also 2 at the end for its axis, and if an int is
                 accepted, the kernel size will be initiated as (int, int)
             stride (int or tuple): stride, the logic is the same as kernel size.
             padding (int): tuple, list or None, padding, the logic is the same
@@ -947,8 +947,8 @@ class Pooling2d(Layer):
             elif len(padding) == 4:
                 _h_mask = padding[0] - padding[1]
                 _w_mask = padding[2] - padding[3]
-                # the odd paddding is the value that cannot be handled by the tuple padding (w, h) mode
-                # so we need to firstly handle the input, then use the nomal padding method.
+                # the odd padding is the value that cannot be handled by the tuple padding (w, h) mode
+                # so we need to firstly handle the input, then use the normal padding method.
                 self.odd_padding = (max(_h_mask, 0), max(-_h_mask, 0),
                                     max(_w_mask, 0), max(-_w_mask, 0))
                 self.padding = (
@@ -1013,7 +1013,7 @@ class MaxPool2d(Pooling2d):
         Args:
             kernel_size (int or tuple): kernel size for two direction of each
                 axis. For example, (2, 3), the first 2 means will add 2 at the
-                beginning and also 2 at the end for its axis.and if a int is
+                beginning and also 2 at the end for its axis, and if an int is
                 accepted, the kernel size will be initiated as (int, int)
             stride (int or tuple): stride, the logic is the same as kernel size.
             padding (int): tuple, list or None, padding, the logic is the same
@@ -1037,7 +1037,7 @@ class AvgPool2d(Pooling2d):
         Args:
             kernel_size (int or tuple): kernel size for two direction of each
                 axis. For example, (2, 3), the first 2 means will add 2 at the
-                beginning and also 2 at the end for its axis.and if a int is
+                beginning and also 2 at the end for its axis, and if an int is
                 accepted, the kernel size will be initiated as (int, int)
             stride (int or tuple): stride, the logic is the same as kernel size.
             padding (int): tuple, list or None, padding, the logic is the same
@@ -1064,7 +1064,7 @@ class MaxPool1d(Pooling2d):
         Args:
             kernel_size (int or tuple): kernel size for two direction of each
                 axis. For example, (2, 3), the first 2 means will add 2 at the
-                beginning and also 2 at the end for its axis.and if a int is
+                beginning and also 2 at the end for its axis, and if an int is
                 accepted, the kernel size will be initiated as (int, int)
             stride (int or tuple): stride, the logic is the same as kernel size.
             padding (int): tuple, list or None, padding, the logic is the same
@@ -1085,7 +1085,7 @@ class MaxPool1d(Pooling2d):
 
 class AvgPool1d(Pooling2d):
     """
-    Generate a Avg Pooling 1d operator
+    Generate an average Pooling 1d operator
     """
 
     def __init__(self, kernel_size, stride=None, padding=0, pad_mode="NOTSET"):
@@ -1093,7 +1093,7 @@ class AvgPool1d(Pooling2d):
         Args:
             kernel_size (int or tuple): kernel size for two direction of each
                 axis. For example, (2, 3), the first 2 means will add 2 at the
-                beginning and also 2 at the end for its axis.and if a int is
+                beginning and also 2 at the end for its axis, and if an int is
                 accepted, the kernel size will be initiated as (int, int)
             stride (int or tuple): stride, the logic is the same as kernel size.
             padding (int): tuple, list or None, padding, the logic is the same
@@ -1426,7 +1426,7 @@ class Sigmoid(Layer):
 
 class Add(Layer):
     """
-    Generate a Add operator
+    Generate an Add operator
     """
 
     def __init__(self):
@@ -1571,7 +1571,7 @@ class CudnnRNN(Layer):
         """
         assert singa.USE_CUDA, "Not able to run without CUDA"
         assert num_layers > 0, "num layers should be > 0"
-        assert 0 <= dropout < 1, "dropout shouldbe >=0 and <1"
+        assert 0 <= dropout < 1, "dropout should be >=0 and <1"
         super(CudnnRNN, self).__init__()
 
         self.rnn_mode = rnn_mode

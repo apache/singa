@@ -40,7 +40,7 @@ void InitLogging(const char* argv);
 /// Make it so that all log messages go only to stderr
 void LogToStderr();
 /// Make it so that all log messages of at least a particular severity are
-/// logged to stderr (in addtion to logging to the usual log files)
+/// logged to stderr (in addition to logging to the usual log files)
 void SetStderrLogging(int severity);
 /// Set the file name for logging (and disable logging to stderr)
 void SetLogDestination(int severity, const char* path);
@@ -153,7 +153,7 @@ string* MakeCheckOpString(const T1& v1, const T2& v2, const char* exprtext);
 
 // A helper class for formatting "expr (V1 vs. V2)" in a CHECK_XX
 // statement.  See MakeCheckOpString for sample usage.  Other
-// approaches were considered: use of a template method (e.g.,
+// approaches were considerred: use of a template method (e.g.,
 // base::BuildCheckOpString(exprtext, base::Print<T1>, &v1,
 // base::Print<T2>, &v2), however this approach has complications
 // related to volatile arguments and function-pointer arguments).

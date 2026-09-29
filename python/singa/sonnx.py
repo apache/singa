@@ -74,13 +74,13 @@ cpu_dev = device.get_default_device()
 
 class SingaFrontend(object):
     """
-    This class provides mthods to convert model from singa to onnx. 
+    This class provides methods to convert model from singa to onnx.
     """
 
     # This number indicates the target onnx operator set version
     _target_opset_version = 11
 
-    # beceuase singa's operators are different from onnx.
+    # because singa's operators are different from onnx.
     # we define a dict for the name projection
     # "singa op name": "onnx op name"
     _rename_operators = {
@@ -217,7 +217,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_onehot(cls, op, op_t):
         """
-        get a onnx node from singa onthot
+        get an ONNX node from singa onthot
         Args:
             op: a given operator
         Args:
@@ -237,7 +237,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_cast(cls, op, op_t):
         """
-        get a onnx node from singa cast
+        get an ONNX node from singa cast
         Args:
             op: a given operator
         Args:
@@ -259,7 +259,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_tile(cls, op, op_t):
         """
-        get a onnx node from singa tile
+        get an ONNX node from singa tile
         Args:
             op: a given operator
         Args:
@@ -275,7 +275,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_gather(cls, op, op_t):
         """
-        get a onnx node from singa gather
+        get an ONNX node from singa gather
         Args:
             op: a given operator
         Args:
@@ -294,7 +294,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_split(cls, op, op_t):
         """
-        get a onnx node from singa split
+        get an ONNX node from singa split
         Args:
             op: a given operator
         Args:
@@ -313,7 +313,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_slice(cls, op, op_t):
         """
-        get a onnx node from singa slice
+        get an ONNX node from singa slice
         Args:
             op: a given operator
         Args:
@@ -329,7 +329,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_squeeze(cls, op, op_t):
         """
-        get a onnx node from singa squeeze and unsqueeze
+        get an ONNX node from singa squeeze and unsqueeze
         Args:
             op: a given operator
         Args:
@@ -347,7 +347,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_reduceOp(cls, op, op_t):
         """
-        get a onnx node from singa ReduceSum, ReduceMean, ReduceMax, ReduceMin, etc.
+        get an ONNX node from singa ReduceSum, ReduceMean, ReduceMax, ReduceMin, etc.
         Args:
             op: a given operator
         Args:
@@ -366,7 +366,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_dropout(cls, op, op_t):
         """
-        get a onnx node from singa Dropout operator
+        get an ONNX node from singa Dropout operator
         Args:
             op: a given operator
         Args:
@@ -384,7 +384,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_constantOfShape(cls, op, op_t):
         """
-        get a onnx node from singa ConstantOfShape operator
+        get an ONNX node from singa ConstantOfShape operator
         Args:
             op: a given operator
         Args:
@@ -404,7 +404,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_transpose(cls, op, op_t):
         """
-        get a onnx node from singa Transpose operator
+        get an ONNX node from singa Transpose operator
         Args:
             op: a given operator
         Args:
@@ -422,7 +422,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_clip(cls, op, op_t):
         """
-        get a onnx node from singa clip operator
+        get an ONNX node from singa clip operator
         Args:
             op: a given operator
         Args:
@@ -444,7 +444,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_hardsigmoid(cls, op, op_t):
         """
-        get a onnx node from singa HardSigmoid operator
+        get an ONNX node from singa HardSigmoid operator
         Args:
             op: a given operator
         Args:
@@ -463,7 +463,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_elu(cls, op, op_t):
         """
-        get a onnx node from singa elu operator
+        get an ONNX node from singa elu operator
         Args:
             op: a given operator
         Args:
@@ -481,7 +481,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_selu(cls, op, op_t):
         """
-        get a onnx node from singa SeLU operator
+        get an ONNX node from singa SeLU operator
         Args:
             op: a given operator
         Args:
@@ -500,7 +500,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_reshape(cls, op, op_t):
         """
-        get a onnx node from singa Concat operator
+        get an ONNX node from singa Concat operator
         Args:
             op: a given operator
         Args:
@@ -518,7 +518,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_concat(cls, op, op_t):
         """
-        get a onnx node from singa Concat operator
+        get an ONNX node from singa Concat operator
         Args:
             op: a given operator
         Args:
@@ -536,7 +536,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_softmax(cls, op, op_t):
         """
-        get a onnx node from singa Concat operator
+        get an ONNX node from singa Concat operator
         Args:
             op: a given operator
         Args:
@@ -554,7 +554,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_flatten(cls, op, op_t):
         """
-        get a onnx node from singa flatten operator
+        get an ONNX node from singa flatten operator
         Args:
             op: a given operator
         Args:
@@ -572,7 +572,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_gemm(cls, op, op_t):
         """
-        get a onnx node from singa gemm operator
+        get an ONNX node from singa gemm operator
         Args:
             op: a given operator
         Args:
@@ -594,7 +594,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_batchnorm(cls, op, op_t):
         """
-        get a onnx node from singa _BatchNorm2d operator
+        get an ONNX node from singa _BatchNorm2d operator
         Args:
             op: a given operator
         Args:
@@ -622,7 +622,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_conv_pool(cls, op, op_t):
         """
-        get a onnx node from singa _Conv2d and _Pooling2d operator
+        get an ONNX node from singa _Conv2d and _Pooling2d operator
         Args:
             op: a given operator
         Args:
@@ -690,7 +690,7 @@ class SingaFrontend(object):
     @classmethod
     def _special_handle_batchnorm(cls, op, X, W):
         """
-        hanlde the special operators
+        handle the special operators
         Args:
             op: a given operator
         Args:
@@ -712,7 +712,7 @@ class SingaFrontend(object):
     @classmethod
     def _special_handle_reshape(cls, op, X, W):
         """
-        hanlde the special operators
+        handle the special operators
         Args:
             op: a given operator
         Args:
@@ -729,7 +729,7 @@ class SingaFrontend(object):
     @classmethod
     def _special_handle_clip(cls, op, X, W):
         """
-        hanlde the special operators
+        handle the special operators
         Args:
             op: a given operator
         Args:
@@ -750,7 +750,7 @@ class SingaFrontend(object):
     @classmethod
     def _special_handle_slice(cls, op, X, W):
         """
-        hanlde the special operators
+        handle the special operators
         Args:
             op: a given operator
         Args:
@@ -775,7 +775,7 @@ class SingaFrontend(object):
     @classmethod
     def _special_handle_gather(cls, op, X, W):
         """
-        hanlde the special operators
+        handle the special operators
         Args:
             op: a given operator
         Args:
@@ -796,7 +796,7 @@ class SingaFrontend(object):
     @classmethod
     def _special_handle_tile(cls, op, X, W):
         """
-        hanlde the special operators
+        handle the special operators
         Args:
             op: a given operator
         Args:
@@ -817,7 +817,7 @@ class SingaFrontend(object):
     @classmethod
     def _special_handle_onehot(cls, op, X, W):
         """
-        hanlde the special operators
+        handle the special operators
         Args:
             op: a given operator
         Args:
@@ -839,8 +839,8 @@ class SingaFrontend(object):
     @classmethod
     def handle_special_ops(cls, op, X, W):
         """
-        hanlde the special operators, 
-        because the inputs of batchnorm and reshape are differnet with onnx
+        handle the special operators,
+        because the inputs of batchnorm and reshape are different with onnx
         we need to add these inputs into onnx model mannully
         Args:
             op: a given operator
@@ -863,7 +863,7 @@ class SingaFrontend(object):
     @classmethod
     def _common_singa_tensor_to_onnx_node(cls, op, op_t):
         """
-        get a onnx node from singa operator, prepare its type, inputs and outputs
+        get an ONNX node from singa operator, prepare its type, inputs and outputs
         Args:
             op: a given operator
         Args:
@@ -885,7 +885,7 @@ class SingaFrontend(object):
     @classmethod
     def singa_op_to_onnx_node(cls, op, op_t):
         """
-        get a onnx node from singa operator
+        get an ONNX node from singa operator
         Args:
             op: a given operator
         Args:
@@ -894,7 +894,7 @@ class SingaFrontend(object):
             the onnx node
         """
         optype = cls._get_singa_op_type(op)
-        # wether the operator needs special handler
+        # whether the operator needs special handler
         if optype in cls._special_operators:
             translator = getattr(cls, cls._special_operators[optype])
         else:
@@ -1041,7 +1041,7 @@ class SingaBackend(Backend):
 
     _ir_version = 0x0000000000000006
 
-    # beceuase singa's operators are different from onnx.
+    # because singa's operators are different from onnx.
     # we define a dict for the name projection
     _rename_operators = {
         # common op
@@ -1729,7 +1729,7 @@ class SingaBackend(Backend):
     @classmethod
     def _onnx_constant_to_np(cls, onnx_node, opset_version=_opset_version):
         """
-        parse onnx constatn node to numpy array
+        parse onnx constant node to numpy array
         Args:
             onnx_node (OnnxNode): a given onnx node
             opset_version (int): the opset version
@@ -1743,7 +1743,7 @@ class SingaBackend(Backend):
     @classmethod
     def _onnx_node_to_singa_op(cls, onnx_node, opset_version=_opset_version):
         """
-        get singa operator from a onnx node
+        get singa operator from an ONNX node
         Args:
             onnx_node (OnnxNode): a given onnx node
             opset_version (int): the opset version
@@ -1771,7 +1771,7 @@ class SingaBackend(Backend):
     @classmethod
     def run_node(cls, node, inputs, device='CPU', opset_version=_opset_version):
         """
-        run a single singa operator from a onnx node
+        run a single singa operator from an ONNX node
         Args:
             node (NodeProto): a given onnx node
             inputs (ndarray[]): a list of numpy ndarray
@@ -1932,14 +1932,14 @@ class SingaBackend(Backend):
                 opset_version = imp.version
                 if imp.version > cls._opset_version:
                     warnings.warn(
-                        "The imported opertor set verion {} is larger than the supported version {}."
+                        "The imported operator set version {} is larger than the supported version {}."
                         .format(imp.version, cls._opset_version))
             else:
                 warnings.warn("Unrecognized operator set {}".format(imp.domain))
 
         if model.ir_version > cls._ir_version:
             warnings.warn(
-                "The imported ir verion {} is larger than the supported version {}."
+                "The imported ir version {} is larger than the supported version {}."
                 .format(cls._ir_version, imp.version))
 
         graph = model.graph
@@ -2061,7 +2061,7 @@ class SingaRep(BackendRep):
 
     def handle_special_ops(self, node, op, tensor_dict):
         """
-        hanlde some special operations
+        handle some special operations
         Args:
             name (str): name of the state
             node (ONNXNode): ONNX node
@@ -2215,7 +2215,7 @@ class SONNXModel(model.Model):
             aux_output (string()): a set of required output name
 
         Returns:
-            a OrderedDict of Tensor
+            an OrderedDict of Tensor
         """
         return self.sg_ir.run(input, aux_output=aux_output, **kwargs)
 

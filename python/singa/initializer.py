@@ -233,7 +233,7 @@ def glorot(t):
 
 @deprecated(reason="Use he_normal")
 def msra(t):
-    '''Initialize the matrix parameter follow a Guassian distribution with
+    '''Initialize the matrix parameter follow a Gaussian distribution with
     mean = 0, std = math.sqrt(2.0 / nb_row).
 
     Ref [He, Zhang, Ren and Sun 2015]: Specifically accounts for ReLU

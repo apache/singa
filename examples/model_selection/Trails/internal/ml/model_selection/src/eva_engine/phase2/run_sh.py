@@ -160,7 +160,7 @@ class BudgetAwareControllerSH:
         if self.is_simulate:
             logger.info(
                 f"5. [trails] Phase2 Done, Select {candidates_m[0]}, "
-                f"simulate={self.is_simulate}. Acqure the ground truth")
+                f"simulate={self.is_simulate}. Acquire the ground truth")
             best_perform, _ = self._evaluator.p2_evaluate(candidates_m[0], self.max_unit_per_model)
         else:
             logger.info(

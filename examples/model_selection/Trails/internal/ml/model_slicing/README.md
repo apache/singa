@@ -315,7 +315,7 @@ SELECT inference(
     8000
 ); 
 
-# explaination
+# explanation
 EXPLAIN (ANALYZE, BUFFERS) SELECT inference(
     'frappe', 
     '{"2":977}', 

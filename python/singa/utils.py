@@ -131,7 +131,7 @@ def same_pad_shape_check(handle, pad_mode, x):
 
 def re_new_handle(handle, x, is_pool=False):
     """
-    re-new a handle by useing the new input tensor
+    re-new a handle by using the new input tensor
     Args:
         handle, the handle
         x, input tensor
@@ -171,8 +171,8 @@ def get_padding_shape(pad_mode, input_spatial_shape, kernel_spatial_shape,
                                             kernel_spatial_shape,
                                             strides_spatial)
     pad_shape = [0] * len(input_spatial_shape) * 2  # 2 means left and right
-    # the odd paddding is the value that cannot be handled by the tuple padding (w, h) mode
-    # so we need to firstly handle the input, then use the nomal padding method.
+    # the odd padding is the value that cannot be handled by the tuple padding (w, h) mode
+    # so we need to firstly handle the input, then use the normal padding method.
     odd_padd_shape = [0] * len(input_spatial_shape) * 2
     for i in range(len(input_spatial_shape)):
         whole_pad = (output_spatial_shape[i] - 1) * strides_spatial[i] + \
@@ -243,7 +243,7 @@ def post_order_recursive(root, root_t):
 
     def recursive(root, yid, root_t):
         if root:
-            # srcop: operator for a input of root
+            # srcop: operator for an input of root
             # yid: id(output of this operator)
             # y: output of this operator
             for srcop, yid, y, _ in root.src:

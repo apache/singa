@@ -23,7 +23,7 @@
 
 ### Option:
   - `[-y]`
-    - In interactive mode, it is for user to confirm. Could be used in sript.
+    - In interactive mode, it is for user to confirm. Could be used in script.
 
 ### Argument:
   - `<type>`
@@ -53,7 +53,7 @@
 ## In the release.py
 
 Internally, the script retrieve latest git tag by `git describe`,
-and increment the version accroding to semantic versioning,
+and increment the version according to semantic versioning,
 then push latest tag to remote master.
 
 ## Next step

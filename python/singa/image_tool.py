@@ -539,10 +539,10 @@ class ImageTool(object):
             return new_imgs
 
     def flip(self, num_case=1, inplace=True):
-        '''Randomly flip a img left to right.
+        '''Randomly flip an image left to right.
 
         Args:
-            num_case: num of cases, must be in {1,2}; if 2, then add the orignal
+            num_case: num of cases, must be in {1,2}; if 2, then add the original
                       and flipped img
             inplace: inplace imgs or not (return new_imgs)
         '''
@@ -566,9 +566,9 @@ class ImageTool(object):
             return new_imgs
 
     def flip_down(self, num_case=1, inplace=True):
-        '''Randomly flip a img top to bottom.
+        '''Randomly flip an image top to bottom.
         Args:
-            num_case: num of cases, must be in {1,2}; if 2, then add the orignal
+            num_case: num of cases, must be in {1,2}; if 2, then add the original
                       and flip_down img
             inplace: inplace imgs or not (return new_imgs)
         '''

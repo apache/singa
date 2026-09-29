@@ -41,7 +41,7 @@ namespace singa {
   do {                                                                  \
     cusparseStatus_t e = cmd;                                           \
     if (e != CUSPARSE_STATUS_SUCCESS) {                                 \
-      printf("Falied: Cusparse Error %s:%d '%d'\n", __FILE__, __LINE__, \
+      printf("Failed: Cusparse Error %s:%d '%d'\n", __FILE__, __LINE__, \
              int(e));                                                   \
       exit(EXIT_FAILURE);                                               \
     }                                                                   \

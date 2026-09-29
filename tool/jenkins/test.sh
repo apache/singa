@@ -23,7 +23,7 @@
 echo Compile and test Singa...
 echo workspace: `pwd`
 echo OS version: `cat /etc/issue`
-echo kernal version: `uname -a`
+echo kernel version: `uname -a`
 echo parameters: $1
 echo parameters: $2
 COMMIT=`git rev-parse --short HEAD`

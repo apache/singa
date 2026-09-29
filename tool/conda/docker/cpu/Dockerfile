@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-# 18.04 has erros in ssh
+# 18.04 has errors in ssh
 FROM ubuntu:18.04
 
 # install dependencies

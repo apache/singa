@@ -234,7 +234,7 @@ class Tensor(object):
 
         Args:
             shape (list<int>): new shape, which should have the same
-                volumn as the original shape.
+                volume as the original shape.
 
         Returns:
             new tensor reshaped
@@ -502,7 +502,7 @@ class Tensor(object):
 
         Args:
             low (float): the lower bound
-            high (float): the hight bound
+            high (float): the higher bound
             inplace: inplace flag
 
         Returns:
@@ -806,7 +806,7 @@ def reshape(tensor, shape):
 
     Args:
         tensor (Tensor): the tensor to be changed
-        shape (list<int>): the new shape, which should have the same volumn as the
+        shape (list<int>): the new shape, which should have the same volume as the
             old shape.
 
     Returns:
@@ -1303,7 +1303,7 @@ def einsum(ops, *args):
     2.repeat(A,repeats)
     3.transpose(A,axes = None)
     Do the matrix to matrix einsum calculation according to the operands
-    Warning : this function could only support two matrix' einsum calcultion
+    Warning : this function could only support two matrix' einsum calculation
 
     Args:
         ops(string): the string specifies the subscripts for summation such as
@@ -1312,7 +1312,7 @@ def einsum(ops, *args):
             but here only support two tensors.
 
     Returns:
-        Singa.Tensor the output matirx of the einsum calculation
+        Singa.Tensor the output matrix of the einsum calculation
 
     The best way to understand this function is to try the examples below:
     A_ = [0,1,2,3,4,5,6,7,8,9,10,11]
@@ -1331,7 +1331,7 @@ def einsum(ops, *args):
     A = A_.reshape(4,3)
     B = A_.reshape(4,3)
 
-    Here the einsum calculation is the same as normol 'eltwise_mult'
+    Here the einsum calculation is the same as normal 'eltwise_mult'
     Res = einsum('ki,ki->ki',A,B)
 
     >>> [[  0   1   4]

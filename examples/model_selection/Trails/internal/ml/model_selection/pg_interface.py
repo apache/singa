@@ -34,7 +34,7 @@ def exception_catcher(func):
     def wrapper(encoded_str: str):
         global_res = "NA, "
         try:
-            # each functon accepts a json string
+            # each function accepts a json string
             params = json.loads(encoded_str)
             config_file = params.get("config_file")
 
@@ -489,7 +489,7 @@ def benchmark_filtering_phase_latency(params: dict, args: Namespace):
 
     # Then, at the end of your program, you can stop the thread:
     print("Done, time sleep for 10 seconds")
-    # wait the resource montor flush
+    # wait the resource monitor flush
     time.sleep(10)
     stop_event.set()
     thread.join()
@@ -611,7 +611,7 @@ def records_results(params: dict, args: Namespace):
             _evaluator.time_usage["compute_latency"] \
             / len(_evaluator.time_usage["track_compute"][2:])
 
-        logger.info(f"Saving time usag to {time_output_file}")
+        logger.info(f"Saving time usage to {time_output_file}")
         # compute time
         write_json(time_output_file, _evaluator.time_usage)
     except:

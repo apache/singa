@@ -55,7 +55,7 @@ def read_json(file_name):
 def exception_catcher(func):
     def wrapper(encoded_str: str):
         try:
-            # each functon accepts a json string
+            # each function accepts a json string
             params = json.loads(encoded_str)
             config_file = params.get("config_file")
 

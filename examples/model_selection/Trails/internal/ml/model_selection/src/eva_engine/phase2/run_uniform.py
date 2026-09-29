@@ -66,7 +66,7 @@ class UniformAllocation:
     def pre_calculate_epoch_required(self, K, U, eta: int=3, max_unit_per_model: int=200):
         """
         :param B: total budget for phase 2
-        :param U: mini unit computation for each modle
+        :param U: mini unit computation for each model
         :param candidates_m:
         :return:
         """
@@ -74,7 +74,7 @@ class UniformAllocation:
 
     def run_phase2(self, U: int, candidates_m: list):
         """
-        :param U: mini unit computation for each modle
+        :param U: mini unit computation for each model
         :param candidates_m:
         :return:
         """
@@ -83,7 +83,7 @@ class UniformAllocation:
         candidates = copy(candidates_m)
         min_budget_required = 0
 
-        # todo: this is to run the full training, when compute full traiing
+        # todo: this is to run the full training, when compute full training
         # U = self.max_unit_per_model
 
         if U >= self.max_unit_per_model:

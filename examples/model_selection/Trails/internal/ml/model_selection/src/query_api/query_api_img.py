@@ -73,7 +73,7 @@ def guess_train_one_epoch_time(search_space_m, dataset):
 
 class ImgScoreQueryApi:
     # Multiton pattern
-    # use those algoroithm => new tfmem
+    # use those algorithm => new tfmem
     default_alg_name_list = ["nas_wot", "synflow"]
     _instances = {}
 

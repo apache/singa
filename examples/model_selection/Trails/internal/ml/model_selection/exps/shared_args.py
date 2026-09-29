@@ -94,7 +94,7 @@ def mlp_trainner_args(parser):
                              'nb101: 108, nb201: 200')
 
     parser.add_argument('--batch_size', type=int, default=32, help='batch size')
-    parser.add_argument('--lr', type=float, default=0.001, help="learning reate")
+    parser.add_argument('--lr', type=float, default=0.001, help="learning rate")
     parser.add_argument('--patience', type=int, default=1, help='number of epochs for stopping training')
     # parser.add_argument('--eval_freq', type=int, default=10000, help='max number of batches to train per epoch')
 

@@ -134,7 +134,7 @@ parser = argparse.ArgumentParser(description='predict FLOPS')
 parser.add_argument('path', type=str,
                     help="directory to model file")
 parser.add_argument('--flag', '-p', action='store_true',
-                    help="wehther to print profile")
+                    help="whether to print profile")
 parser.add_argument('--print_net', '--b', action='store_true',
                     help="print the structure of network")
 

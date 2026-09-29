@@ -49,7 +49,7 @@ class TestPythonOnnx(unittest.TestCase):
     def check_shape(self, actual, expect):
         self.assertEqual(
             actual, expect, 'shape mismatch, actual shape is %s'
-            ' exepcted is %s' %
+            ' expected is %s' %
             (_tuple_to_string(actual), _tuple_to_string(expect)))
 
     def _conv2d_helper(self, dev):

@@ -57,7 +57,7 @@ class Device {
   void PrintTimeProfiling();
   void SetVerbosity(int verbosity);
   void SetSkipIteration(int skip_iteration);
-  static void EnableLazyAlloc(bool enbale);
+  static void EnableLazyAlloc(bool enable);
 };
 
 class Platform {

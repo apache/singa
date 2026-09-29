@@ -54,7 +54,7 @@ class Reader {
 
   /// Read a tuple.
   /// return true if read successfully;
-  /// return flase if coming to the end of the file;
+  /// return false if coming to the end of the file;
   /// LOG(FATAL) if error happens.
   virtual bool Read(std::string* key, std::string* value) = 0;
 

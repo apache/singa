@@ -46,14 +46,14 @@ class FeedForwardNet {
   // AddSliceLayer(Layer* layer, vector<Layer*> dst);
 
   /// Add a layer by providing its configuration, and setup it.
-  /// Assume the layer is added in corret order.
+  /// Assume the layer is added in correct order.
   /// For the first layer, 'sample_shape' (the input sample shape) is necessary
   /// for calling Setup().
   std::shared_ptr<Layer> Add(const LayerConf& conf,
       const Shape* sample_shape = nullptr);
 
   /// Set some fields used for training and evaluating the neural net.
-  /// This method will instantiate an Updater ,then wrap the Optimier into
+  /// This method will instantiate an Updater ,then wrap the Optimizer into
   /// Updater and always register the parameters of the net instance.
   /// If the neural net is constructed for evaluation only, then 'opt' is not
   /// necessary; But for training, both 'opt' and 'loss' are necessary.

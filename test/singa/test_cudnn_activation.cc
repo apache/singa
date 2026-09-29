@@ -76,7 +76,7 @@ TEST(CudnnActivation, Forward) {
     } else if (acti.Mode() == "relu") {
       for (size_t i = 0; i < n; i++) y[i] = (x[i] >= 0.f) ? x[i] : 0.f;
     } else {
-      LOG(FATAL) << "Unkown activation: " << acti.Mode();
+      LOG(FATAL) << "Unknown activation: " << acti.Mode();
     }
     EXPECT_FLOAT_EQ(y[0], yptr[0]);
     EXPECT_FLOAT_EQ(y[4], yptr[4]);
@@ -126,7 +126,7 @@ TEST(CudnnActivation, Backward) {
         dx[i] =
             grad[i] * (x[i] > 0.f);  //+ acti.Negative_slope() * (x[i] <= 0.f);
     } else {
-      LOG(FATAL) << "Unkown activation: " << acti.Mode();
+      LOG(FATAL) << "Unknown activation: " << acti.Mode();
     }
     for (size_t i = 0; i < n; i++) {
       EXPECT_NEAR(dx[i], xptr[i], 1e-7);
