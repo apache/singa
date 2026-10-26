@@ -18,10 +18,10 @@
 -->
 # How to contribute 
 
-[Getting Started](./doc/en/develop/how-contribute.md)
+[Getting Started](https://singa.apache.org/docs/installation/)
 
-[How to contribute code](./doc/en/develop/contribute-code.md)
+[How to contribute code](https://singa.apache.org/docs/contribute-code)
 
-[How to contribute documentation](./doc/README.md)
+[How to contribute documentation](https://singa.apache.org/docs/contribute-docs)
 
 
