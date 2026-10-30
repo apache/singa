@@ -20,6 +20,10 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 PROJECT(singa)
 
+IF(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    SET(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+ENDIF()
+
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Thirdparty)
 
 #include(GetGitRevisionDescription)
@@ -47,10 +51,10 @@ message(STATUS "SINGA Version ${SINGA_VERSION}")
 
 # Flags
 IF(UNIX)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -O2 -fPIC -Wall -pthread")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -Wall -pthread")
 ENDIF()
 IF(APPLE)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -g -O2 -fPIC -Wall -pthread")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -fPIC -Wall -pthread")
     SET(CMAKE_MACOSX_RPATH 1)
 ENDIF()
 
@@ -61,7 +65,7 @@ IF(WIN32)
         #MESSAGE(STATUS "Using msvc compiler ${CMAKE_CXX_FLAGS}")
     ENDIF()
 ENDIF()
-IF(CMAKE_BUILD_TYPE=Debug)
+IF(CMAKE_BUILD_TYPE STREQUAL "Debug")
     SET(NVCC_FLAG "${NVCC_FLAG} -g -G ")
 ENDIF()
 #message(STATUS "${CMAKE_CXX_FLAGS}")

@@ -23,9 +23,10 @@ import numpy as np
 
 import onnx
 import onnx.utils
+import onnxoptimizer as optimizer
 from onnx.backend.base import Backend, BackendRep
 from onnx import (checker, helper, numpy_helper, GraphProto, NodeProto,
-                  TensorProto, OperatorSetIdProto, optimizer, mapping,
+                  TensorProto, OperatorSetIdProto, mapping,
                   shape_inference)
 import warnings
 
@@ -38,6 +39,7 @@ from . import utils
 from . import singa_wrap as singa
 
 import collections
+from collections.abc import Iterable
 OrderedDict = collections.OrderedDict
 namedtuple = collections.namedtuple
 
@@ -57,7 +59,7 @@ NP_TYPE_TO_SINGA_SUPPORT_TYPE = {
     np.dtype('complex128'): None,
     np.dtype('uint32'): None,
     np.dtype('uint64'): None,
-    np.dtype(np.object): None
+    np.dtype(object): None
 }
 
 
@@ -900,7 +902,7 @@ class SingaFrontend(object):
         else:
             translator = cls._common_singa_tensor_to_onnx_node
         nodes = translator(op, op_t)
-        if not isinstance(nodes, collections.Iterable):
+        if not isinstance(nodes, Iterable):
             nodes = [nodes]
         nodes = [node for node in nodes if node is not None]
         return nodes
@@ -1826,7 +1828,7 @@ class SingaBackend(Backend):
             list, the output
         """
         outputs = operator(*inputs)
-        if not isinstance(outputs, collections.Iterable):
+        if not isinstance(outputs, Iterable):
             outputs = [outputs]
         return outputs
 
@@ -1919,10 +1921,10 @@ class SingaBackend(Backend):
         """
         super(SingaBackend, cls).prepare(model, device, **kwargs)
         # optimize and infer the shape of the model
-        try:
-            model = onnx.utils.polish_model(model)
-        except IndexError as err:
-            model = shape_inference.infer_shapes(model)
+        checker.check_model(model)
+        model = shape_inference.infer_shapes(model)
+        model = optimizer.optimize(model)
+        checker.check_model(model)
 
         # check the opset version and ir version
         # SINGA supports opset version(11), ir version(1.6.0 -> 6)
@@ -1939,8 +1941,8 @@ class SingaBackend(Backend):
 
         if model.ir_version > cls._ir_version:
             warnings.warn(
-                "The imported ir verion {} is larger than the supported version {}."
-                .format(cls._ir_version, imp.version))
+                "The imported IR version {} is larger than the supported version {}."
+                .format(model.ir_version, cls._ir_version))
 
         graph = model.graph
         params, inputs, outputs, layers = cls._onnx_model_to_singa_ops(
