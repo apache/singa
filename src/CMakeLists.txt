@@ -111,7 +111,7 @@ IF(CODE_COVERAGE)
 ENDIF(CODE_COVERAGE)
 
 #pass configure infor to swig
-FILE(REMOVE "${CMAKE_CURRENT_SOURCE_DIR}/api/config.i")
-CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/api/config.i.in" "${CMAKE_CURRENT_SOURCE_DIR}/api/config.i")
+FILE(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/src/api")
+CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/api/config.i.in" "${CMAKE_BINARY_DIR}/src/api/config.i")
 
 

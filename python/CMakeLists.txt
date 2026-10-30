@@ -94,17 +94,22 @@ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/python/singa/proto)
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/python/rafiki)
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/src/api)
 
-IF(USE_PYTHON3)
-	SET(SWIG_PYTHON3 "-py3")
+IF(USE_PYTHON3 AND SWIG_VERSION VERSION_LESS "4.1")
+    SET(SWIG_PYTHON3 "-py3")
 ELSE()
-	SET(SWIG_PYTHON3 "")
+    SET(SWIG_PYTHON3 "")
 ENDIF()
 
 execute_process(
-    COMMAND swig -c++ -python ${SWIG_PYTHON3} -I${CMAKE_SOURCE_DIR}/include
+    COMMAND ${SWIG_EXECUTABLE} -c++ -python ${SWIG_PYTHON3}
+    -I${CMAKE_BINARY_DIR}/src/api -I${CMAKE_SOURCE_DIR}/include
     -outdir ${CMAKE_BINARY_DIR}/python/singa
     -o ${CMAKE_BINARY_DIR}/src/api/singa_wrap.cxx
-    ${CMAKE_SOURCE_DIR}/src/api/singa.i)
+    ${CMAKE_SOURCE_DIR}/src/api/singa.i
+    RESULT_VARIABLE SWIG_RESULT)
+IF(NOT SWIG_RESULT EQUAL 0)
+    MESSAGE(FATAL_ERROR "SINGA SWIG generation failed (${SWIG_RESULT})")
+ENDIF()
 
 set(python_srcs "${CMAKE_BINARY_DIR}/src/api/singa_wrap.cxx")
 
@@ -115,7 +120,12 @@ create_symlinks(${python_source_files})
 
 execute_process(
     COMMAND ${PYTHON_EXECUTABLE} -c "from __future__ import print_function; import numpy; print(numpy.get_include())"
-    OUTPUT_VARIABLE NUMPY_INCLUDE_DIR)
+    OUTPUT_VARIABLE NUMPY_INCLUDE_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    RESULT_VARIABLE NUMPY_RESULT)
+IF(NOT NUMPY_RESULT EQUAL 0)
+    MESSAGE(FATAL_ERROR "NumPy is unavailable in ${PYTHON_EXECUTABLE}")
+ENDIF()
 
 #message(status "numpy path ${NUMPY_INCLUDE_DIR}")
 
