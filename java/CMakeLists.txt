@@ -104,7 +104,7 @@ PROTOBUF_GENERATE_JAVA(proto_javas ${proto_files})
 # MESSAGE(STATUS "proto javas: ${proto_javas}")
 
 execute_process(
-    COMMAND swig -c++ -java -I${CMAKE_SOURCE_DIR}/include
+    COMMAND ${SWIG_EXECUTABLE} -c++ -java -I${CMAKE_BINARY_DIR}/src/api -I${CMAKE_SOURCE_DIR}/include
     -I${JAVA_INCLUDE_PATH} -I${JAVA_INCLUDE_PATH2}
     -package org.apache.singa.swig
     -outdir ${CMAKE_BINARY_DIR}/java/src/main/java/org/apache/singa/swig
