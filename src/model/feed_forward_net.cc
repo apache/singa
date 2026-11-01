@@ -23,6 +23,8 @@
 #include "singa/model/initializer.h"
 #include "singa/utils/logging.h"
 #include "singa/utils/channel.h"
+#include <algorithm>
+#include <random>
 namespace singa {
 
 FeedForwardNet::~FeedForwardNet() {
@@ -158,7 +160,10 @@ void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
   std::vector<size_t> index;
   for (size_t i = 0; i < x.shape(0) / batchsize; i++) index.push_back(i);
   for (int epoch = 0; epoch < nb_epoch; epoch++) {
-    if (shuffle_) std::random_shuffle(index.begin(), index.end());
+    if (shuffle_) {
+      static thread_local std::mt19937 rng(std::random_device{}());
+      std::shuffle(index.begin(), index.end(), rng);
+    }
     float loss = 0.0f, metric = 0.0f;
     size_t b = 0;
     for (; b < x.shape(0) / batchsize; b++) {
