@@ -224,7 +224,7 @@ class Layer {
 /// Name should be formated as cudnn_xxx, singacpp_xxx, singacuda_xxx,
 /// singacl_xxx, where xxx is the real layer type, e.g., convolution, relu, etc.
 /// xxx should only have lower case letters.
-/// if the implmentation is transparent to cpp/cuda/opencl, then register all
+/// if the implementation is transparent to cpp/cuda/opencl, then register all
 /// possible identifiers. For instance, Dropout is registered three times,
 /// RegisterLayerClass("singacpp_dropout", Dropout)
 /// RegisterLayerClass("singacl_dropout", Dropout)
