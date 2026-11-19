@@ -41,20 +41,19 @@ requirements:
   build:
     - {{ compiler('cxx') }}
     - {{ compiler('c') }}
-    - cmake >=3.12.2
+    - cmake >=3.12.2,<4
     - make # [unix]
 
   host:
-    - swig 3.0.12
-    - openblas 0.3.9
-    - protobuf 3.10.0         # [osx]
-    - protobuf 3.9.2          # [linux]
-    - glog 0.3.5
-    - numpy >=1.16,<2.0
+    - swig >=4.1,<4.2
+    - openblas >=0.3.23,<0.4
+    - libprotobuf >=3.21.12,<3.22
+    - glog >=0.6,<0.7
+    - numpy >=1.23.5,<2.0
     - pytest
-    - deprecated 1.2.7
-    - cudnn {{ cudnn }}       # ['cudnn' in str(build_str)]
+    - deprecated >=1.2.13,<2
     - dnnl {{ dnnl }}
+    - cudnn {{ cudnn }}       # ['cudnn' in str(build_str)]
     - python {{ python }}
     - nccl {{ nccl }}         # ['nccl' in str(build_str)]
     - mpich {{ mpich }}       # ['mpich' in str(build_str)]
@@ -62,19 +61,19 @@ requirements:
   run:
     - {{ pin_compatible('glog', max_pin='x.x') }}
     - {{ pin_compatible('numpy', max_pin='x.x') }}
-    - {{ pin_compatible('dnnl', max_pin='x.x') }}
     - cudnn {{ cudnn }}       # ['cudnn' in str(build_str)]
     - python {{ python }}
     - nccl {{ nccl }}         # ['nccl' in str(build_str)]
     - mpich {{ mpich }}       # ['mpich' in str(build_str)]
-    - libprotobuf 3.10.0      # [osx]
-    - libprotobuf 3.9.2       # [linux]
-    - libopenblas 0.3.9
+    - libprotobuf >=3.21.12,<3.22
+    - libopenblas >=0.3.23,<0.4
+    - {{ pin_compatible('dnnl', max_pin='x.x') }}
     - pillow
     - future
     - tqdm
-    - onnx 1.6.0
-    - deprecated 1.2.7
+    - onnx >=1.13.1,<1.14
+    - onnxoptimizer >=0.3.13,<0.4
+    - deprecated >=1.2.13,<2
     
 test:
   requires:
