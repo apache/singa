@@ -41,7 +41,7 @@ requirements:
   build:
     - {{ compiler('cxx') }}
     - {{ compiler('c') }}
-    - cmake >=3.12.2
+    - cmake >=3.12.2,<4
     - make # [unix]
 
   host:
@@ -53,6 +53,11 @@ requirements:
     - numpy >=1.16,<2.0
     - pytest
     - deprecated 1.2.7
+    - cuda-nvcc {{ cuda_nvcc }}       # ['cuda' in str(build_str)]
+    - cuda-cccl {{ cuda_cccl }}       # ['cuda' in str(build_str)]
+    - cuda-cudart {{ cuda_cudart }}       # ['cuda' in str(build_str)]
+    - cuda-cudart-dev {{ cuda_cudart }}       # ['cuda' in str(build_str)]
+    - cuda-libraries-dev {{ cuda_libraries }}       # ['cuda' in str(build_str)]
     - cudnn {{ cudnn }}       # ['cudnn' in str(build_str)]
     - dnnl {{ dnnl }}
     - python {{ python }}
@@ -63,6 +68,8 @@ requirements:
     - {{ pin_compatible('glog', max_pin='x.x') }}
     - {{ pin_compatible('numpy', max_pin='x.x') }}
     - {{ pin_compatible('dnnl', max_pin='x.x') }}
+    - cuda-cudart {{ cuda_cudart }}       # ['cuda' in str(build_str)]
+    - cuda-libraries {{ cuda_libraries }}       # ['cuda' in str(build_str)]
     - cudnn {{ cudnn }}       # ['cudnn' in str(build_str)]
     - python {{ python }}
     - nccl {{ nccl }}         # ['nccl' in str(build_str)]

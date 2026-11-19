@@ -144,7 +144,14 @@ void CudnnRNN::SetRNNDescriptor(shared_ptr<Device> dev) {
     rnn_mode = CUDNN_RNN_TANH;
   else if (rnn_mode_ == "gru")
     rnn_mode = CUDNN_GRU;
-#if CUDNN_MAJOR <= 5
+#if CUDNN_MAJOR >= 8
+  CUDNN_CHECK(cudnnSetRNNDescriptor_v8(
+      rnn_desc_, CUDNN_RNN_ALGO_STANDARD, rnn_mode, CUDNN_RNN_DOUBLE_BIAS,
+      direction, input_mode, dtype_, dtype_, CUDNN_DEFAULT_MATH,
+      static_cast<int32_t>(input_size_), static_cast<int32_t>(hidden_size_),
+      static_cast<int32_t>(hidden_size_), static_cast<int32_t>(num_stacks_),
+      dropout_desc_, 0));
+#elif CUDNN_MAJOR <= 5
   CUDNN_CHECK(cudnnSetRNNDescriptor(rnn_desc_, hidden_size_, num_stacks_,
                                     dropout_desc_, input_mode, direction,
                                     rnn_mode, dtype_));
