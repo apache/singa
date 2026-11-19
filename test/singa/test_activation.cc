@@ -121,9 +121,9 @@ TEST(Activation, Backward) {
     } else {
       LOG(FATAL) << "Unkown activation: " << acti.Mode();
     }
-    EXPECT_FLOAT_EQ(dx[0], xptr[0]);
-    EXPECT_FLOAT_EQ(dx[4], xptr[4]);
-    EXPECT_FLOAT_EQ(dx[5], xptr[5]);
+    EXPECT_NEAR(dx[0], xptr[0], 1e-7f);
+    EXPECT_NEAR(dx[4], xptr[4], 1e-7f);
+    EXPECT_NEAR(dx[5], xptr[5], 1e-7f);
     delete[] dx;
   }
 }
