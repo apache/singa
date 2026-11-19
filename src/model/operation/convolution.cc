@@ -175,7 +175,7 @@ Tensor CpuConvForward(const Tensor &x, Tensor &W, Tensor &b,
                            {DNNL_ARG_TO, conv_weights_memory}});
         }
 
-        // execuete forward
+        // execute forward
         convolution_forward(conv_pd).execute(
             s, {{DNNL_ARG_SRC, conv_src_memory},
                 {DNNL_ARG_WEIGHTS, conv_weights_memory},

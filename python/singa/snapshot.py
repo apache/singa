@@ -18,8 +18,8 @@
 '''
 This script includes io::snapshot class and its methods.
 
-Note: This module is depreated. Please use the model module for 
-checkpoing and restore.
+Note: This module is deprecated. Please use the model module for
+checkpoint and restore.
 
 Example usages::
 

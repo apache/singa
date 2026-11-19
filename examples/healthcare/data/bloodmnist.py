@@ -209,7 +209,7 @@ class ClassDataset(object):
 
         Return:
             batch_x (Numpy ndarray): batch array of input images (B, C, H, W)
-            batch_y (Numpy ndarray): batch array of ground truth lables (B,)
+            batch_y (Numpy ndarray): batch array of ground truth labels (B,)
         """
         batch_x = np.zeros((batch_size,) + data_size)
         batch_y = np.zeros((batch_size,) + (1,), dtype=np.int32)

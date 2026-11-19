@@ -42,7 +42,7 @@ void Activation::Setup(const Shape& in_sample, const LayerConf& conf) {
     << conf.type();
   mode_ = ToLowerCase(conf.type().substr(pos + 1));
   if (mode_ != "relu" && mode_ != "sigmoid" && mode_ != "tanh")
-    LOG(FATAL) << "Unkown activation type: " << conf.type() << " " << mode_
+    LOG(FATAL) << "Unknown activation type: " << conf.type() << " " << mode_
       << ". Please use singa_relu, singa_sigmoid, or singa_tanh";
   if (mode_ == "relu") {
     neg_slope_ = conf.relu_conf().negative_slope();
@@ -80,7 +80,7 @@ const std::pair<Tensor, vector<Tensor>> Activation::Backward(
     input_grad = grad * (inout * inout * (-1.f) + 1.f);
   else if (mode_ == "relu")
     input_grad = grad * (inout > 0.f) + (inout <= 0.f) * neg_slope_;
-  else LOG(FATAL) << "Unkown activation: " << mode_;
+  else LOG(FATAL) << "Unknown activation: " << mode_;
   return std::make_pair(input_grad, param_grad);
 }
 

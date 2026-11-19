@@ -624,7 +624,7 @@ __global__ void KernelHalf2Float(const size_t n, const __half *in, float *out) {
   }
 }
 
-// kernal used by the threshold based sparsification
+// kernel used by the threshold based sparsification
 __global__ void KernelSparsAbs(const size_t n, const float threshold,
                                const float *in, float *out) {
   for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
@@ -633,7 +633,7 @@ __global__ void KernelSparsAbs(const size_t n, const float threshold,
   }
 }
 
-// kernal used by the threshold based sparsification
+// kernel used by the threshold based sparsification
 __global__ void KernelSparsIndex(const size_t n, const float *in, int *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
@@ -641,7 +641,7 @@ __global__ void KernelSparsIndex(const size_t n, const float *in, int *out) {
   }
 }
 
-// kernal used by the topK based sparsification
+// kernel used by the topK based sparsification
 __global__ void KernelGenerateIndex(const size_t n, int *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {

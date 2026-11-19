@@ -414,7 +414,7 @@ def run(global_rank,
 
             synflow_flag = False
             # Train the model
-            if epoch == (max_epoch - 1) and b == (num_train_batch - 1):  ### synflow calcuation for the last batch
+            if epoch == (max_epoch - 1) and b == (num_train_batch - 1):  ### synflow calculation for the last batch
                 print ("last epoch calculate synflow")
                 synflow_flag = True
                 ### step 1: all one input
@@ -482,7 +482,7 @@ def run(global_rank,
             test_correct += accuracy(tensor.to_numpy(out_test), y)
 
         if DIST:
-            # Reduce the evaulation accuracy from multiple devices
+            # Reduce the evaluation accuracy from multiple devices
             test_correct = reduce_variable(test_correct, mssgd, reducer)
 
         # Output the evaluation accuracy

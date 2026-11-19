@@ -58,7 +58,7 @@ class Layer {
   /// Destruct objects created by this layer.
   virtual ~Layer() {};
 
-  /// Each layer sub-class would optionaly have a type name.
+  /// Each layer sub-class would optionally have a type name.
   /// Used for debugging and logging.
   virtual const std::string layer_type() const { return "Unknown"; }
 
@@ -199,7 +199,7 @@ class Layer {
     return vector<Tensor>{};
   }
 
-  /// Return names of all parmaeters.
+  /// Return names of all parameters.
   const vector<string> param_names() {
     vector<string> pname;
     for (const auto& spec : param_specs_) pname.push_back(spec.name());
@@ -221,10 +221,10 @@ class Layer {
   vector<ParamSpec> param_specs_;
 };
 
-/// Name should be formated as cudnn_xxx, singacpp_xxx, singacuda_xxx,
+/// Name should be formatted as cudnn_xxx, singacpp_xxx, singacuda_xxx,
 /// singacl_xxx, where xxx is the real layer type, e.g., convolution, relu, etc.
 /// xxx should only have lower case letters.
-/// if the implmentation is transparent to cpp/cuda/opencl, then register all
+/// if the implementation is transparent to cpp/cuda/opencl, then register all
 /// possible identifiers. For instance, Dropout is registered three times,
 /// RegisterLayerClass("singacpp_dropout", Dropout)
 /// RegisterLayerClass("singacl_dropout", Dropout)

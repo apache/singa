@@ -65,7 +65,7 @@ Here are some example tags:
 `devel-cuda9-cudnn7`, `devel-cuda9-cudnn7`, `devel-cuda10-cudnn7`, `devel-cpu`, `runtime-gpu` and `runtime-cpu`
 
 
-Please follow the existing Dockefiles under tool/docker/ to create other Dockefiles.
+Please follow the existing Dockerfiles under tool/docker/ to create other Dockerfiles.
 The folder structure is like
 
     level1: devel|runtime

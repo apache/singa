@@ -59,12 +59,12 @@ def schedule(dataset: str, sh: BudgetAwareControllerSH, T_: float, t1_: float, t
              only_phase1: bool = False):
     """
     :param dataset
-    :param sh: BudgetAwareControllerSH instnace
+    :param sh: BudgetAwareControllerSH instance
     :param T_: user given time budget
     :param t1_: time to score one model
     :param t2_: time to train one model
     :param w_: number of workers, for parallelly running.
-    :param search_space_ins: search spcae instance
+    :param search_space_ins: search space instance
     :param N_K_ratio: N/K = N_K_ratio
     :param only_phase1: Only use filtering phase.
     """

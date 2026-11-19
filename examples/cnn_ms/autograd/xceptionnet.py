@@ -279,7 +279,7 @@ class Xception(layer.Layer):
 
 if __name__ == '__main__':
     model = Xception(num_classes=1000)
-    print('Start intialization............')
+    print('Start initialization............')
     dev = device.create_cuda_gpu_on(0)
     #dev = device.create_cuda_gpu()
 

@@ -391,7 +391,7 @@ void Graph::RunInSerial() {
     }
 
     /*
-    // Wait for calculation to complete and then recyle the data
+    // Wait for calculation to complete and then recycle the data
     CBData *cb_data = new CBData(this, curNode);
     CHECK(cudaStreamAddCallback(device_->ctx_.stream, Graph::Callback, (void
     *)(cb_data), 0));
@@ -677,8 +677,8 @@ void Graph::AnalyzeEdges() {
       int node_id = blkInfo->used_nodes_.back()->id_;
       BlockType type = blkInfo->type_;
 
-      // if the block belongs to a inter tensor
-      // and isn't refered on the Python Side
+      // if the block belongs to an Inter tensor
+      // and isn't referred on the Python Side
       if ((type == BlockType::kInter || type == BlockType::kEnd) &&
           blkInfo->graph_ref_ >= blk->ref_count()) {
         free_blocks_[node_id].push_back(blk);

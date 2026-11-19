@@ -169,7 +169,7 @@ class SampleController(object):
         :return:
         """
         if k == -1:
-            # retur all models
+            # return all models
             return self.ranked_models
         else:
             return self.ranked_models[-k:]

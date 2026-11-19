@@ -67,7 +67,7 @@ class CnMemPool : public DeviceMemPool {
   std::pair<size_t, size_t> GetMemUsage() override;
   std::pair<size_t, size_t> GetMemUsage(int id) override;
 
-  // release all memory and set cnmem manager to unintialized
+  // release all memory and set cnmem manager to uninitialized
   ~CnMemPool();
 
  protected:

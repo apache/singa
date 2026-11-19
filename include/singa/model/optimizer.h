@@ -42,7 +42,7 @@ class Optimizer {
  public:
   Optimizer() = default;
   virtual ~Optimizer();
-  /// Setup the optimzier using configurations from serialized string (for
+  /// Setup the optimizer using configurations from serialized string (for
   /// binding languages).
   void Setup(const string& str) {
     OptimizerConf conf;
@@ -77,7 +77,7 @@ class Optimizer {
       int step = -1);
 
   /// The argument is a function that returns the learning rate given the
-  /// current step (i.e., curren running iteration).
+  /// current step (i.e., current running iteration).
   void SetLearningRateGenerator(function<float(int)> func) {
     learning_rate_generator_ = func;
   }
@@ -100,7 +100,7 @@ class Optimizer {
 };
 
 /// Apply constraints for parameters (gradient).
-/// E.g., restrict the norm of parmeter gradients to be within a threshold.
+/// E.g., restrict the norm of parameter gradients to be within a threshold.
 /// \ref http://keras.io/constraints/
 /// TODO(wangwei) implement a sub-class for each type of constraint
 class Constraint {
@@ -115,7 +115,7 @@ class Constraint {
     conf.ParseFromString(conf_str);
     Setup(conf);
   }
-  /// Apply the constraint to a single parmeter object, e.g., W, or b
+  /// Apply the constraint to a single parameter object, e.g., W, or b
   /// e.g., clip each gradient if it is too large w.r.t the threshold,
   /// \ref
   /// https://www.reddit.com/r/MachineLearning/comments/31b6x8/gradient_clipping_rnns/
@@ -129,7 +129,7 @@ class Constraint {
   /// currently only support "L2" norm constraint, i.e., the norm should be less
   /// than the configured threshold_, otherwise, the parameters would be clipped
   /// to make the norm within that threshold.
-  /// TODO(wangwei) consider other constraint, e.g., hard clip and unitnorm.
+  /// TODO(wangwei) considerr other constraint, e.g., hard clip and unitnorm.
   string type_ = "Unknown";
   float threshold_;
 };
@@ -152,7 +152,7 @@ class Regularizer {
     Setup(conf);
   }
 
-  /// Apply the regularizer to a single parmeter object, e.g., W, or b
+  /// Apply the regularizer to a single parameter object, e.g., W, or b
   /// e.g., clip each gradient if it is too large w.r.t the threshold,
   /// \ref
   /// https://www.reddit.com/r/MachineLearning/comments/31b6x8/gradient_clipping_rnns/

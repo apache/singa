@@ -157,7 +157,7 @@ class SpaceWrapper:
 
     def get_reinforcement_learning_policy(self, lr_rate):
         """
-        This is fpr reinforcement learning policy sampler
+        This is for reinforcement learning policy sampler
         :return:
         """
         raise NotImplementedError

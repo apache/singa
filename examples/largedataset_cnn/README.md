@@ -23,7 +23,7 @@ Examples inside this folder show how to train CNN models using SINGA for image c
 is from the filesystem.
 
 It reads the dataset from the filesystem defined by `process_data.py`. Hence, users can modify `process_data.py`
-for their perference of dataset format.
+for their preference of dataset format.
 
 In the current setting, 'classes.txt' contains the names of the classes at each line. For example, if it is a food dataset containing three classes, 'classes.txt' may read like this:
 
