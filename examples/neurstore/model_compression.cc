@@ -1,13 +1,21 @@
 /**
- * @file model_compression.cpp
+ * @file model_compression.cc
  * Demonstrate model compression using NeurStore
  */
 
-#include "neurstore/neurstore.h"
-
-#include <filesystem>
 #include <chrono>
+#include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+#include <omp.h>
+
+#include "neurstore/neurstore.h"
 
 namespace fs = std::filesystem;
 using namespace std::chrono;
