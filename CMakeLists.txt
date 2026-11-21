@@ -78,6 +78,7 @@ OPTION(USE_PYTHON3 "Python 3x" OFF)
 
 OPTION(USE_CUDNN "Use Cudnn libs" ON)
 OPTION(USE_OPENCV "Use opencv" OFF)
+OPTION(USE_NEURSTORE "Build NeurStore examples (requires ENABLE_TEST)" OFF)
 OPTION(USE_LMDB "Use LMDB libs" OFF)
 OPTION(USE_JAVA "Generate java wrappers" OFF)
 OPTION(USE_OPENCL "Use OpenCL" OFF)

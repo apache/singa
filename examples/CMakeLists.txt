@@ -18,3 +18,4 @@
 
 ADD_SUBDIRECTORY(cpp/imagenet)
 ADD_SUBDIRECTORY(cpp/cifar10)
+ADD_SUBDIRECTORY(neurstore)
