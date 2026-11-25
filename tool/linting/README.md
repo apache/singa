@@ -19,7 +19,7 @@
 
 # Linting check
 
-This guide is for singa devoloper who should sanitize the code
+This guide is for singa developer who should sanitize the code
 before merging into the main branch.
 
 ## linting tools

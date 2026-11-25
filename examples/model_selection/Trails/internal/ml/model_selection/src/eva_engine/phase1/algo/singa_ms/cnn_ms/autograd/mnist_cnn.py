@@ -135,7 +135,7 @@ def reduce_variable(variable, dist_opt, reducer):
     return output
 
 
-# Function to sychronize SINGA TENSOR initial model parameters
+# Function to synchronize SINGA TENSOR initial model parameters
 def synchronize(tensor, dist_opt):
     dist_opt.all_reduce(tensor.data)
     dist_opt.wait()
@@ -176,7 +176,7 @@ def train_mnist_cnn(DIST=False,
     batch_size = 64
     sgd = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)
 
-    # Prepare training and valadiation data
+    # Prepare training and validation data
     train_x, train_y, test_x, test_y = load_dataset()
     IMG_SIZE = 28
     num_classes = 10
@@ -216,7 +216,7 @@ def train_mnist_cnn(DIST=False,
     idx = np.arange(train_x.shape[0], dtype=np.int32)
 
     if DIST:
-        #Sychronize the initial parameters
+        #Synchronize the initial parameters
         autograd.training = True
         x = np.random.randn(batch_size, 1, IMG_SIZE,
                             IMG_SIZE).astype(np.float32)
@@ -228,7 +228,7 @@ def train_mnist_cnn(DIST=False,
         for p, g in autograd.backward(loss):
             synchronize(p, sgd)
 
-    # Training and evaulation loop
+    # Training and evaluation loop
     for epoch in range(max_epoch):
         start_time = time.time()
         np.random.shuffle(idx)
@@ -287,7 +287,7 @@ def train_mnist_cnn(DIST=False,
             test_correct += accuracy(tensor.to_numpy(out_test), y)
 
         if DIST:
-            # Reduce the evaulation accuracy from multiple devices
+            # Reduce the evaluation accuracy from multiple devices
             test_correct = reduce_variable(test_correct, sgd, reducer)
 
         # Output the evaluation accuracy

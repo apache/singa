@@ -46,7 +46,7 @@ void CudnnActivation::InitCudnn(size_t size, DataType dtype) {
     else if (mode_ == "relu")
       cudnn_mode_ = CUDNN_ACTIVATION_RELU;
     else
-      LOG(FATAL) << "Unkown activation: " << mode_;
+      LOG(FATAL) << "Unknown activation: " << mode_;
 
     CUDNN_CHECK(cudnnSetActivationDescriptor(
           acti_desc_, cudnn_mode_, CUDNN_PROPAGATE_NAN, 0.0f));

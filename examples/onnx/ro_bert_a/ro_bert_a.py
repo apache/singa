@@ -69,12 +69,12 @@ if __name__ == "__main__":
     logging.info("preprocessing...")
     input_ids = preprocess()
 
-    logging.info("model compling...")
+    logging.info("model compiling...")
     dev = device.get_default_device()
     x = tensor.Tensor(device=dev, data=input_ids)
     model = MyModel(onnx_model)
 
-    # verifty the test
+    # verify the test
     # from utils import load_dataset
     # sg_ir = sonnx.prepare(onnx_model) # run without graph
     # inputs, ref_outputs = load_dataset(

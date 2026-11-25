@@ -181,7 +181,7 @@ vector<Tensor> GpuRNNForwardInference(const Tensor &x, const Tensor &hx,
   // out
   // y in shape {seq, bs, ..}
 
-  h.batch_size = x.shape(1);  // update batch size to accomodate bs change
+  h.batch_size = x.shape(1);  // update batch size to accommodate bs change
   h.seq_length = x.shape(0);
 
   Tensor y(Shape{h.seq_length, h.batch_size,
@@ -250,7 +250,7 @@ vector<Tensor> GpuRNNForwardTraining(const Tensor &x, const Tensor &hx,
   // out
   // y in shape {seq, bs, ..}
 
-  // update batch size to accomodate bs change
+  // update batch size to accommodate bs change
   h.batch_size = x.shape(1);
   h.seq_length = x.shape(0);
 

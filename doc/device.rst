@@ -20,16 +20,16 @@ Device
 =======
 
 
-The Device abstract represents any hardware device with memory and compuation units.
+The Device abstract represents any hardware device with memory and computation units.
 All [Tensor operations](tensor.html) are scheduled by the resident device for execution.
 Tensor memory is also managed by the device's memory manager. Therefore, optimization
 of memory and execution are implemented in the Device class.
 
 Specific devices
 ----------------
-Currently, SINGA has three Device implmentations,
+Currently, SINGA has three Device implementations,
 
-1. CudaGPU for an Nvidia GPU card which runs Cuda code
+1. CudaGPU for an NVIDIA GPU card which runs CUDA code
 2. CppCPU for a CPU which runs Cpp code
 3. OpenclGPU for a GPU card which runs OpenCL code
 

@@ -96,7 +96,7 @@ const Tensor BatchNorm::Forward(int flag, const Tensor& input) {
       buf_.push(var);
       buf_.push(xnorm);
     } else {  // batchnorm_spatial mode
-      LOG(FATAL) << "Trainning SpatialBatchNormalization has not been "
+      LOG(FATAL) << "Training SpatialBatchNormalization has not been "
                     "implemented yet...";
     }
   } else {         // forward for test
@@ -234,7 +234,7 @@ const std::pair<Tensor, vector<Tensor>> BatchNorm::Backward(
       param_grad.push_back(dummy);
       param_grad.push_back(dummy);
     } else {
-      LOG(FATAL) << "Trainning SpatialBatchNormalization has not been "
+      LOG(FATAL) << "Training SpatialBatchNormalization has not been "
                     "implemented yet...";
     }
   } else {

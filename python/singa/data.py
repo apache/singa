@@ -62,7 +62,7 @@ import numpy as np
 
 
 class ImageBatchIter(object):
-    '''Utility for iterating over an image dataset to get mini-batches.
+    '''Utility for iterationg over an image dataset to get mini-batches.
 
     Args:
         img_list_file(str): name of the file containing image meta data; each

@@ -20,7 +20,7 @@
 import json
 
 from src.common.structure import ModelAcquireData, ModelEvaData
-from src.controller.controler import SampleController
+from src.controller.controller import SampleController
 from src.controller.sampler_all.seq_sampler import SequenceSampler
 
 from src.eva_engine.phase1.evaluator import P1Evaluator
@@ -149,7 +149,7 @@ class RunPhase1:
                                                     model_eva.model_score,
                                                     simple_score_sum=self.args.simple_score_sum)
 
-            # this is to measure the value of metrix, sum of two value.
+            # this is to measure the value of metric, sum of two value.
             if len(trace_highest_score) == 0:
                 trace_highest_score.append(ranked_score)
                 trace_highest_scored_models_id.append(str(arch_id))

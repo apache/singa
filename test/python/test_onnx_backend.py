@@ -64,7 +64,7 @@ _exclude_nodes_patterns = [
     r'(test_greater_equal)',  # interrupt greater
     r'(test_negative_log)',  # interrupt negative
     r'(test_softmax_cross_entropy)',  # interrupt softmax
-    r'(test_reduce_sum_square)',  # interrupt reduce sum squre
+    r'(test_reduce_sum_square)',  # interrupt reduce sum square
     r'(test_log_softmax)',  # interrupt log softmax
     r'(test_maxunpool)',  # interrupt max unpool
     r'(test_gather_elements)',  # interrupt gather elements

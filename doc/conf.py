@@ -40,7 +40,7 @@ import os
 import sys
 
 # If the user has singa codebase
-# will build document from code comments in these loactions
+# will build document from code comments in these locations
 sys.path.append(os.path.abspath('../python/'))
 sys.path.append(os.path.abspath('../build/python/'))
 

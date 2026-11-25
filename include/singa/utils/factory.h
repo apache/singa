@@ -28,7 +28,7 @@
 
 #include "singa/utils/logging.h"
 /**
- * Macro that creats a function which instantiate a subclass instance and
+ * Macro that creates a function that instantiates a subclass instance and
  * returns pointer to the base class.
  */
 #define CreateInstance(SubClass, BaseClass) \
@@ -39,7 +39,7 @@
  * 1. register class creation function that generates a class
  * object based on id.
  * 2. call Create() func to call the creation function and return
- * a pointer to the base calss.
+ * a pointer to the base class.
  */
 template <typename T, typename ID = std::string>
 class Factory {

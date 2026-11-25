@@ -227,7 +227,7 @@ void NetworkThread::doWork() {
     LOG(FATAL) << "Bind Error: " << strerror(errno);
   }
 
-  // TODO(wangwei) remove the hardcode setting, which would result erros if
+  // TODO(wangwei) remove the hardcode setting, which would result errors if
   // there are more than 10 connections
   // reported by yaochang
   if (listen(socket_fd_, 10)) {
@@ -276,7 +276,7 @@ void NetworkThread::onNewEp() {
 
       this->fd_ep_map_[fd] = ep;
 
-      // initialize the addess
+      // initialize the address
       ep->addr_.sin_family = AF_INET;
       ep->addr_.sin_port = htons(port_);
       bzero(&(ep->addr_.sin_zero), 8);
@@ -440,8 +440,8 @@ void NetworkThread::afterConnEst(EndPoint *ep, int fd, bool active) {
 
   if (sfd == fd) {
     // this fd is a reuse of a previous socket fd
-    // so we first need to clean the resouce for that fd
-    // we duplicate this fd to let the resouce of the oldf fd can be freed
+    // so we first need to clean the resource for that fd
+    // we duplicate this fd to let the resource of the oldf fd can be freed
     // also indicate there is no need to reconnect
     fd = dup(fd);
     handleConnLost(sfd, ep, false);
@@ -458,7 +458,7 @@ void NetworkThread::afterConnEst(EndPoint *ep, int fd, bool active) {
 
   ep->last_msg_time_ = ev_now(loop_);
 
-  // see whether there is already a established connection for this fd
+  // see whether there is already an established connection for this fd
   if (ep->conn_status_ == CONN_EST && sfd >= 0) {
     // check if fd and sfd are associate with the same socket
     struct sockaddr_in addr;

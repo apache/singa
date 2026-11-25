@@ -53,8 +53,8 @@ class P1Evaluator:
         :param train_loader:
         :param is_simulate:
         :param metrics: which TFMEM to use?
-        :param enable_cache: if cache embedding for scoring? only used on structued data
-        :param db_config: how to connect to databaes
+        :param enable_cache: if cache embedding for scoring? only used on structured data
+        :param db_config: how to connect to databases
         :param data_retrievel: sql or spi
         """
         self.metrics = metrics
@@ -339,7 +339,7 @@ class P1Evaluator:
 
     def _p1_evaluate_simu(self, model_acquire: ModelAcquireData) -> dict:
         """
-        This involves simulate get alls core,
+        This involves simulate get all core,
         """
         if self.score_getter is None:
             self.score_getter = SimulateScore(space_name=self.search_space_ins.name,

@@ -182,7 +182,7 @@ pub fn run_inference_shared_memory(
     response.insert("overall_query_latency", overall_elapsed_time.clone());
     response.insert("diff", diff_time.clone());
 
-    // Step 4: Return to PostgresSQL
+    // Step 4: Return to PostgreSQL
     return serde_json::json!(response);
 }
 
@@ -292,7 +292,7 @@ pub fn run_inference(
         &response_json,
         "records_results");
 
-    // Step 4: Return to PostgresSQL
+    // Step 4: Return to PostgreSQL
     return serde_json::json!(response);
 }
 
@@ -474,7 +474,7 @@ pub fn run_inference_shared_memory_write_once(
         &response_json,
         "records_results");
 
-    // Step 4: Return to PostgresSQL
+    // Step 4: Return to PostgreSQL
     return serde_json::json!(response);
 }
 
@@ -626,7 +626,7 @@ pub fn run_inference_shared_memory_write_once_int_exp(
         &response_json,
         "records_results");
 
-    // Step 4: Return to PostgresSQL
+    // Step 4: Return to PostgreSQL
     return serde_json::json!(response);
 }
 
@@ -767,7 +767,7 @@ pub fn run_inference_shared_memory_write_once_int(
         &response_json,
         "records_results");
 
-    // Step 4: Return to PostgresSQL
+    // Step 4: Return to PostgreSQL
     return serde_json::json!(response);
 }
 

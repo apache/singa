@@ -57,7 +57,7 @@ std::vector<Tensor> JPGDecoder::Decode(std::string value) {
           data[i * width * channel + j * channel + k] =
               static_cast<float>(static_cast<int>(mat.at<cv::Vec3b>(i, j)[k]));
   } else {
-    LOG(FATAL) << "Unknow dimension order for images " << image_dim_order_
+    LOG(FATAL) << "Unknown dimension order for images " << image_dim_order_
                << " Only support 'HWC' and 'CHW'";
   }
   image.CopyDataFromHostPtr<float>(data, image.Size());

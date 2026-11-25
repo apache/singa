@@ -33,7 +33,7 @@ if(ENV_OPENCLROOT)
     OPENCL_INCLUDE_DIR
     NAMES CL/cl.h OpenCL/cl.h
     PATHS "${ENV_OPENCLROOT}/include"
-    #NO_DEFAULT_PATH  #uncomment this is you wish to surpress the use of default paths for OpenCL
+    #NO_DEFAULT_PATH  #uncomment this is you wish to suppress the use of default paths for OpenCL
     )
 
   if (("${CMAKE_SYSTEM_NAME}" MATCHES "Linux") OR ("${CMAKE_SYSTEM_NAME}" MATCHES "Windows"))
@@ -51,7 +51,7 @@ if(ENV_OPENCLROOT)
     OPENCL_LIBRARY
     NAMES OpenCL
     PATHS "${OPENCL_LIB_SEARCH_PATH}"
-    #NO_DEFAULT_PATH  #uncomment this is you wish to surpress the use of default paths for OpenCL
+    #NO_DEFAULT_PATH  #uncomment this is you wish to suppress the use of default paths for OpenCL
     )
 else(ENV_OPENCLROOT)
   find_path(

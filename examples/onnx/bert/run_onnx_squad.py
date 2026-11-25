@@ -15,7 +15,7 @@
 Inference for squad/bert using onnx.
 
 This is going to do the samem as 'python run_squad.py --do_predict=True ...' using a squad/bert model
-that was converted to onnx. Lots of code was taken from run_squad.py.
+that was converted to ONNX. Lots of code was taken from run_squad.py.
 You run it with:
 
 
