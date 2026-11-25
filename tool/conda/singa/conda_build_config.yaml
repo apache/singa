@@ -17,10 +17,6 @@
 # under the License.
 #
 
-c_compiler_version:         # [linux]
-    - 5.4                   # [linux]
-cxx_compiler_version:       # [linux]
-    - 5.4                   # [linux]
 # https://docs.conda.io/projects/conda-build/en/latest/resources/compiler-tools.html#macos-sdk
 CONDA_BUILD_SYSROOT:
     - "/Applications/Xcode_11.7.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk" # [osx]
@@ -30,8 +26,10 @@ cudnn:                      # [linux]
 #    - "7.6.5 cuda9.0_0"     # [environ.get("CUDA")=="9.0"]
 dnnl:
     - 1.1
+numpy:
+    - 1.26
 python:
-    - 3.8
+    - 3.11
 #    - 3.7
 nccl:
     - 2.6.4.1               # [environ.get("CUDA")=="10.2"]

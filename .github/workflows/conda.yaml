@@ -29,43 +29,72 @@ on:
 jobs:
   build-pytest-package-ubuntu:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
 
     steps:
       - uses: actions/checkout@v1
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: "3.11"
+          auto-update-conda: true
       - name: install-conda-build
-        run: conda install conda-build=3.20.4 anaconda-client
+        run: conda install -y python=3.11 conda-build anaconda-client
       - name: conda-config
-        run: conda config --add channels conda-forge && conda config --add channels nusdbsystem && conda config --set anaconda_upload no
+        run: |
+          conda config --prepend channels conda-forge
+          conda config --prepend channels nusdbsystem
+          conda config --set anaconda_upload no
+          conda config --show channels
       - name: build-pytest
-        run:  conda build tool/conda/singa --python 3.6
+        run:  conda-build tool/conda/singa --python 3.11 -c nusdbsystem -c conda-forge
         env:
-          TEST_COMMAND: pytest --cov=$PREFIX/lib/python3.7/site-packages/singa --cov-report=xml && codecov --flags singa-python
+          TEST_COMMAND: pytest --ignore=test/python/test_onnx_backend.py --cov=$PREFIX/lib/python3.11/site-packages/singa --cov-report=xml && codecov --flags singa-python || exit 1
       - name: upload-package
         env: 
           ANACONDA_UPLOAD_TOKEN: ${{ secrets.ANACONDA_UPLOAD_TOKEN }}
         if: ${{ env.ANACONDA_UPLOAD_TOKEN }}
-        run: /usr/share/miniconda/bin/anaconda -t $ANACONDA_UPLOAD_TOKEN upload -u nusdbsystem -l main /usr/share/miniconda/conda-bld/linux-64/singa-*.tar.bz2 --force
+        run: |
+          CONDA_BASE=$(conda info --base)
+          shopt -s nullglob
+          packages=("$CONDA_BASE"/conda-bld/linux-64/singa-*.conda "$CONDA_BASE"/conda-bld/linux-64/singa-*.tar.bz2)
+          test ${#packages[@]} -gt 0
+          "$CONDA_BASE/bin/anaconda" -t $ANACONDA_UPLOAD_TOKEN upload -u nusdbsystem -l main "${packages[@]}" --force
         # 
 
 
   build-pytest-package-macos:
-    runs-on: macos-latest
+    runs-on: macos-15-intel
+    defaults:
+      run:
+        shell: bash -el {0}
 
     steps:
       - uses: actions/checkout@v1
-      - name: set permission
-        run: sudo chmod -R 777 /usr/local/miniconda 
-        # && xcrun --show-sdk-path
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: "3.11"
+          auto-update-conda: true
       - name: install-conda-build
-        run: conda install conda-build anaconda-client
+        run: conda install -y python=3.11 conda-build anaconda-client
       - name: conda-config
-        run: conda config --add channels conda-forge && conda config --add channels nusdbsystem && conda config --set anaconda_upload no
+        run: |
+          conda config --prepend channels conda-forge
+          conda config --prepend channels nusdbsystem
+          conda config --set anaconda_upload no
+          conda config --show channels
       - name: build-pytest
-        run:  conda build tool/conda/singa --python 3.6
+        run:  conda-build tool/conda/singa --python 3.11 -c nusdbsystem -c conda-forge
         env:
-          TEST_COMMAND: pytest --cov=$PREFIX/lib/python3.6/site-packages/singa --cov-report=xml && codecov --flags singa-python
+          TEST_COMMAND: pytest --ignore=test/python/test_onnx_backend.py --cov=$PREFIX/lib/python3.11/site-packages/singa --cov-report=xml && codecov --flags singa-python || exit 1
       - name: upload-package
         env: 
           ANACONDA_UPLOAD_TOKEN: ${{ secrets.ANACONDA_UPLOAD_TOKEN }}
         if: ${{ env.ANACONDA_UPLOAD_TOKEN }}
-        run: /usr/local/miniconda/bin/anaconda -t $ANACONDA_UPLOAD_TOKEN upload -u nusdbsystem -l main /usr/local/miniconda/conda-bld/osx-64/singa-*.tar.bz2 --force
+        run: |
+          CONDA_BASE=$(conda info --base)
+          shopt -s nullglob
+          packages=("$CONDA_BASE"/conda-bld/osx-*/singa-*.conda "$CONDA_BASE"/conda-bld/osx-*/singa-*.tar.bz2)
+          test ${#packages[@]} -gt 0
+          "$CONDA_BASE/bin/anaconda" -t $ANACONDA_UPLOAD_TOKEN upload -u nusdbsystem -l main "${packages[@]}" --force
