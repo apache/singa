@@ -6,7 +6,7 @@ __pycache__
 *~
 .\#*
 \#*\#
-
+.mcp.json
 
 
 *.o
@@ -25,6 +25,8 @@ thirdparty/*
 test/samples/
 .idea/
 .vscode/
+.codex
+.claude
 
 # Sphinx and Doxygen Doc-Site
 doc/_build/*
